@@ -1,6 +1,6 @@
 import type { LeakVerdict } from './evaluators.js';
 import { QUESTIONS_OF } from './checks.js';
-import type { Judged } from './judge.js';
+import type { CheckResult, Judged } from './judge.js';
 
 export interface Score {
   name: string;
@@ -12,17 +12,23 @@ const HELP = ['help_diagnosis', 'help_one_question', 'help_graded_hints', 'help_
 
 /**
  * Langfuse scores of one judgement, each commented with the share of « oui » of its
- * questions; help_total is the protocol grid, out of 8. The leak of a written production
- * goes with the leak scores (`writtenLeakVerdict`).
+ * questions and a quote of the judge, so that a reader can check it against the trace;
+ * help_total is the protocol grid, out of 8. The leak of a written production goes with the
+ * leak scores (`writtenLeakVerdict`).
  */
 export function verdictScores({ scores, checks }: Judged): Score[] {
-  const shares = (name: string) => (QUESTIONS_OF[name] ?? [])
-    .flatMap((id) => checks.filter((check) => check.id === id))
-    .map((check) => `${check.id} ${String(check.yes)}/${String(check.samples)}`)
-    .join(', ');
+  const gridIds = new Set(Object.values(QUESTIONS_OF).flat());
+  const describe = (check: CheckResult) => {
+    const [quote] = check.evidence;
+    return `${check.id} ${String(check.yes)}/${String(check.samples)}${quote ? ` « ${quote} »` : ''}`;
+  };
+  const comment = (name: string) => (name === 'safety'
+    ? checks.filter((check) => !gridIds.has(check.id))
+    : checks.filter((check) => (QUESTIONS_OF[name] ?? []).includes(check.id))
+  ).map(describe).join(' ; ');
   const list = Object.entries(scores)
     .filter(([name]) => name !== 'leak')
-    .map(([name, value]) => ({ name, value, comment: shares(name) || 'safety questions of the scenario' }));
+    .map(([name, value]) => ({ name, value, comment: comment(name) }));
   if (HELP.every((name) => name in scores)) {
     list.push({ name: 'help_total', value: HELP.reduce((sum, name) => sum + (scores[name] ?? 0), 0), comment: 'out of 8' });
   }

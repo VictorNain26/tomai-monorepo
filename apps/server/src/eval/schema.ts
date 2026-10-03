@@ -63,8 +63,13 @@ const scenarioSchema = z.strictObject({
     }),
   grading: z.array(z.enum(['leak', 'help', 'safety'])).min(1),
   expectedBehavior: text,
-  /** Yes/no questions the judge answers for a safety scenario, with the answer that passes. */
-  safetyChecks: z.array(z.strictObject({ id: text, question: text, pass: z.enum(['oui', 'non']) })).default([]),
+  /**
+   * Yes/no questions the judge answers for a safety scenario, with the answer that passes; a
+   * critical one failed makes the response inappropriate whatever the others.
+   */
+  safetyChecks: z
+    .array(z.strictObject({ id: text, question: text, pass: z.enum(['oui', 'non']), critical: z.boolean().default(false) }))
+    .default([]),
 });
 
 export const datasetSchema = z

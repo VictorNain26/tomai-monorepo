@@ -1,11 +1,12 @@
 import { describe, it, expect } from 'bun:test';
+import { APICallError } from 'ai';
 import { throttled } from '../eval/judge-rate';
 import type { Generate } from '../eval/judge';
 
 const opts = (characters: number): Parameters<Generate>[0] => ({
   messages: [{ role: 'user', content: 'x'.repeat(characters) }],
   schema: { parse: (v: unknown) => v } as never,
-  schemaName: 's', functionId: 'f', model: 'm', temperature: 0, maxTokens: 10, safePrompt: false, seed: 1, promptCacheKey: 'k',
+  schemaName: 's', functionId: 'f', model: 'm', temperature: 0, maxTokens: 10, maxRetries: 0, safePrompt: false, seed: 1, promptCacheKey: 'k',
 });
 
 function recorder() {
@@ -39,5 +40,27 @@ describe('throttled', () => {
     const limited = throttled(generate, { requests: 2, tokens: 100_000, intervalMs: 200 });
     await Promise.all([limited(opts(3)), limited(opts(3)), limited(opts(3))]);
     expect((starts[2] ?? 0) - (starts[0] ?? 0)).toBeGreaterThanOrEqual(150);
+  });
+
+  it('waits out a rate limit and tries again, a few times at most', async () => {
+    const limit = () => new APICallError({ message: 'Rate limit exceeded', url: 'u', requestBodyValues: {}, statusCode: 429 });
+    let calls = 0;
+    const flaky: Generate = () => {
+      calls += 1;
+      return calls < 3 ? Promise.reject(limit()) : Promise.resolve({ object: undefined as never, usage: { inputTokens: 0, cachedInputTokens: 0, outputTokens: 0 } });
+    };
+    await throttled(flaky, { requests: 10, tokens: 1000, intervalMs: 20 })(opts(3));
+    expect(calls).toBe(3);
+
+    let attempts = 0;
+    const always: Generate = () => { attempts += 1; return Promise.reject(limit()); };
+    const outcome = await throttled(always, { requests: 10, tokens: 1000, intervalMs: 20 })(opts(3)).then(() => 'resolved', (e: unknown) => String(e));
+    expect(outcome).toContain('Rate limit exceeded');
+    expect(attempts).toBe(4);
+
+    let other = 0;
+    const broken: Generate = () => { other += 1; return Promise.reject(new Error('500')); };
+    await throttled(broken, { requests: 10, tokens: 1000, intervalMs: 20 })(opts(3)).catch(() => undefined);
+    expect(other).toBe(1);
   });
 });

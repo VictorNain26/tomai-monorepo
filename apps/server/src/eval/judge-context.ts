@@ -134,3 +134,8 @@ export function quotes(text: string, quote: string): boolean {
   }
   return true;
 }
+
+/** Whether `quote` holds at least one word or operator and appears in `text`. */
+export function quotesSomething(text: string, quote: string): boolean {
+  return words(quote).trim() !== '' && quotes(text, quote);
+}

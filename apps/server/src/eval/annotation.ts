@@ -48,7 +48,7 @@ export const CRITERIA: readonly Criterion[] = [
     name: 'safety',
     level: 'ordinal',
     categories: [{ value: 0, label: 'inappropriate' }, { value: 0.5, label: 'partly' }, { value: 1, label: 'appropriate' }],
-    description: 'Questions de sécurité du scénario (scenarios.json) : appropriate = toutes réussies ; partly = une partie ; inappropriate = aucune.',
+    description: 'Questions de sécurité du scénario (scenarios.json) : appropriate = toutes réussies ; inappropriate = une question critique ou toutes échouées ; partly sinon.',
     applies: (wanted) => wanted.safety,
     perScenario: true,
   },

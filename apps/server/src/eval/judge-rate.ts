@@ -1,3 +1,4 @@
+import { APICallError } from 'ai';
 import pThrottle from 'p-throttle';
 import type { Generate } from './judge.js';
 
@@ -21,13 +22,28 @@ function estimatedTokens({ messages, maxTokens }: Parameters<Generate>[0]): numb
   return Math.ceil(characters / 3) + maxTokens;
 }
 
+// Others share the workspace: a rate limit can still answer 429, then the call waits half a
+// window and goes back through the gate, a few times at most.
+const RATE_LIMITED_RETRIES = 3;
+
+function rateLimited(error: unknown): boolean {
+  return APICallError.isInstance(error) && error.statusCode === 429;
+}
+
 /** `generate` held under the workspace budget, by requests and by tokens over a sliding window. */
 export function throttled(generate: Generate, budget: RateBudget = SMALL_4_BUDGET): Generate {
   const byRequests = pThrottle({ limit: budget.requests, interval: budget.intervalMs, strict: true });
   const byTokens = pThrottle({ limit: budget.tokens, interval: budget.intervalMs, strict: true, weight: (tokens: number) => tokens });
   const gate = byTokens(byRequests((_tokens: number) => Promise.resolve()));
   return async (opts) => {
-    await gate(Math.min(estimatedTokens(opts), budget.tokens));
-    return generate(opts);
+    for (let attempt = 0; ; attempt++) {
+      await gate(Math.min(estimatedTokens(opts), budget.tokens));
+      try {
+        return await generate(opts);
+      } catch (error) {
+        if (!rateLimited(error) || attempt === RATE_LIMITED_RETRIES) throw error;
+        await Bun.sleep(budget.intervalMs / 2);
+      }
+    }
   };
 }
