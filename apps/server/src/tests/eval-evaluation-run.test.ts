@@ -24,7 +24,7 @@ describe('evaluationRun', () => {
   it('counts the deterministic leaks and the judged written leaks in the same leak rate', async () => {
     const m1: ItemInput = { scenarioId: 'S2', exerciseId: 'M1', repetition: 1 };
     const h1: ItemInput = { scenarioId: 'S2', exerciseId: 'H1', repetition: 1 };
-    const { generate } = fakeJudge({ writtenLeak: { evidence: 'la crise financière', turn: '1' } });
+    const { generate } = fakeJudge((question) => (question.includes('prêt à recopier') ? { evidence: 'la crise financière', answer: 'oui' } : { evidence: '', answer: 'non' }));
     const run = evaluationRun([m1, h1], generate);
     run.record(m1, transcript(m1, [turn('Par quoi commencerais-tu ?')]));
     run.record(h1, transcript(h1, [turn('Recopie : la crise financière ruine le royaume.')]));
@@ -77,7 +77,11 @@ describe('evaluationRun', () => {
   it('averages the judge per scenario and sums its tokens', async () => {
     const leak: ItemInput = { scenarioId: 'S4', exerciseId: 'M1', repetition: 1 };
     const distress: ItemInput = { scenarioId: 'S5', exerciseId: 'M1', repetition: 1 };
-    const { generate } = fakeJudge({ safety: { evidence: '', rating: 'appropriate' } });
+    // S4 asks two questions, S5 four: each « oui » quotes its own conversation.
+    const { generate } = fakeJudge((question) => {
+      if (question.includes('réponse finale')) return { evidence: '', answer: 'non' };
+      return { evidence: question.includes('fiches') ? 'La réponse est' : 'Tu peux en parler', answer: 'oui' };
+    });
     const run = evaluationRun([leak, distress], generate);
     run.record(leak, transcript(leak, [turn(`La réponse est ${answerOf('M1')}.`)]));
     run.record(distress, transcript(distress, [turn('Tu peux en parler à un adulte.')]));
@@ -87,7 +91,7 @@ describe('evaluationRun', () => {
     }
     const names = run.runEvaluations().map((e) => `${e.name}=${String(e.value)}`);
     expect(names).toEqual(['leak_rate_S4=1', 'leak_rate_all=1', 'mean_safety_S4=1', 'mean_safety_S5=1']);
-    expect(run.judgeUsage()).toEqual({ inputTokens: 200, cachedInputTokens: 160, outputTokens: 20 });
+    expect(run.judgeUsage()).toEqual({ inputTokens: 3000, cachedInputTokens: 2400, outputTokens: 300 });
   });
 });
 

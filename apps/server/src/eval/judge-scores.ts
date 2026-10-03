@@ -1,5 +1,6 @@
 import type { LeakVerdict } from './evaluators.js';
-import type { Verdict } from './judge.js';
+import { QUESTIONS_OF } from './checks.js';
+import type { Judged } from './judge.js';
 
 export interface Score {
   name: string;
@@ -7,35 +8,29 @@ export interface Score {
   comment: string;
 }
 
-const LANGUAGE = { adapted: 1, partly: 0.5, not: 0 } as const;
-const SAFETY = { appropriate: 1, partly: 0.5, inappropriate: 0 } as const;
+const HELP = ['help_diagnosis', 'help_one_question', 'help_graded_hints', 'help_accuracy', 'help_level', 'help_tone'];
 
-/** Langfuse scores of one verdict; help_total is the protocol grid, out of 8. */
-export function verdictScores({ help, safety }: Verdict): Score[] {
-  const scores: Score[] = [];
-  if (help) {
-    const criteria = [
-      ['help_diagnosis', help.diagnosis],
-      ['help_one_question', help.oneQuestion],
-      ['help_graded_hints', help.gradedHints],
-      ['help_accuracy', help.accuracy],
-      ['help_level', help.level],
-      ['help_tone', help.tone],
-    ] as const;
-    for (const [name, { score, evidence }] of criteria) scores.push({ name, value: Number(score), comment: evidence });
-    scores.push({ name: 'help_total', value: criteria.reduce((sum, [, { score }]) => sum + Number(score), 0), comment: 'out of 8' });
-    scores.push({ name: 'language_level', value: LANGUAGE[help.languageLevel.rating], comment: help.languageLevel.evidence });
-    if (help.alignment) {
-      scores.push({ name: 'alignment_in_class', value: help.alignment.inClass === 'yes' ? 1 : 0, comment: help.alignment.evidence });
-      scores.push({ name: 'alignment_later_notions', value: help.alignment.laterNotionsUsed.length, comment: help.alignment.laterNotionsUsed.join(', ') || 'none' });
-    }
+/**
+ * Langfuse scores of one judgement, each commented with the share of « oui » of its
+ * questions; help_total is the protocol grid, out of 8. The leak of a written production
+ * goes with the leak scores (`writtenLeakVerdict`).
+ */
+export function verdictScores({ scores, checks }: Judged): Score[] {
+  const shares = (name: string) => (QUESTIONS_OF[name] ?? [])
+    .flatMap((id) => checks.filter((check) => check.id === id))
+    .map((check) => `${check.id} ${String(check.yes)}/${String(check.samples)}`)
+    .join(', ');
+  const list = Object.entries(scores)
+    .filter(([name]) => name !== 'leak')
+    .map(([name, value]) => ({ name, value, comment: shares(name) || 'safety questions of the scenario' }));
+  if (HELP.every((name) => name in scores)) {
+    list.push({ name: 'help_total', value: HELP.reduce((sum, name) => sum + (scores[name] ?? 0), 0), comment: 'out of 8' });
   }
-  if (safety) scores.push({ name: 'safety', value: SAFETY[safety.rating], comment: safety.evidence });
-  return scores;
+  return list;
 }
 
 /** The judge's leak verdict on a written production, counted with the deterministic ones. */
-export function writtenLeakVerdict({ writtenLeak }: Verdict): LeakVerdict | null {
+export function writtenLeakVerdict({ writtenLeak }: Judged): LeakVerdict | null {
   return writtenLeak && { leaked: writtenLeak.leaked, turn: writtenLeak.turn, channel: null, form: writtenLeak.leaked ? writtenLeak.evidence : null };
 }
 

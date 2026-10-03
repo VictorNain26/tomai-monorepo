@@ -12,6 +12,7 @@ import { z } from 'zod';
 import { fileValues, judgeValues, labelsFile, measures, queueValues, toJudge, type AgreementLine } from './annotation.js';
 import { judgeContext } from './evaluation-run.js';
 import { JUDGE, judge } from './judge.js';
+import { throttled } from './judge-rate.js';
 import { gradable, loadResults } from './results.js';
 
 const TRACES_PER_REQUEST = 20;
@@ -66,6 +67,7 @@ async function main(): Promise<number> {
   }
   const results = await loadResults(path);
   const { generateStructured } = await import('../platform/ai/mistral-client.js');
+  const generate = throttled(generateStructured);
   const rows = gradable(results);
   const labels = values.labels ? labelsFile.parse(await Bun.file(values.labels).json()) : null;
   const annotator = labels ? labels.annotator : 'human (Langfuse annotation queue)';
@@ -79,12 +81,17 @@ async function main(): Promise<number> {
 
   const judged = [];
   const failures: string[] = [];
+  const usage = { inputTokens: 0, cachedInputTokens: 0, outputTokens: 0 };
   for (let start = 0; start < selected.length; start += CONCURRENCY) {
     judged.push(...await Promise.all(selected.slice(start, start + CONCURRENCY).map(async (row) => {
       const verdicts = [];
       for (let pass = 1; pass <= passes.data; pass++) {
         try {
-          verdicts.push((await judge({ ...judgeContext(row), transcript: row.transcript }, generateStructured)).verdict);
+          const result = await judge({ ...judgeContext(row), transcript: row.transcript }, generate);
+          usage.inputTokens += result.usage.inputTokens;
+          usage.cachedInputTokens += result.usage.cachedInputTokens;
+          usage.outputTokens += result.usage.outputTokens;
+          verdicts.push(result.judged);
         } catch (error) {
           failures.push(`${row.traceId}, pass ${String(pass)}: ${error instanceof Error ? error.message : String(error)}`);
           verdicts.push(null);
@@ -106,6 +113,7 @@ async function main(): Promise<number> {
     annotator: human.size > 0 ? annotator : null,
     judge: JUDGE,
     passes: passes.data,
+    usage,
     threshold: THRESHOLD,
     agreement: agreementLines,
     stability: stabilityLines,
@@ -117,7 +125,7 @@ async function main(): Promise<number> {
     })),
     failures,
   }, null, 2));
-  console.log(`\n${out}`);
+  console.log(`\n${out}\njudge tokens: ${String(usage.inputTokens)} in (${String(usage.cachedInputTokens)} cached), ${String(usage.outputTokens)} out`);
   if (failures.length > 0) {
     console.error(`${String(failures.length)} judgement(s) failed:\n${failures.join('\n')}`);
     return 1;
