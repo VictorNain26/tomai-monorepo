@@ -308,3 +308,6 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
 - **2026-10-03** : juge daté (`mistral-medium-2604`), un appel par critère, citations
   vérifiées dans la transcription, fuite rédigée comptée avec la fuite déterministe ;
   premier passage réduit à environ 1 centime par conversation (#366).
+  Annotation à l'aveugle et accord du juge : échantillon fixe de 38 conversations, file
+  d'annotation Langfuse, α de Krippendorff avec intervalle ; première mesure annotée par
+  Claude, un seul critère d'aide au seuil et sans robustesse (#367).
