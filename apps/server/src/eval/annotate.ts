@@ -4,7 +4,7 @@
  * on the judge's scales and anchors. Without the judge, no judge score is there to see.
  */
 import { LangfuseClient } from '@langfuse/client';
-import { CRITERIA } from './annotation.js';
+import { CRITERIA, matchesCriterion, queueChanges } from './annotation.js';
 import { gradable, loadResults } from './results.js';
 
 const QUEUE = 'tom-judge-agreement';
@@ -29,9 +29,7 @@ async function main(path: string | undefined): Promise<number> {
   for (const criterion of CRITERIA) {
     const found = existing.find((c) => c.name === criterion.name);
     if (found) {
-      const same = found.description === criterion.description
-        && JSON.stringify(found.categories ?? []) === JSON.stringify(criterion.categories);
-      if (!same) {
+      if (!matchesCriterion(found, criterion)) {
         console.error(`score config ${criterion.name} differs from the judge's anchors: archive it in Langfuse, then run again.`);
         return 1;
       }
@@ -61,14 +59,21 @@ async function main(path: string | undefined): Promise<number> {
     return 1;
   }
 
-  const queued = new Set<string>();
+  const items = [];
   for (let page = 1; ; page++) {
     const { data, meta } = await api.annotationQueues.listQueueItems(queue.id, { page, limit: 100 });
-    for (const item of data) queued.add(item.objectId);
+    items.push(...data);
     if (page >= meta.totalPages) break;
   }
   const rows = gradable(results);
   const skipped = results.report.length - rows.length;
+  // The queue holds one run: pending items of another run leave it, annotated ones stay.
+  const { keep, remove } = queueChanges(items, new Set(rows.map((row) => row.traceId)));
+  for (const item of remove) {
+    await pause();
+    await api.annotationQueues.deleteQueueItem(queue.id, item.id);
+  }
+  const queued = new Set(keep.map((item) => item.objectId));
   let added = 0;
   for (const { traceId } of rows) {
     if (queued.has(traceId)) continue;
@@ -76,7 +81,7 @@ async function main(path: string | undefined): Promise<number> {
     await api.annotationQueues.createQueueItem(queue.id, { objectId: traceId, objectType: 'TRACE' });
     added += 1;
   }
-  console.log(`queue ${QUEUE}: ${String(added)} conversation(s) added, ${String(queued.size)} already there, ${String(skipped)} skipped (error or no trace)`);
+  console.log(`queue ${QUEUE}: ${String(added)} conversation(s) added, ${String(queued.size)} kept, ${String(remove.length)} pending of another run removed, ${String(skipped)} skipped (error or no trace)`);
   return 0;
 }
 

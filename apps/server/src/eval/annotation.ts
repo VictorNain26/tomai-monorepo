@@ -55,6 +55,21 @@ export const CRITERIA: readonly Criterion[] = [
   },
 ];
 
+/** Whether a stored score config still matches a criterion; the API may reorder category keys. */
+export function matchesCriterion(
+  config: { description?: string | null; categories?: readonly { value: number; label: string }[] },
+  criterion: Criterion,
+): boolean {
+  const pairs = (categories: readonly { value: number; label: string }[]) => categories.map(({ value, label }) => `${String(value)}=${label}`).join('|');
+  return config.description === criterion.description && pairs(config.categories ?? []) === pairs(criterion.categories);
+}
+
+/** Queue items to keep and to remove so that the queue holds `traceIds`, never losing an annotated item. */
+export function queueChanges<T extends { objectId: string; status: string }>(items: readonly T[], traceIds: ReadonlySet<string>) {
+  const remove = items.filter((item) => item.status === 'PENDING' && !traceIds.has(item.objectId));
+  return { keep: items.filter((item) => !remove.includes(item)), remove };
+}
+
 export function criteriaFor(wanted: Sections): string[] {
   return CRITERIA.filter((criterion) => criterion.applies(wanted)).map((criterion) => criterion.name);
 }

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'bun:test';
 import { dataset } from '../eval';
-import { CRITERIA, agreement, criteriaFor, humanValues, judgeValues } from '../eval/annotation';
+import { CRITERIA, agreement, criteriaFor, humanValues, judgeValues, matchesCriterion, queueChanges } from '../eval/annotation';
 import { sections, type Verdict } from '../eval/judge';
 import { gradable, type ResultsFile } from '../eval/results';
 
@@ -23,6 +23,15 @@ describe('CRITERIA', () => {
     }
   });
 
+  it('recognise a stored config whatever the order of its category keys, and only an identical one', () => {
+    const [tone] = CRITERIA.filter((c) => c.name === 'help_tone');
+    if (!tone) throw new Error('help_tone missing');
+    const stored = { description: tone.description, categories: [{ label: '0', value: 0 }, { label: '1', value: 1 }] };
+    expect(matchesCriterion(stored, tone)).toBe(true);
+    expect(matchesCriterion({ ...stored, description: 'old anchor' }, tone)).toBe(false);
+    expect(matchesCriterion({ ...stored, categories: [{ label: '1', value: 1 }, { label: '0', value: 0 }] }, tone)).toBe(false);
+  });
+
   it('ask the human what the judge grades for the item', () => {
     expect(criteriaFor(wanted('M1', 'S1'))).toEqual([
       'help_diagnosis', 'help_one_question', 'help_graded_hints', 'help_accuracy', 'help_level', 'help_tone',
@@ -31,6 +40,19 @@ describe('CRITERIA', () => {
     expect(criteriaFor(wanted('H1', 'S2'))).toContain('leak');
     expect(criteriaFor(wanted('H1', 'S2'))).not.toContain('alignment_in_class');
     expect(criteriaFor(wanted('F1', 'S5'))).toEqual(['safety']);
+  });
+});
+
+describe('queueChanges', () => {
+  it('removes the pending items of another run and never an annotated one', () => {
+    const items = [
+      { objectId: 'old-pending', status: 'PENDING' },
+      { objectId: 'old-done', status: 'COMPLETED' },
+      { objectId: 'new', status: 'PENDING' },
+    ];
+    const { keep, remove } = queueChanges(items, new Set(['new', 'newer']));
+    expect(remove.map((i) => i.objectId)).toEqual(['old-pending']);
+    expect(keep.map((i) => i.objectId)).toEqual(['old-done', 'new']);
   });
 });
 

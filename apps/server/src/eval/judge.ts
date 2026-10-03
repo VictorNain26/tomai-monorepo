@@ -157,6 +157,11 @@ function turnBlocks({ turns }: Transcript): string[] {
   ].join('\n')));
 }
 
+/** The conversation as the judge reads it, also the trace output a human annotates. */
+export function transcriptText(transcript: Transcript): string {
+  return turnBlocks(transcript).join('\n\n');
+}
+
 const PREAMBLE = `Tu es le juge d'un banc d'évaluation de tuteurs IA pour collégiens. Tu notes une conversation
 entre un élève et un tuteur sur un seul critère, celui donné par le dernier message, avec son ancre et
 rien d'autre.
@@ -195,7 +200,7 @@ export function briefing(input: Omit<JudgeInput, 'transcript'>): string {
 
 /** Shared by every criterion of a conversation, so the prompt cache serves it after the first call. */
 export function contextMessages(input: JudgeInput): MistralMessage[] {
-  const user = `${briefing(input)}\n\n<transcription>\n${turnBlocks(input.transcript).join('\n\n')}\n</transcription>`;
+  const user = `${briefing(input)}\n\n<transcription>\n${transcriptText(input.transcript)}\n</transcription>`;
   return [{ role: 'system', content: PREAMBLE }, { role: 'user', content: user }];
 }
 

@@ -16,7 +16,7 @@ import { resolveDatabaseUrl } from '../platform/config/database-url.js';
 import { evaluationRun } from './evaluation-run.js';
 import { criteriaFor } from './annotation.js';
 import { resolveEntries } from './evaluation-run.js';
-import { JUDGE, briefing, sections } from './judge.js';
+import { JUDGE, briefing, sections, transcriptText } from './judge.js';
 import { buildItems, isLocalDatabase, itemInput, keyOf, lookup, runOptions, samplePairs, type ItemInput } from './items.js';
 
 async function main(): Promise<number> {
@@ -80,7 +80,7 @@ async function main(): Promise<number> {
         const { scenario, exercise } = lookup(item);
         const transcript = await playConversation(scenario, exercise, item.repetition);
         run.record(item, transcript);
-        return transcript;
+        return transcriptText(transcript);
       },
       evaluators: options['skip-judge'] ? [leakEvaluator] : [leakEvaluator, judgeEvaluator],
       runEvaluators: [runEvaluator],
