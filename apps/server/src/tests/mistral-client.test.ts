@@ -103,7 +103,7 @@ describe('generateStructured', () => {
 
     const result = await generateStructured({ functionId: 'test', messages: [{ role: 'user', content: 'classe' }], schema, schemaName: 'intent' });
 
-    expect(result).toEqual({ object: { intent: 'explain-concept' }, usage: { inputTokens: 10, outputTokens: 5 } });
+    expect(result).toEqual({ object: { intent: 'explain-concept' }, usage: { inputTokens: 10, cachedInputTokens: 0, outputTokens: 5 } });
     const responseFormat = capture.body?.['response_format'] as Record<string, unknown>;
     expect(responseFormat['type']).toBe('json_schema');
     const wire = responseFormat['json_schema'] as Record<string, unknown>;
@@ -134,7 +134,7 @@ describe('generateStructured', () => {
     const result = await generateStructured({ functionId: 'test', messages: [{ role: 'user', content: 'salut' }], schema, schemaName: 'intent' });
 
     expect(result.object).toEqual({ intent: 'chit-chat' });
-    expect(result.usage).toEqual({ inputTokens: 20, outputTokens: 10 });
+    expect(result.usage).toEqual({ inputTokens: 20, cachedInputTokens: 0, outputTokens: 10 });
     const retryMessages = bodies[1]?.['messages'] as { role: string; content: unknown }[];
     expect(JSON.stringify(retryMessages.at(-1)?.content)).toContain('schéma');
   });
@@ -187,6 +187,22 @@ describe('generateStructured', () => {
     await generateStructured({ functionId: 'test', messages: [{ role: 'user', content: 'classe' }], schema, schemaName: 'intent', promptCacheKey: 'intent-v1' });
 
     expect(capture.body?.['prompt_cache_key']).toBe('intent-v1');
+  });
+
+  it('keeps the Mistral safety prompt unless the caller turns it off', async () => {
+    const capture: { body?: Record<string, unknown> } = {};
+    mockFetchJson(capture, chatCompletion(JSON.stringify({ intent: 'explain-concept' })));
+    await generateStructured({ functionId: 'test', messages: [{ role: 'user', content: 'classe' }], schema, schemaName: 'intent' });
+    expect(capture.body?.['safe_prompt']).toBe(true);
+
+    await generateStructured({ functionId: 'test', messages: [{ role: 'user', content: 'classe' }], schema, schemaName: 'intent', safePrompt: false });
+    expect(capture.body?.['safe_prompt']).toBe(false);
+  });
+
+  it('reports the input tokens read from the prompt cache', async () => {
+    mockFetchJson({}, { ...chatCompletion(JSON.stringify({ intent: 'explain-concept' })), usage: { prompt_tokens: 10, completion_tokens: 5, total_tokens: 15, prompt_tokens_details: { cached_tokens: 8 } } });
+    const { usage } = await generateStructured({ functionId: 'test', messages: [{ role: 'user', content: 'classe' }], schema, schemaName: 'intent' });
+    expect(usage).toEqual({ inputTokens: 10, cachedInputTokens: 8, outputTokens: 5 });
   });
 
   it('keeps reasoning off for structured outputs', async () => {

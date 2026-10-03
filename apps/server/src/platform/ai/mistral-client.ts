@@ -61,10 +61,14 @@ interface GenerateStructuredOptions<T> extends GenerateTextOptions {
   schema: z.ZodType<T>;
   schemaName: string;
   strict?: boolean;
+  /** Mistral's own safety prompt, prepended to the conversation; on unless a caller owns its whole prompt. */
+  safePrompt?: boolean;
 }
 
 interface StructuredUsage {
   inputTokens: number;
+  /** Part of `inputTokens` read from the prompt cache, billed at 10 %. */
+  cachedInputTokens: number;
   outputTokens: number;
 }
 
@@ -94,7 +98,11 @@ function toModelMessages(messages: MistralMessage[]): ModelMessage[] {
 }
 
 function toUsage(usage: LanguageModelUsage | undefined): StructuredUsage {
-  return { inputTokens: usage?.inputTokens ?? 0, outputTokens: usage?.outputTokens ?? 0 };
+  return {
+    inputTokens: usage?.inputTokens ?? 0,
+    cachedInputTokens: usage?.inputTokenDetails.cacheReadTokens ?? 0,
+    outputTokens: usage?.outputTokens ?? 0,
+  };
 }
 
 // ── API publique ────────────────────────────────────────────────────────────
@@ -158,7 +166,7 @@ export async function generateStructured<T>(opts: GenerateStructuredOptions<T>):
       telemetry: { functionId: opts.functionId, recordInputs: false, recordOutputs: false },
       providerOptions: {
         mistral: {
-          safePrompt: true,
+          safePrompt: opts.safePrompt ?? true,
           strictJsonSchema: opts.strict ?? true,
           reasoningEffort: 'none',
           promptCacheKey: opts.promptCacheKey,
@@ -183,6 +191,7 @@ export async function generateStructured<T>(opts: GenerateStructuredOptions<T>):
       object: retry.object,
       usage: {
         inputTokens: first.inputTokens + retry.usage.inputTokens,
+        cachedInputTokens: first.cachedInputTokens + retry.usage.cachedInputTokens,
         outputTokens: first.outputTokens + retry.usage.outputTokens,
       },
     };

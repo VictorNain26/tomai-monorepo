@@ -40,7 +40,7 @@ let mockStructuredResponse: { intent?: string; confidence?: string; subject?: st
 mock.module('../platform/ai/mistral-client', () => ({
   generateStructured: mock(async (opts: { schema: { parse: (value: unknown) => unknown } }) => {
     if (mockStructuredResponse instanceof Error) throw mockStructuredResponse;
-    return { object: opts.schema.parse(mockStructuredResponse), usage: { inputTokens: 0, outputTokens: 0 } };
+    return { object: opts.schema.parse(mockStructuredResponse), usage: { inputTokens: 0, cachedInputTokens: 0, outputTokens: 0 } };
   }),
   generateText: mock(async () => 'not-used-here'),
 }));
