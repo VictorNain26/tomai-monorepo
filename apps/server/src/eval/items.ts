@@ -4,11 +4,16 @@ import { dataset, exercisesFor, type Exercise, type Scenario } from './index.js'
 export const itemInput = z.object({ scenarioId: z.string(), exerciseId: z.string(), repetition: z.number().int().min(1) });
 export type ItemInput = z.infer<typeof itemInput>;
 
+export const samplePairs = z.array(z.object({ scenarioId: z.string(), exerciseId: z.string() })).min(1);
+export type SamplePairs = z.infer<typeof samplePairs>;
+
 export const runOptions = z.object({
   scenario: z.array(z.string()).optional(),
   exercise: z.array(z.string()).optional(),
   repeat: z.coerce.number().int().min(1).max(10),
   concurrency: z.coerce.number().int().min(1).max(4),
+  /** A JSON file of scenario × exercise pairs to play instead of every pair. */
+  sample: z.string().optional(),
   /** Leak check only, without the paid judge. */
   'skip-judge': z.boolean().default(false),
 });
@@ -20,13 +25,17 @@ export function keyOf({ scenarioId, exerciseId, repetition }: ItemInput): string
   return `${scenarioId}:${exerciseId}:${String(repetition)}`;
 }
 
-/** Scenario × exercise × repetition, narrowed by the `--scenario` and `--exercise` filters. */
-export function buildItems(options: RunOptions): ItemInput[] {
+/**
+ * Scenario × exercise × repetition, narrowed by the `--scenario` and `--exercise` filters,
+ * and to the pairs of a sample when one is given.
+ */
+export function buildItems(options: RunOptions, sample?: SamplePairs): ItemInput[] {
   return dataset.scenarios
     .filter((s) => !options.scenario || options.scenario.includes(s.id))
     .flatMap((scenario) =>
       exercisesFor(scenario)
         .filter((e) => !options.exercise || options.exercise.includes(e.id))
+        .filter((e) => !sample || sample.some((pair) => pair.scenarioId === scenario.id && pair.exerciseId === e.id))
         .flatMap((exercise) =>
           Array.from({ length: options.repeat }, (_, i) => ({ scenarioId: scenario.id, exerciseId: exercise.id, repetition: i + 1 })),
         ),
