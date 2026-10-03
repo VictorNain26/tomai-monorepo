@@ -16,11 +16,11 @@ bloquant levé).
 - **Lot en cours :** 1 — Harnais d'évaluation (`roadmap.md`). Le lot 0 est terminé : serveur
   sur Hono et outillage sur Bun (#343 à #347), refonte du serveur en modules (#348 à #354),
   lint strict (#355) et TypeScript strict (#356).
-- **Prochaine action :** point 4 du lot 1, analyse des erreurs sur les conversations
-  réelles : le harnais actuel sur l'échantillon d'accord, traces relues, défauts observés et
-  leur fréquence, fausses alarmes du code ; puis simplification (retirer ce que l'analyse ne
-  justifie pas) et relecture humaine d'une vingtaine de conversations par Victor, avant
-  tout nouveau vérificateur (étapes de référence, notions). Plan d'abord dans `docs/plans/`.
+- **Prochaine action :** point 4 du lot 1, le juge corrigé selon l'analyse d'erreurs
+  (`etudes/2026-10-03/analyse-erreurs.md`, décision 2) : exactitude vérifiée affirmation
+  par affirmation, diagnostic posé contre l'erreur de l'élève, questions qui ne
+  discriminent pas retirées, trois tirages pour les questions unanimes ; puis nouvelle
+  mesure et baseline de Tom (point 5). Plan d'abord dans `docs/plans/`.
 - **PR ouvertes :** aucune.
 - **Landing en ligne gelée** jusqu'au lot 4 : seuls des correctifs d'honnêteté ou techniques y entrent.
   L'identité visuelle est rejetée et se refait au lot 4.
@@ -96,22 +96,27 @@ contraire.
 
 ### Lot 2 — agent qui ne cède pas, quotas et coûts
 
-- **Fuites sans pression** (point 1) : sur l'échantillon d'accord joué le 2026-10-03
-  (`etudes/2026-10-03/donnees/results.json`, une conversation par paire), Tom donne la
-  réponse dans 3 conversations d'aide normale sur 7 (S1), 2 sur 8 sous pression (S3), 4
-  sur 6 en fuite accidentelle (S4) ; 10 sur 29 en tout. Une passe, à confirmer par les
-  répétitions du point 5.
-- **Détresse** (point 2) : au premier passage du juge (S5 sur F1 et H1, 2026-10-03), Tom
-  accueille le découragement et propose un adulte de confiance, mais ne donne jamais le
-  3114 ; le juge note `safety` « partly » les deux fois, puis « inappropriate » sur M1 et
-  H1 avec le juge par critère. Le comportement attendu est dans
-  `apps/server/src/eval/scenarios.json` (S5).
+- **Défauts de Tom** (points 1 et 2) : analyse d'erreurs sur 38 conversations
+  (`etudes/2026-10-03/analyse-erreurs.md`). 15 ratées :
+  - réponse donnée dans 10, dont 4 sur 6 à la demande d'une explication orale ;
+  - affirmation fausse dans 5 ;
+  - détresse sans 3114 et retour à l'exercice dans les 3 ;
+  - fiches refusées ou ignorées dans 4 sur 6.
+
+  Corrections décidées, dans l'ordre, chacune comparée à la baseline :
+  - détresse : détecteur et réponse fixe approuvée par Victor ;
+  - solution de référence côté serveur, vérifiée par mathjs ;
+  - diagnostic de l'erreur avant l'aide ;
+  - palier d'aide tenu par le serveur ;
+  - contrôle avant envoi ;
+  - prompt : règle des faits, oral, fiches, portée collège.
 - **Programme dans le contexte** (`etudes/2026-10-02/alignement.md`, § 4) : référentiel
   du niveau et de la matière de la séance injecté en bloc, constant pendant la séance ;
   `modules/tutor/prompts/adaptation/by-level.ts` réécrit par niveau à partir du
   référentiel, consignes chiffrées sans source retirées. Après la correction du quota.
-- **Outil de calcul** (même étude, § 6) : mathjs ou Compute Engine, après lecture de leur
-  documentation sur la résolution d'équations et l'équivalence.
+- **Outil de calcul** (même étude, § 6) : mathjs, déjà adopté par le harnais (#373), vérifie
+  les calculs de la solution de référence ; la résolution d'équations et l'équivalence
+  restent à lire dans sa documentation.
 - **Défauts de coût** relevés par `etudes/2026-10-01/couts.md` sur le code du 2026-10-01 :
   - la synthèse vocale (`/api/tts`, `modules/voice/voice.routes.ts`) n'a aucun quota, seulement le
     rate limit global : c'est le seul poste non borné ;
@@ -335,3 +340,7 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
   Nettoyage du harnais : une table par critère, version du juge calculée sur ce que lit
   son modèle et commit dans chaque sortie, plus de relance cachée hors limite de débit,
   données des études sorties de `src/` (#374).
+  Analyse d'erreurs sur les 38 conversations de l'échantillon : 15 ratées, réponse donnée
+  dans 10, affirmation fausse dans 5, détresse sans 3114 dans les 3 ; le juge rate les
+  affirmations fausses et le retour à l'exercice après la détresse ; corrections du juge
+  puis de Tom décidées, sur sources (#375).
