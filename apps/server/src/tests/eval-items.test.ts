@@ -18,6 +18,11 @@ describe('buildItems', () => {
     expect(items.map(keyOf)).toEqual(['S2:M1:1', 'S2:M3:1', 'S5:M1:1']);
   });
 
+  it('runs the judge unless --skip-judge is given', () => {
+    expect(runOptions.parse({ repeat: '1', concurrency: '1' })['skip-judge']).toBe(false);
+    expect(runOptions.parse({ repeat: '1', concurrency: '1', 'skip-judge': true })['skip-judge']).toBe(true);
+  });
+
   it('rejects out-of-range options', () => {
     expect(runOptions.safeParse({ repeat: '0', concurrency: '1' }).success).toBe(false);
     expect(runOptions.safeParse({ repeat: '1', concurrency: '9' }).success).toBe(false);
