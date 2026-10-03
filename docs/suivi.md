@@ -16,9 +16,10 @@ bloquant levé).
 - **Lot en cours :** 1 — Harnais d'évaluation (`roadmap.md`). Le lot 0 est terminé : serveur
   sur Hono et outillage sur Bun (#343 à #347), refonte du serveur en modules (#348 à #354),
   lint strict (#355) et TypeScript strict (#356).
-- **Prochaine action :** point 4 du lot 1, juge v2 (`etudes/2026-10-03/refonte-harnais.md`,
-  « Ordre des PR », 1) : contrôles oui/non sur Small 4, référence, tirages multiples, cache
-  vérifié, cas construits ; plan d'abord dans `docs/plans/`.
+- **Prochaine action :** point 4 du lot 1, suite du juge Small 4
+  (`etudes/2026-10-03/juge-small-4.md`, « Suite ») : cas construits pour mesurer sa
+  sensibilité défaut par défaut, questions universelles reformulées en questions de
+  présence, annotation avec les questions du juge ; plan d'abord dans `docs/plans/`.
 - **PR ouvertes :** aucune.
 - **Landing en ligne gelée** jusqu'au lot 4 : seuls des correctifs d'honnêteté ou techniques y entrent.
   L'identité visuelle est rejetée et se refait au lot 4.
@@ -70,6 +71,13 @@ contraire.
   passages ; reproductible sur cinq critères d'aide, et ses désaccords sur `oneQuestion`,
   `accuracy` et `level` sont stables ; non établi sur `diagnosis` et `tone`
   (`etudes/2026-10-03/reproductibilite-juge.md`).
+- **Juge Small 4** (point 4) : mesuré le 2026-10-03 sur l'échantillon d'accord
+  (`etudes/2026-10-03/juge-small-4.md`). Il ne voit presque pas les défauts de son propre
+  modèle (méthode déroulée 2 fois sur 27 contre 9 pour l'annotateur, aucune erreur de
+  fond, aucune double question) : biais d'auto-préférence à mesurer sur des cas construits
+  avant que ses notes servent de métrique. À ce débit (100 000 tokens par minute), juger le
+  jeu complet prend plusieurs heures : l'API Batch de Mistral, hors limite de débit et à
+  moitié prix, est à étudier pour la baseline (point 5).
 - **Calibration du juge** (point 4, suite) : la revue de la PR du juge a réécrit les ancres
   pour qu'elles ne dépendent ni des réponses de l'élève ni de la longueur (proportions de
   messages) et séparé les critères en appels distincts. Le prompt ne se retouche plus sur
