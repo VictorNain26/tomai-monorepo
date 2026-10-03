@@ -5,7 +5,7 @@
  * alone. Low detection is a finding, not a failure; a failed judgement is.
  */
 import { mkdir } from 'node:fs/promises';
-import { checksFor } from './checks.js';
+import { checksFor } from './criteria.js';
 import { constructedCases, detection, faultFlagged, versions, type CaseOutcome } from './constructed-cases.js';
 import { judgeContext } from './evaluation-run.js';
 import { JUDGE, answerByCode, answerChecks } from './judge.js';

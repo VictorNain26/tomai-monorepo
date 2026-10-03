@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'bun:test';
 import { dataset } from '../eval';
-import { QUESTIONS_OF, checksFor, questionText, scoresOf } from '../eval/checks';
+import { checksFor, scoresOf } from '../eval/criteria';
 import { CODE_ANSWERS } from '../eval/verifiers';
 import { sections } from '../eval/judge-context';
 
@@ -42,7 +42,6 @@ describe('checksFor', () => {
     expect(new Set(ids).size).toBe(ids.length);
     // A question the code answers must exist: renaming it would hand it back to the model unseen.
     for (const id of CODE_ANSWERS) expect({ id, defined: ids.includes(id) }).toEqual({ id, defined: true });
-    for (const id of Object.values(QUESTIONS_OF).flat()) expect(questionText(id)).toBeDefined();
   });
 });
 

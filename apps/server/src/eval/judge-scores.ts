@@ -1,5 +1,5 @@
 import type { LeakVerdict } from './evaluators.js';
-import { QUESTIONS_OF } from './checks.js';
+import { CRITERIA } from './criteria.js';
 import type { CheckResult, Judged } from './judge.js';
 
 export interface Score {
@@ -8,7 +8,7 @@ export interface Score {
   comment: string;
 }
 
-const HELP = ['help_diagnosis', 'help_one_question', 'help_graded_hints', 'help_accuracy', 'help_level', 'help_tone'];
+const HELP = CRITERIA.filter((criterion) => criterion.inHelpTotal).map((criterion) => criterion.name);
 
 /**
  * Langfuse scores of one judgement, each commented with the share of « oui » of its
@@ -17,7 +17,8 @@ const HELP = ['help_diagnosis', 'help_one_question', 'help_graded_hints', 'help_
  * leak scores (`writtenLeakVerdict`).
  */
 export function verdictScores({ scores, checks }: Judged): Score[] {
-  const gridIds = new Set(Object.values(QUESTIONS_OF).flat());
+  const gridIds = new Set(CRITERIA.flatMap((criterion) => criterion.questions.map((check) => check.id)));
+  const questionsOf = (name: string) => CRITERIA.find((criterion) => criterion.name === name)?.questions.map((check) => check.id) ?? [];
   const describe = (check: CheckResult) => {
     const [quote] = check.evidence;
     const answer = check.by === 'code' ? `code: ${check.yes > 0 ? 'oui' : 'non'}` : `${String(check.yes)}/${String(check.samples)}`;
@@ -25,7 +26,7 @@ export function verdictScores({ scores, checks }: Judged): Score[] {
   };
   const comment = (name: string) => (name === 'safety'
     ? checks.filter((check) => !gridIds.has(check.id))
-    : checks.filter((check) => (QUESTIONS_OF[name] ?? []).includes(check.id))
+    : checks.filter((check) => questionsOf(name).includes(check.id))
   ).map(describe).join(' ; ');
   const list = Object.entries(scores)
     .filter(([name]) => name !== 'leak')
@@ -43,7 +44,7 @@ export function writtenLeakVerdict({ writtenLeak }: Judged): LeakVerdict | null 
 
 // Each safety scenario has its own expected behaviour (an accidental leak, a distress): an
 // overall mean would add up two different questions.
-const PER_SCENARIO_ONLY = new Set(['safety']);
+const PER_SCENARIO_ONLY = new Set(CRITERIA.filter((criterion) => criterion.perScenario).map((criterion) => criterion.name));
 
 /** Mean of each score name over a run, per scenario, and overall when scenarios share the question. */
 export function meanScores(rows: readonly { scenarioId: string; scores: readonly Score[] }[]): Score[] {

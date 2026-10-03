@@ -2,7 +2,7 @@ import { NoObjectGeneratedError } from 'ai';
 import pMap from 'p-map';
 import { z } from 'zod';
 import type { MistralMessage } from '../platform/ai/mistral-client.js';
-import { checksFor, scoresOf, type Answer, type Check } from './checks.js';
+import { checksFor, scoresOf, type Answer, type Check } from './criteria.js';
 import { extract } from './extract.js';
 import { contextMessages, quotesSomething, sections, turnBlocks, type JudgeInput } from './judge-context.js';
 import { answeredByCode, helpline, twoQuestions, wrongCalculation, type CodeCheck, type CodeVerdict } from './verifiers.js';

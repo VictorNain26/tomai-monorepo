@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'bun:test';
 import type { MistralMessage } from '../platform/ai/mistral-client';
 import { dataset } from '../eval';
-import { checksFor, questionText } from '../eval/checks';
+import { CRITERIA, checksFor } from '../eval/criteria';
 import { sections } from '../eval/judge-context';
 import { resolveEntries } from '../eval/evaluation-run';
 import { NoObjectGeneratedError } from 'ai';
@@ -31,7 +31,7 @@ function input(exerciseId: string, scenarioId: string, turns?: TutorTurn[]): Jud
 }
 
 function question(id: string): string {
-  const text = questionText(id);
+  const text = CRITERIA.flatMap((criterion) => criterion.questions).find((check) => check.id === id)?.question;
   if (!text) throw new Error(`unknown check ${id}`);
   return text;
 }

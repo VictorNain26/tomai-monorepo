@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import rawCases from './constructed-cases.json' with { type: 'json' };
-import { checksFor } from './checks.js';
+import { checksFor } from './criteria.js';
 import { saysYes, type CheckResult } from './judge.js';
 import { dataset, exercisesFor } from './index.js';
 import { sections } from './judge-context.js';

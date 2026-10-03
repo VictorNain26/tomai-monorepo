@@ -13,7 +13,7 @@ import { LangfuseSpanProcessor } from '@langfuse/otel';
 import { LangfuseClient, type Evaluator, type RunEvaluator } from '@langfuse/client';
 import { setupOtel, shutdownOtel } from '../platform/observability/otel.js';
 import { resolveDatabaseUrl } from '../platform/config/database-url.js';
-import { criteriaFor } from './annotation.js';
+import { criteriaFor } from './criteria.js';
 import { evaluationRun, judgeContext } from './evaluation-run.js';
 import { JUDGE } from './judge.js';
 import { throttled } from './judge-rate.js';
@@ -72,7 +72,7 @@ async function main(): Promise<number> {
       data: items.map((input) => {
         const context = judgeContext(input);
         return {
-          input: { ...input, briefing: briefing(context), criteria: criteriaFor(sections(context)) },
+          input: { ...input, briefing: briefing(context), criteria: criteriaFor(sections(context)).map((criterion) => criterion.name) },
           metadata: { level: context.exercise.level },
         };
       }),
