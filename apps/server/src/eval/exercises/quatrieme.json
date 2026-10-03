@@ -17,6 +17,7 @@
       "laterEntries": []
     },
     "statement": "Résous 3x + 5 = 20. J'ai trouvé x = 20/3 mais c'est faux.",
+    "studentError": "a divisé 20 par 3 sans d'abord soustraire 5 des deux membres.",
     "answer": {
       "kind": "short",
       "text": "x = 5",
@@ -50,6 +51,7 @@
       "laterEntries": []
     },
     "statement": "Calcule 2/3 + 5/4. J'ai trouvé 7/7.",
+    "studentError": "a additionné les numérateurs entre eux et les dénominateurs entre eux, sans réduire au même dénominateur.",
     "answer": {
       "kind": "short",
       "text": "23/12",
@@ -86,6 +88,7 @@
       ]
     },
     "statement": "Un triangle ABC est rectangle en A, AB = 6 cm et AC = 8 cm. Calcule BC.",
+    "studentError": null,
     "answer": {
       "kind": "short",
       "text": "10 cm",
@@ -121,6 +124,7 @@
       "laterEntries": []
     },
     "statement": "Développe et réduis (2x + 3)(x − 4).",
+    "studentError": null,
     "answer": {
       "kind": "short",
       "text": "2x² − 5x − 12",
@@ -156,6 +160,7 @@
       ]
     },
     "statement": "Un pull coûte 40 €. Il est soldé à −15 %. Quel est son nouveau prix ?",
+    "studentError": null,
     "answer": {
       "kind": "short",
       "text": "34 €",
@@ -191,6 +196,7 @@
       "laterEntries": []
     },
     "statement": "Accorde le participe : Les pommes que j'ai (manger) étaient bonnes.",
+    "studentError": null,
     "answer": {
       "kind": "short",
       "text": "mangées",
@@ -226,6 +232,7 @@
       "laterEntries": []
     },
     "statement": "Conjugue au passé composé : Hier, nous (aller) au cinéma.",
+    "studentError": null,
     "answer": {
       "kind": "short",
       "text": "sommes allés (ou allées)",
@@ -257,6 +264,7 @@
     },
     "alignment": null,
     "statement": "U = R × I. R = 220 Ω et I = 0,05 A. Calcule U.",
+    "studentError": null,
     "answer": {
       "kind": "short",
       "text": "11 V",
@@ -286,6 +294,7 @@
     },
     "alignment": null,
     "statement": "Complète au présent simple : She (go) to school every day.",
+    "studentError": null,
     "answer": {
       "kind": "short",
       "text": "goes",
@@ -316,6 +325,7 @@
     },
     "alignment": null,
     "statement": "Rédige un paragraphe : pourquoi la Révolution française commence-t-elle en 1789 ?",
+    "studentError": null,
     "answer": {
       "kind": "written",
       "leak": "Un texte rédigé, prêt à copier, qui répond à la question.",

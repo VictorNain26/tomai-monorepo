@@ -54,7 +54,7 @@ d'agent reste la nôtre ([regional inference](https://docs.mistral.ai/inference/
 | Résumés, génération de cartes, analyse de document, titres, classification d'intention | Mistral Small 4 `mistral-small-2603` | `reasoningEffort: 'none'` ; sortie structurée stricte |
 | Modération entrée/sortie | `mistral-moderation-2603` | Seuils par catégorie (§5) |
 | STT / TTS | Voxtral via `@mistralai/mistralai` (`audio.*`) | Timeout explicite |
-| Juge d'évaluation | Mistral Small 4 `mistral-small-2603` (passage depuis Medium 3.5 avec le juge v2, `etudes/2026-10-03/refonte-harnais.md`) | Contrôles oui/non en JSON strict, tirages multiples |
+| Juge d'évaluation | Mistral Small 4 `mistral-small-2603` | Questions oui/non en JSON strict, cinq tirages, référence fournie |
 
 Small 4 : 256k de contexte, function calling, sorties structurées, raisonnement,
 0,15 $ / 0,60 $ par million de tokens ([fiche](https://docs.mistral.ai/models/mistral-small-4-0-26-03)),
@@ -62,10 +62,11 @@ multimodal texte + image ([annonce](https://mistral.ai/news/mistral-small-4) :
 « Native multimodal: Accepts both text and image inputs » — la page vision de la
 doc, arrêtée à Medium 3.1, ne le mentionne pas encore).
 
-Un seul modèle pour tous les rôles texte, juge d'évaluation compris : décision de Victor
-du 2026-10-03, aucun autre modèle de texte. Moins de variables à évaluer, un seul cache ;
-le juge note donc son propre modèle, biais que sa conception et la mesure d'accord
-doivent contenir (`etudes/2026-10-03/refonte-harnais.md`).
+Un seul LLM pour tous les rôles texte, juge d'évaluation compris : entre Medium, Large et
+Small 4, Victor garde Small 4 (2026-10-03) ; Voxtral et le modèle de modération restent.
+Moins de variables à évaluer, un seul cache ; le juge note donc son propre modèle, biais
+que sa conception et la mesure d'accord doivent contenir
+(`etudes/2026-10-03/refonte-harnais.md`).
 
 **Identifiants datés uniquement**, jamais d'alias `-latest` : un alias change de
 modèle sans prévenir et invalide l'évaluation. Chaque prompt porte une version
@@ -238,22 +239,24 @@ d'exercices, transcriptions et résultats sont publiables et rejouables par un t
   dernières que pour une expérience sur un dataset qu'il héberge. Quotas coupés ; refusé hors d'une base
   locale, parce qu'il crée des comptes et supprime ceux du passage précédent. Débit de
   `mistral-small-2603` sur ce compte : 100 000 tokens par minute.
-- Juge LLM daté, sortie JSON stricte ; relecture humaine d'un échantillon de ses notes,
-  publiée avec les résultats. Juge : `apps/server/src/eval/judge.ts`, modèle épinglé
-  `mistral-medium-2604` (Medium 3.5), température 0, graine fixe, version du prompt
-  datée ; il note la
-  grille du protocole (`help_total` sur 8), l'alignement (`alignment_in_class`, notions des
-  classes suivantes mobilisées), le niveau de langue sur trois crans, la fuite d'une
-  production rédigée et `safety`, chaque note précédée de sa citation. Un appel par
-  critère, pour qu'une note n'en entraîne pas une autre, sur un préfixe commun servi par le
-  cache de prompt de Mistral ; sans le prompt de sécurité de Mistral (`safe_prompt`), qui
-  n'est ni daté ni versionné. La transcription est balisée et déclarée donnée, jamais
-  consigne. Chaque citation doit se retrouver mot pour mot dans la transcription, et une
-  fuite rédigée dans le tour qu'elle nomme ; sinon le jugement échoue. Une conversation
-  coupée par une erreur n'est pas jugée. La fuite rédigée compte dans le même taux de fuite
-  que le contrôle déterministe ; `safety` se moyenne par scénario seulement, la fuite
-  accidentelle et la détresse n'attendant pas le même comportement. `--skip-judge` lance
-  la fuite seule.
+- Juge LLM daté ; relecture humaine d'un échantillon de ses notes, publiée avec les
+  résultats. Juge : `apps/server/src/eval/judge.ts`, Mistral Small 4 `mistral-small-2603`
+  comme le tuteur, version du prompt datée. Chaque critère se pose en questions oui/non
+  objectives (`eval/checks.ts`), la sécurité en questions propres au scénario
+  (`scenarios.json`) ; les notes de la grille (`help_total` sur 8, niveau de langue sur
+  trois crans, alignement, fuite rédigée, `safety`) se recalculent à partir des réponses.
+  Le juge reçoit la réponse attendue, l'erreur de l'élève (`studentError`) et les notions
+  du programme, jamais le nom du modèle ni du produit. Cinq tirages par question à
+  température 0,7, graines fixes, verdict à la majorité, égalité tranchée contre le tuteur ;
+  un seul schéma de sortie et un préfixe commun, que le cache de Mistral sert à 91 %. Un « oui » cite la transcription mot
+  pour mot ; une citation introuvable a droit à une relance, puis le tirage est perdu, comme
+  une réponse illisible ; une question à moins de trois tirages valides fait échouer le
+  jugement. Les appels restent sous les limites du compte (`eval/judge-rate.ts`). Sans le
+  prompt de sécurité de Mistral (`safe_prompt`), ni daté ni versionné. Une conversation
+  coupée par une erreur n'est pas jugée ; la fuite rédigée compte dans le même taux que le
+  contrôle déterministe ; `safety` se moyenne par scénario seulement. `--skip-judge` lance
+  la fuite seule. Première mesure : le juge ne voit presque pas les défauts de son propre
+  modèle (`etudes/2026-10-03/juge-small-4.md`).
 - **Relecture humaine et accord** : un échantillon fixe de 38 conversations
   (`apps/server/src/eval/agreement-sample.json`, `--sample`) se joue sans juge ;
   `bun run eval:annotate <résultats>` crée une config de score par critère, sur les

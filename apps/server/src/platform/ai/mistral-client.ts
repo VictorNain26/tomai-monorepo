@@ -65,6 +65,8 @@ interface GenerateStructuredOptions<T> extends GenerateTextOptions {
   safePrompt?: boolean;
   /** Sent as `random_seed`: the same seed gives the same output (https://docs.mistral.ai/api/endpoint/chat). */
   seed?: number;
+  /** Retries of the AI SDK on a failed call; a caller that throttles its own calls passes 0. */
+  maxRetries?: number;
 }
 
 interface StructuredUsage {
@@ -164,7 +166,7 @@ export async function generateStructured<T>(opts: GenerateStructuredOptions<T>):
       temperature,
       ...(opts.seed === undefined ? {} : { seed: opts.seed }),
       maxOutputTokens: maxTokens,
-      maxRetries: env.MISTRAL_RETRY_ATTEMPTS,
+      maxRetries: opts.maxRetries ?? env.MISTRAL_RETRY_ATTEMPTS,
       abortSignal,
       telemetry: { functionId: opts.functionId, recordInputs: false, recordOutputs: false },
       providerOptions: {

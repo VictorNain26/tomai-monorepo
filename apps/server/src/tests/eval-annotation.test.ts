@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'bun:test';
 import { dataset } from '../eval';
 import { CRITERIA, agreement, criteriaFor, fileValues, humanValues, judgeValues, labelValues, labelsFile, matchesCriterion, measures, queueChanges, queueValues, toJudge } from '../eval/annotation';
-import { sections, type Verdict } from '../eval/judge';
+import type { Judged } from '../eval/judge';
+import { sections } from '../eval/judge-context';
 import { gradable, parseResults, type ResultsFile } from '../eval/results';
 
 function wanted(exerciseId: string, scenarioId: string) {
@@ -11,7 +12,6 @@ function wanted(exerciseId: string, scenarioId: string) {
   return sections({ exercise, scenario });
 }
 
-const graded = <S extends string>(score: S) => ({ evidence: '', score });
 
 describe('CRITERIA', () => {
   it('fit Langfuse score configs: unique names of 35 characters at most, unique labels', () => {
@@ -57,23 +57,9 @@ describe('queueChanges', () => {
 });
 
 describe('judgeValues', () => {
-  it('puts the verdict on the human scales', () => {
-    const verdict: Verdict = {
-      help: {
-        diagnosis: graded('2'), oneQuestion: graded('1'), gradedHints: graded('0'), accuracy: graded('1'),
-        level: graded('1'), tone: graded('0'), languageLevel: { evidence: '', rating: 'partly' },
-        alignment: { evidence: '', inClass: 'no', laterNotionsUsed: ['x'] },
-      },
-      writtenLeak: { evidence: 'texte', leaked: true, turn: 1 },
-      safety: null,
-    };
-    const values = judgeValues(verdict);
-    expect(values.get('help_diagnosis')).toBe(2);
-    expect(values.get('language_level')).toBe(0.5);
-    expect(values.get('alignment_in_class')).toBe(0);
-    expect(values.get('alignment_later_used')).toBe(1);
-    expect(values.get('leak')).toBe(1);
-    expect(values.has('safety')).toBe(false);
+  it('reads the judge scores on the human scales', () => {
+    const judged: Judged = { checks: [], scores: { help_diagnosis: 2, language_level: 0.5, leak: 1 }, writtenLeak: null };
+    expect([...judgeValues(judged)]).toEqual([['help_diagnosis', 2], ['language_level', 0.5], ['leak', 1]]);
   });
 });
 

@@ -122,6 +122,24 @@ describe('eval dataset', () => {
     expect(duplicate.error?.issues.map((i) => i.message)).toEqual(['duplicate scenario id S1']);
   });
 
+  it('describes the error of every attempt a statement contains, and only those', () => {
+    const attempts = dataset.exercises.filter((e) => /J'ai (trouvé|écrit)/.test(e.statement)).map((e) => e.id);
+    expect(dataset.exercises.filter((e) => e.studentError !== null).map((e) => e.id)).toEqual(attempts);
+  });
+
+  it('rejects safety checks outside a safety scenario, and a safety scenario without them', () => {
+    const s1 = scenario('S1');
+    const s5 = scenario('S5');
+    const result = datasetSchema.safeParse({
+      exercises: dataset.exercises,
+      scenarios: [{ ...s1, safetyChecks: s5.safetyChecks }, { ...s5, safetyChecks: [] }],
+    });
+    expect(result.error?.issues.map((i) => i.message)).toEqual([
+      'scenario S1: safety checks go with safety grading, and only there',
+      'scenario S5: safety checks go with safety grading, and only there',
+    ]);
+  });
+
   it('gives every short answer at least one leak form found in the answer itself', () => {
     for (const { id, answer } of dataset.exercises) {
       if (answer.kind === 'written') continue;

@@ -15,7 +15,9 @@ import { setupOtel, shutdownOtel } from '../platform/observability/otel.js';
 import { resolveDatabaseUrl } from '../platform/config/database-url.js';
 import { criteriaFor } from './annotation.js';
 import { evaluationRun, judgeContext } from './evaluation-run.js';
-import { JUDGE, briefing, sections, transcriptText } from './judge.js';
+import { JUDGE } from './judge.js';
+import { throttled } from './judge-rate.js';
+import { briefing, sections, transcriptText } from './judge-context.js';
 import { buildItems, isLocalDatabase, itemInput, keyOf, lookup, runOptions, samplePairs, unknownPairs, type ItemInput } from './items.js';
 
 async function main(): Promise<number> {
@@ -54,7 +56,7 @@ async function main(): Promise<number> {
     const { generateStructured } = await import('../platform/ai/mistral-client.js');
     console.log(`removed ${String(await removeEvalAccounts())} account(s) of the previous run`);
 
-    const run = evaluationRun(items, generateStructured);
+    const run = evaluationRun(items, throttled(generateStructured));
     const leakEvaluator: Evaluator<ItemInput> = ({ input }) => Promise.resolve(run.leakEvaluation(input));
     const judgeEvaluator: Evaluator<ItemInput> = ({ input }) => run.judgeEvaluation(input);
     const runEvaluator: RunEvaluator<ItemInput> = () => Promise.resolve(run.runEvaluations());
