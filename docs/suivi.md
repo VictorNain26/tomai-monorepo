@@ -315,3 +315,5 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
   Annotation à l'aveugle et accord du juge : échantillon fixe de 38 conversations, file
   d'annotation Langfuse, α de Krippendorff avec intervalle ; première mesure annotée par
   Claude, un seul critère d'aide au seuil et sans robustesse (#367).
+  Juge avec graine et reproductibilité mesurée sur trois passages : 4 notes sur 189
+  changent, les désaccords avec l'annotation sont stables (#368).
