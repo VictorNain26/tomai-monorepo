@@ -2,7 +2,7 @@ import { describe, it, expect } from 'bun:test';
 import type { MistralMessage } from '../platform/ai/mistral-client';
 import { CRITERIA, checksFor } from '../eval/criteria';
 import { sections } from '../eval/judge-context';
-import { NoObjectGeneratedError } from 'ai';
+import { NoObjectGeneratedError, type LanguageModelUsage } from 'ai';
 import { answerChecks, judge, saysYes } from '../eval/judge';
 import { JUDGE, type Generate } from '../eval/judge-config';
 import { verdictScores, writtenLeakVerdict } from '../eval/judge-scores';
@@ -18,6 +18,13 @@ function question(id: string): string {
 }
 
 const no: FakeAnswer = { evidence: '', answer: 'non' };
+const TRUNCATED_USAGE: LanguageModelUsage = {
+  inputTokens: 1,
+  inputTokenDetails: { noCacheTokens: 1, cacheReadTokens: 0, cacheWriteTokens: 0 },
+  outputTokens: 1,
+  outputTokenDetails: { textTokens: 1, reasoningTokens: 0 },
+  totalTokens: 2,
+};
 const yes = (evidence: string): FakeAnswer => ({ evidence, answer: 'oui' });
 
 async function outcome(promise: Promise<unknown>): Promise<string> {
@@ -105,7 +112,7 @@ describe('judge', () => {
   it('loses a sample whose answer is no valid object, and fails on an API error', async () => {
     const { generate: base } = fakeJudge();
     const unreadable: Generate = (opts) => (opts.seed === JUDGE.firstSeed && opts.schemaName === 'judge_answer'
-      ? Promise.reject(new NoObjectGeneratedError({ message: 'could not parse the response', text: '{"evidence": "', response: { id: 'r', timestamp: new Date(), modelId: 'm' }, usage: { inputTokens: 1, outputTokens: 1 } as never, finishReason: 'length' }))
+      ? Promise.reject(new NoObjectGeneratedError({ message: 'could not parse the response', text: '{"evidence": "', response: { id: 'r', timestamp: new Date(), modelId: 'm' }, usage: TRUNCATED_USAGE, finishReason: 'length' }))
       : base(opts));
     const { judged } = await judge(input('M1', 'S1'), unreadable);
     expect(judged.checks.filter((c) => c.by === 'model').every((c) => c.samples === JUDGE.samples - 1)).toBe(true);

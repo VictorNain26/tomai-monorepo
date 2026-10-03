@@ -1,19 +1,23 @@
 import { describe, it, expect } from 'bun:test';
 import { APICallError } from 'ai';
 import { throttled } from '../eval/judge-rate';
-import type { Generate } from '../eval/judge-config';
+import { z } from 'zod';
+import { NO_USAGE, type Generate } from '../eval/judge-config';
 
 const opts = (characters: number): Parameters<Generate>[0] => ({
   messages: [{ role: 'user', content: 'x'.repeat(characters) }],
-  schema: { parse: (v: unknown) => v } as never,
+  schema: z.unknown(),
   schemaName: 's', functionId: 'f', model: 'm', temperature: 0, maxTokens: 10, maxRetries: 0, safePrompt: false, seed: 1, promptCacheKey: 'k', repairInvalid: false,
 });
 
+// What a call resolves to once through: the schema read on an empty answer.
+const answered: Generate = (o) => Promise.resolve({ object: o.schema.parse(undefined), usage: NO_USAGE });
+
 function recorder() {
   const starts: number[] = [];
-  const generate: Generate = () => {
+  const generate: Generate = (o) => {
     starts.push(performance.now());
-    return Promise.resolve({ object: undefined as never, usage: { inputTokens: 0, cachedInputTokens: 0, outputTokens: 0 } });
+    return answered(o);
   };
   return { generate, starts };
 }
@@ -45,9 +49,9 @@ describe('throttled', () => {
   it('waits out a rate limit or an outage and tries again, a few times at most', async () => {
     const limit = () => new APICallError({ message: 'Rate limit exceeded', url: 'u', requestBodyValues: {}, statusCode: 429 });
     let calls = 0;
-    const flaky: Generate = () => {
+    const flaky: Generate = (o) => {
       calls += 1;
-      return calls < 3 ? Promise.reject(limit()) : Promise.resolve({ object: undefined as never, usage: { inputTokens: 0, cachedInputTokens: 0, outputTokens: 0 } });
+      return calls < 3 ? Promise.reject(limit()) : answered(o);
     };
     await throttled(flaky, { requests: 10, tokens: 1000, intervalMs: 20 })(opts(3));
     expect(calls).toBe(3);
@@ -59,11 +63,11 @@ describe('throttled', () => {
     expect(attempts).toBe(4);
 
     let unavailable = 0;
-    const outage: Generate = () => {
+    const outage: Generate = (o) => {
       unavailable += 1;
       return unavailable < 2
         ? Promise.reject(new APICallError({ message: 'Service unavailable', url: 'u', requestBodyValues: {}, statusCode: 503 }))
-        : Promise.resolve({ object: undefined as never, usage: { inputTokens: 0, cachedInputTokens: 0, outputTokens: 0 } });
+        : answered(o);
     };
     await throttled(outage, { requests: 10, tokens: 1000, intervalMs: 20 })(opts(3));
     expect(unavailable).toBe(2);
