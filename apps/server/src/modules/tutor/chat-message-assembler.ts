@@ -3,7 +3,6 @@ import {
   pruneMessages,
   toolModelMessageSchema,
   type AssistantModelMessage,
-  type FilePart,
   type ModelMessage,
   type ToolModelMessage,
   type UserContent,
@@ -41,16 +40,16 @@ export interface ChatTurnParts {
   systemPrompt: string;
   /** The exercise in progress, stable while it lasts: opening the window, it stays in the cached prefix. */
   exerciseBlock?: string | null | undefined;
+  /** The texts of the session's files, in the order they were attached: they open the window too. */
+  attachedFilesBlock?: string | null | undefined;
   /** Résumé DÉJÀ tronqué au budget (ou null/undefined si aucun). */
   conversationSummary?: string | null | undefined;
   history: readonly HistoryTurn[];
   subjectBlock?: string | null | undefined;
   studentContextBlock?: string | null | undefined;
-  attachedFilesBlock?: string | null | undefined;
   turnInstruction?: string | null | undefined;
   inputMode?: string | undefined;
   studentText: string;
-  images?: FilePart[] | undefined;
 }
 
 const VOICE_MARKER = "[VOCAL] Ce tour a été dicté à l'oral — réponds en style parlé, sans markdown.";
@@ -89,10 +88,11 @@ function alternate(messages: readonly ModelMessage[]): ModelMessage[] {
  *   (https://docs.mistral.ai/studio/conversations/reasoning), mais rejouer tous les
  *   raisonnements ferait payer chaque tour de la séance pour des traces de plusieurs milliers
  *   de tokens.
- * - Ce qui change d'un tour à l'autre (matière, contexte de l'élève, fichiers, consigne,
- *   marqueur vocal) va dans le message du tour, avant le texte de l'élève : placé plus tôt, il
- *   casserait le cache de l'historique.
- * - L'exercice en cours puis le résumé ouvrent la fenêtre.
+ * - Ce qui change d'un tour à l'autre (matière, contexte de l'élève, consigne, marqueur vocal)
+ *   va dans le message du tour, avant le texte de l'élève : placé plus tôt, il casserait le
+ *   cache de l'historique.
+ * - L'exercice en cours, les fichiers de la séance puis le résumé ouvrent la fenêtre : ils ne
+ *   changent qu'avec un nouvel exercice, un nouveau fichier ou une relance du résumé.
  */
 export function assembleChatPrompt(parts: ChatTurnParts): { system: string; messages: ModelMessage[] } {
   const past = pruneMessages({
@@ -106,6 +106,7 @@ export function assembleChatPrompt(parts: ChatTurnParts): { system: string; mess
   // Untrusted text, the statement from the student included, never sits in the system prompt.
   const opening: ModelMessage[] = [
     ...(parts.exerciseBlock ? [{ role: 'user' as const, content: parts.exerciseBlock }] : []),
+    ...(parts.attachedFilesBlock ? [{ role: 'user' as const, content: parts.attachedFilesBlock }] : []),
     ...(parts.conversationSummary
       ? [{ role: 'user' as const, content: `<conversation_summary>\n${stripPromptTags(parts.conversationSummary)}\n</conversation_summary>` }]
       : []),
@@ -114,13 +115,9 @@ export function assembleChatPrompt(parts: ChatTurnParts): { system: string; mess
   const text = [
     parts.subjectBlock,
     parts.studentContextBlock,
-    parts.attachedFilesBlock,
     parts.turnInstruction,
     parts.inputMode === 'voice' ? VOICE_MARKER : null,
     wrapUserMessage(parts.studentText),
   ].filter((block): block is string => Boolean(block)).join('\n\n');
-  const images = parts.images ?? [];
-  const turn: ModelMessage = { role: 'user', content: images.length > 0 ? [{ type: 'text', text }, ...images] : text };
-
-  return { system: parts.systemPrompt, messages: alternate([...opening, ...past, turn]) };
+  return { system: parts.systemPrompt, messages: alternate([...opening, ...past, { role: 'user', content: text }]) };
 }

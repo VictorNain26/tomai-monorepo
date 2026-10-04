@@ -19,10 +19,10 @@ bloquant levé).
   - Le lot 0 est terminé : serveur sur Hono et outillage sur Bun (#343 à #347), refonte du
     serveur en modules (#348 à #354), lint strict (#355) et TypeScript strict (#356).
 - **Prochaine action :** refonte de l'agent (lot 2), demandée par Victor le 2026-10-04 ;
-  étude `etudes/2026-10-04/refonte-agent.md`, ordre des PR dans `roadmap.md`. Point 3, première
-  PR mergée (#383, analyse du tour), deuxième mergée (#384, fiche d'exercice) ; prochaine :
-  l'analyse de document réduite à une
-  extraction. Plan d'abord dans `docs/plans/`.
+  étude `etudes/2026-10-04/refonte-agent.md`, ordre des PR dans `roadmap.md`. Point 3 terminé :
+  analyse du tour (#383), fiche d'exercice (#384), analyse de document réduite à une extraction (#385). Prochaine : point 4,
+  diagnostic contre la fiche, palier décidé par le code et contrat du tour. Plan d'abord dans
+  `docs/plans/`.
   - Étape à la charge de Victor avant le point 6 : approuver le texte de la réponse fixe de
     détresse.
   - Une relecture humaine d'une partie des conversations lues par Claude reste due avant
@@ -460,3 +460,11 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
     du message de l'élève ;
   - mesuré sur un appel réel (4e, maths) : 6,3 s et 8 786 tokens d'entrée par tirage, le
     programme en faisant l'essentiel.
+  Point 3 de la refonte, troisième PR, extraction des documents (#385) :
+  - l'analyse de document, un second tuteur sans garde-fou, devient une extraction : texte
+    tiré du PDF ou du docx sans modèle, image lue une fois par Small 4 en vision, transcrite
+    sans être résolue ; le chat reçoit ce texte, et non plus l'image ;
+  - les fichiers de la séance ouvrent la fenêtre dans l'ordre d'attache, stables pour le cache ;
+    la fiche les lit tous ; un fichier illisible apparaît comme tel ;
+  - un tour ne lit et n'attache que les fichiers de l'utilisateur, envoyés jusqu'au bout :
+    n'importe quel identifiant était lu, facturé, injecté et attaché, testé sur postgres.

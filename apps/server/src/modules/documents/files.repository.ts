@@ -8,7 +8,7 @@ import { db } from '../../db/connection.js';
 import { files, type FileStatus } from './files.schema.js';
 
 // Types inférés du schéma
-export type File = typeof files.$inferSelect;
+type File = typeof files.$inferSelect;
 type NewFile = typeof files.$inferInsert;
 
 class FilesRepository {
@@ -41,15 +41,13 @@ class FilesRepository {
     return file;
   }
 
-  /**
-   * Trouver plusieurs fichiers par leurs IDs (un seul SELECT)
-   */
-  async findByIds(ids: string[]): Promise<File[]> {
+  /** The given files that belong to the user and finished uploading; any other id is left out. */
+  async findReadyOwnedBy(userId: string, ids: readonly string[]): Promise<File[]> {
     if (ids.length === 0) return [];
     return await db
       .select()
       .from(files)
-      .where(inArray(files.id, ids));
+      .where(and(inArray(files.id, [...ids]), eq(files.userId, userId), eq(files.status, 'ready')));
   }
 
   /**
@@ -131,8 +129,8 @@ class FilesRepository {
 
   /**
    * Merge arbitrary keys into the JSONB educationalContext column (SQL-level merge
-   * to avoid read-modify-write races). Used to persist STT transcription, OCR
-   * extraction snippets, and document analysis caches on the file record.
+   * to avoid read-modify-write races). Used to persist the STT transcription and the text
+   * extracted from the file.
    * Returns false when no row matched (file deleted meanwhile).
    */
   async mergeEducationalContext(id: string, patch: Record<string, unknown>): Promise<boolean> {

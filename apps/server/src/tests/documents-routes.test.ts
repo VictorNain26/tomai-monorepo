@@ -71,10 +71,10 @@ describe('DELETE /api/upload/file/:fileId', () => {
 });
 
 describe('GET /api/files', () => {
-  it("lists the student's files with the type and subject found by the analysis", async () => {
+  it("lists the student's files with the subject given at upload", async () => {
     const createdAt = new Date('2026-10-01T08:00:00Z');
     listedFiles = [
-      { id: FILE_ID, fileName: 'ex.pdf', mimeType: 'application/pdf', sizeBytes: 12, educationalContext: { documentType: 'exercice', subject: 'mathematiques' }, createdAt },
+      { id: FILE_ID, fileName: 'ex.pdf', mimeType: 'application/pdf', sizeBytes: 12, educationalContext: { subject: 'mathematiques' }, createdAt },
       { id: 'f2', fileName: 'photo.png', mimeType: 'image/png', sizeBytes: 34, educationalContext: null, createdAt },
     ];
 
@@ -85,8 +85,8 @@ describe('GET /api/files', () => {
     expect(await res.json()).toEqual({
       success: true,
       files: [
-        { id: FILE_ID, fileName: 'ex.pdf', mimeType: 'application/pdf', sizeBytes: 12, documentType: 'exercice', subject: 'mathematiques', createdAt: '2026-10-01T08:00:00.000Z' },
-        { id: 'f2', fileName: 'photo.png', mimeType: 'image/png', sizeBytes: 34, documentType: null, subject: null, createdAt: '2026-10-01T08:00:00.000Z' },
+        { id: FILE_ID, fileName: 'ex.pdf', mimeType: 'application/pdf', sizeBytes: 12, subject: 'mathematiques', createdAt: '2026-10-01T08:00:00.000Z' },
+        { id: 'f2', fileName: 'photo.png', mimeType: 'image/png', sizeBytes: 34, subject: null, createdAt: '2026-10-01T08:00:00.000Z' },
       ],
     });
   });

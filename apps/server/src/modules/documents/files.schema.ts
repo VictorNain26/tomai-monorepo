@@ -29,7 +29,7 @@ export type FileStatus = (typeof fileStatusEnum.enumValues)[number];
 /**
  * Table files - Métadonnées fichiers uploadés
  * Stockage: Scaleway Object Storage (RGPD France)
- * Analyse: multimodal Mistral (base64 inline, pas de cache fichier externe)
+ * Lecture : le texte extrait une fois, gardé dans educational_context
  */
 export const files = pgTable('files', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -45,9 +45,8 @@ export const files = pgTable('files', {
   storageBucket: varchar('storage_bucket', { length: 100 }).notNull(),
   storageRegion: varchar('storage_region', { length: 20 }).notNull().default('fr-par'),
 
-  // Contexte éducatif (résultat d'analyse)
+  // { subject, level, userId } from the upload, then { extractedText, extractionMethod, wordCount } once read.
   educationalContext: jsonb('educational_context').default(sql`'{}'::jsonb`),
-  // Structure: { analysisContext, extractedText, documentType, subject, classification, metrics }
 
   // Statut et métadonnées
   status: fileStatusEnum('status').notNull().default('pending'),

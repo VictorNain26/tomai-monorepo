@@ -42,12 +42,11 @@ mock.module('../modules/tutor/study-sessions.repository', () => ({
   studySessionsRepository: { updateSubject: mock(async () => {}) },
 }));
 
+interface Texts { fileIds: string[]; attachedFileInfos: { fileName: string; fileId: string }[]; files: { fileId: string; fileName: string; text: string }[] }
+const prepareFileContext = mock(async (): Promise<Texts> => ({ fileIds: [], attachedFileInfos: [], files: [] }));
 mock.module('../modules/documents/index', () => ({
   sessionFilesRepository: { attach: mock(async () => {}) },
-  fileContextService: {
-    prepareFileContext: mock(async () => ({ attachedFileInfos: [], attachedFiles: [] })),
-    prepareMultimodalFiles: mock(async () => []),
-  },
+  fileContextService: { prepareFileContext },
 }));
 
 const actualMistralHelpers = await import('../modules/tutor/mistral-helpers');
@@ -131,6 +130,23 @@ describe('ChatOrchestrationService.prepareTurn — exercise sheet', () => {
     expect(context.exerciseSheet?.statement).toBe('Exercice précédent');
     expect(currentExerciseSheet).toHaveBeenCalledWith('session-001');
     expect(prepareExerciseSheet).not.toHaveBeenCalled();
+  });
+
+  it("feeds the sheet and the writer the session's files then the turn's, and attaches only the files the user may attach", async () => {
+    analyseTurn.mockImplementationOnce(async () => analysis({ bringsExercise: true }));
+    prepareFileContext.mockImplementationOnce(async () => ({
+      fileIds: ['f2'],
+      attachedFileInfos: [{ fileName: 'photo.jpg', fileId: 'f2' }],
+      files: [{ fileId: 'f1', fileName: 'cours.pdf', text: 'Le cours' }, { fileId: 'f2', fileName: 'photo.jpg', text: 'Résous 3x + 5 = 20.' }],
+    }));
+
+    const context = await chatOrchestrationService.prepareTurn({ ...request, content: 'Voici mon exercice', fileIds: ['f2', 'someone-elses'] });
+
+    expect(prepareExerciseSheet.mock.calls[0]?.[0]).toMatchObject({
+      attachedFilesBlock: '<attached_file name="cours.pdf">\nLe cours\n</attached_file>\n\n<attached_file name="photo.jpg">\nRésous 3x + 5 = 20.\n</attached_file>',
+    });
+    expect(context.attachedFiles.map((file) => file.fileId)).toEqual(['f1', 'f2']);
+    expect(context.fileIds).toEqual(['f2']);
   });
 
   it('never falls back on the previous exercise when the new sheet failed', async () => {

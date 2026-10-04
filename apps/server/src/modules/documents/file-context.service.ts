@@ -1,249 +1,118 @@
-import { filesRepository, type File as FileRecord } from './files.repository.js';
+import { filesRepository } from './files.repository.js';
 import { sessionFilesRepository } from './session-files.repository.js';
 import * as storage from './storage.js';
-import { documentAnalysisService } from './document-analysis.service.js';
-import type { DocumentAnalysisResult } from './document-types.js';
+import { documentExtractionService } from './document-extraction.service.js';
+import { costTrackingService } from '../billing/index.js';
+import { env } from '../../platform/config/env.js';
 import { logger } from '../../platform/observability/logger.js';
-import type { EducationLevelType } from '../../types/index.js';
-import type { AttachedFileInfo, AttachedFileForPrompt, FileAnalysisResult, FileAnalysisOptions, MultimodalFile } from './file-context-types.js';
-import { prepareMultimodalFiles, updateFileAnalysis } from './file-multimodal.service.js';
+import type { AttachedFileInfo, AttachedFileForPrompt } from './file-context-types.js';
+
+// The attached texts of a turn share this budget, the newest files served first: the same files
+// get the same cut from one turn to the next, which keeps them in the cached prefix.
+const MAX_ATTACHED_CHARS = 50_000;
+const CUT = '\n\n[Contenu tronqué]';
+/** Stands for a file whose text could not be read, so the tutor knows it was sent. */
+export const UNREADABLE = '[Fichier illisible : son contenu n’a pas pu être lu.]';
+
+interface Readable {
+  id: string;
+  fileName: string;
+  mimeType: string;
+  storageKey: string;
+  educationalContext: unknown;
+}
+
+function bounded(files: AttachedFileForPrompt[]): AttachedFileForPrompt[] {
+  let left = MAX_ATTACHED_CHARS;
+  return files
+    .toReversed()
+    .map((file) => {
+      if (file.text.length <= left) {
+        left -= file.text.length;
+        return file;
+      }
+      const text = left > 0 ? `${file.text.slice(0, left)}${CUT}` : CUT.trim();
+      left = 0;
+      return { ...file, text };
+    })
+    .toReversed();
+}
 
 class FileContextService {
-  /**
-   * Récupère le contexte de tous les fichiers attachés à une session
-   * Lit depuis la table session_files (classeur) au lieu de scanner l'historique
-   */
-  async getSessionFilesForPrompt(sessionId: string): Promise<AttachedFileForPrompt[]> {
-    try {
-      const attachedFiles = await sessionFilesRepository.findBySessionWithContext(sessionId);
+  /** The text of a file, read once and kept on its record; a failed read is kept too, and not tried again. */
+  private async textOf(file: Readable, owner: { userId: string; sessionId: string }): Promise<string> {
+    const kept = file.educationalContext as { extractedText?: string; extractionFailed?: boolean } | null;
+    if (kept?.extractedText) return kept.extractedText;
+    if (kept?.extractionFailed) return UNREADABLE;
 
-      if (attachedFiles.length === 0) {
-        return [];
-      }
-
-      logger.info('Found attached files for session', {
-        filesCount: attachedFiles.length,
-        fileNames: attachedFiles.map(f => f.fileName),
-        operation: 'get-session-files-context'
-      });
-
-      return attachedFiles
-        .map(f => {
-          const eduContext = f.educationalContext as {
-            analysisContext?: string;
-            documentType?: string;
-            subject?: string;
-          } | null;
-
-          if (!eduContext?.analysisContext) return null;
-
-          return {
-            fileName: f.fileName,
-            analysis: eduContext.analysisContext,
-            documentType: eduContext.documentType,
-            subject: eduContext.subject,
-          };
-        })
-        .filter((ctx): ctx is NonNullable<typeof ctx> => ctx !== null);
-    } catch (error) {
-      logger.error('Failed to get session files context', {
-        err: error,
-        operation: 'get-session-files-context',
-        severity: 'medium' as const
-      });
-      return [];
+    const content = await storage.getFileContent(file.storageKey);
+    if (!content) {
+      logger.error('Failed to retrieve file from storage', { fileId: file.id, operation: 'file-extraction', severity: 'medium' as const });
+      return UNREADABLE;
     }
+    const bytes = content.content;
+    const extraction = await documentExtractionService.extractText(
+      bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer,
+      file.mimeType,
+      file.fileName,
+    );
+    const { usage } = extraction.metadata;
+    if (usage) {
+      void costTrackingService.record({
+        ...owner,
+        aiModel: env.MISTRAL_MODEL,
+        operation: 'document-extraction',
+        tokensInput: usage.inputTokens,
+        tokensOutput: usage.outputTokens,
+        cachedTokens: usage.cachedInputTokens,
+      });
+    }
+    if (!extraction.success) {
+      logger.warn('File text not extracted', { fileId: file.id, method: extraction.metadata.extractionMethod, operation: 'file-extraction' });
+    }
+    await filesRepository
+      .mergeEducationalContext(file.id, extraction.success
+        ? { extractedText: extraction.text, extractionMethod: extraction.metadata.extractionMethod, wordCount: extraction.metadata.wordCount }
+        : { extractionFailed: true })
+      .catch((err: unknown) => { logger.warn('Extraction result not saved', { fileId: file.id, err, operation: 'file-extraction' }); });
+    return extraction.success ? extraction.text : UNREADABLE;
   }
 
   /**
-   * Analyse un fichier avec le pipeline complet
-   *
-   * Accepte optionnellement un FileRecord pré-chargé pour éviter un SELECT
-   * redondant quand l'appelant a déjà récupéré le fichier (ex: prepareFileContext).
+   * The texts of the session's files, in the order they were attached, then of this turn's: only
+   * the user's own files that finished uploading. A file sent again with the turn counts as the
+   * turn's; a session file never read, attached from the binder, is read now.
    */
-  async analyzeFileWithCache(
-    fileId: string,
-    options: FileAnalysisOptions,
-    preloadedFile?: FileRecord
-  ): Promise<FileAnalysisResult | null> {
-    try {
-      const { content: userQuestion, schoolLevel, userId } = options;
-
-      const file = preloadedFile ?? await filesRepository.findById(fileId);
-      if (!file) {
-        logger.warn('File not found in DB', { fileId, operation: 'analyze-file' });
-        return null;
-      }
-
-      const eduContext = file.educationalContext as {
-        analysisContext?: string;
-        extractedText?: string;
-        documentType?: string;
-        subject?: string;
-      } | null;
-
-      // Utiliser l'analyse en cache si disponible
-      if (eduContext?.analysisContext && !userQuestion) {
-        return {
-          analysis: eduContext.analysisContext,
-          extractedText: eduContext.extractedText,
-          fileName: file.fileName,
-          documentType: eduContext.documentType,
-          subject: eduContext.subject,
-        };
-      }
-
-      // Enrichir avec question spécifique
-      if (userQuestion && eduContext?.analysisContext) {
-        const contextualAnalysis = `ANALYSE DU DOCUMENT (${eduContext.documentType ?? 'document'} - ${eduContext.subject ?? 'matière non identifiée'}):
-${eduContext.analysisContext}
-
-QUESTION DE L'ÉLÈVE: ${userQuestion}
-
-RÉPONSE CONTEXTUALISÉE: Basé sur l'analyse du document ci-dessus, voici la réponse adaptée à votre question.`;
-
-        return {
-          analysis: contextualAnalysis,
-          extractedText: eduContext.extractedText,
-          fileName: file.fileName,
-          documentType: eduContext.documentType,
-          subject: eduContext.subject,
-        };
-      }
-
-      // Analyse complète nécessaire
-      logger.info('No cached analysis, running full pipeline', {
-        fileId,
-        fileName: file.fileName,
-        operation: 'analyze-file-pipeline'
-      });
-
-      // Récupérer le contenu depuis Scaleway
-      const fileContent = await storage.getFileContent(file.storageKey);
-      if (!fileContent) {
-        logger.error('Failed to retrieve file from storage', {
-          reason: 'Storage returned null',
-          fileId,
-          storageKey: file.storageKey,
-          operation: 'analyze-file',
-          severity: 'medium' as const
-        });
-        return null;
-      }
-
-      const isImage = file.mimeType.startsWith('image/');
-
-      let analysisResult: DocumentAnalysisResult;
-
-      if (isImage) {
-        const base64 = fileContent.content.toString('base64');
-        analysisResult = await documentAnalysisService.analyzeImage(
-          base64,
-          file.mimeType,
-          file.fileName,
-          { schoolLevel, userId, userQuestion }
-        );
-      } else {
-        analysisResult = await documentAnalysisService.analyzeDocument(
-          fileContent.content.buffer as ArrayBuffer,
-          file.fileName,
-          file.mimeType,
-          { schoolLevel, userId, userQuestion }
-        );
-      }
-
-      if (analysisResult.success) {
-        await updateFileAnalysis(file.id, analysisResult);
-
-        return {
-          analysis: analysisResult.analysis,
-          extractedText: analysisResult.extraction.text,
-          fileName: file.fileName,
-          documentType: analysisResult.classification.documentType,
-          subject: analysisResult.classification.subject,
-        };
-      }
-
-      return null;
-    } catch (error) {
-      logger.error('File analysis failed', {
-        err: error,
-        fileId,
-        operation: 'analyze-file',
-        severity: 'medium' as const
-      });
-      return null;
-    }
-  }
-
-  /**
-   * Prépare le contexte complet des fichiers pour une requête chat
-   */
-  async prepareFileContext(params: {
+  async prepareFileContext(params: { fileIds: string[]; userId: string; sessionId: string }): Promise<{
+    /** The turn's files the user may attach: their own, uploaded, each once. */
     fileIds: string[];
-    content: string;
-    schoolLevel: EducationLevelType;
-    userId: string;
-    sessionId: string;
-  }): Promise<{
     attachedFileInfos: AttachedFileInfo[];
-    attachedFiles: AttachedFileForPrompt[];
+    files: AttachedFileForPrompt[];
   }> {
-    const { fileIds, content, schoolLevel, userId, sessionId } = params;
-
-    // Batch-fetch all attached files once (1 SELECT) in parallel with session context.
-    const [fileRecords, sessionFiles] = await Promise.all([
-      filesRepository.findByIds(fileIds),
-      this.getSessionFilesForPrompt(sessionId)
+    const { userId, sessionId } = params;
+    const requested = [...new Set(params.fileIds)];
+    const [records, attached] = await Promise.all([
+      filesRepository.findReadyOwnedBy(userId, requested),
+      sessionFilesRepository.findBySessionWithContext(sessionId).catch((err: unknown) => {
+        logger.error('Session files not loaded, the turn goes on without them', { sessionId, err, operation: 'file-context', severity: 'medium' as const });
+        return [];
+      }),
     ]);
+    const turnFiles = requested.flatMap((id) => records.filter((f) => f.id === id));
+    const turnIds = new Set(turnFiles.map((f) => f.id));
+    const sessionFiles: Readable[] = attached.filter((f) => !turnIds.has(f.fileId)).map((f) => ({ ...f, id: f.fileId }));
 
-    // Preserve input order and build attached metadata from preloaded records (no extra SELECT).
-    const orderedFiles = fileIds
-      .map(id => fileRecords.find(f => f.id === id))
-      .filter((f): f is NonNullable<typeof f> => f !== undefined);
-
-    const attachedFileInfos: AttachedFileInfo[] = orderedFiles.map(file => ({
-      fileName: file.fileName,
-      fileId: file.id,
-      mimeType: file.mimeType,
-      fileSizeBytes: file.sizeBytes
-    }));
-
-    // Analyze files sequentially to keep ordered prompts and avoid hammering
-    // Mistral with parallel multi-MB requests; preloaded FileRecord avoids the
-    // duplicate SELECT inside analyzeFileWithCache.
-    const analysisResults: (FileAnalysisResult | null)[] = [];
-    for (const file of orderedFiles) {
-      const result = await this.analyzeFileWithCache(file.id, { content, schoolLevel, userId }, file);
-      analysisResults.push(result);
-    }
-
-    // File analyses are returned as SEPARATE structured blocks (never prefixed
-    // into the student message). The caller wraps them in their own
-    // `<attached_file>` fence so the document body cannot be read as an
-    // instruction. Session-classeur files come first (older context), then the
-    // files attached to this turn.
-    const turnFiles: AttachedFileForPrompt[] = [];
-    for (let i = 0; i < analysisResults.length; i++) {
-      const result = analysisResults[i];
-      if (!result?.analysis) continue;
-
-      turnFiles.push({
-        fileName: attachedFileInfos[i]?.fileName ?? 'document',
-        analysis: result.analysis,
-        documentType: result.documentType,
-        subject: result.subject,
-      });
+    // One at a time: several multi-MB images in parallel would hammer Mistral.
+    const texts: AttachedFileForPrompt[] = [];
+    for (const file of [...sessionFiles, ...turnFiles]) {
+      texts.push({ fileId: file.id, fileName: file.fileName, text: await this.textOf(file, { userId, sessionId }) });
     }
 
     return {
-      attachedFileInfos,
-      attachedFiles: [...sessionFiles, ...turnFiles],
+      fileIds: turnFiles.map((f) => f.id),
+      attachedFileInfos: turnFiles.map((f) => ({ fileName: f.fileName, fileId: f.id, mimeType: f.mimeType, fileSizeBytes: f.sizeBytes })),
+      files: bounded(texts),
     };
-  }
-
-  async prepareMultimodalFiles(fileIds: string[]): Promise<MultimodalFile[]> {
-    return prepareMultimodalFiles(fileIds);
   }
 }
 

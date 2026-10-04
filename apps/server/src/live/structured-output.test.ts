@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'bun:test';
 import { generateStructured } from '../platform/ai/mistral-client';
 import { CardGenerationSchema } from '../modules/learning/cards.schema';
-import { DocumentAnalysisSchema } from '../modules/documents/document-types';
 import { HAS_MISTRAL } from './_creds';
 
 // La doc Mistral ne liste pas les mots-clés JSON Schema acceptés en mode strict.
@@ -24,18 +23,6 @@ describe('Mistral structured outputs accept our schemas, strict except cards (re
     });
     expect(CardGenerationSchema.safeParse(object).success).toBe(true);
     expect(object.cards.length).toBeGreaterThan(0);
-    expect(usage.outputTokens).toBeGreaterThan(0);
-  }, 60_000);
-
-  it('document analysis (nullable field)', async () => {
-    const { object, usage } = await generateStructured({
-      messages: [{ role: 'user', content: 'Classe ce document : « Exercice 1 : résoudre 2x + 3 = 7 ».' }],
-      schema: DocumentAnalysisSchema,
-      schemaName: 'document_analysis',
-      functionId: 'live-doc',
-      maxTokens: 512,
-    });
-    expect(object.classification.subject).toBe('mathematiques');
     expect(usage.outputTokens).toBeGreaterThan(0);
   }, 60_000);
 });

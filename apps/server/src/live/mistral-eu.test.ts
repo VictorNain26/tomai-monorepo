@@ -1,9 +1,10 @@
 import { describe, it, expect } from 'bun:test';
 import { randomUUID } from 'node:crypto';
 import { streamChat } from '../modules/tutor/ai-chat.service';
-import { generateStructured, generateText } from '../platform/ai/mistral-client';
+import { generateStructured } from '../platform/ai/mistral-client';
 import { ExerciseSheetSchema, keepKnownNotions, notionsFor, sheetMessages } from '../modules/tutor/exercise-sheet';
 import { checkAnswer } from '../modules/tutor/exercise-math';
+import { readImageWithMistralVision } from '../modules/documents/mistral-vision';
 import { mistralEmbeddingsService } from '../modules/tutor/mistral-embeddings.service';
 import { getVoxtralTTSService } from '../modules/voice/voxtral-tts.service';
 import { getVoxtralTranscribeService } from '../modules/voice/voxtral-transcribe.service';
@@ -16,8 +17,8 @@ import { env } from '../platform/config/env';
 
 // Live contre l'endpoint UE de Mistral. LOCAL-ONLY (`bun run test:live`), fail-closed.
 
-const RED_PNG =
-  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC+aJAAAAS0lEQVR42u3PQQkAAAgAsetfWiP4FgYrsKZeS0BAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEDgsqnc8OJg6Ln3AAAAAElFTkSuQmCC';
+// « 3X + 5 = 20 » drawn in a 5×7 bitmap font, 420×66 px: past the 64 px Mistral wants.
+const EQUATION_PNG = 'iVBORw0KGgoAAAANSUhEUgAAAaQAAABCCAAAAAA9Tf3CAAAA90lEQVR42u3bURaCIBBAUfa/6VqAgYhMDIf7PjulNLcPjmb5KH3FCCAJEiRBEiRIgiRIkATpeKRS6fqeHweqvB7+BZotG2vHSvpXCwkSJEiQIEGCNIbUPmUc0qrPxvHMnSEkSJAgQYIECVIcUv8p/4n0fvMdvZVvT+xmsw4JEiRIkCBBgvQC6cGFv4DhRgwl26a8BgYJEiRIkCBBghSBtNcWfNYxI340PTfOj7jACgkSJEiQIEFKjLTL7fMMf46ctWZIkCBBggQJEqQxpB0ffamtPM9K2pM84vkkSJAgQYIECdIiJOUMEiRBgiRIggRJkAQJkiAd2RcJykrfFEVu7AAAAABJRU5ErkJggg==';
 
 const mathTurn = {
   userId: 'live-user',
@@ -123,19 +124,12 @@ describe('Mistral Small 4 on the EU endpoint (real API)', () => {
     expect(sheet.entries.length).toBeGreaterThan(0);
   }, 90_000);
 
-  it('reads an image (Small 4 is multimodal)', async () => {
-    const out = await generateText({
-      functionId: 'live-mistral-eu',
-      messages: [{ role: 'user', content: [
-        { type: 'text', text: 'De quelle couleur est cette image ? Réponds en un seul mot.' },
-        { type: 'image_url', imageUrl: RED_PNG },
-      ] }],
-      maxTokens: 10,
-      temperature: 0,
-    });
+  it('reads the text of an image once, for the sheet and the tutor', async () => {
+    const result = await readImageWithMistralVision(Uint8Array.from(Buffer.from(EQUATION_PNG, 'base64')).buffer, 'image/png');
 
-    expect(out.toLowerCase()).toContain('rouge');
-  }, 30_000);
+    expect(result.text.replace(/\s/g, '').toLowerCase()).toContain('3x+5=20');
+    expect(result.usage?.inputTokens).toBeGreaterThan(0);
+  }, 60_000);
 
   it('embeds text in 1024 dimensions', async () => {
     expect((await mistralEmbeddingsService.embed('bonjour')).length).toBe(1024);

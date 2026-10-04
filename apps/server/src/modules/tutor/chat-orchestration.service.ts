@@ -27,9 +27,6 @@ import type { LanguageModelUsage } from 'ai';
 import { replayable, type HistoryTurn, type ResponseMessage } from './chat-message-assembler.js';
 import { messagesRepository } from './messages.repository.js';
 import type { EducationLevelType } from '../../types/index.js';
-import type { AttachedFile } from './ai-chat.service.js';
-
-const MAX_ENRICHED_CONTENT_CHARS = 50_000;
 
 /**
  * An assistant message's stored response messages, replayed as they are; an unreadable or
@@ -70,9 +67,9 @@ export interface ChatTurnContext {
   turnAnalysis: TurnAnalysis;
   /** The exercise in progress: prepared when the student brings one, else the session's last. */
   exerciseSheet: ExerciseSheet | null;
-  /** Multimodal files (images) for Mistral vision, ready for `streamChat`'s `files` param. */
-  files: AttachedFile[];
-  /** Bounded document analyses (OCR), ready for `streamChat`'s `attachedFiles` param. */
+  /** The turn's files the user may attach: their own, uploaded, each once. */
+  fileIds: string[];
+  /** The bounded texts of the session's files, then of this turn's, for `streamChat`'s `attachedFiles`. */
   attachedFiles: AttachedFileForPrompt[];
   attachedFileInfo: AttachedFileInfo | null;
   attachedFileInfos?: AttachedFileInfo[];
@@ -150,20 +147,12 @@ class ChatOrchestrationService {
     // its own logging.
     const [
       fileContext,
-      multimodalFiles,
       cognitiveProfileSummary,
       learningContext,
       turnAnalysis,
       relevantEpisodes,
     ] = await Promise.all([
-      fileContextService.prepareFileContext({
-        fileIds: request.fileIds,
-        content: request.content,
-        schoolLevel: request.schoolLevel,
-        userId: request.userId,
-        sessionId,
-      }),
-      fileContextService.prepareMultimodalFiles(request.fileIds),
+      fileContextService.prepareFileContext({ fileIds: request.fileIds, userId: request.userId, sessionId }),
       cognitiveProfileService.getProfileSummary(request.userId),
       getLearningContext(request.userId),
       analyseTurn(request.content, conversationHistory.findLast(turn => turn.role === 'assistant')?.content ?? null),
@@ -196,26 +185,9 @@ class ChatOrchestrationService {
         }); });
     }
 
-    const { attachedFileInfos, attachedFiles } = fileContext;
+    const { attachedFileInfos, files } = fileContext;
     const attachedFileInfo = attachedFileInfos[0] ?? null;
     const hasMultipleFiles = attachedFileInfos.length > 1;
-
-    // Cap the combined analysis size so a large document can't blow the context
-    // budget. Truncate each analysis against a shared running budget rather than
-    // the student message (the message is never truncated).
-    let remainingBudget = MAX_ENRICHED_CONTENT_CHARS;
-    const boundedAttachedFiles = attachedFiles.map(f => {
-      if (remainingBudget <= 0) {
-        return { ...f, analysis: '[Contenu tronqué]' };
-      }
-      if (f.analysis.length > remainingBudget) {
-        const truncated = f.analysis.slice(0, remainingBudget) + '\n\n[Contenu tronqué]';
-        remainingBudget = 0;
-        return { ...f, analysis: truncated };
-      }
-      remainingBudget -= f.analysis.length;
-      return f;
-    });
 
     const [subjectMemoryBlock, exerciseSheet] = await Promise.all([
       effectiveSubject ? subjectProfileService.formatSubjectMemoryForPrompt(request.userId, effectiveSubject) : null,
@@ -226,7 +198,7 @@ class ChatOrchestrationService {
           level: request.schoolLevel,
           subject: effectiveSubject,
           studentText: request.content,
-          attachedFilesBlock: boundedAttachedFiles.length > 0 ? wrapAttachedFiles(boundedAttachedFiles) : null,
+          attachedFilesBlock: files.length > 0 ? wrapAttachedFiles(files) : null,
         })
         : currentExerciseSheet(sessionId),
     ]);
@@ -242,7 +214,7 @@ class ChatOrchestrationService {
       sessionId,
       schoolLevel: request.schoolLevel,
       filesCount: request.fileIds.length,
-      multimodalFilesCount: multimodalFiles.length,
+      attachedTexts: files.length,
       proposesAnswer: turnAnalysis.proposesAnswer,
       bringsExercise: turnAnalysis.bringsExercise,
       asksSolution: turnAnalysis.asksSolution,
@@ -263,12 +235,8 @@ class ChatOrchestrationService {
       turnInstruction,
       turnAnalysis,
       exerciseSheet,
-      files: multimodalFiles.map(f => ({
-        base64: f.base64,
-        mimeType: f.mimeType,
-        contentType: f.contentType,
-      })),
-      attachedFiles: boundedAttachedFiles,
+      fileIds: fileContext.fileIds,
+      attachedFiles: files,
       attachedFileInfo,
       ...(hasMultipleFiles && { attachedFileInfos }),
     };

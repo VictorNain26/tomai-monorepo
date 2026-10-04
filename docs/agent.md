@@ -51,7 +51,7 @@ d'agent reste la nôtre ([regional inference](https://docs.mistral.ai/inference/
 | Rôle | Modèle | Réglage |
 |---|---|---|
 | Chat élève, texte et image | **Mistral Small 4** `mistral-small-2603` | rédaction sans raisonnement, l'exactitude passant par la fiche d'exercice, produite en `high` sans plafond de tokens (décision de Victor, 2026-10-04) ; température 0,7, dans la plage de la fiche Hugging Face de Small 4 pour `none` ; `promptCacheKey` par session |
-| Résumés, génération de cartes, analyse de document, titres, analyse du tour (`turn-analysis.service.ts`) | Mistral Small 4 `mistral-small-2603` | `reasoningEffort: 'none'` ; sortie structurée stricte |
+| Résumés, génération de cartes, lecture d'une image jointe (`documents/mistral-vision.ts`, transcription seule), titres, analyse du tour (`turn-analysis.service.ts`) | Mistral Small 4 `mistral-small-2603` | `reasoningEffort: 'none'` ; sortie structurée stricte |
 | Fiche d'exercice (`exercise-sheet.service.ts`) | Mistral Small 4 `mistral-small-2603` | `reasoningEffort: 'high'` sans plafond de tokens, borné par un timeout de 20 s ; température 0,7 (« 0.7 for `reasoning_effort="high"` », fiche Hugging Face) ; trois tirages votés ; sortie structurée stricte, acceptée en raisonnement par un appel réel |
 | Modération entrée/sortie | `mistral-moderation-2603` | Seuils par catégorie (§5) |
 | STT / TTS | Voxtral via `@mistralai/mistralai` (`audio.*`) | Timeout explicite |
@@ -438,6 +438,6 @@ succès). Coûts mesurés : `etudes/2026-10-01/couts.md` ; défauts du code 
   génération ou de l'outil du chat.
 - Le résumé de conversation est incrémental : il ne se relance qu'après un nombre fixe de
   nouveaux messages, comptés hors de la fenêtre gardée en clair.
-- Chaque appel IA (chat, analyse du tour, titre, résumé, analyse de photo, cartes, embeddings,
+- Chaque appel IA (chat, analyse du tour, titre, résumé, lecture d'image, cartes, embeddings,
   STT, TTS) est tracé dans `cost_tracking`, à une précision inférieure au centime.
 - Le quota gratuit se fixe sur le coût mesuré, une fois ces corrections faites.

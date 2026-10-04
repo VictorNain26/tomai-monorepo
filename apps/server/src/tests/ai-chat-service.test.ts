@@ -90,6 +90,22 @@ describe('streamChat', () => {
     expect(sent).not.toContain('Retrancher 5');
   });
 
+  it("sends the session's files as fenced texts opening the window, never in the turn message", async () => {
+    const model = new MockLanguageModelV4({
+      doStream: async () => ({
+        stream: simulateReadableStream({ chunkDelayInMs: 0, initialDelayInMs: 0, chunks: [{ type: 'stream-start', warnings: [] }, finishStreamPart()] }),
+      }),
+    });
+
+    await streamChat({ ...baseParams, tools: noopTools, model, attachedFiles: [{ fileId: 'f1', fileName: 'exo.png', text: 'Résous 3x + 5 = 20.' }] }).text;
+
+    const prompt = model.doStreamCalls[0]?.prompt ?? [];
+    expect(prompt).toHaveLength(2);
+    const sent = JSON.stringify(prompt[1]);
+    expect(sent.indexOf('<attached_file name=\\"exo.png\\">')).toBeLessThan(sent.indexOf('<student_message>'));
+    expect(sent).not.toContain('"type":"file"');
+  });
+
   it('stops the agentic loop after 5 steps via stopWhen: isStepCount(5)', async () => {
     let callIndex = 0;
     const model = new MockLanguageModelV4({

@@ -117,7 +117,7 @@ export const chatMessageRoutes = new Hono<AppEnv>()
         sessionId: turnCtx.sessionId,
         content: safeContent,
         inputMode,
-        fileIds,
+        fileIds: turnCtx.fileIds,
         attachedFileInfo: turnCtx.attachedFileInfo,
         attachedFileInfos: turnCtx.attachedFileInfos,
       });
@@ -165,7 +165,6 @@ export const chatMessageRoutes = new Hono<AppEnv>()
           turnInstruction: turnCtx.turnInstruction,
           turnAnalysis: turnCtx.turnAnalysis,
           exerciseSheet: turnCtx.exerciseSheet,
-          files: turnCtx.files,
           attachedFiles: turnCtx.attachedFiles,
           inputMode,
           tools,
