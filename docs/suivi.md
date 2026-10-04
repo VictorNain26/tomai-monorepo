@@ -19,9 +19,8 @@ bloquant levé).
   - Le lot 0 est terminé : serveur sur Hono et outillage sur Bun (#343 à #347), refonte du
     serveur en modules (#348 à #354), lint strict (#355) et TypeScript strict (#356).
 - **Prochaine action :** refonte de l'agent (lot 2), demandée par Victor le 2026-10-04 ;
-  étude `etudes/2026-10-04/refonte-agent.md`, ordre des PR dans `roadmap.md`. Point 2,
-  première PR en cours (#381) ; ensuite sa seconde PR (outils stricts, renommages de l'AI SDK
-  7, usage d'un tour coupé), puis le point 3.
+  étude `etudes/2026-10-04/refonte-agent.md`, ordre des PR dans `roadmap.md`. Point 2, seconde
+  PR en cours (#382) ; ensuite le point 3, fiche d'exercice : plan d'abord dans `docs/plans/`.
   - Étape à la charge de Victor avant le point 6 : approuver le texte de la réponse fixe de
     détresse.
   - Une relecture humaine d'une partie des conversations lues par Claude reste due avant
@@ -429,3 +428,8 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
   - un seul message `user` par tour, le résumé dans le premier message de la fenêtre ;
   - bloc de la matière dans le message du tour : le prompt système ne change plus d'un tour à
     l'autre.
+  Point 2 de la refonte, seconde PR (#382) :
+  - outils en mode strict, acceptés par Mistral et remplis par un appel réel ;
+  - un tour coupé compte l'usage de ses pas terminés, sans garder de messages du modèle ;
+  - l'usage arrive dans le flux sans `stream_options`, vérifié par un appel réel ;
+  - renommages de l'AI SDK 7 : `instructions`, `onEnd`, option `timeout`.

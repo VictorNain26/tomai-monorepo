@@ -80,9 +80,10 @@ modèle sans prévenir et invalide l'évaluation. Chaque prompt porte une versio
 - `safePrompt` est déprécié par Mistral au profit des Custom Guardrails
   ([source](https://docs.mistral.ai/resources/deprecated/guardrailing/safe_prompt)).
 - En streaming, l'usage n'arrive que si `stream_options.include_usage` est envoyé
-  (known limitations) : vérifier sur le fil que `usage` et `cacheRead` remontent. Non
-  vérifié : `@ai-sdk/mistral` 4.0.48 ne l'envoie pas ; à vérifier au point 2 du lot 2, avant
-  que le quota compte un tour qui raisonne sans plafond.
+  (known limitations) : vérifier sur le fil que `usage` et `cacheRead` remontent. `@ai-sdk/mistral`
+  4.0.48 ne l'envoie pas, et l'usage arrive pourtant : vérifié par un appel réel
+  (`live/mistral-eu.test.ts`, 2026-10-04). Un tour coupé compte l'usage de ses pas terminés
+  (`onAbort`) ; celui du pas coupé n'arrive jamais.
 
 ## 3. Équivalents Mistral des mécanismes Claude
 
