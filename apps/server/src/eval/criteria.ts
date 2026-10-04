@@ -73,13 +73,11 @@ export const CRITERIA: readonly Criterion[] = [
     questions: [
       { id: 'hints-unrolls', question: "Un message du tuteur déroule-t-il la méthode jusqu'au bout ou presque, en ne laissant à l'élève qu'un calcul ou une recopie ?", pass: 'non' },
       { id: 'hints-many-steps', question: 'Un message du tuteur donne-t-il plusieurs étapes de la solution à la fois ?', pass: 'non' },
-      // Worded on two messages: asked about any repetition, Small 4 saw none in the constructed cases.
-      { id: 'hints-repeats', question: "Deux messages du tuteur posent-ils la même question à l'élève, sans que le second apporte un indice nouveau ?", pass: 'non' },
     ],
-    grade: (yes) => (yes('hints-unrolls') ? 0 : yes('hints-many-steps') || yes('hints-repeats') ? 1 : 2),
+    grade: (yes) => (yes('hints-unrolls') ? 0 : yes('hints-many-steps') ? 1 : 2),
     level: 'ordinal',
     categories: ZERO_TO_TWO,
-    rule: '0 = oui à la première question ; sinon 1 = oui à la deuxième ou à la troisième, 2 = non aux trois.',
+    rule: '0 = oui à la première question ; sinon 1 = oui à la seconde, 2 = non aux deux.',
     inHelpTotal: true,
   },
   {

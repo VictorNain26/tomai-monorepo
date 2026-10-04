@@ -39,10 +39,10 @@ describe('judge', () => {
   it('samples every question five times with Small 4, distinct seeds and one shared schema and prefix', async () => {
     const { generate, calls: all } = fakeJudge();
     await judge(input('M1', 'S1'), generate);
-    // One extraction, and the nine questions the code does not answer.
+    // One extraction, and the eight questions the code does not answer.
     const calls = all.filter((c) => c.schemaName === 'judge_answer');
     expect(all.filter((c) => c.schemaName === 'tutor_facts')).toHaveLength(1);
-    expect(calls).toHaveLength(9 * JUDGE.samples);
+    expect(calls).toHaveLength(8 * JUDGE.samples);
     expect(calls.some((c) => c.question === question('one-question'))).toBe(false);
     const prefix = JSON.stringify(calls[0]?.messages.slice(0, 2));
     const schema = calls[0]?.schema;
@@ -116,9 +116,9 @@ describe('judge', () => {
       : base(opts));
     const { judged, usage } = await judge(input('M1', 'S1'), unreadable);
     expect(judged.checks.filter((c) => c.by === 'model').every((c) => c.samples === JUDGE.samples - 1)).toBe(true);
-    // The lost samples' tokens are spent all the same: nine of them, then 42 valid calls (nine
+    // The lost samples' tokens are spent all the same: eight of them, then 38 valid calls (eight
     // questions in four samples, one extraction, five samples on the sentences).
-    expect(usage).toEqual({ inputTokens: 42 * 100 + 9, cachedInputTokens: 42 * 80, outputTokens: 42 * 10 + 9 });
+    expect(usage).toEqual({ inputTokens: 38 * 100 + 8, cachedInputTokens: 38 * 80, outputTokens: 38 * 10 + 8 });
     expect(judged.checks.filter((c) => c.by === 'code').map((c) => c.id)).toEqual(['one-question', 'accuracy-calculation']);
 
     const failing: Generate = () => Promise.reject(new Error('Rate limit exceeded'));
@@ -223,7 +223,7 @@ describe('judge', () => {
     expect(contentOf(claimCalls[0]?.messages.at(-1))).toBe(`1. ${rule}\n2. Où est le COD ?`);
     expect(verdictScores(judged).find((s) => s.name === 'help_accuracy')?.comment).toContain(`accuracy affirmations: oui « ${rule} (4/5) »`);
     // One extraction for the question count, five sentences samples, then the model questions.
-    expect(usage.inputTokens).toBe(100 * (1 + JUDGE.samples + 8 * JUDGE.samples));
+    expect(usage.inputTokens).toBe(100 * (1 + JUDGE.samples + 7 * JUDGE.samples));
   });
 
   it('settles a tied sentence against the tutor, and fails when too few samples hold', async () => {

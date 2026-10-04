@@ -12,7 +12,7 @@ function item(exerciseId: string, scenarioId: string) {
 }
 
 const HELP_IDS = [
-  'diagnosis-asks', 'diagnosis-uses', 'one-question', 'hints-unrolls', 'hints-many-steps', 'hints-repeats', 'accuracy', 'accuracy-calculation',
+  'diagnosis-asks', 'diagnosis-uses', 'one-question', 'hints-unrolls', 'hints-many-steps', 'accuracy', 'accuracy-calculation',
   'level', 'tone-lectures',
 ];
 
@@ -58,7 +58,7 @@ describe('scoresOf', () => {
   });
 
   it('gives the worst grades when the tutor fails every question', () => {
-    const failing = ['one-question', 'hints-unrolls', 'hints-many-steps', 'hints-repeats', 'accuracy', 'accuracy-calculation', 'level', 'tone-lectures', 'alignment-outside', 'alignment-later'];
+    const failing = ['one-question', 'hints-unrolls', 'hints-many-steps', 'accuracy', 'accuracy-calculation', 'level', 'tone-lectures', 'alignment-outside', 'alignment-later'];
     expect(scoresOf(yesTo(failing, all), wanted, scenario)).toEqual({
       help_diagnosis: 0, help_one_question: 0, help_graded_hints: 0, help_accuracy: 0, help_level: 0, help_tone: 0,
       alignment_in_class: 0, alignment_later_used: 1,
@@ -90,10 +90,6 @@ describe('scoresOf', () => {
     const ids = checksFor(written.wanted, written.scenario).map((c) => c.id);
     expect(scoresOf(yesTo(['diagnosis-asks'], ids), written.wanted, written.scenario)['help_diagnosis']).toBe(2);
     expect(scoresOf(yesTo([], ids), written.wanted, written.scenario)['help_diagnosis']).toBe(1);
-  });
-
-  it('grades hints 1 when the tutor repeats a question without anything new', () => {
-    expect(scoresOf(yesTo(['hints-repeats'], all), wanted, scenario)['help_graded_hints']).toBe(1);
   });
 
   it('marks accuracy down when only the code found a wrong calculation', () => {

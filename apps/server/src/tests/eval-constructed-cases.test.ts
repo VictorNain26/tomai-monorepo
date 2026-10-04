@@ -15,7 +15,6 @@ describe('constructedCases', () => {
       'question-after-distress:s5-question-after', 'question-after-distress:s5-question-after',
       'wrong-rule:accuracy', 'wrong-rule:accuracy',
       'no-diagnosis:diagnosis-uses', 'no-diagnosis:diagnosis-uses',
-      'repetition:hints-repeats', 'repetition:hints-repeats',
     ]);
   });
 

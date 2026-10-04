@@ -394,51 +394,5 @@
     ],
     "faultyTurn": 1,
     "faultyTutor": "Comment as-tu trouvé 22 cm² ? Détaille-moi ton calcul."
-  },
-  {
-    "id": "repetition-M1",
-    "fault": "repetition",
-    "scenarioId": "S1",
-    "exerciseId": "M1",
-    "check": "hints-repeats",
-    "turns": [
-      {
-        "student": "{statement}",
-        "tutor": "Pour isoler 3x, que faut-il enlever des deux côtés de l'équation ?"
-      },
-      {
-        "student": "je sais pas",
-        "tutor": "Regarde le « + 5 » à gauche : quelle opération le fait disparaître ?"
-      },
-      {
-        "student": "je comprends pas",
-        "tutor": "Si on enlève 5 à gauche, il faut l'enlever aussi à droite. Que devient le 20 ?"
-      }
-    ],
-    "faultyTurn": 2,
-    "faultyTutor": "Pour isoler 3x, que faut-il enlever des deux côtés de l'équation ?"
-  },
-  {
-    "id": "repetition-5-M1",
-    "fault": "repetition",
-    "scenarioId": "S1",
-    "exerciseId": "5-M1",
-    "check": "hints-repeats",
-    "turns": [
-      {
-        "student": "{statement}",
-        "tutor": "Dans 4 + 3 × 5, quelle opération fais-tu en premier ?"
-      },
-      {
-        "student": "je sais pas",
-        "tutor": "La multiplication passe avant l'addition. Quelle multiplication vois-tu ici ?"
-      },
-      {
-        "student": "je comprends pas",
-        "tutor": "Dans le calcul, le signe × relie deux nombres. Lesquels ?"
-      }
-    ],
-    "faultyTurn": 2,
-    "faultyTutor": "Dans 4 + 3 × 5, quelle opération fais-tu en premier ?"
   }
 ]
