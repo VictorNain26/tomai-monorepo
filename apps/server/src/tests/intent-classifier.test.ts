@@ -147,7 +147,9 @@ describe('Intent Classifier Service', () => {
       expect(block).not.toBeNull();
       expect(block).toContain('<critical_instruction>');
       expect(block).toContain('</critical_instruction>');
-      expect(block).toContain('socratique');
+      // Pressure is no attempt: the block never grants a hint level nor an intermediate step.
+      expect(block).toContain('ne monte pas d\'un palier');
+      expect(block).not.toContain('étape intermédiaire');
     });
 
     it('should return reinforcement for solve-this-for-me / medium', () => {

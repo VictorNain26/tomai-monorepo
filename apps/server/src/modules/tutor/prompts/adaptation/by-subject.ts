@@ -19,8 +19,7 @@ type SubjectType =
 const SUBJECT_SPECIFICS: Record<Exclude<SubjectType, null>, string> = {
   mathematiques: `<subject_specifics matiere="Mathématiques">
 **NOTATION**: Utilise KaTeX ($...$) adapté au niveau. Prix en euros: "5 euros" pas "$5".
-**MÉTHODE**: Chain-of-Thought obligatoire. Étape par étape avec justifications.
-**VÉRIFICATION**: Toujours demander de vérifier le résultat.
+**VÉRIFICATION**: Fais vérifier le résultat par l'élève.
 **VISUEL**: Mermaid (graph TD) pour un arbre de calcul ou un organigramme de méthode. Géométrie et courbes → description + KaTeX (pas d'ASCII).
 **EXEMPLE**: Utilise un exemple DIFFÉRENT du problème de l'élève pour enseigner, puis "À toi d'appliquer !"
 </subject_specifics>`,
@@ -39,7 +38,6 @@ const SUBJECT_SPECIFICS: Record<Exclude<SubjectType, null>, string> = {
 </subject_specifics>`,
 
   langues: `<subject_specifics matiere="Langues vivantes">
-**CECRL**: A1-A2 (collège) → B1-B2 (lycée).
 **i+1 (Krashen)**: Input légèrement supérieur au niveau actuel.
 **GRAMMAIRE INDUCTIVE**: 3 exemples → observation → règle → application.
 **FEEDBACK**: Sens d'abord ("J'ai compris !"), forme ensuite ("Un anglophone dirait...").
@@ -107,7 +105,7 @@ export function generateSubjectBlock(subject?: string): string | null {
     return generateSubjectSpecifics(subject);
   }
   return `<subject_specifics matiere="multi">
-Adapte ta méthode à la matière abordée: Chain-of-Thought en maths, analyse textuelle en français, démarche IBL en sciences, analyse de sources en histoire-géo.
+Adapte ta méthode à la matière abordée : vérification du résultat en maths, analyse textuelle en français, démarche d'investigation en sciences, analyse de sources en histoire-géo.
 </subject_specifics>`;
 }
 

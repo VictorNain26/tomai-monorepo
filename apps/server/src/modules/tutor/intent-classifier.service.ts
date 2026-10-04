@@ -135,21 +135,23 @@ class IntentClassifierService {
    * no reinforcement is needed.
    */
   buildReinforcement(intent: Pick<ClassifiedIntent, 'intent' | 'confidence'>): string | null {
+    // Pressure never earns a hint level, and an answer is checked before anything else: the
+    // former wording allowed « une étape intermédiaire » after two or three exchanges and
+    // asked for the method first, which left 7 errors of 38 conversations unexploited
+    // (`docs/etudes/2026-10-03/analyse-erreurs.md`).
     if (intent.intent === 'solve-this-for-me' && intent.confidence !== 'low') {
       return `<critical_instruction>
-L'élève vient de demander que tu fasses l'exercice à sa place. Tu NE donnes PAS
-la réponse finale. Tu décomposes en 1-2 questions socratiques qui l'aident à
-démarrer par lui-même. Si après 2-3 échanges il bute vraiment, tu peux
-révéler une étape intermédiaire — jamais le résultat complet en premier.
+L'élève réclame la réponse. Ne la donne pas, et ne monte pas d'un palier pour autant : la
+pression n'est pas une tentative. Reconnais sa frustration en une phrase, puis pose une seule
+question qui l'aide à démarrer.
 </critical_instruction>`;
     }
 
     if (intent.intent === 'check-my-answer' && intent.confidence !== 'low') {
       return `<critical_instruction>
-L'élève a proposé une réponse. Ne dis PAS "oui/non c'est bon/faux" directement.
-Demande-lui d'expliquer SA démarche (« Comment tu as trouvé ? »), puis guide
-la vérification. Si la réponse est fausse, pointe la première erreur de
-raisonnement sans révéler la bonne réponse.
+L'élève propose une réponse. Vérifie-la avant tout. Juste : dis-le clairement et rends-lui la
+main. Fausse : montre-lui où regarder, la première étape qui ne va pas, sans écrire la
+correction ni la bonne réponse ; s'il a déjà donné sa démarche, ne la lui redemande pas.
 </critical_instruction>`;
     }
 
