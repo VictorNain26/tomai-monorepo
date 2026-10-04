@@ -158,6 +158,25 @@ describe('ChatOrchestrationService.finishTurn', () => {
     expect(summarizeIfNeeded).not.toHaveBeenCalled();
   });
 
+  it('stores the response messages as the model produced them, to replay them next turn', async () => {
+    const modelMessages = [{ role: 'assistant' as const, content: [{ type: 'reasoning' as const, text: 'raisonnement' }, { type: 'text' as const, text: 'Bonjour à toi' }] }];
+    await chatOrchestrationService.finishTurn({
+      sessionId: 'session-001',
+      userId: 'user-001',
+      userContent: 'Bonjour',
+      responseMessage: { id: 'm2', role: 'assistant', parts: [{ type: 'text', text: 'Bonjour à toi', state: 'done' }] },
+      modelMessages,
+      model: 'mistral-small-2603',
+      usage: undefined,
+      startTime: Date.now(),
+      attachedFileInfo: null,
+      classifiedIntent: noopIntent,
+    });
+
+    expect(saveMessage.mock.calls[0]?.[2]).toBe('Bonjour à toi');
+    expect((saveMessage.mock.calls[0]?.[3] as Record<string, unknown> | undefined)?.['modelMessages']).toEqual(modelMessages);
+  });
+
   it('persists the assistant message and accounts tokens when content was produced', async () => {
     const filledResponse: TomChatMessage = {
       id: 'm2',
@@ -185,6 +204,7 @@ describe('ChatOrchestrationService.finishTurn', () => {
     expect(saveMessage).toHaveBeenCalledTimes(1);
     expect(saveMessage.mock.calls[0]?.[1]).toBe('assistant');
     expect(saveMessage.mock.calls[0]?.[2]).toBe('Bonjour à toi');
+    expect((saveMessage.mock.calls[0]?.[3] as Record<string, unknown> | undefined)?.['modelMessages']).toBeUndefined();
     expect(incrementTokenUsage).toHaveBeenCalledWith('user-001', 15);
     expect(record).toHaveBeenCalledTimes(1);
     expect(summarizeIfNeeded).toHaveBeenCalledWith('session-001');

@@ -119,6 +119,10 @@ export const messages = pgTable('messages', {
   // Métadonnées
   messageMetadata: jsonb('message_metadata').default(sql`'{}'::jsonb`),
 
+  // Réponse du modèle telle qu'il l'a produite (raisonnement, appels d'outils), rejouée au tour
+  // suivant ; jamais rendue au client.
+  modelMessages: jsonb('model_messages'),
+
   // Audit
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [

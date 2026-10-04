@@ -173,11 +173,13 @@ export const chatMessageRoutes = new Hono<AppEnv>()
       onFinish: async ({ responseMessage }) => {
         try {
           const usage = capturedResult ? await capturedResult.usage : undefined;
+          const modelMessages = capturedResult ? await capturedResult.responseMessages : undefined;
           await chatOrchestrationService.finishTurn({
             sessionId: turnCtx.sessionId,
             userId: user.id,
             userContent: safeContent,
             responseMessage,
+            modelMessages,
             model: env.MISTRAL_MODEL,
             usage,
             startTime,

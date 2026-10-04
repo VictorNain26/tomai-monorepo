@@ -31,10 +31,23 @@ import { subjectProfileService } from './subject-profile.service.js';
 import { logger } from '../../platform/observability/logger.js';
 import { extractTextFromParts, type TomChatMessage } from './chat-ui-message.js';
 import type { LanguageModelUsage } from 'ai';
+import { parseStoredResponseMessages, type ResponseMessage } from './chat-message-assembler.js';
 import type { EducationLevelType } from '../../types/index.js';
 import type { AttachedFile } from './ai-chat.service.js';
 
 const MAX_ENRICHED_CONTENT_CHARS = 50_000;
+
+/** An assistant message's stored response messages; an unreadable value is logged and replays as text. */
+function storedModelMessages(value: unknown, messageId: string): ResponseMessage[] | undefined {
+  const parsed = parseStoredResponseMessages(value);
+  if (parsed !== null) return parsed;
+  logger.error('Stored model messages unreadable, replayed as text', {
+    operation: 'chat-orchestration:model-messages-invalid',
+    messageId,
+    severity: 'high' as const,
+  });
+  return undefined;
+}
 
 interface PrepareTurnRequest {
   userId: string;
@@ -54,6 +67,7 @@ export interface ChatTurnContext {
     role: 'user' | 'assistant';
     content: string;
     timestamp: string;
+    modelMessages?: ResponseMessage[];
   }[];
   cognitiveProfileSummary: string | null;
   /** Learning context (FSRS due cards) + episodic memory + subject memory, merged into one block. */
@@ -82,6 +96,8 @@ interface FinishTurnParams {
   userId: string;
   userContent: string;
   responseMessage: TomChatMessage;
+  /** The turn's response messages as the model produced them, reasoning and tool calls included. */
+  modelMessages?: ResponseMessage[] | undefined;
   model: string;
   usage: LanguageModelUsage | undefined;
   startTime: number;
@@ -120,11 +136,15 @@ class ChatOrchestrationService {
 
     const conversationHistory = sessionHistory
       .filter(msg => msg.role === 'user' || msg.role === 'assistant')
-      .map(msg => ({
-        role: msg.role as 'user' | 'assistant',
-        content: msg.content,
-        timestamp: msg.createdAt.toISOString(),
-      }));
+      .map(msg => {
+        const modelMessages = msg.role === 'assistant' ? storedModelMessages(msg.modelMessages, msg.id) : undefined;
+        return {
+          role: msg.role as 'user' | 'assistant',
+          content: msg.content,
+          timestamp: msg.createdAt.toISOString(),
+          ...(modelMessages && { modelMessages }),
+        };
+      });
 
     // Context assembly (parallel) — intent classification and episodic
     // memory run alongside file/profile/learning context assembly so none
@@ -281,7 +301,7 @@ class ChatOrchestrationService {
    * persiste, mais les tokens factures sont comptes.
    */
   async finishTurn(params: FinishTurnParams): Promise<void> {
-    const { sessionId, userId, userContent, responseMessage, model, usage, startTime, attachedFileInfo, attachedFileInfos, classifiedIntent } = params;
+    const { sessionId, userId, userContent, responseMessage, modelMessages, model, usage, startTime, attachedFileInfo, attachedFileInfos, classifiedIntent } = params;
     const fullContent = extractTextFromParts(responseMessage.parts);
     const tokensUsed = usage?.totalTokens ?? 0;
 
@@ -317,6 +337,7 @@ class ChatOrchestrationService {
       ...(attachedFileInfo && { attachedFile: attachedFileInfo }),
       ...(attachedFileInfos && { attachedFiles: attachedFileInfos }),
       classifiedIntent,
+      modelMessages,
     }, { verifySessionExists: false });
 
     logger.info('Streaming message saved', {
