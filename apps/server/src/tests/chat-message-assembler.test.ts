@@ -30,6 +30,21 @@ describe('assembleChatPrompt', () => {
     expect(text).toEndWith('Résous 3x + 5 = 20.\n</student_message>');
   });
 
+  it('opens the window with the exercise in progress then the summary, never in the system prompt', () => {
+    const { system, messages } = assembleChatPrompt({
+      systemPrompt: 'SYS',
+      exerciseBlock: '<exercise>E</exercise>',
+      conversationSummary: 'Résumé',
+      history: [{ role: 'user', content: 'Bonjour', timestamp: at }, { role: 'assistant', content: 'Salut', timestamp: at }],
+      studentText: 'Je bloque.',
+    });
+
+    expect(system).toBe('SYS');
+    expect(messages[0]?.role).toBe('user');
+    expect(textOf(messages[0])).toStartWith('<exercise>E</exercise>\n\n<conversation_summary>\nRésumé\n</conversation_summary>');
+    expect(textOf(messages.at(-1))).not.toContain('<exercise>');
+  });
+
   it('replays the assistant as the model produced it, keeping the reasoning of the last message only', () => {
     const { messages } = assembleChatPrompt({
       systemPrompt: 'SYS',

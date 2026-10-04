@@ -20,8 +20,8 @@ bloquant levé).
     serveur en modules (#348 à #354), lint strict (#355) et TypeScript strict (#356).
 - **Prochaine action :** refonte de l'agent (lot 2), demandée par Victor le 2026-10-04 ;
   étude `etudes/2026-10-04/refonte-agent.md`, ordre des PR dans `roadmap.md`. Point 3, première
-  PR mergée (#383, analyse du tour) ; prochaine : la fiche d'exercice (Small 4 en raisonnement,
-  trois tirages votés, mathjs, notions du référentiel), puis l'analyse de document réduite à une
+  PR mergée (#383, analyse du tour), deuxième mergée (#384, fiche d'exercice) ; prochaine :
+  l'analyse de document réduite à une
   extraction. Plan d'abord dans `docs/plans/`.
   - Étape à la charge de Victor avant le point 6 : approuver le texte de la réponse fixe de
     détresse.
@@ -448,3 +448,15 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
     raison transmise au modèle (distincte quand l'analyse a échoué), puis retire l'outil pour
     le reste du tour ;
   - le transcript d'évaluation ne compte plus un appel refusé comme un outil appelé.
+  Point 3 de la refonte, deuxième PR, fiche d'exercice (#384) :
+  - à un nouvel exercice, trois tirages de Small 4 en raisonnement, votés : deux tirages
+    concordent par mathjs ou par le texte normalisé, sinon la fiche est incertaine ; mathjs
+    vérifie la réponse contre l'équation de l'énoncé ; notions de la classe et des classes
+    suivantes prises dans le référentiel ;
+  - table `exercise_sheets`, la dernière ligne de la séance étant l'exercice en cours ; coût
+    de chaque tirage dans `cost_tracking` ;
+  - le rédacteur reçoit l'énoncé et les notions en tête de fenêtre, jamais la réponse ;
+  - `stripPromptTags` retire jusqu'à stabilité : une balise imbriquée refermait la clôture
+    du message de l'élève ;
+  - mesuré sur un appel réel (4e, maths) : 6,3 s et 8 786 tokens d'entrée par tirage, le
+    programme en faisant l'essentiel.

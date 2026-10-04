@@ -4,7 +4,8 @@
  */
 const PROMPT_TAG_NAMES = [
   'student_message', 'conversation_summary', 'student_context', 'attached_file', 'attachments',
-  'past_sessions', 'subject_memory', 'critical_instruction', 'tutor_message',
+  'past_sessions', 'subject_memory', 'critical_instruction', 'tutor_message', 'exercise',
+  'exercise_statement', 'programme', 'later_programme',
   'role', 'student', 'tone', 'honesty', 'pedagogy', 'visualization',
   'response_format', 'safety', 'level_adaptation', 'subject_specifics',
 ];

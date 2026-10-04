@@ -164,6 +164,7 @@ export const chatMessageRoutes = new Hono<AppEnv>()
           learningContext: turnCtx.mergedLearningContext,
           turnInstruction: turnCtx.turnInstruction,
           turnAnalysis: turnCtx.turnAnalysis,
+          exerciseSheet: turnCtx.exerciseSheet,
           files: turnCtx.files,
           attachedFiles: turnCtx.attachedFiles,
           inputMode,

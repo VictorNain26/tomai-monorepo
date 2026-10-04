@@ -68,6 +68,28 @@ describe('streamChat', () => {
     expect(typeof systemMessage?.content).toBe('string');
   });
 
+  it('gives the writer the statement of the exercise in progress, out of the system prompt, and not its answer', async () => {
+    const model = new MockLanguageModelV4({
+      doStream: async () => ({
+        stream: simulateReadableStream({ chunkDelayInMs: 0, initialDelayInMs: 0, chunks: [{ type: 'stream-start', warnings: [] }, finishStreamPart()] }),
+      }),
+    });
+    const exerciseSheet = {
+      statement: 'Résous 3x + 5 = 20.', kind: 'short' as const, answer: 'x = 5', answerForms: ['x = 5'], mathEquation: null, mathAnswer: null,
+      steps: ['Retrancher 5'], commonErrors: [], rule: null, facts: [], expectedElements: [], entries: [], laterEntries: [],
+    };
+
+    await streamChat({ ...baseParams, tools: noopTools, model, exerciseSheet }).text;
+
+    const [system, opening] = model.doStreamCalls[0]?.prompt ?? [];
+    expect(JSON.stringify(system)).not.toContain('Résous 3x + 5 = 20.');
+    const sent = JSON.stringify(opening);
+    expect(opening?.role).toBe('user');
+    expect(sent).toContain('<exercise_statement>\\nRésous 3x + 5 = 20.\\n</exercise_statement>');
+    expect(sent).not.toContain('x = 5');
+    expect(sent).not.toContain('Retrancher 5');
+  });
+
   it('stops the agentic loop after 5 steps via stopWhen: isStepCount(5)', async () => {
     let callIndex = 0;
     const model = new MockLanguageModelV4({

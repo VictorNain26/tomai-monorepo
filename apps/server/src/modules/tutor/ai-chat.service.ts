@@ -37,11 +37,12 @@ import { env } from '../../platform/config/env.js';
 import { imageFilePart } from '../../platform/ai/mistral-client.js';
 import type { TurnUsage } from './turn-usage.js';
 import type { TurnAnalysis } from './turn-analysis.service.js';
+import { exerciseBlock, type ExerciseSheet } from './exercise-sheet.js';
 import type { EducationLevelType } from '../../types/index.js';
 import type { AttachedFileForPrompt } from '../documents/index.js';
 
 /** Bump whenever content under modules/tutor/prompts/** or shared/pedagogy/** changes. */
-const PROMPT_VERSION = '2026-10-04.2';
+const PROMPT_VERSION = '2026-10-04.3';
 
 export interface AttachedFile {
   /** Inline base64 payload for multimodal user messages (Mistral vision). */
@@ -75,6 +76,8 @@ export interface StreamGenerationParams {
   turnInstruction?: string | null | undefined;
   /** The turn's analysis: reasoning routing and the flashcards' approval. */
   turnAnalysis?: TurnAnalysis | undefined;
+  /** The exercise in progress: its statement and notions open the window. */
+  exerciseSheet?: ExerciseSheet | null | undefined;
   /**
    * Input channel declared by the user's gesture (mic vs keyboard), never
    * inferred by the model. When 'voice', a turn note is injected so Tom answers
@@ -126,6 +129,7 @@ export function streamChat(params: ChatStreamParams) {
 
   const { system, messages } = assembleChatPrompt({
     systemPrompt,
+    exerciseBlock: params.exerciseSheet ? exerciseBlock(params.exerciseSheet) : null,
     conversationSummary,
     history: optimizeConversationHistory(params.conversationHistory, { conversationSummary: params.conversationSummary }),
     subjectBlock: generateSubjectBlock(params.subject),
