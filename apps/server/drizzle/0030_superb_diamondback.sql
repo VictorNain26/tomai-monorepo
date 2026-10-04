@@ -1,0 +1,1 @@
+DROP INDEX "idx_session_episodes_embedding";

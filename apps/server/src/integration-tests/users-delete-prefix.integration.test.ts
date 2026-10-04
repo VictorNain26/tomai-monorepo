@@ -4,17 +4,7 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from 'bun:test';
-import { sql } from 'drizzle-orm';
-
-async function checkDbReachable(): Promise<boolean> {
-  try {
-    const { db } = await import('../db/connection');
-    await db.execute(sql`select 1`);
-    return true;
-  } catch {
-    return false;
-  }
-}
+import { checkDbReachable } from './_helpers/db';
 
 const dbReachable = await checkDbReachable();
 

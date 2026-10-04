@@ -196,8 +196,8 @@ class EpisodicMemoryService {
       const rows = await episodicMemoryRepository.findRelevantEpisodes(userId, vectorLiteral, limit);
 
       // Only keep results with meaningful similarity (>0.6 on normalized
-      // embeddings) — the HNSW index returns the top-k by raw distance even
-      // when none are relevant, so we threshold here.
+      // embeddings): the query returns the student's top-k even when none
+      // is relevant.
       return rows
         .filter(r => r.similarity > 0.6)
         .map(r => ({

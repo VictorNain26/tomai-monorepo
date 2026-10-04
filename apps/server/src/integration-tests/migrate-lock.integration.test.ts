@@ -3,17 +3,9 @@ import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
 import { sql } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
+import { checkDbReachable } from './_helpers/db';
 
 // DB reachability guard — mirrors seed-dev.integration.test.ts
-async function checkDbReachable(): Promise<boolean> {
-  try {
-    const { db } = await import('../db/connection');
-    await db.execute(sql`SELECT 1`);
-    return true;
-  } catch {
-    return false;
-  }
-}
 
 const dbReachable = await checkDbReachable();
 

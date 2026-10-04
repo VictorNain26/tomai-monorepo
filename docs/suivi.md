@@ -403,3 +403,11 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
   - diagnostic posé contre l'erreur de l'élève : les 7 erreurs non exploitées repérées ;
   - répétition sans progression essayée puis retirée, faute d'en repérer aucune ;
   - puce de liste lue comme un signe moins par le code des calculs, corrigée.
+
+  Épisodes de mémoire limités à l'élève (#378) :
+  - le filtre rendait `user_id = $1 and ttl_until IS NULL OR ttl_until > NOW()` : les
+    épisodes non expirés de tous les élèves entraient dans le prompt ;
+  - trouvé par l'audit de la refonte, testé sur postgres avec deux élèves ;
+  - index vectoriel retiré, jamais utilisé par la requête, qui parcourt exactement les
+    épisodes de l'élève ;
+  - en CI, un test d'intégration échoue au lieu d'être sauté quand la base ne répond pas.
