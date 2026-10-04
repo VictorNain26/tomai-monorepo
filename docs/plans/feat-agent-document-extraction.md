@@ -36,12 +36,16 @@ traitée deux fois avant le premier mot »). Chemins relatifs à `apps/server/sr
      l'exercice et avant le résumé : stables d'un tour à l'autre, ils restent dans le préfixe
      mis en cache ;
    - la fiche d'exercice lit les fichiers joints au tour ;
-   - le budget de 50 000 caractères passe dans `file-context.service.ts`.
+   - le budget de 50 000 caractères passe dans `file-context.service.ts`, servi d'abord aux
+     fichiers du tour ;
+   - les fichiers de la séance sont lus dans l'ordre d'attache : la requête n'avait pas
+     d'`orderBy`, l'ordre pouvait changer d'un tour à l'autre et casser le cache.
 4. **Prompt** : la section des pièces jointes parle du texte lu sur une photo ou un document,
    une donnée.
 5. **Tests** : extraction (texte, image, cache, échec), coût de la vision, ordre et budget des
    fichiers, fichiers dans l'ouverture et pas dans le message du tour, fiche nourrie des
-   fichiers du tour ; un appel réel lit une image de texte.
+   fichiers du tour ; un appel réel lit une image de texte ; il remplace le test réel
+   du carré rouge, instable (« noir » deux fois sur trois passages).
 
 ## Hors périmètre
 
