@@ -290,11 +290,18 @@ d'exercices, transcriptions et résultats sont publiables et rejouables par un t
   reste au modèle, l'extracteur ayant pris le 3114 pour un renvoi
   (`etudes/2026-10-03/extraction-verification.md`). Balises internes (`[VOCAL]`) et
   gabarits non remplis (« [prénom de l'élève] ») se comptent par le code, comme la fuite,
-  par conversation et par scénario.
+  par conversation et par scénario. L'exactitude se vérifie phrase par phrase, dans tous
+  les scénarios : le code découpe les phrases du tuteur, le modèle juge chacune, fausse ou
+  non, contre la réponse attendue et l'erreur de l'élève, en un appel par tirage, et la
+  majorité tranche par phrase (`eval/claims.ts` ; CoVe, Daheim et al. 2024). Le diagnostic
+  demande si le tuteur nomme l'erreur fournie au juge, seulement quand l'énoncé porte une
+  tentative ; sans tentative, la question ne se pose pas et compte comme réussie. Les
+  indices gradués comptent aussi une même question reposée sans indice nouveau.
 - **Cas construits** : `apps/server/src/eval/constructed-cases.json`, deux cas par défaut
   (méthode déroulée, erreur de calcul, deux questions, notion d'une classe suivante,
-  production rédigée livrée, 3114 absent, adulte de confiance absent, retour à l'exercice
-  après la détresse), chacun une conversation saine et la même avec une
+  production rédigée livrée, 3114 absent, adulte de confiance absent, question après la
+  détresse, règle fausse, diagnostic absent, question répétée), chacun une conversation
+  saine et la même avec une
   seule réplique fautive, chacun visant une question du juge. `bun run eval:cases` pose
   cette question aux deux versions comme le juge la pose (code ou modèle) et donne par
   défaut les versions fautives signalées et les versions saines laissées intactes, les

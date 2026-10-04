@@ -38,3 +38,34 @@ les questions que le juge pose encore au modèle, puis la nouvelle mesure.
 
 `bun run typecheck`, `bun run lint`, `bunx knip`, `bun run test` ; `bun run eval:cases` ;
 `bun run eval:agreement` sur l'échantillon.
+
+## État au 2026-10-04 (reprise)
+
+- Fait et commité : tâches 1 à 4.
+  - L'exactitude se vérifie phrase par phrase (`eval/claims.ts`) plutôt que sur des
+    affirmations extraites : l'extracteur séparait une règle de son exception.
+  - La répétition est formulée sur deux messages (« Deux messages du tuteur posent-ils la
+    même question… »).
+  - `docs/agent.md` § 9 est à jour.
+- Cas construits (`bun run eval:cases`, 2026-10-04T11h00) :
+  - question répétée 2 sur 2, sans fausse alarme ;
+  - règle fausse 1 sur 2 : l'anglais (« on ajoute un -s, have compris ») est jugé vrai
+    par Small 4, sans source pour une vérification de grammaire par le code ;
+  - diagnostic absent 2 sur 2, mais une fausse alarme sur la version saine de 5-M1, quelle
+    que soit la formulation testée (trois essayées).
+- En cours : tâche 5, le rejugement des 38 conversations, lancé depuis `apps/server` avec
+  `bun run eval:agreement ../../docs/etudes/2026-10-03/donnees/results.json --labels ../../docs/etudes/2026-10-04/donnees/labels.claude-exactitude.json`.
+  - Le résultat arrive dans `apps/server/eval-results/results.agreement-<date>.json`. S'il
+    manque, relancer cette commande.
+  - Le fichier de notes porte la lecture ouverte sur l'exactitude : 0 pour #18, 23, 28, 30,
+    32, et 1 ailleurs.
+- Reste à faire :
+  - analyser ce rejugement : accord sur l'exactitude, verdicts de `diagnosis-uses` et de
+    `hints-repeats` contre les catégories de `donnees/lecture-ouverte.json`, unanimité,
+    coût ;
+  - relancer `bun run eval:cases` et copier sa sortie avec le rejugement dans
+    `docs/etudes/2026-10-04/donnees/` ;
+  - écrire l'étude `docs/etudes/2026-10-04/questions-juge.md` et mettre à jour
+    `docs/suivi.md` ;
+  - pousser, ouvrir la PR, `/code-review`, corriger, CI verte, merger (Victor a dit de ne
+    plus demander jusqu'à la fin).
