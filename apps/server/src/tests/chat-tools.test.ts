@@ -62,6 +62,10 @@ describe('buildChatTools', () => {
       return schema.properties as Record<string, Record<string, unknown>>;
     }
 
+    it('declares every tool strict: the model must produce a valid input', () => {
+      for (const name of Object.keys(tools)) expect(tools[name]?.strict).toBe(true);
+    });
+
     it('exports 13 non-empty subject slugs', () => {
       expect(SUBJECT_SLUGS.length).toBe(13);
       for (const slug of SUBJECT_SLUGS) {

@@ -6,6 +6,10 @@ import { mistralEmbeddingsService } from '../modules/tutor/mistral-embeddings.se
 import { getVoxtralTTSService } from '../modules/voice/voxtral-tts.service';
 import { getVoxtralTranscribeService } from '../modules/voice/voxtral-transcribe.service';
 import { HAS_MISTRAL } from './_creds';
+import { generateText as generateWithTools } from 'ai';
+import { buildChatTools } from '../modules/tutor/chat-tools';
+import { mistralProvider } from '../platform/ai/provider';
+import { env } from '../platform/config/env';
 
 // Live contre l'endpoint UE de Mistral. LOCAL-ONLY (`bun run test:live`), fail-closed.
 
@@ -53,6 +57,27 @@ describe('Mistral Small 4 on the EU endpoint (real API)', () => {
 
     expect((await second.usage).inputTokenDetails.cacheReadTokens ?? 0).toBeGreaterThan(0);
   }, 180_000);
+
+  it('accepts the chat tools in strict mode and fills their input', async () => {
+    const tools = buildChatTools({ userId: 'live-user', sessionId: randomUUID(), schoolLevel: 'troisieme', emitDeckCreated: () => undefined });
+    const asks: [string, string][] = [
+      ['generate_flashcards', 'Crée-moi 5 cartes de révision sur le théorème de Pythagore, en mathématiques.'],
+      ['update_student_profile', "Note dans mon profil que je confonds l'aire et le périmètre, en mathématiques."],
+    ];
+    for (const [name, prompt] of asks) {
+      const result = await generateWithTools({
+        model: mistralProvider()(env.MISTRAL_MODEL),
+        tools,
+        activeTools: [name],
+        toolChoice: 'required',
+        // The call is returned, never run: no database is touched.
+        toolApproval: { generate_flashcards: 'denied', update_student_profile: 'denied' },
+        prompt,
+        maxOutputTokens: 512,
+      });
+      expect(result.toolCalls.map((call) => call.toolName)).toEqual([name]);
+    }
+  }, 60_000);
 
   it("emits no reasoning when the route says 'none'", async () => {
     const turn = streamChat({ ...mathTurn, subject: 'francais', sessionId: randomUUID(), content: 'Donne un synonyme de rapide.', conversationHistory: [] });
