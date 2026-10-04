@@ -3,7 +3,7 @@
  *
  * Covers the guards that stay plain JSON before the UI Message Stream
  * starts (auth, quota, concurrency) and the post-stream contract:
- * `content-type`/`x-vercel-ai-ui-message-stream` headers, `onFinish`
+ * `content-type`/`x-vercel-ai-ui-message-stream` headers, `onEnd`
  * persistence (user + assistant messages), concurrency release even when
  * the stream throws, no reasoning on the wire, and the usage recorded.
  */
@@ -12,6 +12,7 @@ import { describe, it, expect, beforeEach, mock } from 'bun:test';
 import { Hono } from 'hono';
 import { z } from 'zod';
 import { isStepCount, simulateReadableStream, streamText, tool, type ToolSet } from 'ai';
+import type { TurnUsage } from '../modules/tutor/turn-usage';
 import { MockLanguageModelV4 } from 'ai/test';
 import type { AppEnv } from '../platform/http/context';
 import { createMockLogger } from './_helpers/mock-logger';
@@ -151,11 +152,15 @@ type StreamChatResult = ReturnType<typeof streamText>;
 let lastStreamChatResult: StreamChatResult | undefined;
 
 function realStreamChat(params: unknown): StreamChatResult {
+  const { tools, usage } = params as { tools: ToolSet; usage: TurnUsage };
+  // Wired as streamChat wires it: the route reads the turn's usage from the meter.
   lastStreamChatResult = streamText({
     model: mockChatModel(),
     prompt: 'Bonjour Tom',
-    tools: (params as { tools: ToolSet }).tools,
+    tools,
     stopWhen: isStepCount(5),
+    onLanguageModelCallStart: () => { usage.callStarted(); },
+    onLanguageModelCallEnd: ({ usage: called }) => { usage.callEnded(called); },
   });
   return lastStreamChatResult;
 }
@@ -232,7 +237,7 @@ describe('POST /api/chat/stream', () => {
     await res.text();
   });
 
-  it('persists the user message before streaming and the assistant message in onFinish', async () => {
+  it('persists the user message before streaming and the assistant message in onEnd', async () => {
     currentUser = { id: 'user-001', role: 'student', schoolLevel: 'sixieme', firstName: 'Léo' };
     const res = await app.fetch(makeRequest());
     await res.text();
@@ -263,7 +268,7 @@ describe('POST /api/chat/stream', () => {
     };
 
     // MAX_CONCURRENT_STREAMS is 2 — send 3 requests sequentially, fully
-    // consuming each stream (which drives release via onFinish/onError).
+    // consuming each stream (which drives release via onEnd/onError).
     // If the slot were never released, the 3rd request would 409.
     for (let i = 0; i < 3; i += 1) {
       const res = await app.fetch(makeRequest());
@@ -288,13 +293,46 @@ describe('POST /api/chat/stream', () => {
     const res = await app.fetch(makeRequest());
     await res.text();
 
-    const finishArgs = finishTurn.mock.calls[0]?.[0] as { usage: unknown };
-    expect(finishArgs.usage).toEqual(await lastStreamChatResult?.usage);
+    const finishArgs = finishTurn.mock.calls[0]?.[0] as { usage: { totalTokens: number } };
+    // The meter's sum of the calls is the SDK's total of the steps.
+    expect(finishArgs.usage.totalTokens).toBe((await lastStreamChatResult?.usage)?.totalTokens ?? -1);
     expect(finishArgs.usage).toMatchObject({
       inputTokens: 220,
       outputTokens: 7,
       totalTokens: 227,
       inputTokenDetails: { cacheReadTokens: 164 },
     });
+  });
+
+  it('counts a cut turn with its estimated usage, waits for the model to end, and keeps no model messages', async () => {
+    currentUser = { id: 'user-001', role: 'student', schoolLevel: 'troisieme', firstName: 'Léo' };
+    streamChatImpl = (params) => {
+      const meter = (params as { usage: { prompt: (text: string) => void; callStarted: () => void; delta: (text: string) => void } }).usage;
+      meter.prompt('p'.repeat(400));
+      return streamText({
+        model: new MockLanguageModelV4({
+          doStream: async ({ abortSignal }) => ({
+            stream: new ReadableStream({
+              start: (controller) => {
+                controller.enqueue({ type: 'stream-start', warnings: [] });
+                abortSignal?.addEventListener('abort', () => { controller.error(abortSignal.reason); });
+              },
+            }),
+          }),
+        }),
+        prompt: 'Bonjour Tom',
+        timeout: 100,
+        onLanguageModelCallStart: () => { meter.callStarted(); meter.delta('r'.repeat(80)); },
+      });
+    };
+
+    const res = await app.fetch(makeRequest());
+    await res.text();
+
+    const finishArgs = finishTurn.mock.calls[0]?.[0] as { usage: { totalTokens: number }; aborted: boolean; modelMessages: unknown };
+    expect(finishArgs.aborted).toBe(true);
+    // 400 prompt characters and 80 streamed ones, at 4 characters a token.
+    expect(finishArgs.usage.totalTokens).toBe(120);
+    expect(finishArgs.modelMessages).toBeUndefined();
   });
 });

@@ -35,6 +35,7 @@ import {
 import { calculateBudget, truncateToTokenBudget } from './token-budget.service.js';
 import { env } from '../../platform/config/env.js';
 import { imageFilePart } from '../../platform/ai/mistral-client.js';
+import type { TurnUsage } from './turn-usage.js';
 import type { EducationLevelType } from '../../types/index.js';
 import type { AttachedFileForPrompt } from '../documents/index.js';
 
@@ -90,6 +91,8 @@ export interface StreamGenerationParams {
 
 export interface ChatStreamParams extends StreamGenerationParams {
   tools: ToolSet;
+  /** Counts the turn's usage as it goes, so that a cut or failed turn is counted too. */
+  usage?: TurnUsage | undefined;
   /**
    * Test seam: inject a mock `LanguageModel` (e.g. `MockLanguageModelV4`
    * from `ai/test`) instead of the real Mistral provider. Never set in
@@ -132,6 +135,8 @@ export function streamChat(params: ChatStreamParams) {
     images: imageParts(params.files),
   });
 
+  params.usage?.prompt(`${system}\n${JSON.stringify(messages)}`);
+
   const reasoningEffort = routeReasoningEffort({
     schoolLevel: params.schoolLevel,
     subject: params.subject,
@@ -150,7 +155,7 @@ export function streamChat(params: ChatStreamParams) {
 
   return streamText({
     model,
-    system,
+    instructions: system,
     messages,
     tools: params.tools,
     stopWhen: isStepCount(MAX_TOOL_ITERATIONS),
@@ -167,6 +172,14 @@ export function streamChat(params: ChatStreamParams) {
       } satisfies MistralLanguageModelChatOptions,
     },
     telemetry: { functionId: 'chat-stream', recordInputs: false, recordOutputs: false },
-    abortSignal: AbortSignal.timeout(env.CHAT_STREAM_TIMEOUT_MS),
+    timeout: env.CHAT_STREAM_TIMEOUT_MS,
+    onLanguageModelCallStart: () => { params.usage?.callStarted(); },
+    onChunk: ({ chunk }) => {
+      if (chunk.type === 'text-delta' || chunk.type === 'reasoning-delta') params.usage?.delta(chunk.text);
+    },
+    onLanguageModelCallEnd: ({ usage }) => { params.usage?.callEnded(usage); },
+    onError: ({ error }) => {
+      logger.error('Chat stream failed', { operation: 'chat-stream:error', sessionId: params.sessionId, err: error, severity: 'high' as const });
+    },
   });
 }

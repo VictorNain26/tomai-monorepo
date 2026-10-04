@@ -15,6 +15,7 @@ import { z } from 'zod';
 import { APICallError, tool, type ToolSet, simulateReadableStream, toUIMessageStream } from 'ai';
 import { MockLanguageModelV4 } from 'ai/test';
 import { streamChat, type ChatStreamParams } from '../modules/tutor/ai-chat.service.js';
+import { TurnUsage } from '../modules/tutor/turn-usage.js';
 import { env } from '../platform/config/env.js';
 
 const baseParams: Omit<ChatStreamParams, 'model' | 'tools'> = {
@@ -169,6 +170,56 @@ describe('streamChat', () => {
       expect(model.doStreamCalls).toHaveLength(1);
     } finally {
       (env as Record<string, unknown>)['MISTRAL_RETRY_ATTEMPTS'] = configured;
+    }
+  });
+});
+
+describe('a turn cut by the timeout', () => {
+  it('counts the call that ended exactly, and the one cut while streaming as estimated', async () => {
+    const configured = env.CHAT_STREAM_TIMEOUT_MS;
+    (env as Record<string, unknown>)['CHAT_STREAM_TIMEOUT_MS'] = 200;
+    try {
+      let callIndex = 0;
+      const model = new MockLanguageModelV4({
+        doStream: async ({ abortSignal }) => {
+          callIndex += 1;
+          if (callIndex === 1) {
+            return {
+              stream: simulateReadableStream({
+                chunkDelayInMs: 0,
+                initialDelayInMs: 0,
+                chunks: [
+                  { type: 'stream-start', warnings: [] },
+                  { type: 'tool-call', toolCallId: 'call-1', toolName: 'noop_tool', input: '{}' },
+                  { type: 'finish', usage, finishReason: toolCallsFinishReason },
+                ],
+              }),
+            };
+          }
+          // The second call reasons and never ends, until the timeout aborts the request as a
+          // real fetch would be.
+          return {
+            stream: new ReadableStream({
+              start: (controller) => {
+                controller.enqueue({ type: 'stream-start', warnings: [] });
+                controller.enqueue({ type: 'reasoning-start', id: 'r1' });
+                controller.enqueue({ type: 'reasoning-delta', id: 'r1', delta: 'r'.repeat(400) });
+                abortSignal?.addEventListener('abort', () => { controller.error(abortSignal.reason); });
+              },
+            }),
+          };
+        },
+      });
+      const turnUsage = new TurnUsage();
+
+      await Promise.resolve(streamChat({ ...baseParams, tools: noopTools, model, usage: turnUsage }).text).catch(() => undefined);
+
+      const { usage: total, cut } = turnUsage.read();
+      expect(cut).toBe(true);
+      // The first call's input (1) stands for the cut one's, and its 400 streamed characters for its output.
+      expect(total).toMatchObject({ inputTokens: 2, outputTokens: 101 });
+    } finally {
+      (env as Record<string, unknown>)['CHAT_STREAM_TIMEOUT_MS'] = configured;
     }
   });
 });

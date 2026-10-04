@@ -7,7 +7,7 @@
  *    contexte d'apprentissage, classification d'intention, memoire
  *    episodique, memoire de matiere) exactement comme le pipeline SSE legacy
  * 3. Persister le message user AVANT le streaming (+ associer les fichiers)
- * 4. Post-processing apres le streaming (`onFinish`) : sauver le message
+ * 4. Post-processing apres le streaming (`onEnd`) : sauver le message
  *    assistant, comptabiliser tokens/cout, declencher summarization et
  *    auto-titrage en fire-and-forget — SAUTE entierement si le stream n'a
  *    produit aucun contenu (miroir du pipeline legacy, qui ne postProcess
@@ -99,7 +99,7 @@ interface FinishTurnParams {
   responseMessage: TomChatMessage;
   /** The turn's response messages as the model produced them, reasoning and tool calls included. */
   modelMessages?: ResponseMessage[] | undefined;
-  /** The stream was cut: its response messages miss what the student saw of the last step. */
+  /** The turn was cut (timeout, error): its response messages miss what the student saw of the last call. */
   aborted?: boolean | undefined;
   model: string;
   usage: LanguageModelUsage | undefined;
@@ -296,7 +296,7 @@ class ChatOrchestrationService {
   }
 
   /**
-   * Post-processing apres le streaming (branche sur `onFinish` du UI
+   * Post-processing apres le streaming (branche sur `onEnd` du UI
    * Message Stream) : sauve le message assistant, comptabilise
    * tokens/cout, et declenche summarization + auto-titrage en
    * fire-and-forget. Miroir du `postProcess` du pipeline legacy — qui
@@ -344,6 +344,7 @@ class ChatOrchestrationService {
       // Kept only when they can be replayed as they are: a cut turn, or one that ended on a tool
       // result at the step limit, replays as its text.
       modelMessages: aborted ? undefined : replayable(modelMessages),
+      cut: aborted,
     }, { verifySessionExists: false });
 
     logger.info('Streaming message saved', {
@@ -364,6 +365,8 @@ class ChatOrchestrationService {
       });
     });
 
+    // A cut answer is no ground for a title.
+    if (aborted) return;
     autoTitleService.generateTitleIfNeeded(sessionId, userContent, fullContent).catch((err: unknown) => {
       logger.warn('Background auto-title failed', {
         err: err,
