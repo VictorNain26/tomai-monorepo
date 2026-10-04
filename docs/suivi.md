@@ -19,8 +19,8 @@ bloquant levé).
   - Le lot 0 est terminé : serveur sur Hono et outillage sur Bun (#343 à #347), refonte du
     serveur en modules (#348 à #354), lint strict (#355) et TypeScript strict (#356).
 - **Prochaine action :** refonte de l'agent (lot 2), demandée par Victor le 2026-10-04 ;
-  étude `etudes/2026-10-04/refonte-agent.md`, ordre des PR dans `roadmap.md`. Point 1, prompt
-  et outils : plan d'abord dans `docs/plans/`.
+  étude `etudes/2026-10-04/refonte-agent.md`, ordre des PR dans `roadmap.md`. Point 1 en PR
+  (#380) ; ensuite le point 2, socle du tour : plan d'abord dans `docs/plans/`.
   - Étape à la charge de Victor avant le point 6 : approuver le texte de la réponse fixe de
     détresse.
   - Une relecture humaine d'une partie des conversations lues par Claude reste due avant
@@ -131,27 +131,17 @@ contraire.
   - point 5 : contrôle avant l'envoi ;
   - point 6 : détecteur et réponse fixe approuvée par Victor, puis fin de la conversation.
 - **Audit de l'agent** (2026-10-04, code du tour de chat), en plus des défauts listés ici :
-  - aucun outil ni contexte pour vérifier : ni solution, ni erreur de l'élève, ni programme ;
-  - le prompt pousse à affirmer : « Réponds comme un professeur qui connaît son sujet »,
-    « Ne mentionne jamais : tes sources » (`prompts/core/identity.ts`) ;
+  - aucun outil ni contexte pour vérifier : ni solution, ni erreur de l'élève, ni programme
+    (point 3) ;
   - raisonnement seulement en 4e-3e, maths ou sciences, trois intentions
-    (`mistral-reasoning.ts`) : 4 des 5 règles fausses sont en français et en anglais ;
-  - température 0,7 sans raisonnement (`platform/config/env.ts`), borne haute de la fiche
-    de Small 4 pour `reasoning_effort="none"` ;
-  - `maxOutputTokens` de 16 384 aussi sur les tours qui raisonnent
-    (`ai-chat.service.ts`) : à retirer, décision de Victor ;
-  - « Chain-of-Thought obligatoire. Étape par étape » en maths
-    (`prompts/adaptation/by-subject.ts`) ;
-  - la consigne de tour sur une réponse proposée fait demander la démarche sans montrer
-    l'erreur, et celle sur une demande de solution permet « 1-2 questions » et une étape
-    intermédiaire (`intent-classifier.service.ts`) ;
-  - `get_student_profile` à appeler « en début de conversation » alors que le profil est
-    injecté à chaque tour ;
-  - historique rechargé en texte seul : ni raisonnement ni appels d'outils rejoués.
+    (`mistral-reasoning.ts`) : 4 des 5 règles fausses sont en français et en anglais ; il
+    passe à la fiche (point 3) ;
+  - historique rechargé en texte seul : ni raisonnement ni appels d'outils rejoués
+    (point 2).
 - **Programme dans le contexte** : les notions de l'exercice, prises dans le référentiel,
   entrent dans la fiche (point 3), plutôt que le programme entier de la matière
   (`etudes/2026-10-04/refonte-agent.md`, « Contexte et mémoire »). Les consignes chiffrées
-  sans source de `modules/tutor/prompts/adaptation/by-level.ts` sont retirées au point 1.
+  sans source de `modules/tutor/prompts/adaptation/by-level.ts` sont retirées (#380).
 - **Outil de calcul** (même étude, § 6) : mathjs, déjà adopté par le harnais (#373), pour
   vérifier les calculs de la solution de référence ; sa résolution d'équations et
   l'équivalence restent à lire dans sa documentation avant tout usage.
@@ -210,8 +200,6 @@ contraire.
   routes qui ont besoin des enfants ou du lien parent-enfant vont dans `family`, comme
   `/api/subscriptions` : `billing` reste un module feuille, sinon `billing`, `family` et
   `tutor` s'importent en boucle (#354).
-- `modules/tutor/app-guide/app-guide-data.ts` (outil `get_app_help`) décrit l'application mobile
-  et l'abonnement : à réécrire avec la navigation web.
 - **Hébergement** : délai de grâce SIGTERM au moins égal à un tour de chat (`app.stop()`
   attend les flux SSE) ; stockage partagé du rate limit s'il y a plusieurs instances ;
   `advanced.ipAddress.trustedProxies` de better-auth derrière le proxy de l'hébergeur.
@@ -416,3 +404,10 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
   l'élève) ; spec corrigée (`toolApproval` au lieu de `needsApproval`, déprécié ; contrôle
   avant l'élève et non après la génération ; ordre du contexte pour le cache) ; ordre du
   lot 2 revu, deux passages au harnais.
+  Point 1 de la refonte, prompt et outils (#380) :
+  - prompt réécrit pour le collège, sans ce qui poussait à affirmer ni à dérouler la méthode ;
+  - consignes de tour corrigées : la pression ne fait pas monter d'un palier, une réponse
+    proposée se vérifie avant tout ;
+  - `get_student_profile` et `get_app_help` supprimés, styles d'apprentissage retirés
+    (colonne comprise), écriture de profil échouée remontée ;
+  - plus de plafond de tokens sur un tour qui raisonne (décision de Victor).

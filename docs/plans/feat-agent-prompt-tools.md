@@ -44,8 +44,11 @@ Chemins relatifs à `apps/server/src/`.
      n'existe plus : onglets, « Mon Classeur », bouton micro, « du CP a la Terminale »,
      « serveurs en France (RGPD) », « messages par jour », « Premium ». Aucun client
      n'existe avant le lot 3, qui écrira le guide du client web.
-4. `PROMPT_VERSION` mise à jour.
-5. **Tests** : prompts (sécurité, voix, visualisation), outils du chat, exécuteur et profil,
+4. Plus de plafond de tokens sur un tour qui raisonne (`ai-chat.service.ts`), demandé par
+   Victor le 2026-10-04 : la réflexion compte dans `completion_tokens`, un plafond coupe la
+   réponse après elle. Le timeout du flux le borne.
+5. `PROMPT_VERSION` mise à jour.
+6. **Tests** : prompts (sécurité, voix, visualisation), outils du chat, exécuteur et profil,
    classifieur, guide de l'application, profil cognitif.
 
 ## Hors de cette PR
@@ -53,7 +56,8 @@ Chemins relatifs à `apps/server/src/`.
 - Lot 3 : l'inscription accepte encore les niveaux de la primaire et du lycée
   (`lib/education-levels.ts`). Le prompt ne sert que le collège : un autre niveau ne
   reçoit pas de bloc d'adaptation.
-- Point 2 : `strict: true`, historique rejoué, routes de lecture, usage d'un tour coupé.
+- Point 2 : `strict: true`, historique rejoué, routes de lecture, usage d'un tour coupé ou
+  sans plafond.
 - Point 3 : analyse du tour, fiche (seul appel qui raisonne, sans plafond de tokens),
   `toolApproval`.
 - Point 6 : détresse.
