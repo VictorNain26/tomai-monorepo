@@ -4,6 +4,7 @@ import { generateLevelAdaptation } from '../modules/tutor/prompts/adaptation/by-
 import { generateSubjectBlock } from '../modules/tutor/prompts/adaptation/by-subject.js';
 import { turnInstruction } from '../modules/tutor/turn-analysis.service.js';
 import { analysis } from './_helpers/turn-analysis';
+import { exerciseBlock, notionsFor, sheetMessages } from '../modules/tutor/exercise-sheet.js';
 import { stripPromptTags, wrapStudentContext, wrapUserMessage } from '../modules/tutor/mistral-helpers.js';
 
 const prompt = buildSystemPrompt({ level: 'quatrieme', levelText: '4e', firstName: 'Léa' });
@@ -71,6 +72,11 @@ describe('tutor prompt, consistent from method to subject blocks', () => {
       buildSystemPrompt({ level: 'troisieme', levelText: '3e' }),
       ...['mathematiques', 'francais', 'anglais', 'sciences', 'histoire', undefined].map((subject) => generateSubjectBlock(subject)),
       turnInstruction(analysis({ asksSolution: true })) ?? '',
+      exerciseBlock({
+        statement: 'x', kind: 'short', answer: null, answerForms: [], mathEquation: null, mathAnswer: null, steps: [], commonErrors: [],
+        rule: null, facts: [], expectedElements: [], entries: [], laterEntries: [],
+      }),
+      sheetMessages('cinquieme', notionsFor('cinquieme', 'mathematiques', 2026), 'x').map(({ content }) => content).join('\n'),
       wrapStudentContext('Points forts: calcul', '<past_sessions>\nx\n</past_sessions>\n<subject_memory>\ny\n</subject_memory>') ?? '',
       wrapUserMessage('Bonjour'),
     ].join('\n');

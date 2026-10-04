@@ -231,12 +231,16 @@ describe('generateStructured', () => {
     expect(usage).toEqual({ inputTokens: 10, cachedInputTokens: 8, outputTokens: 5 });
   });
 
-  it('keeps reasoning off for structured outputs', async () => {
+  it('keeps reasoning off for structured outputs unless asked, and lifts the output cap when reasoning', async () => {
     const capture: { body?: Record<string, unknown> } = {};
     mockFetchJson(capture, chatCompletion(JSON.stringify({ intent: 'explain-concept' })));
-
-    await generateStructured({ functionId: 'test', messages: [{ role: 'user', content: 'classe' }], schema, schemaName: 'intent' });
-
+    await generateStructured({ functionId: 'test', messages: [{ role: 'user', content: 'classe' }], schema, schemaName: 'intent', maxTokens: 256 });
     expect(capture.body?.['reasoning_effort']).toBe('none');
+    expect(capture.body?.['max_tokens']).toBe(256);
+
+    mockFetchJson(capture, chatCompletion(JSON.stringify({ intent: 'explain-concept' })));
+    await generateStructured({ functionId: 'test', messages: [{ role: 'user', content: 'classe' }], schema, schemaName: 'intent', maxTokens: 256, reasoningEffort: 'high' });
+    expect(capture.body?.['reasoning_effort']).toBe('high');
+    expect(capture.body).not.toHaveProperty('max_tokens');
   });
 });

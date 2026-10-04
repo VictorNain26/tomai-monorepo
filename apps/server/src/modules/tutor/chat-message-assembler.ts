@@ -39,6 +39,8 @@ export function replayable(value: unknown): ResponseMessage[] | undefined {
 
 export interface ChatTurnParts {
   systemPrompt: string;
+  /** The exercise in progress, stable while it lasts: after the system prompt, it stays in the cached prefix. */
+  exerciseBlock?: string | null | undefined;
   /** Résumé DÉJÀ tronqué au budget (ou null/undefined si aucun). */
   conversationSummary?: string | null | undefined;
   history: readonly HistoryTurn[];
@@ -116,5 +118,6 @@ export function assembleChatPrompt(parts: ChatTurnParts): { system: string; mess
   const images = parts.images ?? [];
   const turn: ModelMessage = { role: 'user', content: images.length > 0 ? [{ type: 'text', text }, ...images] : text };
 
-  return { system: parts.systemPrompt, messages: alternate([...summary, ...past, turn]) };
+  const system = parts.exerciseBlock ? `${parts.systemPrompt}\n\n${parts.exerciseBlock}` : parts.systemPrompt;
+  return { system, messages: alternate([...summary, ...past, turn]) };
 }

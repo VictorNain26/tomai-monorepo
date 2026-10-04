@@ -69,6 +69,7 @@ export type UserWithRelations = User & {
 export * from '../../modules/auth/auth.schema';
 export * from '../../modules/family/family.schema';
 export * from '../../modules/tutor/session.schema';
+export * from '../../modules/tutor/exercise-sheet.schema';
 export * from './progress.schema';
 export * from '../../modules/billing/cost-tracking.schema';
 export * from '../../modules/billing/billing.schema';

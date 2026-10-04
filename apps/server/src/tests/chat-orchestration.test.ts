@@ -1,16 +1,14 @@
 /**
- * Tests — ChatOrchestrationService.finishTurn (modules/tutor/chat-orchestration.service.ts)
- *
- * Mirrors the legacy SSE pipeline's `postProcess`, which only ever ran on a
- * `done` chunk (never on a stream that errored before producing content):
- * when the AI SDK `onFinish` callback fires with an empty `responseMessage`
- * (no text parts), nothing gets persisted and no token/cost accounting runs.
+ * Tests — ChatOrchestrationService (modules/tutor/chat-orchestration.service.ts): the exercise
+ * sheet of `prepareTurn`, and `finishTurn`, which persists nothing and counts no tokens when the
+ * stream produced no content.
  */
 
 import { describe, it, expect, beforeEach, mock } from 'bun:test';
 import { createMockLogger } from './_helpers/mock-logger';
 import type { TomChatMessage } from '../modules/tutor/chat-ui-message';
 import { analysis } from './_helpers/turn-analysis';
+import type { ExerciseSheet } from '../modules/tutor/exercise-sheet';
 
 // ============================================
 // MOCKS (must be before any import of the real module under test)
@@ -68,8 +66,9 @@ mock.module('../modules/tutor/auto-title.service', () => ({
   autoTitleService: { generateTitleIfNeeded },
 }));
 
+const analyseTurn = mock(async () => analysis());
 mock.module('../modules/tutor/turn-analysis.service', () => ({
-  analyseTurn: mock(async () => analysis()),
+  analyseTurn,
   turnInstruction: mock(() => null),
 }));
 
@@ -95,8 +94,53 @@ mock.module('../modules/tutor/subject-profile.service', () => ({
   subjectProfileService: { formatSubjectMemoryForPrompt: mock(async () => null) },
 }));
 
+const sheet = (statement: string): ExerciseSheet => ({
+  statement, kind: 'short', answer: '5', answerForms: ['5'], mathEquation: null, mathAnswer: '5', steps: [], commonErrors: [],
+  rule: null, facts: [], expectedElements: [], entries: [], laterEntries: [],
+});
+const prepareExerciseSheet = mock(async (_params: unknown): Promise<ExerciseSheet | null> => sheet('Résous 3x + 5 = 20.'));
+const currentExerciseSheet = mock(async (_sessionId: string): Promise<ExerciseSheet | null> => sheet('Exercice précédent'));
+mock.module('../modules/tutor/exercise-sheet.service', () => ({ prepareExerciseSheet, currentExerciseSheet }));
+
 // Import the real module under test AFTER all mocks are registered.
 const { chatOrchestrationService, readStoredResponseMessages } = await import('../modules/tutor/chat-orchestration.service');
+
+describe('ChatOrchestrationService.prepareTurn — exercise sheet', () => {
+  beforeEach(() => {
+    prepareExerciseSheet.mockClear();
+    currentExerciseSheet.mockClear();
+  });
+
+  const request = { userId: 'user-001', content: 'Résous 3x + 5 = 20.', fileIds: [], schoolLevel: 'quatrieme' as const };
+
+  it('prepares the sheet of an exercise the student brings, with the class, the detected subject and the message', async () => {
+    analyseTurn.mockImplementationOnce(async () => analysis({ bringsExercise: true, subject: 'mathematiques' }));
+
+    const context = await chatOrchestrationService.prepareTurn(request);
+
+    expect(context.exerciseSheet?.statement).toBe('Résous 3x + 5 = 20.');
+    expect(prepareExerciseSheet).toHaveBeenCalledWith({
+      userId: 'user-001', sessionId: 'session-001', level: 'quatrieme', subject: 'mathematiques', studentText: 'Résous 3x + 5 = 20.',
+    });
+    expect(currentExerciseSheet).not.toHaveBeenCalled();
+  });
+
+  it('goes on with the exercise in progress when the message brings none', async () => {
+    const context = await chatOrchestrationService.prepareTurn({ ...request, content: "Je n'y arrive pas" });
+
+    expect(context.exerciseSheet?.statement).toBe('Exercice précédent');
+    expect(currentExerciseSheet).toHaveBeenCalledWith('session-001');
+    expect(prepareExerciseSheet).not.toHaveBeenCalled();
+  });
+
+  it('never falls back on the previous exercise when the new sheet failed', async () => {
+    analyseTurn.mockImplementationOnce(async () => analysis({ bringsExercise: true }));
+    prepareExerciseSheet.mockImplementationOnce(async () => null);
+
+    expect((await chatOrchestrationService.prepareTurn(request)).exerciseSheet).toBeNull();
+    expect(currentExerciseSheet).not.toHaveBeenCalled();
+  });
+});
 
 describe('ChatOrchestrationService.finishTurn', () => {
   beforeEach(() => {

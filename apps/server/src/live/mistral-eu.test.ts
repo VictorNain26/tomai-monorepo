@@ -1,7 +1,9 @@
 import { describe, it, expect } from 'bun:test';
 import { randomUUID } from 'node:crypto';
 import { streamChat } from '../modules/tutor/ai-chat.service';
-import { generateText } from '../platform/ai/mistral-client';
+import { generateStructured, generateText } from '../platform/ai/mistral-client';
+import { ExerciseSheetSchema, keepKnownNotions, notionsFor, sheetMessages } from '../modules/tutor/exercise-sheet';
+import { checkAnswer } from '../modules/tutor/exercise-math';
 import { mistralEmbeddingsService } from '../modules/tutor/mistral-embeddings.service';
 import { getVoxtralTTSService } from '../modules/voice/voxtral-tts.service';
 import { getVoxtralTranscribeService } from '../modules/voice/voxtral-transcribe.service';
@@ -100,6 +102,30 @@ describe('Mistral Small 4 on the EU endpoint (real API)', () => {
 
     expect((await turn.finalStep).reasoningText ?? '').toBe('');
   }, 60_000);
+
+  it('drafts an exercise sheet in reasoning under the strict schema, with the notions of the class', async () => {
+    const notions = notionsFor('quatrieme', 'mathematiques', 2026);
+    const startTime = Date.now();
+    const { object, usage } = await generateStructured({
+      functionId: 'live-mistral-eu',
+      messages: sheetMessages('quatrieme', notions, "Résous l'équation 3x + 5 = 20. J'ai trouvé x = 20/3."),
+      schema: ExerciseSheetSchema,
+      schemaName: 'exercise_sheet',
+      reasoningEffort: 'high',
+      temperature: 0.7,
+      safePrompt: false,
+      timeoutMs: 60_000,
+    });
+    // Measured once for the plan: latency and output tokens of one draw.
+    console.log('exercise sheet draw', { durationMs: Date.now() - startTime, ...usage });
+
+    expect(object.kind).toBe('short');
+    expect(object.mathEquation).not.toBeNull();
+    expect(object.mathAnswer).not.toBeNull();
+    expect(checkAnswer(object.mathEquation ?? '', object.mathAnswer ?? '')).toBe('passed');
+    const { sheet } = keepKnownNotions(object, notions);
+    expect(sheet.entries.length).toBeGreaterThan(0);
+  }, 90_000);
 
   it('reads an image (Small 4 is multimodal)', async () => {
     const out = await generateText({

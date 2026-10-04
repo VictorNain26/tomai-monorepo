@@ -19,6 +19,6 @@ export const educationLevelSchema = z.enum(EDUCATION_LEVELS);
 /** The levels Tom serves in V1 (`docs/vision.md`): the collège, 6e to 3e. */
 const COLLEGE_LEVELS: ReadonlySet<EducationLevelType> = new Set<EducationLevelType>(['sixieme', 'cinquieme', 'quatrieme', 'troisieme']);
 
-export function isCollegeLevel(level: EducationLevelType): boolean {
+export function isCollegeLevel(level: EducationLevelType): level is 'sixieme' | 'cinquieme' | 'quatrieme' | 'troisieme' {
   return COLLEGE_LEVELS.has(level);
 }

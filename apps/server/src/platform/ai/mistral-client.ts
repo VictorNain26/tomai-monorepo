@@ -8,8 +8,8 @@
  * - `generateStructured` — sortie structurée Zod en JSON Schema, strict par défaut (analyse du tour, épisodes…) ; les cartes passent `strict: false`
  *
  * Both go through `mistralProvider` (`platform/ai/provider.ts`, EU endpoint).
- * Every call runs with `reasoningEffort: 'none'`: reasoning is reserved to the
- * chat turn (`ai-chat.service.ts`).
+ * They run with `reasoningEffort: 'none'`, except a structured call that asks
+ * for `'high'` (the exercise sheet).
  */
 
 import { generateText as aiGenerateText, Output, NoObjectGeneratedError, TypeValidationError, type ModelMessage, type TextPart, type FilePart } from 'ai';
@@ -73,6 +73,8 @@ interface GenerateStructuredOptions<T> extends GenerateTextOptions {
    * that counts such an answer as lost, and paces its own calls, turns it off.
    */
   repairInvalid?: boolean;
+  /** `'high'` reasons before answering, with no output cap: the thinking counts in the output tokens, the timeout bounds the call. */
+  reasoningEffort?: 'none' | 'high';
 }
 
 
@@ -162,7 +164,7 @@ export async function generateStructured<T>(opts: GenerateStructuredOptions<T>):
       output: Output.object({ schema: opts.schema, name: opts.schemaName }),
       temperature,
       ...(opts.seed === undefined ? {} : { seed: opts.seed }),
-      maxOutputTokens: maxTokens,
+      ...(opts.reasoningEffort === 'high' ? {} : { maxOutputTokens: maxTokens }),
       maxRetries: opts.maxRetries ?? env.MISTRAL_RETRY_ATTEMPTS,
       abortSignal,
       telemetry: { functionId: opts.functionId, recordInputs: false, recordOutputs: false },
@@ -170,7 +172,7 @@ export async function generateStructured<T>(opts: GenerateStructuredOptions<T>):
         mistral: {
           safePrompt: opts.safePrompt ?? true,
           strictJsonSchema: opts.strict ?? true,
-          reasoningEffort: 'none',
+          reasoningEffort: opts.reasoningEffort ?? 'none',
           promptCacheKey: opts.promptCacheKey,
         } satisfies MistralLanguageModelChatOptions,
       },

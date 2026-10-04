@@ -1,17 +1,8 @@
 /**
- * ChatOrchestrationService - Pipeline chat streaming (AI SDK)
- *
- * Responsabilites:
- * 1. Resoudre/creer la session + charger historique + resume
- * 2. Assembler le contexte enrichi (fichiers multimodaux, profil cognitif,
- *    contexte d'apprentissage, classification d'intention, memoire
- *    episodique, memoire de matiere) exactement comme le pipeline SSE legacy
- * 3. Persister le message user AVANT le streaming (+ associer les fichiers)
- * 4. Post-processing apres le streaming (`onEnd`) : sauver le message
- *    assistant, comptabiliser tokens/cout, declencher summarization et
- *    auto-titrage en fire-and-forget — SAUTE entierement si le stream n'a
- *    produit aucun contenu (miroir du pipeline legacy, qui ne postProcess
- *    que sur un chunk `done`, jamais sur une erreur en cours de stream).
+ * Chat turn pipeline: resolves the session and its history, assembles the turn's context (files,
+ * profile, learning context, turn analysis, exercise sheet, episodic and subject memory),
+ * persists the student's message before streaming, then records the answer, its cost, the
+ * summary and the title once the stream ends (`finishTurn`).
  */
 
 import { chatSessionService } from './chat-session.service.js';
@@ -24,6 +15,8 @@ import { getLearningContext } from './mistral-helpers.js';
 import { summarizationService } from './summarization.service.js';
 import { autoTitleService } from './auto-title.service.js';
 import { analyseTurn, turnInstruction as instructionFor, type TurnAnalysis } from './turn-analysis.service.js';
+import { currentExerciseSheet, prepareExerciseSheet } from './exercise-sheet.service.js';
+import type { ExerciseSheet } from './exercise-sheet.js';
 import { cognitiveProfileService } from './cognitive-profile.service.js';
 import { costTrackingService, incrementTokenUsage } from '../billing/index.js';
 import { episodicMemoryService } from './episodic-memory.service.js';
@@ -75,6 +68,8 @@ export interface ChatTurnContext {
   mergedLearningContext: string | null;
   turnInstruction: string | null;
   turnAnalysis: TurnAnalysis;
+  /** The exercise in progress: prepared when the student brings one, else the session's last. */
+  exerciseSheet: ExerciseSheet | null;
   /** Multimodal files (images) for Mistral vision, ready for `streamChat`'s `files` param. */
   files: AttachedFile[];
   /** Bounded document analyses (OCR), ready for `streamChat`'s `attachedFiles` param. */
@@ -111,11 +106,8 @@ interface FinishTurnParams {
 
 class ChatOrchestrationService {
   /**
-   * Resout (ou cree) la session, charge historique + resume, puis assemble
-   * le contexte enrichi (fichiers, profil cognitif, learning, intention,
-   * memoire episodique/matiere) exactement comme le pipeline SSE legacy
-   * (`orchestrateStream` Phases 1-2). Jette `ChatOrchestrationError` si le
-   * `sessionId` fourni n'existe pas ou n'appartient pas a l'utilisateur.
+   * Resolves (or creates) the session, loads its history and summary, then assembles the turn's
+   * context. Throws `ChatOrchestrationError` when the given session is missing or someone else's.
    */
   async prepareTurn(request: PrepareTurnRequest): Promise<ChatTurnContext> {
     let sessionId: string;
@@ -204,9 +196,12 @@ class ChatOrchestrationService {
         }); });
     }
 
-    const subjectMemoryBlock = effectiveSubject
-      ? await subjectProfileService.formatSubjectMemoryForPrompt(request.userId, effectiveSubject)
-      : null;
+    const [subjectMemoryBlock, exerciseSheet] = await Promise.all([
+      effectiveSubject ? subjectProfileService.formatSubjectMemoryForPrompt(request.userId, effectiveSubject) : null,
+      turnAnalysis.bringsExercise
+        ? prepareExerciseSheet({ userId: request.userId, sessionId, level: request.schoolLevel, subject: effectiveSubject, studentText: request.content })
+        : currentExerciseSheet(sessionId),
+    ]);
 
     const { attachedFileInfos, attachedFiles } = fileContext;
     const attachedFileInfo = attachedFileInfos[0] ?? null;
@@ -246,6 +241,7 @@ class ChatOrchestrationService {
       asksSolution: turnAnalysis.asksSolution,
       wantsFlashcards: turnAnalysis.wantsFlashcards,
       turnInstructed: turnInstruction !== null,
+      exerciseSheet: exerciseSheet !== null,
       episodesRetrieved: relevantEpisodes.length,
       operation: 'chat-orchestration:context-ready',
     });
@@ -259,6 +255,7 @@ class ChatOrchestrationService {
       mergedLearningContext,
       turnInstruction,
       turnAnalysis,
+      exerciseSheet,
       files: multimodalFiles.map(f => ({
         base64: f.base64,
         mimeType: f.mimeType,
