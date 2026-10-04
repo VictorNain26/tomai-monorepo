@@ -180,6 +180,10 @@ contraire.
 
 ### Lot 3 — client web
 
+- **Niveaux** : l'inscription accepte encore les niveaux de la primaire et du lycée
+  (`lib/education-levels.ts`), que le chat refuse depuis #380. Les retirer avec les comptes
+  du client web.
+
 - **Conformité** (même étude, c) : mention « vous parlez à une IA » dès la première
   interaction (AI Act, art. 50, applicable depuis le 2 août 2026) ; consentement conjoint
   élève et parent sous 15 ans (loi Informatique et Libertés, art. 45) ; AIPD ; résumé
@@ -410,4 +414,9 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
     proposée se vérifie avant tout ;
   - `get_student_profile` et `get_app_help` supprimés, styles d'apprentissage retirés
     (colonne comprise), écriture de profil échouée remontée ;
-  - plus de plafond de tokens sur un tour qui raisonne (décision de Victor).
+  - plus de plafond de tokens sur un tour qui raisonne (décision de Victor), et un tour qui
+    raisonne sans écrire compte au quota ;
+  - une réponse proposée se vérifie en raisonnement, quels que soient la classe et la
+    matière, en attendant la fiche (point 3) ;
+  - le chat refuse un niveau hors collège, que le prompt ne sert pas ;
+  - balises du prompt toutes neutralisées dans le texte de l'élève, vérifié par un test.

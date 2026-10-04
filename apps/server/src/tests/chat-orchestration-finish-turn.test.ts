@@ -132,6 +132,32 @@ describe('ChatOrchestrationService.finishTurn', () => {
     expect(generateTitleIfNeeded).not.toHaveBeenCalled();
   });
 
+  it('counts the tokens of a turn that reasoned without writing, and persists nothing', async () => {
+    const emptyResponse: TomChatMessage = { id: 'm2', role: 'assistant', parts: [] };
+    await chatOrchestrationService.finishTurn({
+      sessionId: 'session-001',
+      userId: 'user-001',
+      userContent: 'Bonjour',
+      responseMessage: emptyResponse,
+      model: 'mistral-small-2603',
+      usage: {
+        inputTokens: 10,
+        outputTokens: 900,
+        totalTokens: 910,
+        inputTokenDetails: { noCacheTokens: 10, cacheReadTokens: 0, cacheWriteTokens: 0 },
+        outputTokenDetails: { textTokens: 0, reasoningTokens: 900 },
+      },
+      startTime: Date.now(),
+      attachedFileInfo: null,
+      classifiedIntent: noopIntent,
+    });
+
+    expect(incrementTokenUsage).toHaveBeenCalledWith('user-001', 910);
+    expect(record).toHaveBeenCalledTimes(1);
+    expect(saveMessage).not.toHaveBeenCalled();
+    expect(summarizeIfNeeded).not.toHaveBeenCalled();
+  });
+
   it('persists the assistant message and accounts tokens when content was produced', async () => {
     const filledResponse: TomChatMessage = {
       id: 'm2',

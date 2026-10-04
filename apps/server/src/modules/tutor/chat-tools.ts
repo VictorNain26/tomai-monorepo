@@ -68,7 +68,7 @@ export function buildChatTools(ctx: ChatToolContext): ToolSet {
   return {
     generate_flashcards: tool({
       description:
-        "Crée des cartes de révision (flashcards, QCM, vrai/faux) sur une notion. Si l'élève demande des cartes ou des fiches, crée-les sans redemander son accord. Sinon, propose-les et attends qu'il accepte.",
+        "Crée des cartes de révision (flashcards, QCM, vrai/faux) sur une notion. Si l'élève demande des cartes ou des fiches de révision, crée-les sans redemander son accord. Une fiche de devoir (fiche de lecture, fiche d'exercices) n'en est pas une demande. Dans le doute, propose et attends qu'il accepte.",
       inputSchema: generateFlashcardsSchema,
       execute: async (input) => {
         const result = await executeTool('generate_flashcards', input, executionContext);

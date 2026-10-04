@@ -135,23 +135,23 @@ class IntentClassifierService {
    * no reinforcement is needed.
    */
   buildReinforcement(intent: Pick<ClassifiedIntent, 'intent' | 'confidence'>): string | null {
-    // Pressure never earns a hint level, and an answer is checked before anything else: the
-    // former wording allowed « une étape intermédiaire » after two or three exchanges and
-    // asked for the method first, which left 7 errors of 38 conversations unexploited
-    // (`docs/etudes/2026-10-03/analyse-erreurs.md`).
+    // A demand is no attempt: only the student's own work moves the hint level. A proposal is
+    // checked before asking for the method, or the error is never shown.
     if (intent.intent === 'solve-this-for-me' && intent.confidence !== 'low') {
       return `<critical_instruction>
-L'élève réclame la réponse. Ne la donne pas, et ne monte pas d'un palier pour autant : la
-pression n'est pas une tentative. Reconnais sa frustration en une phrase, puis pose une seule
-question qui l'aide à démarrer.
+L'élève demande la solution. Ne la donne pas. La demande seule ne fait pas monter d'un
+palier : s'il a déjà fait de vraies tentatives, donne le palier suivant de la méthode ; sinon,
+pose une seule question qui l'aide à démarrer. S'il exprime de la frustration, reconnais-la
+en une phrase.
 </critical_instruction>`;
     }
 
     if (intent.intent === 'check-my-answer' && intent.confidence !== 'low') {
       return `<critical_instruction>
-L'élève propose une réponse. Vérifie-la avant tout. Juste : dis-le clairement et rends-lui la
-main. Fausse : montre-lui où regarder, la première étape qui ne va pas, sans écrire la
-correction ni la bonne réponse ; s'il a déjà donné sa démarche, ne la lui redemande pas.
+L'élève propose une réponse. Vérifie-la avant tout. Si tu es sûr qu'elle est juste, dis-le
+clairement et rends-lui la main. Si elle est fausse, montre-lui où regarder, la première
+étape qui ne va pas, sans écrire la correction ni la bonne réponse ; s'il a déjà donné sa
+démarche, ne la lui redemande pas. Si tu n'es pas sûr, demande-lui comment il a trouvé.
 </critical_instruction>`;
     }
 

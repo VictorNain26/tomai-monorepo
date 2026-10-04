@@ -16,7 +16,6 @@ const mathTurn = {
   userId: 'live-user',
   schoolLevel: 'troisieme' as const,
   subject: 'mathematiques',
-  userRole: 'student' as const,
   classifiedIntent: { intent: 'solve-this-for-me', confidence: 'high' as const },
   tools: {},
 };

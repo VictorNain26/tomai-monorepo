@@ -188,12 +188,20 @@ describe('executeUpdateProfile()', () => {
       expect(updates).not.toHaveProperty('preferredStyle');
     });
 
-    it('answers with an error, never « Profil mis à jour », when the write fails', async () => {
+    it('answers with a transient error, never a success, when the write fails', async () => {
       existingProfile = null;
       updateProfileSpy.mockImplementationOnce(async () => { throw new Error('db down'); });
       const result = await executeTool('update_student_profile', { observation: 'Confond aire et périmètre', subject: 'mathematiques' }, baseContext) as Record<string, unknown>;
-      expect(result['isError']).toBe(true);
+      expect(result).toMatchObject({ isError: true, errorCategory: 'transient' });
+      expect(result['message']).toContain("sans en parler à l'élève");
       expect(result).not.toHaveProperty('updated');
+    });
+
+    it('writes nothing when the profile cannot be read: an empty merge would erase it', async () => {
+      getProfileSpy.mockImplementationOnce(async () => { throw new Error('db down'); });
+      const result = await executeTool('update_student_profile', { observation: 'Confond aire et périmètre', subject: 'mathematiques', strength: 'Curieux' }, baseContext) as Record<string, unknown>;
+      expect(result).toMatchObject({ isError: true, errorCategory: 'transient' });
+      expect(updateProfileSpy).not.toHaveBeenCalled();
     });
 
     it('should truncate observation at 250 chars', async () => {

@@ -3,7 +3,7 @@
  *
  * Ce fichier centralise les principes du CSEN (Conseil Scientifique de l'Éducation
  * Nationale) utilisés par TOUTES les features éducatives de Tom :
- * - Chatbot (tutorat socratique)
+ * - Chatbot : méthode du tuteur (`generateChatbotPedagogyPrompt`)
  * - Cards (flashcards de révision)
  * - Future: Quiz, exercices, etc.
  *
@@ -28,38 +28,28 @@
 // 4 PILIERS DE L'APPRENTISSAGE (Stanislas Dehaene, président CSEN)
 // ============================================================================
 
-/**
- * Les 4 piliers de l'apprentissage - Structure de données
- */
+/** Les 4 piliers de l'apprentissage, appliqués aux cartes de révision. */
 const CSEN_FOUR_PILLARS = {
+  // Dehaene 2018, chap. 5 - L'attention, porte d'entrée des apprentissages
   attention: {
-    id: 'attention',
     name: 'ATTENTION',
-    principle: 'Capte l\'attention, une chose à la fois',
     cardApplication: 'Chaque carte cible UNE notion précise, formulation claire',
-    source: 'Dehaene 2018, Chap. 5 - L\'attention, porte d\'entrée des apprentissages'
   },
+  // Testing effect - Roediger & Karpicke 2006 + Académie Aix-Marseille
   engagementActif: {
-    id: 'engagement_actif',
     name: 'ENGAGEMENT ACTIF',
-    principle: 'L\'élève doit essayer, pas juste écouter',
     cardApplication: 'Questions/exercices qui demandent un effort de récupération en mémoire',
-    source: 'Testing effect - Roediger & Karpicke 2006 + Académie Aix-Marseille'
   },
+  // Dehaene 2018, Chap. 8 - Le retour sur erreur
   retourErreur: {
-    id: 'retour_erreur',
     name: 'RETOUR D\'INFORMATION',
-    principle: 'Feedback immédiat sur les erreurs, non stressant',
     cardApplication: 'Explications après réponse, feedback constructif',
-    source: 'Dehaene 2018, Chap. 8 - Le retour sur erreur'
   },
+  // Dehaene 2018, Chap. 9 - Consolidation et automatisation
   consolidation: {
-    id: 'consolidation',
     name: 'CONSOLIDATION',
-    principle: 'Répétition espacée pour mémoriser',
     cardApplication: 'Varier les formats pour multiplier les chemins de récupération',
-    source: 'Dehaene 2018, Chap. 9 - Consolidation et automatisation'
-  }
+  },
 } as const;
 
 // ============================================================================
@@ -104,6 +94,14 @@ reconnais la frustration en une phrase, puis pose une question qui aide à déma
 
 **Fait d'appui** (une définition, une règle du cours, qui n'est pas la réponse) : demande
 d'abord si l'élève s'en souvient ; après une vraie tentative, donne-le, court et exact.
+
+**Fait à apprendre par cœur que le devoir demande** (une date, un mot de vocabulaire) :
+après deux vraies tentatives, ne le fais plus deviner ; dis-lui où le trouver, dans son cours
+ou son manuel.
+
+**Questions sur l'application** (abonnement, paiement, menus, fichiers) : tu ne la connais
+pas. Dis-le, et renvoie l'élève vers son parent. N'invente jamais une offre, un prix ni un
+menu.
 </pedagogy>`;
 }
 

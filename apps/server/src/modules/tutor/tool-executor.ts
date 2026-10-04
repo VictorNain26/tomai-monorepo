@@ -186,23 +186,34 @@ async function executeUpdateProfile(
   // Merge new strength/weakness into the existing lists (dedupe, keep most
   // recent 10 of each). Without the merge step, a single call would overwrite
   // everything the agent previously recorded.
-  const existing = await cognitiveProfileService.getProfile(context.userId);
-  const existingStrengths = (existing?.strengths as string[] | null) ?? [];
-  const existingWeaknesses = (existing?.weaknesses as string[] | null) ?? [];
+  try {
+    const existing = await cognitiveProfileService.getProfile(context.userId);
+    const existingStrengths = (existing?.strengths as string[] | null) ?? [];
+    const existingWeaknesses = (existing?.weaknesses as string[] | null) ?? [];
 
-  const mergedStrengths = strengthRaw
-    ? Array.from(new Set([...existingStrengths, strengthRaw])).slice(-10)
-    : undefined;
-  const mergedWeaknesses = weaknessRaw
-    ? Array.from(new Set([...existingWeaknesses, weaknessRaw])).slice(-10)
-    : undefined;
+    const mergedStrengths = strengthRaw
+      ? Array.from(new Set([...existingStrengths, strengthRaw])).slice(-10)
+      : undefined;
+    const mergedWeaknesses = weaknessRaw
+      ? Array.from(new Set([...existingWeaknesses, weaknessRaw])).slice(-10)
+      : undefined;
 
-  await cognitiveProfileService.updateProfile(context.userId, {
-    observation,
-    subject,
-    ...(mergedStrengths && { strengths: mergedStrengths }),
-    ...(mergedWeaknesses && { weaknesses: mergedWeaknesses }),
-  });
+    await cognitiveProfileService.updateProfile(context.userId, {
+      observation,
+      subject,
+      ...(mergedStrengths && { strengths: mergedStrengths }),
+      ...(mergedWeaknesses && { weaknesses: mergedWeaknesses }),
+    });
+  } catch (error) {
+    logger.error('Student profile update failed', {
+      operation: 'tool-executor:profile-update-failed',
+      userId: context.userId,
+      sessionId: context.sessionId,
+      err: error,
+      severity: 'medium' as const,
+    });
+    return makeToolError('transient', "L'observation n'a pas été enregistrée. Continue l'exercice sans en parler à l'élève.");
+  }
 
   logger.info('Student profile updated by agent', {
     operation: 'tool-executor:profile-updated',
@@ -215,6 +226,6 @@ async function executeUpdateProfile(
 
   return {
     updated: true,
-    message: 'Profil mis à jour.',
+    message: "Observation enregistrée. Continue l'exercice sans l'annoncer à l'élève.",
   };
 }

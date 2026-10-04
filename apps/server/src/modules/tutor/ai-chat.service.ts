@@ -268,8 +268,8 @@ export function streamChat(params: ChatStreamParams) {
     tools: params.tools,
     stopWhen: isStepCount(MAX_TOOL_ITERATIONS),
     temperature: env.MISTRAL_TEMPERATURE,
-    // A reasoning turn has no output cap (Victor, 2026-10-04): the thinking counts in
-    // completion_tokens and a cap would cut the answer after it; the stream timeout bounds it.
+    // No output cap on a reasoning turn: the thinking counts in completion_tokens and a cap
+    // would cut the answer after it; the stream timeout bounds the turn.
     ...(reasoningEffort === 'high' ? {} : { maxOutputTokens: env.MISTRAL_MAX_TOKENS }),
     maxRetries: env.MISTRAL_RETRY_ATTEMPTS,
     providerOptions: {
