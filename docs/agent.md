@@ -50,7 +50,7 @@ d'agent reste la nôtre ([regional inference](https://docs.mistral.ai/inference/
 
 | Rôle | Modèle | Réglage |
 |---|---|---|
-| Chat élève, texte et image | **Mistral Small 4** `mistral-small-2603` | `reasoningEffort` routé (`none` par défaut, `high` sur maths/sciences ou tour à risque) ; `promptCacheKey` par session |
+| Chat élève, texte et image | **Mistral Small 4** `mistral-small-2603` | rédaction sans raisonnement, l'exactitude passant par la fiche d'exercice, produite en `high` sans plafond de tokens (décision de Victor, 2026-10-04) ; température 0,7, dans la plage de la fiche Hugging Face de Small 4 pour `none` ; `promptCacheKey` par session |
 | Résumés, génération de cartes, analyse de document, titres, classification d'intention | Mistral Small 4 `mistral-small-2603` | `reasoningEffort: 'none'` ; sortie structurée stricte |
 | Modération entrée/sortie | `mistral-moderation-2603` | Seuils par catégorie (§5) |
 | STT / TTS | Voxtral via `@mistralai/mistralai` (`audio.*`) | Timeout explicite |
@@ -80,14 +80,16 @@ modèle sans prévenir et invalide l'évaluation. Chaque prompt porte une versio
 - `safePrompt` est déprécié par Mistral au profit des Custom Guardrails
   ([source](https://docs.mistral.ai/resources/deprecated/guardrailing/safe_prompt)).
 - En streaming, l'usage n'arrive que si `stream_options.include_usage` est envoyé
-  (known limitations) : vérifier sur le fil que `usage` et `cacheRead` remontent.
+  (known limitations) : vérifier sur le fil que `usage` et `cacheRead` remontent. Non
+  vérifié : `@ai-sdk/mistral` 4.0.48 ne l'envoie pas ; à vérifier au point 2 du lot 2, avant
+  que le quota compte un tour qui raisonne sans plafond.
 
 ## 3. Équivalents Mistral des mécanismes Claude
 
 | Claude | Mistral | Via l'AI SDK |
 |---|---|---|
 | `cache_control` | Cache de préfixe par `prompt_cache_key`, tokens cachés à 10 % du prix, blocs de 64 tokens | `providerOptions.mistral.promptCacheKey` ; lecture `usage.inputTokens.cacheRead` |
-| Extended thinking | `reasoning_effort` (`none`/`high`), pas de budget de tokens | `providerOptions.mistral.reasoningEffort` ; borne via `maxOutputTokens` |
+| Extended thinking | `reasoning_effort` (`none`/`high`), pas de budget de tokens ; la réflexion compte dans `completion_tokens` | `providerOptions.mistral.reasoningEffort` ; pas de `maxOutputTokens` sur un appel qui raisonne (décision de Victor, 2026-10-04), la borne est le timeout |
 | `tool_choice` | `auto`/`none`/`any`/`required`/fonction nommée | `toolChoice` ; fonction nommée émulée par filtrage — préférer `prepareStep` + `activeTools` |
 | Structured outputs | `response_format: json_schema` strict | `Output.object` + `strictJsonSchema: true` |
 | Message Batches | Batch API −50 % | Non exposé, et absent de l'endpoint UE : non utilisé |
@@ -113,14 +115,24 @@ modèle sans prévenir et invalide l'évaluation. Chaque prompt porte une versio
   d'appui (définition, règle) se donne après une vraie tentative, et une bonne réponse de
   l'élève se confirme (décision du 2026-10-04, `etudes/2026-10-03/analyse-erreurs.md`).
 - **Solution de référence côté serveur** : en début d'exercice, Small 4 le résout hors de
-  la vue de l'élève et mathjs vérifie les calculs ; le tuteur la reçoit avec les erreurs
-  fréquentes, et le contrôle de fuite s'y compare. Appui : Bastani 2025 et Kestin 2025
-  fournissent une solution correcte au modèle ; seul, GPT-4 ne donnait la bonne réponse
-  que 51 % du temps (Bastani). Sa justesse se mesure sur le jeu d'évaluation.
+  la vue de l'élève, en raisonnement, et mathjs vérifie les calculs. Le modèle qui rédige
+  n'en reçoit que la part que le palier autorise ; diagnostic, palier et contrôle de fuite
+  s'y comparent (Khan Academy : limiter ce que voit le rédacteur a réduit de 50 % les
+  réponses données). Appui : Bastani 2025 et Kestin 2025 fournissent une solution correcte
+  au modèle ; seul, GPT-4 ne donnait la bonne réponse que 51 % du temps (Bastani). Sa
+  justesse se mesure sur le jeu d'évaluation.
 - **Une explication demandée, à l'écrit comme à l'oral, reste au palier d'aide** ; le
   canal vocal ne change que la forme. En S4, « explique-le à l'oral », tapé, faisait
   dérouler la solution ; le canal vocal lui-même n'est pas encore joué par le harnais.
-- Suppression du « Chain-of-Thought obligatoire » (bloc maths de `SUBJECT_SPECIFICS`,
+- **Workflow tenu par le serveur** (`etudes/2026-10-04/refonte-agent.md`) : à l'ouverture
+  d'un exercice, une fiche (réponse, étapes, erreurs fréquentes, règle en grammaire, nature
+  de chaque fait) produite par Small 4 en raisonnement, trois tirages votés, calculs
+  vérifiés par mathjs ; à chaque tour, une analyse en sortie structurée (nouvel exercice,
+  proposition de l'élève, demande) qui remplace le classifieur d'intention, le diagnostic
+  contre la fiche, le palier décidé par le code (il monte avec les tentatives réelles,
+  jamais sous la seule pression), et un contrat du tour qui ne donne au modèle qui rédige
+  que la part de la fiche que le palier autorise.
+- Suppression du « Chain-of-Thought obligatoire » (bloc maths de `SUBJECT_SPECIFICS`,
   `modules/tutor/prompts/adaptation/by-subject.ts`) et de la règle contradictoire de
   `IntentClassifierService.buildReinforcement` (« révéler une étape intermédiaire » après
   deux ou trois échanges).
@@ -141,12 +153,13 @@ modèle sans prévenir et invalide l'évaluation. Chaque prompt porte une versio
 
 | Garde-fou | Mécanisme | Où |
 |---|---|---|
-| Modération d'entrée | `mistral-moderation-2603` sur le message de l'élève avant l'appel ; catégories Sexual, Self-Harm, Jailbreaking, PII, Violence | Avant `streamText` |
-| Modération de sortie | Même modèle sur la réponse ; blocage et réponse de repli | Après génération, avant persistance |
+| Modération d'entrée | `mistral-moderation-2603` par `classifiers.moderateChat`, qui classe le dernier tour avec son contexte ; scores bruts et seuils propres, recommandés par Mistral ; catégories `sexual`, `selfharm`, `jailbreaking`, `pii`, `violence_and_threats`, `dangerous`, `criminal` | En parallèle de l'analyse du tour, avant le premier mot |
+| Contrôle avant l'élève | Le message entier est généré, contrôlé, puis envoyé ; celui qui est envoyé est celui qui est persisté. Déterministe : réponse et ses formes comparées à la fiche d'exercice, une forme déjà écrite par l'élève et jugée juste restant permise pour la confirmer ; balises et gabarits ; égalités recalculées par mathjs. Sur un échec, une régénération sous contrainte, puis une réponse de repli fixe, l'événement tracé | Entre `streamText` et l'élève ; aussi sur les fiches de révision générées et le titre de séance, avant leur enregistrement |
+| Modération de sortie | Même modèle sur le message entier, en parallèle du contrôle ; même action sur un blocage | Avant l'élève |
 | Détresse | Classifieur indépendant du prompt (catégorie Self-Harm + règles en français, testés sur des phrases d'élèves) ; réponse fixe rédigée et approuvée par un humain, avec le 3114 et un adulte de confiance, puis fin de la conversation (Crawford et Glatard, CMAJ 2026) ; numéros d'aide vérifiés sur service-public.fr, alerte au parent. C'est la seule alerte que reçoit le parent | Même point d'entrée |
 | Fuite de réponse | Palier d'aide imposé par le serveur (§4) ; contrôle de fuite du lot 1 réutilisé en production si son coût le permet | Assembleur de tour |
 | Aucune solution montrée par accident | Le raisonnement du modèle ne quitte jamais le serveur (`sendReasoning: false` de `toUIMessageStream`, `modules/tutor/chat-message.routes.ts`) ; aucune balise interne, étape de calcul cachée, résultat d'outil brut ni bloc de contexte n'arrive dans ce que voit ou entend l'élève. Le contrôle de fuite porte sur tout ce qui l'atteint : texte, lecture vocale, fiches, titre de séance, messages d'erreur | Sortie du flux, outils, TTS |
-| Confirmation avant création de cartes | `needsApproval` de l'AI SDK sur `generate_flashcards`, pas la seule description de l'outil | `chat-tools.ts` |
+| Confirmation avant création de cartes | `toolApproval` de `streamText`, une fonction par outil qui rend `'approved'` quand l'élève vient de demander des fiches, `'user-approval'` sinon ; `needsApproval` est déprécié dans `ai` 7 | `chat-tools.ts` |
 | Injection | Texte élève et contenu de documents délimités comme données ; aucun outil sensible déclenchable par du contenu importé | Assembleur, outils |
 
 La recherche justifie ce passage au code : sur plusieurs tours, les modèles
@@ -156,9 +169,10 @@ en zone intermédiaire (McBain 2025).
 
 ## 6. Outils
 
-Quatre outils aujourd'hui (`chat-tools.ts`) : `generate_flashcards`,
-`get_student_profile`, `update_student_profile`, `get_app_help`. Le compte reste
-dans la cible 4-5.
+Quatre outils aujourd'hui (`chat-tools.ts`) : `generate_flashcards`,
+`get_student_profile`, `update_student_profile`, `get_app_help`. `get_student_profile`
+disparaît : il renvoie le profil, déjà injecté à chaque tour. Quatre ou cinq outils sont un
+plafond, pas une cible ; tous en `strict: true`.
 
 - Descriptions réécrites : format d'entrée, exemple, cas limite, quand l'utiliser
   plutôt qu'un autre outil.
@@ -188,12 +202,20 @@ Ordre du prompt, du plus stable au plus variable :
    domaine, ou si un libellé ne se retrouve pas, lettres, chiffres et symboles dans
    l'ordre, dans le texte brut de sa page ; les notes pour l'enseignant écartées des
    automatismes sont listées.
-4. Bloc de faits de l'élève (niveau, matière, difficultés, palier en cours),
-   délimité comme données.
-5. Résumé des tours anciens + tours récents bruts.
-6. Message de l'élève, **un seul message `user` par tour** : la consigne de tour
-   rejoint ce message au lieu d'en créer d'autres (aujourd'hui jusqu'à six `user`
+4. Énoncé de l'exercice en cours et ses notions du programme, celles de la classe et
+   celles des classes suivantes à ne pas utiliser ; jamais la réponse ni les étapes.
+5. Résumé des tours anciens + tours récents bruts, rejoués avec leur raisonnement et leurs
+   appels d'outils.
+6. Message de l'élève, **un seul message `user` par tour**, qui porte aussi ce qui change
+   d'un tour à l'autre : contrat du tour (palier autorisé, indices déjà donnés,
+   diagnostic) entre balises `<contrat>`, que seul le serveur écrit ; texte de l'élève
+   entre `<student_message>`, ces balises neutralisées dans son texte ; faits de l'élève,
+   délimités comme données. Placé avant l'historique, un
+   bloc qui change à chaque tour casserait le cache (aujourd'hui jusqu'à six `user`
    consécutifs, `assembleChatMessages` de `modules/tutor/chat-message-assembler.ts`).
+
+Aucune consigne du serveur dans un bloc déclaré non fiable : « propose des flashcards »
+est aujourd'hui écrit dans `<student_context>`, que le prompt déclare sans ordre.
 
 `promptCacheKey` = identifiant de session (recommandation Mistral), en place depuis
 la PR C. Le taux `cacheRead` est suivi dans Langfuse.
@@ -214,8 +236,10 @@ absente de la source. Le coût vient de `result.usage`, pas d'une estimation.
 
 ## 9. Évaluation
 
-Le lot 1 construit le harnais ; aucun changement de l'agent n'est mergé sans
-comparaison à la baseline. Le harnais sert aussi la preuve publique : protocole, jeu
+Le lot 1 construit le harnais ; aucun changement de l'agent n'est mergé sans
+comparaison à la baseline. Pendant la refonte du lot 2, la comparaison porte sur l'agent
+refait, d'un bloc, en deux passages annoncés (`etudes/2026-10-04/refonte-agent.md`,
+« Mesure ») ; ses PR se mergent sur leurs tests. Le harnais sert aussi la preuve publique : protocole, jeu
 d'exercices, transcriptions et résultats sont publiables et rejouables par un tiers
 (publication au lot 4, vision, « On publie nos mesures »).
 
@@ -343,8 +367,9 @@ d'exercices, transcriptions et résultats sont publiables et rejouables par un t
   enregistrées (`recordInputs: false`, `recordOutputs: false`) ; le harnais ne les active
   que sur ses données de test.
 - **Non-régression** : baseline approuvée commitée (verdict par cas, versions du jeu et
-  du juge) ; les PR qui touchent l'agent lancent le harnais en CI et échouent sous la
-  baseline. Un cas vu en production devient un scénario synthétique du jeu, jamais un
+  du juge), celle de l'agent refait au lot 2 ; les PR qui touchent l'agent lancent ensuite
+  le harnais en CI et échouent sous la baseline. La porte se lit sur les métriques du
+  code ; un critère du juge n'y entre qu'à α ≥ 0,800. Un cas vu en production devient un scénario synthétique du jeu, jamais un
   texte d'élève (`etudes/2026-10-02/alignement.md`, § 8).
 - Métriques de production suivies en continu : taux de fuite, latence, coût par
   tour, `cacheRead`, taux de blocage de la modération.

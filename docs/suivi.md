@@ -13,19 +13,18 @@ bloquant levé).
 ## Où on en est
 
 - **Dernière mise à jour :** 2026-10-04.
-- **Lot en cours :** 1 — Harnais d'évaluation (`roadmap.md`). Le lot 0 est terminé : serveur
-  sur Hono et outillage sur Bun (#343 à #347), refonte du serveur en modules (#348 à #354),
-  lint strict (#355) et TypeScript strict (#356).
-- **Prochaine action :** refonte de l'agent (lot 2), demandée par Victor le 2026-10-04
-  après l'audit du prompt et des outils (lot 2 ci-dessous, « Audit de l'agent ») :
-  recherches sourcées sur la conception d'un tuteur, l'ingénierie sur Small 4 et l'AI SDK,
-  l'exactitude et les garde-fous, et audit des autres appels IA ; puis étude datée et plan
-  dans `docs/plans/`. Le plan dit comment l'avant et l'après se mesurent, la baseline
-  (point 5 du lot 1) n'étant pas encore passée.
-  - La relecture des conversations, que Victor a confiée à Claude le 2026-10-03, a été
-    faite par Claude.
-  - Une relecture humaine d'une partie d'entre elles reste due avant toute publication
-    (lot 4).
+- **Lot en cours :** 2 — Agent qui ne cède pas, refondu sur sources (`roadmap.md`).
+  - Du lot 1 restent la baseline, réduite aux 38 conversations de l'échantillon
+    (`etudes/2026-10-04/refonte-agent.md`, « Mesure »), les concurrents et la CI.
+  - Le lot 0 est terminé : serveur sur Hono et outillage sur Bun (#343 à #347), refonte du
+    serveur en modules (#348 à #354), lint strict (#355) et TypeScript strict (#356).
+- **Prochaine action :** refonte de l'agent (lot 2), demandée par Victor le 2026-10-04 ;
+  étude `etudes/2026-10-04/refonte-agent.md`, ordre des PR dans `roadmap.md`. Point 1, prompt
+  et outils : plan d'abord dans `docs/plans/`.
+  - Étape à la charge de Victor avant le point 6 : approuver le texte de la réponse fixe de
+    détresse.
+  - Une relecture humaine d'une partie des conversations lues par Claude reste due avant
+    toute publication (lot 4).
 - **PR ouvertes :** aucune.
 - **Landing en ligne gelée** jusqu'au lot 4 : seuls des correctifs d'honnêteté ou techniques y entrent.
   L'identité visuelle est rejetée et se refait au lot 4.
@@ -123,15 +122,14 @@ contraire.
   - détresse sans 3114 et retour à l'exercice dans les 3 ;
   - fiches refusées ou ignorées dans 4 sur 6.
 
-  Corrections rangées sous les points de `roadmap.md`, dans son ordre, chacune comparée à
-  la baseline :
-  - point 1 : palier tenu par le serveur, solution de référence côté serveur, contrôle
-    avant envoi, diagnostic de l'erreur avant l'aide ;
-  - point 2 : détecteur et réponse fixe approuvée par Victor, puis fin de la
-    conversation ;
-  - point 5 : mathjs sur les calculs de la solution ;
-  - point 6 : règle de la réponse jamais donnée, explication demandée au palier d'aide,
-    fiches à la demande, portée collège.
+  Corrections rangées sous les points du lot 2 de `roadmap.md`, revus le 2026-10-04
+  (`etudes/2026-10-04/refonte-agent.md`), l'agent refait comparé à l'avant d'un bloc :
+  - point 1 : règle de la réponse jamais donnée, explication demandée au palier d'aide,
+    fiches à la demande, portée collège ;
+  - point 3 : solution de référence côté serveur, mathjs sur ses calculs ;
+  - point 4 : diagnostic de l'erreur avant l'aide, palier tenu par le serveur ;
+  - point 5 : contrôle avant l'envoi ;
+  - point 6 : détecteur et réponse fixe approuvée par Victor, puis fin de la conversation.
 - **Audit de l'agent** (2026-10-04, code du tour de chat), en plus des défauts listés ici :
   - aucun outil ni contexte pour vérifier : ni solution, ni erreur de l'élève, ni programme ;
   - le prompt pousse à affirmer : « Réponds comme un professeur qui connaît son sujet »,
@@ -150,10 +148,10 @@ contraire.
   - `get_student_profile` à appeler « en début de conversation » alors que le profil est
     injecté à chaque tour ;
   - historique rechargé en texte seul : ni raisonnement ni appels d'outils rejoués.
-- **Programme dans le contexte** (`etudes/2026-10-02/alignement.md`, § 4) : référentiel
-  du niveau et de la matière de la séance injecté en bloc, constant pendant la séance ;
-  `modules/tutor/prompts/adaptation/by-level.ts` réécrit par niveau à partir du
-  référentiel, consignes chiffrées sans source retirées. Après la correction du quota.
+- **Programme dans le contexte** : les notions de l'exercice, prises dans le référentiel,
+  entrent dans la fiche (point 3), plutôt que le programme entier de la matière
+  (`etudes/2026-10-04/refonte-agent.md`, « Contexte et mémoire »). Les consignes chiffrées
+  sans source de `modules/tutor/prompts/adaptation/by-level.ts` sont retirées au point 1.
 - **Outil de calcul** (même étude, § 6) : mathjs, déjà adopté par le harnais (#373), pour
   vérifier les calculs de la solution de référence ; sa résolution d'équations et
   l'équivalence restent à lire dans sa documentation avant tout usage.
@@ -411,3 +409,10 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
   - index vectoriel retiré, jamais utilisé par la requête, qui parcourt exactement les
     épisodes de l'élève ;
   - en CI, un test d'intégration échoue au lieu d'être sauté quand la base ne répond pas.
+
+  Refonte de l'agent décidée sur sources (#379) : quatre recherches (conception d'un
+  tuteur, Small 4 et AI SDK 7, exactitude et garde-fous, autres appels IA) ; un workflow
+  tenu par le serveur (fiche d'exercice, diagnostic, palier, contrat du tour, contrôle avant
+  l'élève) ; spec corrigée (`toolApproval` au lieu de `needsApproval`, déprécié ; contrôle
+  avant l'élève et non après la génération ; ordre du contexte pour le cache) ; ordre du
+  lot 2 revu, deux passages au harnais.
