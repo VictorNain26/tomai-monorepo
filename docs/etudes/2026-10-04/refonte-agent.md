@@ -54,7 +54,7 @@ Tout ce qu'il affirme vient de la mémoire de Small 4.
 
 | Principe | Preuve | Source |
 |---|---|---|
-| Le tuteur reçoit la solution correcte et les erreurs fréquentes avant d'aider | [M] seul, GPT-4 ne donnait la bonne réponse que « 51% of the time » ; avec solutions et erreurs fréquentes dans le prompt, la perte d'apprentissage disparaît | Bastani et al., PNAS 2025, https://pmc.ncbi.nlm.nih.gov/articles/PMC12232635/ |
+| Le tuteur reçoit la solution correcte et les erreurs fréquentes avant d'aider | [M] seul, GPT-4 ne donnait la bonne réponse que « 51% of the time » ; avec solutions et erreurs fréquentes dans le prompt, la perte d'apprentissage à l'examen est « essentially eradicated », sans gain positif | Bastani et al., PNAS 2025, https://pmc.ncbi.nlm.nih.gov/articles/PMC12232635/ |
 | La structure des problèmes à plusieurs parties est tenue hors du prompt | [M] « a system prompt could not reliably provide enough structure to scaffold problems with multiple parts » | Kestin et al., Sci. Rep. 2025, https://pmc.ncbi.nlm.nih.gov/articles/PMC12179260/ |
 | L'erreur de l'élève est diagnostiquée avant la réponse | [M] décisions d'expert (erreur, stratégie, intention) : « +76% more preferred » ; vérifier la solution de l'élève donne des réponses « more often correct with less hallucinations » | Bridge, https://arxiv.org/abs/2310.10648 ; Daheim et al., https://aclanthology.org/2024.emnlp-main.478/ |
 | Les calculs sont faits par un outil, pas par le modèle | [P] « We built a calculator for Khanmigo » ; un « math agent » vérifie les calculs « in real time » | https://blog.khanacademy.org/khanmigo-math-computation-and-tutoring-updates/ ; https://blog.khanacademy.org/how-khan-academy-is-building-a-better-ai-tutor-our-most-recent-learnings/ (2026-05-06) |
@@ -79,24 +79,47 @@ que le modèle sait et de ce qu'il a le droit de donner ; le modèle rédige.
 Quand l'élève apporte un exercice (texte ou photo), le serveur prépare une fiche, hors de
 la vue de l'élève :
 - l'énoncé ;
-- la réponse attendue ;
+- la réponse attendue et ses formes ;
 - les étapes ;
 - les erreurs fréquentes ;
 - la règle qui s'applique, en grammaire ;
-- la nature de chaque fait (réponse du devoir, ou fait d'appui).
+- la nature de chaque fait (réponse du devoir, ou fait d'appui) ;
+- les notions du programme de la classe en jeu, et celles des classes suivantes à ne pas
+  utiliser, prises dans le référentiel (`apps/server/src/referential/`), comme le harnais le
+  fait pour ses exercices.
 
 Comment elle est produite :
-- Small 4 avec `reasoning_effort: "high"`, en trois tirages ; la réponse finale est votée
-  (self-consistency [M], +17,9 % sur GSM8K, https://arxiv.org/abs/2203.11171).
-- mathjs vérifie les calculs.
-  - Pas de `solve` général ; `symbolicEqual` peut répondre `false` sur deux expressions
-    égales (« a `false` value does not absolutely rule this out »,
+- **Small 4 avec `reasoning_effort: "high"`, en trois tirages.**
+  - Une réponse courte se vote après normalisation. Self-consistency [M,
+    https://arxiv.org/abs/2203.11171] a été mesurée avec 40 tirages sur des modèles sans
+    raisonnement : le gain de trois tirages n'est pas établi.
+  - Sans majorité, la fiche est marquée incertaine : le diagnostic ne tranche pas, et le
+    tuteur reste aux paliers qui ne demandent pas la réponse (relance, indice conceptuel).
+  - Une production rédigée ne se vote pas : sa fiche porte les éléments attendus, comme le
+    jeu d'évaluation.
+- **mathjs vérifie les calculs** (version installée 15.2.0).
+  - Il n'a pas de `solve` général, et `symbolicEqual` peut répondre `false` sur deux
+    expressions égales (« a `false` value does not absolutely rule this out »,
     https://mathjs.org/docs/reference/functions/symbolicEqual.html).
-  - L'équivalence se teste donc par `rationalize` de la différence.
-- Coût estimé : environ 0,27 centime par exercice.
-- Latence estimée : une dizaine de secondes au premier tour de l'exercice. À mesurer.
-- La justesse des fiches se mesure sur le jeu d'évaluation : elles viennent de Small 4, pas
-  d'enseignants. C'est une preuve plus faible que Bastani ou Khan Academy.
+  - Deux expressions se comparent par `rationalize` de leur différence.
+  - Deux équations à une inconnue, de degré 3 au plus, se comparent par les racines de
+    « gauche − droite » (`rationalize`, puis `polynomialRoot`) : essayé le 2026-10-04,
+    « 2x + 3 = 7 » et « 2x = 4 » ont la même, « 2x = 10 » non.
+  - Systèmes, inéquations et degrés supérieurs ne sont pas couverts : le diagnostic s'y
+    appuie sur la fiche seule.
+- **Coût**, pour 1 500 tokens de sortie par tirage (hypothèse) : 3 × 1 500 × 0,60 $ par
+  million, soit environ 0,27 centime de dollar par exercice, plus l'entrée.
+- **Latence**, d'après le débit de Small 4 en raisonnement (0,7 s avant le premier token,
+  174 tokens par seconde, https://artificialanalysis.ai/models/mistral-small-4) : environ
+  9 secondes au premier tour de l'exercice, les tirages en parallèle. À mesurer.
+- **Pas de plafond de tokens** sur ces appels qui raisonnent (décision de Victor) : leur
+  borne est le timeout.
+- **La justesse des fiches se mesure sur le jeu d'évaluation.** Elles viennent de Small 4,
+  pas d'enseignants : c'est une preuve plus faible que Bastani ou Khan Academy.
+
+Le modèle qui rédige ne reçoit jamais la fiche entière, seulement l'énoncé, ses notions du
+programme et, dans le contrat du tour, ce que le palier autorise (Khan Academy, −50 %). La
+fiche sert au diagnostic, au palier et au contrôle avant l'élève.
 
 ### À chaque tour
 
@@ -112,9 +135,10 @@ Comment elle est produite :
    Elle dit :
    - si le message ouvre un nouvel exercice ;
    - si l'élève propose une réponse ou une démarche ;
-   - s'il demande une explication, des fiches, ou la solution.
+   - s'il demande une explication ou la solution ;
+   - s'il demande des fiches, ou accepte celles que Tom propose.
 3. **Diagnostic**, quand l'élève propose quelque chose : comparé à la fiche, mathjs pour les
-   calculs. Il rend :
+   calculs et les équations. Il rend :
    - juste ou faux ;
    - la première étape fausse ;
    - le type d'erreur, selon les catégories de Bridge.
@@ -124,39 +148,53 @@ Comment elle est produite :
    https://arxiv.org/abs/2605.23925].
 4. **Palier**, décidé par le code : relance, indice conceptuel, indice ciblé, étape
    intermédiaire, exemple analogue résolu (`../../agent.md` § 4).
-   - Il monte avec les tentatives réelles et après deux tours sans progrès.
-   - Il descend quand l'élève réussit.
-   - « C'est pour demain » ou « je suis son parent » ne le font jamais monter.
+   - Il monte d'un cran à chaque vraie tentative de l'élève, une réponse ou une étape
+     écrite, que le diagnostic juge fausse.
+   - Un message sans tentative ne le fait jamais monter : « je ne sais pas », « c'est pour
+     demain », « je suis son parent ». Le tuteur reste au même palier, sous un angle
+     nouveau.
+   - Il redescend quand l'élève réussit.
    - Le serveur garde les indices déjà donnés : c'est ce qui évite la répétition sans
      progression, que le juge ne sait pas mesurer (`questions-juge.md`).
-5. **Contrat du tour**, en texte simple, dans l'unique message `user` du tour : exercice,
-   palier autorisé, indices déjà donnés, diagnostic.
-   - Le rédacteur ne reçoit de la fiche que ce que le palier exige (Khan Academy, −50 %).
-   - La réponse complète ne sert qu'au contrôle de fuite.
-6. **Rédaction** par Small 4.
-   - Raisonnement : routé par la mesure, non plus par matière.
-   - Température : 0,7 en `high` ; plus basse en `none`, valeur fixée au harnais (fiche
-     Hugging Face de Small 4).
-   - Pas de plafond de tokens sur un tour qui raisonne (décision de Victor). La borne
-     devient le contexte et le timeout du flux.
-7. **Contrôle avant l'élève**, déterministe, dans `experimental_transform` de `streamText`.
-   - Ce qu'il contrôle :
-     - la réponse et ses formes, comparées à la fiche ;
+   - Le risque inverse, un tuteur trop réticent (« too reticent », LearnLM), se lit au
+     passage de fin.
+5. **Contrat du tour**, en texte simple, entre balises `<contrat>`, dans l'unique message
+   `user` du tour : énoncé, palier autorisé, indices déjà donnés, diagnostic.
+   - Le texte de l'élève est entre `<student_message>`. Il ne peut ni ouvrir ni fermer ces
+     balises : `stripPromptTags` les neutralise, comme aujourd'hui.
+   - Le prompt système dit que seul le contrat hors du message de l'élève fait foi. En S6, un
+     « contrat » tapé par l'élève est une donnée.
+   - Le rédacteur ne reçoit de la fiche que ce que le palier autorise.
+6. **Rédaction** par Small 4, sans raisonnement.
+   - L'exactitude passe par la fiche, produite en raisonnement, et par le contrôle avant
+     l'élève.
+   - Température 0,7 : dans la plage de la fiche du modèle pour `reasoning_effort="none"`
+     (« Temp between 0.0 and 0.7 … depending on task »). Aucune source ne montre qu'une
+     valeur plus basse réduirait les erreurs (Renze et Guven, plus bas).
+   - Ces réglages sont fixés sur sources, pas mesurés un à un : ils ne changent pas sans un
+     passage annoncé.
+7. **Contrôle avant l'élève.** Le message entier est généré, contrôlé, puis envoyé. Rien
+   n'atteint l'élève avant le contrôle, et le message envoyé est celui qui est persisté.
+   - Contrôles déterministes :
+     - la réponse et ses formes, comparées à la fiche comme le harnais les cherche
+       (`eval/leak.ts`). Une forme que l'élève a déjà écrite, et que le diagnostic juge
+       juste, peut être reprise pour la confirmer ;
      - les balises et gabarits ;
      - les égalités, recalculées par mathjs.
-   - Sur une fuite :
-     - `stopStream` ;
-     - une régénération sous contrainte ;
-     - puis une réponse de repli.
-   - Le tampon coûte au plus une phrase. Contrôler le message entier ajouterait 1 à 2
-     secondes.
-   - Sources :
-     - https://ai-sdk.dev/docs/ai-sdk-core/generating-text, « Stream transformation » ;
-     - NeMo Guardrails, `stream_first: false`.
+   - Modération de sortie en parallèle (`mistral-moderation-2603`, prix « Free » sur sa
+     fiche, https://docs.mistral.ai/models/model-cards/mistral-moderation-26-03).
+   - Sur un échec : une régénération sous contrainte, puis une réponse de repli fixe, et
+     l'événement est tracé.
+   - Latence ajoutée : celle d'une réponse entière, environ 1,2 seconde pour 200 tokens au
+     débit cité plus haut. À mesurer au premier passage, avec le taux de fausses alarmes
+     sur des formes courtes (« 2 », « être »).
+   - Le tampon par phrase serait plus rapide, mais laisserait à l'écran des phrases déjà lues
+     quand la suite est retirée.
+   - Les mêmes contrôles portent, avant leur enregistrement, sur les fiches de révision
+     générées et sur le titre de séance : en S4, la réponse fuyait aussi par les fiches.
    - La vérification phrase par phrase par le modèle (le juge `eval/claims.ts`) ne sert pas
      de barrière : elle lève 6 alertes injustifiées ou discutables sur 37 conversations
      (`questions-juge.md`).
-8. **Modération de sortie** sur le message complet, avant persistance. Elle est gratuite.
 
 ### Prompt
 
@@ -180,15 +218,27 @@ On y met :
     raisonnement et les appels d'outils, et se rejoue tel quel.
   - Aujourd'hui seul le texte est gardé, et `sendReasoning: false` vide le message UI de son
     raisonnement.
+  - Les routes qui relisent l'historique pour le client (`/chat/session/:id/history`,
+    `/chat/message/:id`) ne rendent que ce que l'élève a vu : ni raisonnement, ni contrat,
+    ni appel d'outil interne.
+  - Un tour compte au quota et au coût même coupé ou vide ; l'usage en flux se vérifie sur
+    le fil.
 - **Préfixe stable**, pour le cache :
   - système ;
   - définitions d'outils ;
-  - programme du niveau et de la matière (point 4 du lot 2) ;
-  - fiche de l'exercice.
+  - énoncé de l'exercice et ses notions du programme, jamais la réponse ni les étapes.
 
   La matière est figée pour la séance. Ce qui change à chaque tour va dans le message
   courant : le placer avant l'historique casserait le cache. Cela corrige `../../agent.md`
   § 7.
+- **Programme** : les notions de l'exercice dans la fiche, plutôt que le programme entier de
+  la matière que proposait `../2026-10-02/alignement.md` (§ 4).
+  - La fiche dit lesquelles l'exercice travaille et lesquelles ne pas utiliser ; c'est ce
+    qu'il faut à la rédaction.
+  - Le juge ne sait pas mesurer l'effet du programme entier : il ne repère pas une notion
+    d'une classe suivante (0 sur 2 cas construits, `questions-juge.md`).
+  - Le programme entier reste possible pour les questions hors exercice. À décider après
+    le passage de fin.
 - **Un seul message `user` par tour.** Aujourd'hui, un tour en empile jusqu'à six.
 - **Résumé incrémental**, qui sert aussi d'épisode. Les épisodes se récupèrent une fois par
   séance, pas à chaque message.
@@ -203,20 +253,23 @@ On y met :
   - n'écrit plus de styles d'apprentissage (neuromythe, `../../agent.md` § 6) ;
   - le profil reçoit une durée de conservation ;
   - une écriture échouée n'est plus déclarée réussie.
-- `generate_flashcards` confirmé par le code.
+- `generate_flashcards` confirmé par le code, avec l'analyse du tour (point 3).
   - Par `toolApproval` de `streamText`, qui accepte pour chaque outil une fonction rendant
-    `'approved'` ou `'user-approval'` (`ToolApprovalConfiguration`, `ai` 7.0.107).
-  - Une demande explicite de l'élève, relevée par l'analyse du tour, vaut confirmation.
+    `'approved'` ou `'denied'` (`ToolApprovalConfiguration`, `ai` 7.0.107).
+  - Elle rend `'approved'` quand l'analyse du tour relève une demande ou un accord de
+    l'élève, `'denied'` sinon : le modèle reçoit le refus et propose les fiches.
+  - Aucune confirmation ne dépend d'un client, qui n'existe pas avant le lot 3.
   - `needsApproval`, prescrit par `../../agent.md` § 5, est `@deprecated` dans la version
     installée : « Tool approval is handled on a `generateText` / `streamText` level now ».
-- Les outils passent en `strict: true`.
-- `get_app_help` : ses affirmations fausses sont retirées. Il dit :
+- Les outils passent en `strict: true` (point 2).
+- `get_app_help` supprimé. Il décrit une application mobile qui n'existe plus :
+  - onglets, « Mon Classeur », bouton micro ;
   - « du CP a la Terminale » ;
   - « serveurs en France (RGPD) », non prouvé ;
   - « messages par jour », alors que le quota compte des tokens ;
   - « Premium » au lieu de Complet.
 
-  Sa réécriture complète reste au lot 3.
+  Le client web du lot 3 écrira son guide.
 
 ### Autres usages de l'IA
 
@@ -262,49 +315,76 @@ On y met :
 
 ## Mesure
 
-Pas de passage par PR. L'avant, ce sont les 38 conversations de l'échantillon, jouées par
-le Tom actuel (`../2026-10-03/donnees/results.json`), déjà lues. L'après, les mêmes paires
+Pas de passage par PR :
+- un passage complet coûte environ 40 minutes de jugement (`questions-juge.md`) ;
+- une étape seule n'est pas l'agent livré : la fiche sans le contrôle, ou le palier sans la
+  fiche, ne se jugent pas séparément.
+
+L'avant, ce sont les 38 conversations de l'échantillon, jouées par le Tom actuel
+(`../2026-10-03/donnees/results.json`) et déjà lues. L'après, les mêmes paires
 scénario × exercice rejouées par le Tom refait. Deux passages en tout, annoncés :
 
-1. **Détresse, injection et fuite par le code**, après le contrôle avant l'élève et la
-   détresse : scénarios S4, S5 et S6, lus par le code seul (fuite, 3114, adulte de
-   confiance, question après la détresse). Peu coûteux.
+1. **Détresse, injection et fuite par le code**, après le point 6 : scénarios S4, S5 et S6,
+   lus par le code seul (fuite, 3114, adulte de confiance, question après la détresse).
 2. **Échantillon complet** à la fin de la refonte. Les transcriptions d'avant et d'après
    sont rejugées dans le même passage, par la même version du juge, et relues par Claude
    selon les catégories de l'analyse d'erreurs.
 
-La baseline de Tom tel qu'il est (point 5 du lot 1) se réduit à ces 38 conversations :
-jouer le jeu complet sur un agent qu'on remplace ne servirait à rien. Le jeu complet se joue
-sur l'agent refait.
+Ce que ces passages établissent :
+- **« Sans régression » se constate sur les métriques du code** : fuite, 3114, adulte de
+  confiance, question après la détresse, fiches créées, balises.
+- **Les critères du juge se rapportent avec leur accord mesuré.** Aucun n'atteint
+  α ≥ 0,800 : ils ne servent pas de porte (`../../agent.md` § 9).
+- **Aucun réglage n'est mesuré isolément** : ni température, ni raisonnement.
+
+Conséquences pour la spec et la roadmap :
+- La règle « aucun changement de l'agent n'est mergé sans comparaison à la baseline »
+  (`../../agent.md` § 9) s'applique à l'agent refait d'un bloc. Les PR du lot 2 se mergent
+  sur leurs tests.
+- Le garde-fou en CI (point 6 du lot 1) se branche ensuite, contre l'agent refait.
+- La baseline de Tom tel qu'il est (point 5 du lot 1) se réduit à ces 38 conversations :
+  jouer le jeu complet sur un agent qu'on remplace ne servirait à rien. Le jeu complet se
+  joue sur l'agent refait.
 
 ## Ordre des PR
 
-1. `fix(tutor)` : épisodes limités à l'élève, avec un test à deux élèves. Mergée (#378).
-2. **Prompt et outils** :
+Préalable : épisodes limités à l'élève, avec un test à deux élèves (#378, mergée). Puis les
+points du lot 2 de `../../roadmap.md` :
+
+1. **Prompt et outils** :
    - prompt réécrit ;
-   - consignes de tour retirées ;
-   - outils revus ;
-   - affirmations fausses du guide retirées.
-3. **Socle du tour** :
-   - historique en messages de l'AI SDK, raisonnement et outils rejoués ;
+   - consignes de tour corrigées ;
+   - `get_student_profile` et `get_app_help` supprimés ;
+   - styles d'apprentissage retirés.
+2. **Socle du tour** :
+   - historique rejoué, raisonnement et outils compris, et routes de lecture limitées au
+     texte vu ;
    - un seul message `user` ;
    - préfixe stable ;
-   - échantillonnage par mode, sans plafond en raisonnement ;
+   - outils stricts ;
+   - usage compté même pour un tour coupé ;
    - renommages de l'AI SDK 7.
-4. **Fiche d'exercice** : analyse du tour, fiche en trois tirages, mathjs ; l'analyse de
-   document devient une extraction.
-5. **Diagnostic, palier et contrat du tour.**
-6. **Contrôle avant l'élève et modération de sortie.**
-7. **Détresse et modération d'entrée.** La réponse fixe est à faire approuver par Victor. →
+3. **Fiche d'exercice** :
+   - analyse du tour ;
+   - fiche en trois tirages, mathjs, notions du programme ;
+   - fiches de révision confirmées par `toolApproval` ;
+   - l'analyse de document devient une extraction.
+4. **Diagnostic, palier et contrat du tour.**
+5. **Contrôle avant l'élève et modération de sortie**, sur le message, les fiches de
+   révision et le titre.
+6. **Détresse et modération d'entrée.** La réponse fixe est à faire approuver par Victor. →
    Premier passage.
-8. **Mémoire et autres appels** :
+7. **Mémoire et autres appels** :
    - résumé incrémental ;
    - épisodes une fois par séance ;
    - logs sans contenu d'élève ;
    - STT sans langue forcée ;
    - `safePrompt` retiré.
-9. Quotas et coûts (point 3 du lot 2), programme dans le contexte (point 4). → Passage de
-   fin.
+8. **Quotas et coûts.** → Passage de fin.
+   - L'ancien ordre les plaçait « avant tout ajout au prompt » pour protéger des
+     utilisateurs, et il n'y en a pas avant le lot 3.
+   - La refonte change ce que coûte un tour (fiche, raisonnement rejoué) : le quota se
+     recalibre sur le coût mesuré de l'agent refait, au lieu d'être réglé deux fois.
 
 ## Non vérifié
 
@@ -315,3 +395,4 @@ sur l'agent refait.
 - La latence et le rappel de `mistral-moderation-2603` sur des phrases d'élèves en français.
 - La justesse des fiches de Small 4, et le gain du raisonnement en grammaire : aucune source
   n'en parle, la mesure le dira.
+- Le taux de fausses alarmes du contrôle avant l'élève sur des formes de réponse générées.

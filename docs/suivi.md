@@ -122,15 +122,14 @@ contraire.
   - détresse sans 3114 et retour à l'exercice dans les 3 ;
   - fiches refusées ou ignorées dans 4 sur 6.
 
-  Corrections rangées sous les points de `roadmap.md`, dans son ordre, chacune comparée à
-  la baseline :
-  - point 1 : palier tenu par le serveur, solution de référence côté serveur, contrôle
-    avant envoi, diagnostic de l'erreur avant l'aide ;
-  - point 2 : détecteur et réponse fixe approuvée par Victor, puis fin de la
-    conversation ;
-  - point 5 : mathjs sur les calculs de la solution ;
-  - point 6 : règle de la réponse jamais donnée, explication demandée au palier d'aide,
-    fiches à la demande, portée collège.
+  Corrections rangées sous les points du lot 2 de `roadmap.md`, revus le 2026-10-04
+  (`etudes/2026-10-04/refonte-agent.md`), l'agent refait comparé à l'avant d'un bloc :
+  - point 1 : règle de la réponse jamais donnée, explication demandée au palier d'aide,
+    fiches à la demande, portée collège ;
+  - point 3 : solution de référence côté serveur, mathjs sur ses calculs ;
+  - point 4 : diagnostic de l'erreur avant l'aide, palier tenu par le serveur ;
+  - point 5 : contrôle avant l'envoi ;
+  - point 6 : détecteur et réponse fixe approuvée par Victor, puis fin de la conversation.
 - **Audit de l'agent** (2026-10-04, code du tour de chat), en plus des défauts listés ici :
   - aucun outil ni contexte pour vérifier : ni solution, ni erreur de l'élève, ni programme ;
   - le prompt pousse à affirmer : « Réponds comme un professeur qui connaît son sujet »,
@@ -149,10 +148,10 @@ contraire.
   - `get_student_profile` à appeler « en début de conversation » alors que le profil est
     injecté à chaque tour ;
   - historique rechargé en texte seul : ni raisonnement ni appels d'outils rejoués.
-- **Programme dans le contexte** (`etudes/2026-10-02/alignement.md`, § 4) : référentiel
-  du niveau et de la matière de la séance injecté en bloc, constant pendant la séance ;
-  `modules/tutor/prompts/adaptation/by-level.ts` réécrit par niveau à partir du
-  référentiel, consignes chiffrées sans source retirées. Après la correction du quota.
+- **Programme dans le contexte** : les notions de l'exercice, prises dans le référentiel,
+  entrent dans la fiche (point 3), plutôt que le programme entier de la matière
+  (`etudes/2026-10-04/refonte-agent.md`, « Contexte et mémoire »). Les consignes chiffrées
+  sans source de `modules/tutor/prompts/adaptation/by-level.ts` sont retirées au point 1.
 - **Outil de calcul** (même étude, § 6) : mathjs, déjà adopté par le harnais (#373), pour
   vérifier les calculs de la solution de référence ; sa résolution d'équations et
   l'équivalence restent à lire dans sa documentation avant tout usage.
