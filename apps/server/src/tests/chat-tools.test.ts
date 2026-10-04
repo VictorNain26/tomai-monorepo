@@ -32,7 +32,6 @@ const baseContext = {
   userId: 'user-001',
   sessionId: 'session-001',
   schoolLevel: 'troisieme' as const,
-  userRole: 'student' as const,
   emitDeckCreated: mock(() => {}),
 };
 
@@ -47,12 +46,10 @@ describe('TomMetadata', () => {
 });
 
 describe('buildChatTools', () => {
-  it('exposes exactly the 4 declared tool keys', () => {
+  it('exposes exactly the declared tool keys', () => {
     const tools = buildChatTools(baseContext);
     expect(Object.keys(tools).sort()).toEqual([
       'generate_flashcards',
-      'get_app_help',
-      'get_student_profile',
       'update_student_profile',
     ]);
   });

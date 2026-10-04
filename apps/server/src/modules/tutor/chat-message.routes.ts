@@ -22,7 +22,7 @@ import { checkQuota } from '../billing/index.js';
 import { AppError, toErrorResponse } from '../../platform/http/errors.js';
 import { logger } from '../../platform/observability/logger.js';
 import { env } from '../../platform/config/env.js';
-import { educationLevelSchema, isEducationLevel } from '../../lib/education-levels.js';
+import { educationLevelSchema, isCollegeLevel, isEducationLevel } from '../../lib/education-levels.js';
 
 // Track active UI message streams per user
 const activeStreams = new Map<string, number>();
@@ -95,7 +95,12 @@ export const chatMessageRoutes = new Hono<AppEnv>()
     };
 
     const resolvedSchoolLevel = schoolLevel ?? (isEducationLevel(user.schoolLevel) ? user.schoolLevel : 'sixieme');
-    const userRole = user.role === 'parent' ? 'parent' : 'student';
+    // The prompt serves the collège only: another level would get a tutor that contradicts it.
+    if (!isCollegeLevel(resolvedSchoolLevel)) {
+      releaseStream();
+      const appError = new AppError('VALIDATION_ERROR', `school level ${resolvedSchoolLevel} is outside the collège`);
+      return c.json(toErrorResponse(appError, requestId), appError.statusCode);
+    }
 
     let turnCtx: Awaited<ReturnType<typeof chatOrchestrationService.prepareTurn>>;
     try {
@@ -141,7 +146,6 @@ export const chatMessageRoutes = new Hono<AppEnv>()
           userId: user.id,
           sessionId: turnCtx.sessionId,
           schoolLevel: resolvedSchoolLevel,
-          userRole,
           emitDeckCreated: d => { writer.write({ type: 'data-deck-created', data: d }); },
         });
 
@@ -152,7 +156,6 @@ export const chatMessageRoutes = new Hono<AppEnv>()
           schoolLevel: resolvedSchoolLevel,
           firstName: firstName ?? user.firstName ?? undefined,
           sessionId: turnCtx.sessionId,
-          userRole,
           conversationSummary: turnCtx.conversationSummary,
           conversationHistory: turnCtx.conversationHistory,
           cognitiveProfileSummary: turnCtx.cognitiveProfileSummary,

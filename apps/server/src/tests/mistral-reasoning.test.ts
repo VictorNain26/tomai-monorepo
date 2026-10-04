@@ -17,7 +17,13 @@ describe('routeReasoningEffort', () => {
   });
 
   it('requires a college+ level', () => {
-    expect(routeReasoningEffort({ schoolLevel: 'cinquieme', subject: 'sciences', intent: 'check-my-answer' })).toBe('none');
+    expect(routeReasoningEffort({ schoolLevel: 'cinquieme', subject: 'sciences', intent: 'solve-this-for-me' })).toBe('none');
+  });
+
+  it('reasons on a proposed answer whatever the level and subject: the verdict must be right', () => {
+    for (const subject of ['francais', 'langues', 'mathematiques'] as const) {
+      expect(routeReasoningEffort({ schoolLevel: 'sixieme', subject, intent: 'check-my-answer' })).toBe('high');
+    }
   });
 
   it('requires a hard intent', () => {

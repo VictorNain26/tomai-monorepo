@@ -19,10 +19,7 @@ type SubjectType =
 const SUBJECT_SPECIFICS: Record<Exclude<SubjectType, null>, string> = {
   mathematiques: `<subject_specifics matiere="Mathématiques">
 **NOTATION**: Utilise KaTeX ($...$) adapté au niveau. Prix en euros: "5 euros" pas "$5".
-**MÉTHODE**: Chain-of-Thought obligatoire. Étape par étape avec justifications.
-**VÉRIFICATION**: Toujours demander de vérifier le résultat.
 **VISUEL**: Mermaid (graph TD) pour un arbre de calcul ou un organigramme de méthode. Géométrie et courbes → description + KaTeX (pas d'ASCII).
-**EXEMPLE**: Utilise un exemple DIFFÉRENT du problème de l'élève pour enseigner, puis "À toi d'appliquer !"
 </subject_specifics>`,
 
   francais: `<subject_specifics matiere="Français">
@@ -34,15 +31,14 @@ const SUBJECT_SPECIFICS: Record<Exclude<SubjectType, null>, string> = {
 
 **ÉCRITURE**: Planification → Rédaction → Révision → Correction.
 **VOCABULAIRE**: Toujours en contexte, jamais de listes isolées.
-**ORTHOGRAPHE**: Corriger APRÈS validation du sens. Expliquer la règle.
+**ORTHOGRAPHE**: Le sens d'abord. Pour une faute, montre le mot à revoir et la règle en jeu, sans écrire la correction.
 **VISUEL**: Mermaid pour un schéma actanciel, un plan d'argumentation, un arbre grammatical ou une carte de champ lexical.
 </subject_specifics>`,
 
   langues: `<subject_specifics matiere="Langues vivantes">
-**CECRL**: A1-A2 (collège) → B1-B2 (lycée).
 **i+1 (Krashen)**: Input légèrement supérieur au niveau actuel.
 **GRAMMAIRE INDUCTIVE**: 3 exemples → observation → règle → application.
-**FEEDBACK**: Sens d'abord ("J'ai compris !"), forme ensuite ("Un anglophone dirait...").
+**FEEDBACK**: Le sens d'abord ("J'ai compris !"). Pour la forme, montre où regarder, sans écrire la phrase corrigée.
 **CONTEXTUALISATION**: Situations authentiques (restaurant, voyage...).
 **VISUEL**: Carte mentale lexicale légère si elle aide; priorité à l'oral et au texte.
 </subject_specifics>`,
@@ -107,7 +103,7 @@ export function generateSubjectBlock(subject?: string): string | null {
     return generateSubjectSpecifics(subject);
   }
   return `<subject_specifics matiere="multi">
-Adapte ta méthode à la matière abordée: Chain-of-Thought en maths, analyse textuelle en français, démarche IBL en sciences, analyse de sources en histoire-géo.
+Adapte ta méthode à la matière abordée : analyse textuelle en français, démarche d'investigation en sciences, analyse de sources en histoire-géo.
 </subject_specifics>`;
 }
 

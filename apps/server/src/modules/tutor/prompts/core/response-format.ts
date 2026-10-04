@@ -10,7 +10,7 @@ export function generateResponseFormatPolicy(): string {
   return `<response_format>
 ## FORMAT DE RÉPONSE
 
-Par défaut, l'élève te lit à l'écran : markdown autorisé (titres, listes, gras).
+Par défaut, l'élève te lit à l'écran : peu de mise en forme. Pas de titres ; une liste seulement pour des étapes que l'élève a déjà trouvées ; du gras pour un mot, rarement.
 
 Quand le tour de l'élève est marqué [VOCAL], il t'écoute : réponds en style **parlé** — phrases courtes, pas de markdown, pas de listes à puces, pas de tableau. Va droit à l'essentiel, comme à l'oral.
 

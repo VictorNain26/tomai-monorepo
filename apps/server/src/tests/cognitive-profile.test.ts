@@ -16,7 +16,6 @@ interface CognitiveProfileData {
   userId: string;
   strengths: string[];
   weaknesses: string[];
-  preferredStyle: string | null;
   observations: { date: string; observation: string; subject?: string }[];
   lastUpdatedByAgent: Date | null;
   createdAt: Date;
@@ -35,6 +34,7 @@ let queryFindFirstResult: CognitiveProfileData | undefined = undefined;
 let dbUpdateCalled = false;
 let dbInsertCalled = false;
 let dbShouldThrow = false;
+let dbWriteShouldThrow = false;
 
 mock.module('../db/connection', () => ({
   db: {
@@ -49,6 +49,7 @@ mock.module('../db/connection', () => ({
     update: mock(() => ({
       set: mock(() => ({
         where: mock(async () => {
+          if (dbWriteShouldThrow) throw new Error('DB write error');
           dbUpdateCalled = true;
           return {};
         }),
@@ -56,6 +57,7 @@ mock.module('../db/connection', () => ({
     })),
     insert: mock(() => ({
       values: mock(async () => {
+        if (dbWriteShouldThrow) throw new Error('DB write error');
         dbInsertCalled = true;
         return {};
       }),
@@ -79,6 +81,7 @@ beforeEach(() => {
   dbUpdateCalled = false;
   dbInsertCalled = false;
   dbShouldThrow = false;
+  dbWriteShouldThrow = false;
 });
 
 describe('Cognitive Profile Service', () => {
@@ -97,23 +100,38 @@ describe('Cognitive Profile Service', () => {
       expect(result).toBeNull();
     });
 
-    it('should return null on DB error', async () => {
+    it('rejects on a DB error: a caller must not merge with an empty profile', async () => {
       dbShouldThrow = true;
-      const result = await cognitiveProfileService.getProfile('user-err');
-      expect(result).toBeNull();
-      expect(mockLogger.error).toHaveBeenCalled();
+      const outcome = await cognitiveProfileService.getProfile('user-err').then(() => 'resolved', (error: unknown) => String(error));
+      expect(outcome).toContain('DB error');
     });
   });
 
   describe('getProfileSummary', () => {
-    it('should format strengths/weaknesses/style/observations', async () => {
+    it('should format strengths/weaknesses/observations', async () => {
       queryFindFirstResult = makeCognitiveProfile();
       const summary = await cognitiveProfileService.getProfileSummary('user-001');
       expect(summary).not.toBeNull();
       expect(summary).toContain('Points forts');
       expect(summary).toContain('Points à travailler');
-      expect(summary).toContain('Style préféré');
       expect(summary).toContain('Observations récentes');
+    });
+
+    it('keeps a profile made of observations only', async () => {
+      queryFindFirstResult = makeCognitiveProfile({
+        strengths: [],
+        weaknesses: [],
+        observations: [{ date: '2025-06-15', observation: 'Confond aire et périmètre' }],
+      });
+      const summary = await cognitiveProfileService.getProfileSummary('user-obs');
+      expect(summary).toContain('Confond aire et périmètre');
+    });
+
+    it('goes on without the profile when it cannot be read, and logs it', async () => {
+      dbShouldThrow = true;
+      mockLogger.error.mockClear();
+      expect(await cognitiveProfileService.getProfileSummary('user-err')).toBeNull();
+      expect(mockLogger.error).toHaveBeenCalledTimes(1);
     });
 
     it('should return null when no profile', async () => {
@@ -126,7 +144,6 @@ describe('Cognitive Profile Service', () => {
       queryFindFirstResult = makeCognitiveProfile({
         strengths: [],
         weaknesses: [],
-        preferredStyle: null,
         observations: [],
       });
       const summary = await cognitiveProfileService.getProfileSummary('user-empty');
@@ -180,12 +197,19 @@ describe('Cognitive Profile Service', () => {
       expect(dbInsertCalled).toBe(true);
     });
 
-    it('should not throw on error', async () => {
+    it('rejects a failed write, so that no caller reports a success', async () => {
+      queryFindFirstResult = makeCognitiveProfile();
+      dbWriteShouldThrow = true;
+      const outcome = await cognitiveProfileService.updateProfile('user-err', { strengths: ['test'] }).then(() => 'resolved', (error: unknown) => String(error));
+      expect(outcome).toContain('DB write error');
+    });
+
+    it('rejects a failed read before writing anything', async () => {
       dbShouldThrow = true;
-      // updateProfile calls getProfile which will return null (due to error)
-      // Then it tries to create new, but the profile was null so it creates
-      await cognitiveProfileService.updateProfile('user-err', { strengths: ['test'] });
-      // Should not throw - error is logged
+      const outcome = await cognitiveProfileService.updateProfile('user-err', { strengths: ['test'] }).then(() => 'resolved', (error: unknown) => String(error));
+      expect(outcome).toContain('DB error');
+      expect(dbInsertCalled).toBe(false);
+      expect(dbUpdateCalled).toBe(false);
     });
   });
 });

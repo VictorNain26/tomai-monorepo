@@ -169,17 +169,18 @@ en zone intermédiaire (McBain 2025).
 
 ## 6. Outils
 
-Quatre outils aujourd'hui (`chat-tools.ts`) : `generate_flashcards`,
-`get_student_profile`, `update_student_profile`, `get_app_help`. `get_student_profile`
-disparaît : il renvoie le profil, déjà injecté à chaque tour. Quatre ou cinq outils sont un
-plafond, pas une cible ; tous en `strict: true`.
+Deux outils (`chat-tools.ts`) : `generate_flashcards` et `update_student_profile`. Supprimés
+le 2026-10-04 : `get_student_profile`, qui renvoyait le profil déjà injecté à chaque tour, et
+`get_app_help`, guide d'une application mobile qui n'existe plus ; le client web du lot 3
+écrira le sien. Quatre ou cinq outils sont un plafond, pas une cible ; tous en `strict: true`.
 
 - Descriptions réécrites : format d'entrée, exemple, cas limite, quand l'utiliser
   plutôt qu'un autre outil.
 - Erreurs structurées `{ isError, errorCategory: transient|validation|business|permission, isRetryable, message }` ;
   un résultat vide n'est jamais une erreur (`tool-errors.ts` étendu).
-- `update_student_profile` n'écrit plus de styles d'apprentissage (neuromythe :
-  Pashler 2008, Newton & Salvi 2020).
+- `update_student_profile` n'écrit plus de styles d'apprentissage (neuromythe :
+  Pashler 2008, Newton & Salvi 2020), la colonne est supprimée ; une écriture échouée
+  revient en erreur au modèle.
 - Appels et résultats d'outils persistés dans l'historique (aujourd'hui seul le
   texte l'est, `ChatOrchestrationService.finishTurn`).
 - `generate_flashcards` réservé au Complet, comme la route de génération de cartes, et

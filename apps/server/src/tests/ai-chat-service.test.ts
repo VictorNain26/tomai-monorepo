@@ -22,7 +22,6 @@ const baseParams: Omit<ChatStreamParams, 'model' | 'tools'> = {
   sessionId: 'session-001',
   content: 'Bonjour Tom',
   schoolLevel: 'troisieme',
-  userRole: 'student',
   conversationHistory: [],
 };
 
@@ -213,6 +212,8 @@ describe('streamChat — Mistral wire request', () => {
     expect(capture.body?.['model']).toBe('mistral-small-2603');
     expect(capture.body?.['prompt_cache_key']).toBe('session-001');
     expect(capture.body?.['reasoning_effort']).toBe('high');
+    // No output cap on a reasoning turn: the thinking would eat it.
+    expect(capture.body).not.toHaveProperty('max_tokens');
   });
 
   it("sends reasoning_effort 'none' outside the STEM hard-intent route", async () => {
@@ -222,6 +223,7 @@ describe('streamChat — Mistral wire request', () => {
     await streamChat({ ...baseParams, subject: 'francais', tools: noopTools }).text;
 
     expect(capture.body?.['reasoning_effort']).toBe('none');
+    expect(capture.body?.['max_tokens']).toBe(env.MISTRAL_MAX_TOKENS);
   });
 
   it('surfaces cached prompt tokens from the streamed usage', async () => {

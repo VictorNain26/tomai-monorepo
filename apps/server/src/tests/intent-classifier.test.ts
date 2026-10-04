@@ -147,7 +147,12 @@ describe('Intent Classifier Service', () => {
       expect(block).not.toBeNull();
       expect(block).toContain('<critical_instruction>');
       expect(block).toContain('</critical_instruction>');
-      expect(block).toContain('socratique');
+      // A demand is no attempt: only real attempts move the level, and frustration is
+      // acknowledged only when expressed.
+      expect(block).toContain("La demande seule ne fait pas monter d'un\npalier");
+      expect(block).toContain("s'il a déjà fait de vraies tentatives, donne le palier suivant");
+      expect(block).toContain("S'il exprime de la frustration");
+      expect(block).not.toContain('étape intermédiaire');
     });
 
     it('should return reinforcement for solve-this-for-me / medium', () => {
@@ -173,7 +178,11 @@ describe('Intent Classifier Service', () => {
       });
       expect(block).not.toBeNull();
       expect(block).toContain('<critical_instruction>');
-      expect(block).toContain('démarche');
+      // The error is shown before any question about the method, and a verdict needs certainty.
+      expect(block).toContain('Vérifie-la avant tout');
+      expect(block).toContain("sans écrire la correction ni la bonne réponse");
+      expect(block).toContain("Si tu n'es pas sûr, demande-lui comment il a trouvé");
+      expect(block).not.toContain("Demande-lui d'expliquer SA démarche");
     });
 
     it('should return null for check-my-answer / low confidence', () => {

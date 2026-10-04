@@ -215,6 +215,14 @@ describe('POST /api/chat/stream', () => {
     expect(json.error.code).toBe('QUOTA_EXCEEDED');
   });
 
+  it('refuses a level outside the collège, which the prompt does not serve', async () => {
+    currentUser = { id: 'user-001', role: 'student', schoolLevel: 'terminale', firstName: 'Léo' };
+    const res = await app.fetch(makeRequest());
+    expect(res.status).toBe(400);
+    const json = (await res.json()) as { error: { code: string } };
+    expect(json.error.code).toBe('VALIDATION_ERROR');
+  });
+
   it('returns a 200 UI Message Stream response with the expected headers', async () => {
     currentUser = { id: 'user-001', role: 'student', schoolLevel: 'sixieme', firstName: 'Léo' };
     const res = await app.fetch(makeRequest());

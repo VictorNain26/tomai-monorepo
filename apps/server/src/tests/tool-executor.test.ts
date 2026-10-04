@@ -15,18 +15,12 @@ import { createMockLogger } from './_helpers/mock-logger';
 const mockLogger = createMockLogger();
 mock.module('../platform/observability/logger', () => ({ logger: mockLogger }));
 
-// Cognitive profile — src/modules/tutor/cognitive-profile.service.ts
-let profileResult: Record<string, unknown> | null = {
-  strengths: ['calcul'],
-  weaknesses: ['fractions'],
-  preferredStyle: 'visual',
-  observations: [{ observation: 'Progresse bien' }],
-  lastUpdatedByAgent: new Date('2025-06-15'),
-};
-
+// Cognitive profile — src/modules/tutor/cognitive-profile.service.ts, exercised by
+// tool-executor-profile.test.ts; stubbed here so that no database is reached.
 mock.module('../modules/tutor/cognitive-profile.service', () => ({
   cognitiveProfileService: {
-    getProfile: mock(async () => profileResult),
+    getProfile: mock(async () => null),
+    updateProfile: mock(async () => undefined),
   },
 }));
 
@@ -82,13 +76,6 @@ mock.module('../modules/learning/index', () => ({
   getLevelConfig: mock(() => ({ cardsPerSession: 10 })),
 }));
 
-mock.module('../modules/tutor/app-guide/index', () => ({
-  getAppHelpContent: mock((topic: string) => {
-    if (topic === 'overview') return 'Guide overview content';
-    return null;
-  }),
-}));
-
 // Import after all mocks
 const { executeTool } = await import('../modules/tutor/tool-executor');
 
@@ -96,7 +83,6 @@ const baseContext = {
   userId: 'user-001',
   schoolLevel: 'troisieme' as const,
   sessionId: 'session-001',
-  userRole: 'student' as const,
 };
 
 beforeEach(() => {
@@ -134,33 +120,6 @@ describe('Tool Executor', () => {
         topic: 'Fractions', subject: 'mathematiques',
       }, baseContext) as Record<string, unknown>;
       expect(result['generated']).toBe(true);
-    });
-  });
-
-  describe('get_student_profile', () => {
-    it('should return profile when exists', async () => {
-      const result = await executeTool('get_student_profile', {}, baseContext) as Record<string, unknown>;
-      expect(result['exists']).toBe(true);
-      expect(result['strengths']).toEqual(['calcul']);
-    });
-
-    it('should return exists=false when no profile', async () => {
-      profileResult = null;
-      const result = await executeTool('get_student_profile', {}, baseContext) as Record<string, unknown>;
-      expect(result['exists']).toBe(false);
-    });
-  });
-
-  describe('get_app_help', () => {
-    it('should return guide for valid topic', async () => {
-      const result = await executeTool('get_app_help', { topic: 'overview' }, baseContext) as Record<string, unknown>;
-      expect(result['found']).toBe(true);
-      expect(result['guide']).toBeDefined();
-    });
-
-    it('should return not found for invalid topic', async () => {
-      const result = await executeTool('get_app_help', { topic: 'nonexistent' }, baseContext) as Record<string, unknown>;
-      expect(result['found']).toBe(false);
     });
   });
 

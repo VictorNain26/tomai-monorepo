@@ -277,33 +277,15 @@ class ChatOrchestrationService {
    * tokens/cout, et declenche summarization + auto-titrage en
    * fire-and-forget. Miroir du `postProcess` du pipeline legacy — qui
    * n'etait invoque QUE sur un chunk `done` (jamais sur une erreur en
-   * cours de stream). Ici, meme garde : si le stream n'a produit aucun
-   * contenu, on ne persiste rien et on ne compte ni tokens ni cout.
+   * cours de stream). Si le stream n'a produit aucun texte, rien n'est
+   * persiste, mais les tokens factures sont comptes.
    */
   async finishTurn(params: FinishTurnParams): Promise<void> {
     const { sessionId, userId, userContent, responseMessage, model, usage, startTime, attachedFileInfo, attachedFileInfos, classifiedIntent } = params;
     const fullContent = extractTextFromParts(responseMessage.parts);
-
-    if (fullContent.length === 0) {
-      logger.warn('Streaming produced no content, skipping persistence', {
-        userId,
-        sessionId,
-        operation: 'chat-orchestration:empty-response',
-      });
-      return;
-    }
-
     const tokensUsed = usage?.totalTokens ?? 0;
 
-    await chatMessageService.saveMessage(sessionId, 'assistant', fullContent, {
-      aiModel: model,
-      tokensUsed,
-      responseTimeMs: Date.now() - startTime,
-      ...(attachedFileInfo && { attachedFile: attachedFileInfo }),
-      ...(attachedFileInfos && { attachedFiles: attachedFileInfos }),
-      classifiedIntent,
-    }, { verifySessionExists: false });
-
+    // A turn that reasoned without writing anything was billed all the same.
     if (tokensUsed > 0) {
       await incrementTokenUsage(userId, tokensUsed);
 
@@ -317,6 +299,25 @@ class ChatOrchestrationService {
         cachedTokens: usage?.inputTokenDetails.cacheReadTokens ?? 0,
       });
     }
+
+    if (fullContent.length === 0) {
+      logger.warn('Streaming produced no content, skipping persistence', {
+        userId,
+        sessionId,
+        tokensUsed,
+        operation: 'chat-orchestration:empty-response',
+      });
+      return;
+    }
+
+    await chatMessageService.saveMessage(sessionId, 'assistant', fullContent, {
+      aiModel: model,
+      tokensUsed,
+      responseTimeMs: Date.now() - startTime,
+      ...(attachedFileInfo && { attachedFile: attachedFileInfo }),
+      ...(attachedFileInfos && { attachedFiles: attachedFileInfos }),
+      classifiedIntent,
+    }, { verifySessionExists: false });
 
     logger.info('Streaming message saved', {
       userId,

@@ -135,7 +135,6 @@ describe('AI SDK telemetry', () => {
       content: 'mon prénom est Léa',
       firstName: 'Léa',
       schoolLevel: 'troisieme',
-      userRole: 'student',
       conversationHistory: [],
       tools: {
         lookup: tool({

@@ -50,12 +50,15 @@ interface ReasoningRouteParams {
 /**
  * Decide whether the next chat turn warrants `reasoning_effort: "high"`.
  *
- * Rule: STEM subject AND college+ level AND a known hard student intent.
- * All three must align; missing any one falls back to "none".
+ * Rule: a proposed answer always reasons; otherwise STEM subject AND college+ level AND a
+ * known hard student intent, all three, or "none".
  * This avoids expensive thinking mode for casual chat in math class.
  */
 export function routeReasoningEffort(params: ReasoningRouteParams): ReasoningEffort {
   const { schoolLevel, subject, intent } = params;
+  // A verdict on the student's answer must be right, whatever the subject: the tutor has no
+  // reference to check against until the exercise sheet exists.
+  if (intent === 'check-my-answer') return 'high';
   if (!COLLEGE_AND_UP.has(schoolLevel)) return 'none';
   if (!subject || !STEM_SUBJECTS.has(subject)) return 'none';
   if (!intent || !HARD_INTENTS.has(intent)) return 'none';

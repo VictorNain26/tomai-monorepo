@@ -42,7 +42,7 @@ import type { EducationLevelType } from '../../types/index.js';
 import type { AttachedFileForPrompt } from '../documents/index.js';
 
 /** Bump whenever content under modules/tutor/prompts/** or shared/pedagogy/** changes. */
-const PROMPT_VERSION = '2026-10-01';
+const PROMPT_VERSION = '2026-10-04';
 
 export interface AttachedFile {
   /** Inline base64 payload for multimodal user messages (Mistral vision). */
@@ -72,7 +72,6 @@ export interface StreamGenerationParams {
   cognitiveProfileSummary?: string | null | undefined;
   learningContext?: string | null | undefined;
   conversationSummary?: string | null | undefined;
-  userRole: 'student' | 'parent';
   files?: AttachedFile[] | undefined;
   /**
    * Attached-document analyses (OCR of the student's files). Injected as a
@@ -269,7 +268,9 @@ export function streamChat(params: ChatStreamParams) {
     tools: params.tools,
     stopWhen: isStepCount(MAX_TOOL_ITERATIONS),
     temperature: env.MISTRAL_TEMPERATURE,
-    maxOutputTokens: env.MISTRAL_MAX_TOKENS,
+    // No output cap on a reasoning turn: the thinking counts in completion_tokens and a cap
+    // would cut the answer after it; the stream timeout bounds the turn.
+    ...(reasoningEffort === 'high' ? {} : { maxOutputTokens: env.MISTRAL_MAX_TOKENS }),
     maxRetries: env.MISTRAL_RETRY_ATTEMPTS,
     providerOptions: {
       mistral: {

@@ -135,21 +135,23 @@ class IntentClassifierService {
    * no reinforcement is needed.
    */
   buildReinforcement(intent: Pick<ClassifiedIntent, 'intent' | 'confidence'>): string | null {
+    // A demand is no attempt: only the student's own work moves the hint level. A proposal is
+    // checked before asking for the method, or the error is never shown.
     if (intent.intent === 'solve-this-for-me' && intent.confidence !== 'low') {
       return `<critical_instruction>
-L'élève vient de demander que tu fasses l'exercice à sa place. Tu NE donnes PAS
-la réponse finale. Tu décomposes en 1-2 questions socratiques qui l'aident à
-démarrer par lui-même. Si après 2-3 échanges il bute vraiment, tu peux
-révéler une étape intermédiaire — jamais le résultat complet en premier.
+L'élève demande la solution. Ne la donne pas. La demande seule ne fait pas monter d'un
+palier : s'il a déjà fait de vraies tentatives, donne le palier suivant de la méthode ; sinon,
+pose une seule question qui l'aide à démarrer. S'il exprime de la frustration, reconnais-la
+en une phrase.
 </critical_instruction>`;
     }
 
     if (intent.intent === 'check-my-answer' && intent.confidence !== 'low') {
       return `<critical_instruction>
-L'élève a proposé une réponse. Ne dis PAS "oui/non c'est bon/faux" directement.
-Demande-lui d'expliquer SA démarche (« Comment tu as trouvé ? »), puis guide
-la vérification. Si la réponse est fausse, pointe la première erreur de
-raisonnement sans révéler la bonne réponse.
+L'élève propose une réponse. Vérifie-la avant tout. Si tu es sûr qu'elle est juste, dis-le
+clairement et rends-lui la main. Si elle est fausse, montre-lui où regarder, la première
+étape qui ne va pas, sans écrire la correction ni la bonne réponse ; s'il a déjà donné sa
+démarche, ne la lui redemande pas. Si tu n'es pas sûr, demande-lui comment il a trouvé.
 </critical_instruction>`;
     }
 
