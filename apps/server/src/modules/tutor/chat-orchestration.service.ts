@@ -150,7 +150,7 @@ class ChatOrchestrationService {
       };
     });
 
-    // Context assembly (parallel) — intent classification and episodic
+    // Context assembly (parallel) — the turn analysis and episodic
     // memory run alongside file/profile/learning context assembly so none
     // of them add end-to-end latency on the critical path. An analysis that
     // fails gives an empty analysis (logged at high severity in the service,
@@ -241,8 +241,8 @@ class ChatOrchestrationService {
       schoolLevel: request.schoolLevel,
       filesCount: request.fileIds.length,
       multimodalFilesCount: multimodalFiles.length,
-      proposal: turnAnalysis.proposal !== null,
-      newExercise: turnAnalysis.newExercise !== null,
+      proposesAnswer: turnAnalysis.proposesAnswer,
+      bringsExercise: turnAnalysis.bringsExercise,
       asksSolution: turnAnalysis.asksSolution,
       wantsFlashcards: turnAnalysis.wantsFlashcards,
       turnInstructed: turnInstruction !== null,

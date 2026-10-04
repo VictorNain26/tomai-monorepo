@@ -17,7 +17,7 @@ const assistantRow = {
   aiModel: 'mistral-small-2603',
   attachedFile: null,
   modelMessages,
-  messageMetadata: { turnAnalysis: { proposal: 'x = 5', asksSolution: false } },
+  messageMetadata: { turnAnalysis: { proposesAnswer: true, asksSolution: false } },
 };
 
 mock.module('../platform/observability/logger', () => ({ logger: createMockLogger() }));

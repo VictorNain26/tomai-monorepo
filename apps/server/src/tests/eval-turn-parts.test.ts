@@ -43,6 +43,21 @@ describe('readTurnParts', () => {
     });
   });
 
+  it('leaves out a call the code denied: it made nothing', () => {
+    const parts: TomChatMessage['parts'] = [
+      {
+        type: 'tool-generate_flashcards',
+        toolCallId: 'c1',
+        state: 'output-denied',
+        input: { topic: 'accord', subject: 'francais' },
+        approval: { id: 'a1', approved: false, reason: "L'élève n'a pas demandé de cartes", isAutomatic: true },
+      },
+      { type: 'text', text: 'Veux-tu des cartes sur les accords ?' },
+    ];
+
+    expect(readTurnParts(parts)).toEqual({ text: 'Veux-tu des cartes sur les accords ?', tools: [], toolOutputs: '', deckIds: [] });
+  });
+
   it('returns empty fields for a turn without parts', () => {
     expect(readTurnParts([])).toEqual({ text: '', tools: [], toolOutputs: '', deckIds: [] });
   });

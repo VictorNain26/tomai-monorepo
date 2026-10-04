@@ -208,6 +208,42 @@ describe('flashcards confirmed by the code', () => {
       expect(made).toBe(wantsFlashcards ? 1 : 0);
     }
   });
+
+  it('tells the model why cards are denied, and removes the tool after a denial instead of spending the steps', async () => {
+    for (const [turnAnalysis, reason] of [
+      [analysis(), "L'élève n'a pas demandé de cartes"],
+      [analysis({ error: 'timeout' }), 'Les cartes ne peuvent pas être créées à ce tour'],
+    ] as const) {
+      let callIndex = 0;
+      const model = new MockLanguageModelV4({
+        doStream: async () => {
+          callIndex += 1;
+          return {
+            stream: simulateReadableStream({
+              chunkDelayInMs: 0,
+              initialDelayInMs: 0,
+              chunks: [
+                { type: 'stream-start', warnings: [] },
+                { type: 'tool-call', toolCallId: `call-${callIndex}`, toolName: 'generate_flashcards', input: '{}' },
+                { type: 'finish', usage, finishReason: toolCallsFinishReason },
+              ],
+            }),
+          };
+        },
+      });
+      const tools: ToolSet = {
+        ...noopTools,
+        generate_flashcards: tool({ inputSchema: z.object({}), execute: async () => 'deck' }),
+      };
+
+      await streamChat({ ...baseParams, tools, model, turnAnalysis }).text;
+
+      const [first, second] = model.doStreamCalls;
+      expect(first?.tools?.map((t) => t.name)).toEqual(['noop_tool', 'generate_flashcards']);
+      expect(second?.tools?.map((t) => t.name)).toEqual(['noop_tool']);
+      expect(JSON.stringify(second?.prompt.at(-1))).toContain(reason);
+    }
+  });
 });
 
 describe('a turn cut by the timeout', () => {

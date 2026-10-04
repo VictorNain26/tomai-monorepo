@@ -38,7 +38,7 @@ interface ReasoningRouteParams {
   schoolLevel: EducationLevelType;
   subject?: string | undefined;
   /** The turn's analysis; without it, "none". */
-  analysis?: Pick<TurnAnalysis, 'proposal' | 'asksSolution' | 'asksExplanation'> | undefined;
+  analysis?: Pick<TurnAnalysis, 'proposesAnswer' | 'asksSolution' | 'asksExplanation'> | undefined;
 }
 
 /**
@@ -51,7 +51,7 @@ export function routeReasoningEffort(params: ReasoningRouteParams): ReasoningEff
   const { schoolLevel, subject, analysis } = params;
   // A verdict on the student's answer must be right, whatever the subject: the tutor has no
   // reference to check against until the exercise sheet exists.
-  if (analysis?.proposal) return 'high';
+  if (analysis?.proposesAnswer) return 'high';
   if (!COLLEGE_AND_UP.has(schoolLevel)) return 'none';
   if (!subject || !STEM_SUBJECTS.has(subject)) return 'none';
   return analysis?.asksSolution || analysis?.asksExplanation ? 'high' : 'none';

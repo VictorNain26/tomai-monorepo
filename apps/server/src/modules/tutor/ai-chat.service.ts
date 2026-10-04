@@ -69,7 +69,7 @@ export interface StreamGenerationParams {
    */
   attachedFiles?: AttachedFileForPrompt[] | undefined;
   /**
-   * Turn-specific reinforcement block injected by the intent classifier, in
+   * Turn-specific reinforcement block derived from the turn analysis, in
    * the turn's user message (e.g. on "solve this for me" requests).
    */
   turnInstruction?: string | null | undefined;
@@ -100,6 +100,13 @@ function imageParts(files?: AttachedFile[]): FilePart[] {
   return (files ?? [])
     .filter((f): f is AttachedFile & { base64: string } => f.contentType === 'image' && f.base64 !== undefined && f.base64 !== '')
     .map((f) => imageFilePart(`data:${f.mimeType};base64,${f.base64}`, f.mimeType));
+}
+
+function flashcardsApproval(analysis: TurnAnalysis | undefined) {
+  if (analysis?.wantsFlashcards) return 'approved';
+  return analysis?.error === undefined
+    ? { type: 'denied' as const, reason: "L'élève n'a pas demandé de cartes : propose-les-lui, sans les créer." }
+    : { type: 'denied' as const, reason: "Les cartes ne peuvent pas être créées à ce tour : si l'élève en a demandé, dis-le-lui et propose de réessayer." };
 }
 
 /**
@@ -154,8 +161,13 @@ export function streamChat(params: ChatStreamParams) {
     messages,
     tools: params.tools,
     // Cards are made when the student asks for them or accepts them, as the turn analysis read
-    // it; denied, the call returns to the model, which proposes them instead.
-    toolApproval: { generate_flashcards: params.turnAnalysis?.wantsFlashcards ? 'approved' : 'denied' },
+    // it; denied, the call returns to the model with the reason.
+    toolApproval: { generate_flashcards: flashcardsApproval(params.turnAnalysis) },
+    // Denial holds for the whole turn: a model that calls again would only spend steps.
+    prepareStep: ({ steps }) =>
+      params.turnAnalysis?.wantsFlashcards || !steps.some((step) => step.toolCalls.some((call) => call.toolName === 'generate_flashcards'))
+        ? undefined
+        : { activeTools: Object.keys(params.tools).filter((name) => name !== 'generate_flashcards') },
     stopWhen: isStepCount(MAX_TOOL_ITERATIONS),
     temperature: env.MISTRAL_TEMPERATURE,
     // No output cap on a reasoning turn: the thinking counts in completion_tokens and a cap

@@ -71,7 +71,6 @@ describe('tutor prompt, consistent from method to subject blocks', () => {
       buildSystemPrompt({ level: 'troisieme', levelText: '3e' }),
       ...['mathematiques', 'francais', 'anglais', 'sciences', 'histoire', undefined].map((subject) => generateSubjectBlock(subject)),
       turnInstruction(analysis({ asksSolution: true })) ?? '',
-      `<tutor_message>\nx\n</tutor_message>`,
       wrapStudentContext('Points forts: calcul', '<past_sessions>\nx\n</past_sessions>\n<subject_memory>\ny\n</subject_memory>') ?? '',
       wrapUserMessage('Bonjour'),
     ].join('\n');

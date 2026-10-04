@@ -75,7 +75,7 @@ const prepareTurn = mock(async (_req: unknown) => ({
   cognitiveProfileSummary: null,
   mergedLearningContext: null,
   turnInstruction: null,
-  turnAnalysis: { subject: 'general', newExercise: null, proposal: null, asksSolution: false, asksExplanation: false, wantsFlashcards: false },
+  turnAnalysis: { subject: 'general', bringsExercise: false, proposesAnswer: false, asksSolution: false, asksExplanation: false, wantsFlashcards: false },
   files: [],
   attachedFiles: [],
   attachedFileInfo: null,

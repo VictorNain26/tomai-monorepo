@@ -24,7 +24,7 @@ describe('routeReasoningEffort', () => {
 
   it('reasons on a proposed answer whatever the level and subject: the verdict must be right', () => {
     for (const subject of ['francais', 'langues', 'mathematiques'] as const) {
-      expect(routeReasoningEffort({ schoolLevel: 'sixieme', subject, analysis: analysis({ proposal: 'x = 5' }) })).toBe('high');
+      expect(routeReasoningEffort({ schoolLevel: 'sixieme', subject, analysis: analysis({ proposesAnswer: true }) })).toBe('high');
     }
   });
 });

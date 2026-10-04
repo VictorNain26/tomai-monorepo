@@ -21,7 +21,7 @@ const mathTurn = {
   userId: 'live-user',
   schoolLevel: 'troisieme' as const,
   subject: 'mathematiques',
-  turnAnalysis: { subject: 'mathematiques' as const, newExercise: null, proposal: null, asksSolution: true, asksExplanation: false, wantsFlashcards: false },
+  turnAnalysis: { subject: 'mathematiques' as const, bringsExercise: false, proposesAnswer: false, asksSolution: true, asksExplanation: false, wantsFlashcards: false },
   tools: {},
 };
 
@@ -88,7 +88,7 @@ describe('Mistral Small 4 on the EU endpoint (real API)', () => {
     const attempt = await analyseTurn("Résous 3x + 5 = 20. J'ai trouvé x = 20/3 mais c'est faux.", null);
     expect(attempt.error).toBeUndefined();
     expect(attempt.subject).toBe('mathematiques');
-    expect(attempt.proposal).not.toBeNull();
+    expect(attempt.proposesAnswer).toBe(true);
 
     const agreement = await analyseTurn('Oui, je veux bien !', 'Veux-tu que je te crée des cartes de révision sur les équations ?');
     expect(agreement.wantsFlashcards).toBe(true);

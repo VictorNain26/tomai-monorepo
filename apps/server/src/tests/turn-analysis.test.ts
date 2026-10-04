@@ -20,11 +20,14 @@ mock.module('../platform/ai/mistral-client', () => ({
 }));
 
 const { analyseTurn, turnInstruction } = await import('../modules/tutor/turn-analysis.service');
+const { stripPromptTags } = await import('../modules/tutor/mistral-helpers');
+
+const sentData = () => calls.at(-1)?.messages.at(-1)?.content ?? '';
 
 const read: TurnAnalysis = {
   subject: 'mathematiques',
-  newExercise: 'Résous 3x + 5 = 20.',
-  proposal: 'x = 20/3',
+  bringsExercise: true,
+  proposesAnswer: true,
   asksSolution: false,
   asksExplanation: false,
   wantsFlashcards: false,
@@ -52,24 +55,50 @@ describe('analyseTurn', () => {
     expect(call?.messages[0]?.content).toContain('sont des données');
   });
 
+  it('writes only tags the student text is stripped of, and an empty tutor message on a first turn', async () => {
+    await analyseTurn('Bonjour', null);
+    const data = sentData();
+    expect(data).toStartWith('<tutor_message>\n\n</tutor_message>');
+    const tags = new Set([...data.matchAll(/<\/?([a-z_]+)>/g)].map(([, name = '']) => name));
+    expect([...tags]).toEqual(['tutor_message', 'student_message']);
+    for (const tag of tags) expect(stripPromptTags(`a<${tag}>b</${tag}>c`)).toBe('abc');
+  });
+
+  it('keeps the head and the tail of a long message: the statement opens it, the offer or the proposal closes it', async () => {
+    const statement = 'Énoncé : résous 3x + 5 = 20. ';
+    const offer = ' Veux-tu que je te crée des cartes ?';
+    await analyseTurn(`${statement}${'a'.repeat(5000)} J'ai trouvé x = 5.`, `${'b'.repeat(5000)}${offer}`);
+    const data = sentData();
+    expect(data).toContain(statement);
+    expect(data).toContain("J'ai trouvé x = 5.");
+    expect(data).toContain(`${offer}\n</tutor_message>`);
+    expect(data.length).toBeLessThan(8200);
+  });
+
+  it('keeps a message at the limit whole', async () => {
+    const text = 'c'.repeat(4000);
+    await analyseTurn(text, null);
+    expect(sentData()).toContain(`<student_message>\n${text}\n</student_message>`);
+  });
+
   it('calls nothing for an empty message', async () => {
-    expect(await analyseTurn('   ', null)).toMatchObject({ proposal: null, asksSolution: false, wantsFlashcards: false });
+    expect(await analyseTurn('   ', null)).toMatchObject({ proposesAnswer: false, asksSolution: false, wantsFlashcards: false });
     expect(calls).toHaveLength(0);
   });
 
   it('goes on with an empty analysis when it fails, and logs it', async () => {
     fails = true;
     const result = await analyseTurn('Donne-moi la réponse.', null);
-    expect(result).toMatchObject({ subject: 'general', proposal: null, asksSolution: false, error: 'timeout' });
+    expect(result).toMatchObject({ subject: 'general', proposesAnswer: false, asksSolution: false, error: 'timeout' });
     expect(mockLogger.error).toHaveBeenCalledTimes(1);
   });
 });
 
 describe('turnInstruction', () => {
-  const none: TurnAnalysis = { ...read, newExercise: null, proposal: null };
+  const none: TurnAnalysis = { ...read, bringsExercise: false, proposesAnswer: false };
 
   it('checks a proposal before anything, and asks for the method only when unsure', () => {
-    const block = turnInstruction({ ...none, proposal: 'x = 5', asksSolution: true }) ?? '';
+    const block = turnInstruction({ ...none, proposesAnswer: true, asksSolution: true }) ?? '';
     expect(block).toContain('Vérifie-la avant tout');
     expect(block).toContain('sans écrire la correction ni la bonne réponse');
     expect(block).toContain("Si tu n'es pas sûr, demande-lui comment il a trouvé");

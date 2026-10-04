@@ -12,8 +12,10 @@ réduite à une extraction.
    Elle lit le message de l'élève et le dernier message de Tom, délimités comme données, et
    rend :
    - la matière ;
-   - le nouvel exercice, recopié, quand le message en apporte un ;
-   - la proposition de l'élève (réponse ou étape), recopiée ;
+   - si le message apporte un nouvel exercice ;
+   - si l'élève propose une réponse ou une étape ;
+   - des booléens, pas de recopie : rien ne lit encore le texte, et le recopier allonge le
+     chemin critique avant la réponse ; la fiche d'exercice ajoutera ce qu'elle lit ;
    - s'il demande la solution, une explication, des fiches, ou s'il accepte celles que Tom
      propose.
 2. **Ce qui en dépend** :
@@ -24,7 +26,10 @@ réduite à une extraction.
 3. **Fiches de révision confirmées par le code** : `toolApproval` de `streamText`
    (`ToolApprovalConfiguration`, `ai` 7.0.107).
    - `'approved'` quand l'analyse relève une demande ou un accord de l'élève, `'denied'`
-     sinon : le modèle reçoit le refus et propose les fiches.
+     sinon : le modèle reçoit le refus avec sa raison et propose les fiches.
+   - Une analyse en échec refuse avec une autre raison : le modèle dit que les fiches ne
+     peuvent pas être créées à ce tour, au lieu de les proposer à qui vient de les demander.
+   - Après un refus, l'outil sort des outils actifs du tour (`prepareStep`).
    - La description de l'outil ne porte plus la règle.
 4. **Tests** :
    - analyse : schéma, prompt, échec ;
