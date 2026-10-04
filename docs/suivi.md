@@ -421,8 +421,10 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
   - balises du prompt toutes neutralisées dans le texte de l'élève, vérifié par un test.
   Point 2 de la refonte, première PR, socle du tour (#381) :
   - historique rejoué tel que le modèle l'a produit, raisonnement et appels d'outils
-    compris (`messages.model_messages`), vérifié sur le fil : le raisonnement repart en bloc
-    `thinking` ;
+    compris (`messages.model_messages`) ; un appel réel à Mistral accepte le raisonnement
+    rejoué en bloc `thinking` (`live/mistral-eu.test.ts`) ;
+  - seul le dernier message de la fenêtre garde son raisonnement, pour le coût ; un tour
+    coupé, ou qui finit sur un résultat d'outil, se rejoue en texte ;
   - routes de lecture limitées au texte vu par l'élève, sous test ;
   - un seul message `user` par tour, le résumé dans le premier message de la fenêtre ;
   - bloc de la matière dans le message du tour : le prompt système ne change plus d'un tour à

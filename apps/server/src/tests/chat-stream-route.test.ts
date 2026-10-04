@@ -244,7 +244,11 @@ describe('POST /api/chat/stream', () => {
     });
 
     expect(finishTurn).toHaveBeenCalledTimes(1);
-    const finishArgs = finishTurn.mock.calls[0]?.[0] as { sessionId: string; userId: string; responseMessage: { parts: unknown[] } };
+    const finishArgs = finishTurn.mock.calls[0]?.[0] as { sessionId: string; userId: string; responseMessage: { parts: unknown[] }; modelMessages: { role: string }[]; aborted: boolean };
+    // The model's response messages, tool call and result included, travel to the persistence,
+    // with whether the stream was cut.
+    expect(finishArgs.modelMessages.map((m) => m.role)).toEqual(['assistant', 'tool', 'assistant']);
+    expect(finishArgs.aborted).toBe(false);
     expect(finishArgs.sessionId).toBe('session-001');
     expect(finishArgs.userId).toBe('user-001');
     expect(finishArgs.responseMessage.parts).toEqual(

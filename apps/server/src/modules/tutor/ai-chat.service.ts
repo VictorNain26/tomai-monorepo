@@ -26,7 +26,7 @@ import { logger } from '../../platform/observability/logger.js';
 import { buildSystemPrompt, generateSubjectBlock } from './prompts/index.js';
 import { getLevelText } from '../../config/education/index.js';
 import { optimizeConversationHistory } from './conversation-optimizer.js';
-import { assembleChatPrompt, type ResponseMessage } from './chat-message-assembler.js';
+import { assembleChatPrompt, type HistoryTurn } from './chat-message-assembler.js';
 import {
   wrapStudentContext,
   wrapAttachedFiles,
@@ -34,21 +34,18 @@ import {
 } from './mistral-helpers.js';
 import { calculateBudget, truncateToTokenBudget } from './token-budget.service.js';
 import { env } from '../../platform/config/env.js';
+import { imageFilePart } from '../../platform/ai/mistral-client.js';
 import type { EducationLevelType } from '../../types/index.js';
 import type { AttachedFileForPrompt } from '../documents/index.js';
 
 /** Bump whenever content under modules/tutor/prompts/** or shared/pedagogy/** changes. */
-const PROMPT_VERSION = '2026-10-04';
+const PROMPT_VERSION = '2026-10-04.2';
 
 export interface AttachedFile {
   /** Inline base64 payload for multimodal user messages (Mistral vision). */
   base64?: string | undefined;
   mimeType: string;
   contentType: 'image' | 'document';
-}
-
-interface HistoricalFileRef {
-  mimeType?: string;
 }
 
 interface ClassifiedIntent {
@@ -88,14 +85,7 @@ export interface StreamGenerationParams {
    * in a spoken style. Defaults to 'text'.
    */
   inputMode?: 'text' | 'voice' | undefined;
-  conversationHistory: {
-    role: 'user' | 'assistant';
-    content: string;
-    timestamp: string;
-    /** The assistant's response messages as the model produced them; absent on older messages. */
-    modelMessages?: ResponseMessage[] | undefined;
-    attachedFile?: HistoricalFileRef | null;
-  }[];
+  conversationHistory: HistoryTurn[];
 }
 
 export interface ChatStreamParams extends StreamGenerationParams {
@@ -111,7 +101,7 @@ export interface ChatStreamParams extends StreamGenerationParams {
 function imageParts(files?: AttachedFile[]): FilePart[] {
   return (files ?? [])
     .filter((f): f is AttachedFile & { base64: string } => f.contentType === 'image' && f.base64 !== undefined && f.base64 !== '')
-    .map((f) => ({ type: 'file', mediaType: 'image', data: new URL(`data:${f.mimeType};base64,${f.base64}`) }));
+    .map((f) => imageFilePart(`data:${f.mimeType};base64,${f.base64}`, f.mimeType));
 }
 
 /**

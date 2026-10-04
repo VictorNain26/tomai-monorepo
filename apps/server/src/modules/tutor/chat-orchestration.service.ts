@@ -31,22 +31,28 @@ import { subjectProfileService } from './subject-profile.service.js';
 import { logger } from '../../platform/observability/logger.js';
 import { extractTextFromParts, type TomChatMessage } from './chat-ui-message.js';
 import type { LanguageModelUsage } from 'ai';
-import { parseStoredResponseMessages, type ResponseMessage } from './chat-message-assembler.js';
+import { replayable, type HistoryTurn, type ResponseMessage } from './chat-message-assembler.js';
+import { messagesRepository } from './messages.repository.js';
 import type { EducationLevelType } from '../../types/index.js';
 import type { AttachedFile } from './ai-chat.service.js';
 
 const MAX_ENRICHED_CONTENT_CHARS = 50_000;
 
-/** An assistant message's stored response messages; an unreadable value is logged and replays as text. */
-function storedModelMessages(value: unknown, messageId: string): ResponseMessage[] | undefined {
-  const parsed = parseStoredResponseMessages(value);
-  if (parsed !== null) return parsed;
-  logger.error('Stored model messages unreadable, replayed as text', {
-    operation: 'chat-orchestration:model-messages-invalid',
-    messageId,
-    severity: 'high' as const,
-  });
-  return undefined;
+/**
+ * An assistant message's stored response messages, replayed as they are; an unreadable or
+ * unreplayable value is logged and the message replays as its text.
+ */
+export function readStoredResponseMessages(value: unknown, messageId: string): ResponseMessage[] | undefined {
+  if (value === null || value === undefined) return undefined;
+  const messages = replayable(value);
+  if (!messages) {
+    logger.error('Stored model messages unreadable, replayed as text', {
+      operation: 'chat-orchestration:model-messages-invalid',
+      messageId,
+      severity: 'high' as const,
+    });
+  }
+  return messages;
 }
 
 interface PrepareTurnRequest {
@@ -63,12 +69,7 @@ export interface ChatTurnContext {
   sessionId: string;
   subject?: string;
   conversationSummary: string | null;
-  conversationHistory: {
-    role: 'user' | 'assistant';
-    content: string;
-    timestamp: string;
-    modelMessages?: ResponseMessage[];
-  }[];
+  conversationHistory: HistoryTurn[];
   cognitiveProfileSummary: string | null;
   /** Learning context (FSRS due cards) + episodic memory + subject memory, merged into one block. */
   mergedLearningContext: string | null;
@@ -98,6 +99,8 @@ interface FinishTurnParams {
   responseMessage: TomChatMessage;
   /** The turn's response messages as the model produced them, reasoning and tool calls included. */
   modelMessages?: ResponseMessage[] | undefined;
+  /** The stream was cut: its response messages miss what the student saw of the last step. */
+  aborted?: boolean | undefined;
   model: string;
   usage: LanguageModelUsage | undefined;
   startTime: number;
@@ -134,17 +137,18 @@ class ChatOrchestrationService {
       afterMessageId: sessionSummary?.summaryUpToMessageId ?? undefined,
     });
 
-    const conversationHistory = sessionHistory
-      .filter(msg => msg.role === 'user' || msg.role === 'assistant')
-      .map(msg => {
-        const modelMessages = msg.role === 'assistant' ? storedModelMessages(msg.modelMessages, msg.id) : undefined;
-        return {
-          role: msg.role as 'user' | 'assistant',
-          content: msg.content,
-          timestamp: msg.createdAt.toISOString(),
-          ...(modelMessages && { modelMessages }),
-        };
-      });
+    const window = sessionHistory.filter(msg => msg.role === 'user' || msg.role === 'assistant');
+    const stored = new Map((await messagesRepository.findModelMessages(window.filter(msg => msg.role === 'assistant').map(msg => msg.id)))
+      .map(row => [row.id, row.modelMessages]));
+    const conversationHistory = window.map((msg): HistoryTurn => {
+      const modelMessages = readStoredResponseMessages(stored.get(msg.id), msg.id);
+      return {
+        role: msg.role as 'user' | 'assistant',
+        content: msg.content,
+        timestamp: msg.createdAt.toISOString(),
+        ...(modelMessages && { modelMessages }),
+      };
+    });
 
     // Context assembly (parallel) — intent classification and episodic
     // memory run alongside file/profile/learning context assembly so none
@@ -301,7 +305,7 @@ class ChatOrchestrationService {
    * persiste, mais les tokens factures sont comptes.
    */
   async finishTurn(params: FinishTurnParams): Promise<void> {
-    const { sessionId, userId, userContent, responseMessage, modelMessages, model, usage, startTime, attachedFileInfo, attachedFileInfos, classifiedIntent } = params;
+    const { sessionId, userId, userContent, responseMessage, modelMessages, aborted, model, usage, startTime, attachedFileInfo, attachedFileInfos, classifiedIntent } = params;
     const fullContent = extractTextFromParts(responseMessage.parts);
     const tokensUsed = usage?.totalTokens ?? 0;
 
@@ -337,7 +341,9 @@ class ChatOrchestrationService {
       ...(attachedFileInfo && { attachedFile: attachedFileInfo }),
       ...(attachedFileInfos && { attachedFiles: attachedFileInfos }),
       classifiedIntent,
-      modelMessages,
+      // Kept only when they can be replayed as they are: a cut turn, or one that ended on a tool
+      // result at the step limit, replays as its text.
+      modelMessages: aborted ? undefined : replayable(modelMessages),
     }, { verifySessionExists: false });
 
     logger.info('Streaming message saved', {

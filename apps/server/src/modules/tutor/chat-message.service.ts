@@ -7,7 +7,7 @@ import type { MessageDetails } from './chat-types';
 import type { ResponseMessage } from './chat-message-assembler.js';
 
 export class ChatMessageService {
-  async getSessionHistory(sessionId: string, options?: { limit?: number | undefined; afterMessageId?: string | undefined }): Promise<DbMessage[]> {
+  async getSessionHistory(sessionId: string, options?: { limit?: number | undefined; afterMessageId?: string | undefined }): Promise<Omit<DbMessage, 'modelMessages'>[]> {
     try {
       let sessionMessages = await messagesRepository.findBySessionId(sessionId);
 

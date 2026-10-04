@@ -244,7 +244,7 @@ describe('streamChat — Mistral wire request', () => {
       { type: 'text', text: 'Que fais-tu du +5 ?' },
     ]);
     expect(JSON.stringify(messages[3]?.content)).toContain('<subject_specifics matiere=\\"Mathématiques\\">');
-    expect(JSON.stringify(messages[0]?.content)).not.toContain('subject_specifics');
+    expect(JSON.stringify(messages[0]?.content)).not.toContain('<subject_specifics matiere=');
   });
 
   it("sends reasoning_effort 'none' outside the STEM hard-intent route", async () => {

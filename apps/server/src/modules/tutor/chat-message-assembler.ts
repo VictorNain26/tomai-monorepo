@@ -1,37 +1,47 @@
-import { assistantModelMessageSchema, toolModelMessageSchema, type AssistantModelMessage, type FilePart, type ModelMessage, type TextPart, type ToolModelMessage } from 'ai';
+import {
+  assistantModelMessageSchema,
+  pruneMessages,
+  toolModelMessageSchema,
+  type AssistantModelMessage,
+  type FilePart,
+  type ModelMessage,
+  type ToolModelMessage,
+  type UserContent,
+} from 'ai';
 import { z } from 'zod';
 import { stripPromptTags, wrapUserMessage } from './mistral-helpers.js';
 
 /** What `streamText` returns as `responseMessages`: the assistant's messages and the tool results. */
 export type ResponseMessage = AssistantModelMessage | ToolModelMessage;
 
-const storedResponseMessages = z.array(z.union([assistantModelMessageSchema, toolModelMessageSchema]));
-
-/**
- * The response messages stored with an assistant message, validated since they go back to the
- * model as they are: `undefined` when there are none (an older message), `null` when the stored
- * value is unreadable.
- */
-export function parseStoredResponseMessages(value: unknown): ResponseMessage[] | null | undefined {
-  if (value === null || value === undefined) return undefined;
-  const parsed = storedResponseMessages.safeParse(value);
-  return parsed.success ? parsed.data : null;
-}
-
-/** One past message of the window, as stored. */
-interface HistoryTurn {
+/** One past message of the window. */
+export interface HistoryTurn {
   role: 'user' | 'assistant';
   /** What the student saw, or wrote. */
   content: string;
-  /** The assistant's response messages as the model produced them, reasoning and tool calls included. */
+  timestamp: string;
+  /** The assistant's response messages as the model produced them; absent on older messages. */
   modelMessages?: ResponseMessage[] | undefined;
+}
+
+// Replayable: at least one message, and the last one the assistant's. A turn cut on a tool
+// result would put `user` right after `tool`, which Mistral rejects.
+const replayableMessages = z
+  .array(z.union([assistantModelMessageSchema, toolModelMessageSchema]))
+  .min(1)
+  .refine((messages) => messages.at(-1)?.role === 'assistant');
+
+/** The response messages of a turn when they can be replayed as they are, otherwise `undefined`. */
+export function replayable(value: unknown): ResponseMessage[] | undefined {
+  const parsed = replayableMessages.safeParse(value);
+  return parsed.success ? parsed.data : undefined;
 }
 
 export interface ChatTurnParts {
   systemPrompt: string;
   /** Résumé DÉJÀ tronqué au budget (ou null/undefined si aucun). */
   conversationSummary?: string | null | undefined;
-  history: HistoryTurn[];
+  history: readonly HistoryTurn[];
   subjectBlock?: string | null | undefined;
   studentContextBlock?: string | null | undefined;
   attachedFilesBlock?: string | null | undefined;
@@ -43,44 +53,59 @@ export interface ChatTurnParts {
 
 const VOICE_MARKER = "[VOCAL] Ce tour a été dicté à l'oral — réponds en style parlé, sans markdown.";
 
-function summaryBlock(summary: string): string {
-  return `<conversation_summary>\n${stripPromptTags(summary)}\n</conversation_summary>`;
+function textParts(content: UserContent) {
+  return typeof content === 'string' ? [{ type: 'text' as const, text: content }] : content;
 }
 
-/**
- * The past messages: the student's text fenced, the assistant's response messages replayed as
- * the model produced them (Mistral: « always replay the full assistant message (including
- * `ThinkChunk`) », https://docs.mistral.ai/studio/conversations/reasoning), an older message
- * without them as its text.
- */
-function historyMessages(history: readonly HistoryTurn[]): ModelMessage[] {
-  return history.flatMap((turn): ModelMessage[] => {
-    if (turn.role === 'user') return [{ role: 'user', content: wrapUserMessage(turn.content) }];
-    return turn.modelMessages ?? [{ role: 'assistant', content: turn.content }];
-  });
+/** Two user messages in a row become one, as Mistral's role flow wants (an orphan student message, the summary). */
+function alternate(messages: readonly ModelMessage[]): ModelMessage[] {
+  const out: ModelMessage[] = [];
+  for (const message of messages) {
+    const last = out.at(-1);
+    if (last?.role === 'user' && message.role === 'user') {
+      out[out.length - 1] = {
+        role: 'user',
+        content: typeof last.content === 'string' && typeof message.content === 'string'
+          ? `${last.content}\n\n${message.content}`
+          : [...textParts(last.content), ...textParts(message.content)],
+      };
+    } else {
+      out.push(message);
+    }
+  }
+  return out;
 }
 
 /**
  * Assemble le prompt d'un tour pour `streamText` : le prompt système, l'historique rejoué, puis
- * un seul message `user`, comme le veut l'alternance des rôles de Mistral
- * (https://docs.mistral.ai/studio/conversations/chat-completion/prompting). Ce qui change d'un
- * tour à l'autre (matière, contexte de l'élève, fichiers, consigne, marqueur vocal) va dans ce
- * message, avant le texte de l'élève : placé plus tôt, il casserait le cache de l'historique.
- * Le résumé rejoint le premier message de l'élève de la fenêtre, le précède quand elle s'ouvre
- * sur l'assistant, ou va dans le message courant quand elle est vide.
+ * un seul message `user`, les rôles alternant comme le veut Mistral
+ * (https://docs.mistral.ai/studio/conversations/chat-completion/prompting).
+ *
+ * - L'assistant se rejoue tel que le modèle l'a produit, appels d'outils compris ; un message
+ *   ancien, sans réponse gardée, en texte. Seul le dernier message de la fenêtre garde son
+ *   raisonnement (`pruneMessages`) : Mistral dit qu'en retirer dégrade le modèle
+ *   (https://docs.mistral.ai/studio/conversations/reasoning), mais rejouer tous les
+ *   raisonnements ferait payer chaque tour de la séance pour des traces de plusieurs milliers
+ *   de tokens.
+ * - Ce qui change d'un tour à l'autre (matière, contexte de l'élève, fichiers, consigne,
+ *   marqueur vocal) va dans le message du tour, avant le texte de l'élève : placé plus tôt, il
+ *   casserait le cache de l'historique.
+ * - Le résumé ouvre la fenêtre.
  */
 export function assembleChatPrompt(parts: ChatTurnParts): { system: string; messages: ModelMessage[] } {
-  const past = historyMessages(parts.history);
-  const [first, ...rest] = past;
-  const summary = parts.conversationSummary ? summaryBlock(parts.conversationSummary) : null;
-  const firstText = first?.role === 'user' && typeof first.content === 'string' ? first.content : null;
-  let window = past;
-  if (summary !== null && firstText !== null) window = [{ role: 'user', content: `${summary}\n\n${firstText}` }, ...rest];
-  // A window that opens on the assistant gets the summary before it, so that the roles alternate.
-  else if (summary !== null && past.length > 0) window = [{ role: 'user', content: summary }, ...past];
+  const past = pruneMessages({
+    messages: parts.history.flatMap((turn): ModelMessage[] => (turn.role === 'user'
+      ? [{ role: 'user', content: wrapUserMessage(turn.content) }]
+      : turn.modelMessages ?? [{ role: 'assistant', content: turn.content }])),
+    reasoning: 'before-last-message',
+    toolCalls: 'none',
+    emptyMessages: 'remove',
+  });
+  const summary: ModelMessage[] = parts.conversationSummary
+    ? [{ role: 'user', content: `<conversation_summary>\n${stripPromptTags(parts.conversationSummary)}\n</conversation_summary>` }]
+    : [];
 
   const text = [
-    past.length === 0 ? summary : null,
     parts.subjectBlock,
     parts.studentContextBlock,
     parts.attachedFilesBlock,
@@ -89,7 +114,7 @@ export function assembleChatPrompt(parts: ChatTurnParts): { system: string; mess
     wrapUserMessage(parts.studentText),
   ].filter((block): block is string => Boolean(block)).join('\n\n');
   const images = parts.images ?? [];
-  const content: string | (TextPart | FilePart)[] = images.length > 0 ? [{ type: 'text', text }, ...images] : text;
+  const turn: ModelMessage = { role: 'user', content: images.length > 0 ? [{ type: 'text', text }, ...images] : text };
 
-  return { system: parts.systemPrompt, messages: [...window, { role: 'user', content }] };
+  return { system: parts.systemPrompt, messages: alternate([...summary, ...past, turn]) };
 }

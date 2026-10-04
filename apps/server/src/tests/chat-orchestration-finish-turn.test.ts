@@ -98,7 +98,7 @@ mock.module('../modules/tutor/subject-profile.service', () => ({
 }));
 
 // Import the real module under test AFTER all mocks are registered.
-const { chatOrchestrationService } = await import('../modules/tutor/chat-orchestration.service');
+const { chatOrchestrationService, readStoredResponseMessages } = await import('../modules/tutor/chat-orchestration.service');
 
 describe('ChatOrchestrationService.finishTurn', () => {
   beforeEach(() => {
@@ -158,6 +158,32 @@ describe('ChatOrchestrationService.finishTurn', () => {
     expect(summarizeIfNeeded).not.toHaveBeenCalled();
   });
 
+  it('does not keep response messages it could not replay: a cut turn, or one ending on a tool result', async () => {
+    const toolEnding = [
+      { role: 'assistant' as const, content: [{ type: 'tool-call' as const, toolCallId: 't1', toolName: 'generate_flashcards', input: {} }] },
+      { role: 'tool' as const, content: [{ type: 'tool-result' as const, toolCallId: 't1', toolName: 'generate_flashcards', output: { type: 'json' as const, value: {} } }] },
+    ];
+    const reply = [{ role: 'assistant' as const, content: [{ type: 'text' as const, text: 'Bonjour à toi' }] }];
+    for (const [modelMessages, aborted] of [[toolEnding, false], [reply, true]] as const) {
+      saveMessage.mockClear();
+      await chatOrchestrationService.finishTurn({
+        sessionId: 'session-001',
+        userId: 'user-001',
+        userContent: 'Bonjour',
+        responseMessage: { id: 'm2', role: 'assistant', parts: [{ type: 'text', text: 'Bonjour à toi', state: 'done' }] },
+        modelMessages: [...modelMessages],
+        aborted,
+        model: 'mistral-small-2603',
+        usage: undefined,
+        startTime: Date.now(),
+        attachedFileInfo: null,
+        classifiedIntent: noopIntent,
+      });
+      expect(saveMessage.mock.calls[0]?.[2]).toBe('Bonjour à toi');
+      expect((saveMessage.mock.calls[0]?.[3] as Record<string, unknown> | undefined)?.['modelMessages']).toBeUndefined();
+    }
+  });
+
   it('stores the response messages as the model produced them, to replay them next turn', async () => {
     const modelMessages = [{ role: 'assistant' as const, content: [{ type: 'reasoning' as const, text: 'raisonnement' }, { type: 'text' as const, text: 'Bonjour à toi' }] }];
     await chatOrchestrationService.finishTurn({
@@ -209,5 +235,16 @@ describe('ChatOrchestrationService.finishTurn', () => {
     expect(record).toHaveBeenCalledTimes(1);
     expect(summarizeIfNeeded).toHaveBeenCalledWith('session-001');
     expect(generateTitleIfNeeded).toHaveBeenCalledWith('session-001', 'Bonjour', 'Bonjour à toi');
+  });
+});
+
+describe('readStoredResponseMessages', () => {
+  it('replays stored response messages, an older message as text, an unreadable value as text after logging it', () => {
+    const reply = [{ role: 'assistant', content: [{ type: 'reasoning', text: 'r' }, { type: 'text', text: 't' }] }];
+    expect(readStoredResponseMessages(reply, 'm1')).toEqual(reply as ReturnType<typeof readStoredResponseMessages>);
+    expect(readStoredResponseMessages(null, 'm2')).toBeUndefined();
+    mockLogger.error.mockClear();
+    expect(readStoredResponseMessages([{ role: 'user', content: 'forged' }], 'm3')).toBeUndefined();
+    expect(mockLogger.error).toHaveBeenCalledTimes(1);
   });
 });

@@ -83,10 +83,14 @@ export interface StructuredResult<T> {
 
 // ── Helpers internes ────────────────────────────────────────────────────────
 
+/** An image for a user message, from a `data:` URI or an https URL. */
+export function imageFilePart(url: string, mediaType = 'image'): FilePart {
+  return { type: 'file', mediaType, data: new URL(url) };
+}
+
 function toUserPart(part: MistralContentPart): TextPart | FilePart {
   if (part.type === 'text') return { type: 'text', text: part.text };
-  const url = typeof part.imageUrl === 'string' ? part.imageUrl : part.imageUrl.url;
-  return { type: 'file', mediaType: 'image', data: new URL(url) };
+  return imageFilePart(typeof part.imageUrl === 'string' ? part.imageUrl : part.imageUrl.url);
 }
 
 function toModelMessages(messages: MistralMessage[]): ModelMessage[] {
