@@ -369,5 +369,5 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
 
   Premier passage S4 et S5 :
   - fuite par la voix dans 2 sur 6, et dans les fiches de M1 ;
-  - fiches refusées dans 2 sur 6 ;
+  - fiches non créées dans 2 sur 6 (un refus, un report) ;
   - détresse sans 3114 dans les 3.
