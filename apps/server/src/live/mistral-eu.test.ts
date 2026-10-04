@@ -8,6 +8,7 @@ import { getVoxtralTranscribeService } from '../modules/voice/voxtral-transcribe
 import { HAS_MISTRAL } from './_creds';
 import { generateText as generateWithTools } from 'ai';
 import { buildChatTools } from '../modules/tutor/chat-tools';
+import { analyseTurn } from '../modules/tutor/turn-analysis.service';
 import { mistralProvider } from '../platform/ai/provider';
 import { env } from '../platform/config/env';
 
@@ -20,7 +21,7 @@ const mathTurn = {
   userId: 'live-user',
   schoolLevel: 'troisieme' as const,
   subject: 'mathematiques',
-  classifiedIntent: { intent: 'solve-this-for-me', confidence: 'high' as const },
+  turnAnalysis: { subject: 'mathematiques' as const, newExercise: null, proposal: null, asksSolution: true, asksExplanation: false, wantsFlashcards: false },
   tools: {},
 };
 
@@ -81,6 +82,16 @@ describe('Mistral Small 4 on the EU endpoint (real API)', () => {
       // An input outside the schema would still be returned, marked invalid.
       expect(result.toolCalls.map((call) => call.invalid ?? false)).toEqual([false]);
     }
+  }, 60_000);
+
+  it('analyses a turn under the strict schema: a proposal, an agreement to cards', async () => {
+    const attempt = await analyseTurn("Résous 3x + 5 = 20. J'ai trouvé x = 20/3 mais c'est faux.", null);
+    expect(attempt.error).toBeUndefined();
+    expect(attempt.subject).toBe('mathematiques');
+    expect(attempt.proposal).not.toBeNull();
+
+    const agreement = await analyseTurn('Oui, je veux bien !', 'Veux-tu que je te crée des cartes de révision sur les équations ?');
+    expect(agreement.wantsFlashcards).toBe(true);
   }, 60_000);
 
   it("emits no reasoning when the route says 'none'", async () => {

@@ -36,6 +36,7 @@ import { calculateBudget, truncateToTokenBudget } from './token-budget.service.j
 import { env } from '../../platform/config/env.js';
 import { imageFilePart } from '../../platform/ai/mistral-client.js';
 import type { TurnUsage } from './turn-usage.js';
+import type { TurnAnalysis } from './turn-analysis.service.js';
 import type { EducationLevelType } from '../../types/index.js';
 import type { AttachedFileForPrompt } from '../documents/index.js';
 
@@ -47,12 +48,6 @@ export interface AttachedFile {
   base64?: string | undefined;
   mimeType: string;
   contentType: 'image' | 'document';
-}
-
-interface ClassifiedIntent {
-  intent: string;
-  confidence: 'low' | 'medium' | 'high';
-  error?: string;
 }
 
 /** @public — reachable only via the typed client's inferred route return types (apps/server build:types), not a direct import; knip false positive. */
@@ -77,9 +72,9 @@ export interface StreamGenerationParams {
    * Turn-specific reinforcement block injected by the intent classifier, in
    * the turn's user message (e.g. on "solve this for me" requests).
    */
-  intentReinforcement?: string | null | undefined;
-  /** Classified intent for reasoning effort routing. */
-  classifiedIntent?: ClassifiedIntent | undefined;
+  turnInstruction?: string | null | undefined;
+  /** The turn's analysis: reasoning routing and the flashcards' approval. */
+  turnAnalysis?: TurnAnalysis | undefined;
   /**
    * Input channel declared by the user's gesture (mic vs keyboard), never
    * inferred by the model. When 'voice', a turn note is injected so Tom answers
@@ -129,7 +124,7 @@ export function streamChat(params: ChatStreamParams) {
     subjectBlock: generateSubjectBlock(params.subject),
     studentContextBlock: wrapStudentContext(params.cognitiveProfileSummary, params.learningContext),
     attachedFilesBlock: params.attachedFiles?.length ? wrapAttachedFiles(params.attachedFiles) : null,
-    intentReinforcement: params.intentReinforcement,
+    turnInstruction: params.turnInstruction,
     inputMode: params.inputMode,
     studentText: params.content,
     images: imageParts(params.files),
@@ -140,7 +135,7 @@ export function streamChat(params: ChatStreamParams) {
   const reasoningEffort = routeReasoningEffort({
     schoolLevel: params.schoolLevel,
     subject: params.subject,
-    intent: params.classifiedIntent?.intent,
+    analysis: params.turnAnalysis,
   });
 
   const model = params.model ?? mistralProvider()(env.MISTRAL_MODEL);
@@ -158,6 +153,9 @@ export function streamChat(params: ChatStreamParams) {
     instructions: system,
     messages,
     tools: params.tools,
+    // Cards are made when the student asks for them or accepts them, as the turn analysis read
+    // it; denied, the call returns to the model, which proposes them instead.
+    toolApproval: { generate_flashcards: params.turnAnalysis?.wantsFlashcards ? 'approved' : 'denied' },
     stopWhen: isStepCount(MAX_TOOL_ITERATIONS),
     temperature: env.MISTRAL_TEMPERATURE,
     // No output cap on a reasoning turn: the thinking counts in completion_tokens and a cap

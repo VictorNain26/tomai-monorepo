@@ -1,37 +1,30 @@
 import { describe, it, expect } from 'bun:test';
 import { routeReasoningEffort } from '../modules/tutor/mistral-reasoning.js';
 import { STUDENT_SUBJECTS } from '../modules/tutor/prompts/adaptation/subjects.js';
+import { analysis } from './_helpers/turn-analysis';
 
 describe('routeReasoningEffort', () => {
-  it('boosts the subject families the intent classifier emits for STEM', () => {
+  it('reasons on a request for the solution or an explanation in STEM, from the 4e', () => {
     for (const subject of ['mathematiques', 'sciences'] as const) {
       expect(STUDENT_SUBJECTS).toContain(subject);
-      expect(routeReasoningEffort({ schoolLevel: 'troisieme', subject, intent: 'solve-this-for-me' })).toBe('high');
+      expect(routeReasoningEffort({ schoolLevel: 'troisieme', subject, analysis: analysis({ asksSolution: true }) })).toBe('high');
+      expect(routeReasoningEffort({ schoolLevel: 'quatrieme', subject, analysis: analysis({ asksExplanation: true }) })).toBe('high');
     }
   });
 
-  it('does not boost non-STEM families', () => {
+  it('does not reason outside STEM, below the 4e, or without a request', () => {
     for (const subject of ['francais', 'langues', 'histoire-geo', 'general'] as const) {
-      expect(routeReasoningEffort({ schoolLevel: 'troisieme', subject, intent: 'explain-concept' })).toBe('none');
+      expect(routeReasoningEffort({ schoolLevel: 'troisieme', subject, analysis: analysis({ asksExplanation: true }) })).toBe('none');
     }
-  });
-
-  it('requires a college+ level', () => {
-    expect(routeReasoningEffort({ schoolLevel: 'cinquieme', subject: 'sciences', intent: 'solve-this-for-me' })).toBe('none');
+    expect(routeReasoningEffort({ schoolLevel: 'cinquieme', subject: 'sciences', analysis: analysis({ asksSolution: true }) })).toBe('none');
+    expect(routeReasoningEffort({ schoolLevel: 'troisieme', subject: 'sciences', analysis: analysis() })).toBe('none');
+    expect(routeReasoningEffort({ schoolLevel: 'troisieme', subject: 'sciences' })).toBe('none');
+    expect(routeReasoningEffort({ schoolLevel: 'troisieme', analysis: analysis({ asksSolution: true }) })).toBe('none');
   });
 
   it('reasons on a proposed answer whatever the level and subject: the verdict must be right', () => {
     for (const subject of ['francais', 'langues', 'mathematiques'] as const) {
-      expect(routeReasoningEffort({ schoolLevel: 'sixieme', subject, intent: 'check-my-answer' })).toBe('high');
+      expect(routeReasoningEffort({ schoolLevel: 'sixieme', subject, analysis: analysis({ proposal: 'x = 5' }) })).toBe('high');
     }
-  });
-
-  it('requires a hard intent', () => {
-    expect(routeReasoningEffort({ schoolLevel: 'seconde', subject: 'sciences', intent: 'chit-chat' })).toBe('none');
-    expect(routeReasoningEffort({ schoolLevel: 'seconde', subject: 'sciences' })).toBe('none');
-  });
-
-  it('falls back to none without a subject', () => {
-    expect(routeReasoningEffort({ schoolLevel: 'terminale', intent: 'solve-this-for-me' })).toBe('none');
   });
 });

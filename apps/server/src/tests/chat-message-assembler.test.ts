@@ -16,7 +16,7 @@ describe('assembleChatPrompt', () => {
       subjectBlock: '<subject_specifics matiere="Mathématiques">X</subject_specifics>',
       studentContextBlock: '<student_context>\n<subject_memory>\nFractions\n</subject_memory>\n</student_context>',
       attachedFilesBlock: '<attached_file name="a">B</attached_file>',
-      intentReinforcement: '<critical_instruction>C</critical_instruction>',
+      turnInstruction: '<critical_instruction>C</critical_instruction>',
       inputMode: 'voice',
       studentText: 'Résous 3x + 5 = 20.',
     });

@@ -10,7 +10,7 @@
 import { describe, it, expect, beforeEach, mock } from 'bun:test';
 import { createMockLogger } from './_helpers/mock-logger';
 import type { TomChatMessage } from '../modules/tutor/chat-ui-message';
-import type { ClassifiedIntent } from '../modules/tutor/intent-classifier.service';
+import { analysis } from './_helpers/turn-analysis';
 
 // ============================================
 // MOCKS (must be before any import of the real module under test)
@@ -68,11 +68,9 @@ mock.module('../modules/tutor/auto-title.service', () => ({
   autoTitleService: { generateTitleIfNeeded },
 }));
 
-mock.module('../modules/tutor/intent-classifier.service', () => ({
-  intentClassifierService: {
-    classify: mock(async () => ({ intent: 'unknown', confidence: 'low', subject: 'general' })),
-    buildReinforcement: mock(() => null),
-  },
+mock.module('../modules/tutor/turn-analysis.service', () => ({
+  analyseTurn: mock(async () => analysis()),
+  turnInstruction: mock(() => null),
 }));
 
 mock.module('../modules/tutor/cognitive-profile.service', () => ({
@@ -109,7 +107,7 @@ describe('ChatOrchestrationService.finishTurn', () => {
     generateTitleIfNeeded.mockClear();
   });
 
-  const noopIntent: ClassifiedIntent = { intent: 'unknown', confidence: 'low', subject: 'general' };
+  const noopAnalysis = analysis();
 
   it('skips persistence entirely when the stream produced no content', async () => {
     const emptyResponse: TomChatMessage = { id: 'm2', role: 'assistant', parts: [] };
@@ -122,7 +120,7 @@ describe('ChatOrchestrationService.finishTurn', () => {
       usage: undefined,
       startTime: Date.now(),
       attachedFileInfo: null,
-      classifiedIntent: noopIntent,
+      turnAnalysis: noopAnalysis,
     });
 
     expect(saveMessage).not.toHaveBeenCalled();
@@ -149,7 +147,7 @@ describe('ChatOrchestrationService.finishTurn', () => {
       },
       startTime: Date.now(),
       attachedFileInfo: null,
-      classifiedIntent: noopIntent,
+      turnAnalysis: noopAnalysis,
     });
 
     expect(incrementTokenUsage).toHaveBeenCalledWith('user-001', 910);
@@ -177,7 +175,7 @@ describe('ChatOrchestrationService.finishTurn', () => {
         usage: undefined,
         startTime: Date.now(),
         attachedFileInfo: null,
-        classifiedIntent: noopIntent,
+        turnAnalysis: noopAnalysis,
       });
       expect(saveMessage.mock.calls[0]?.[2]).toBe('Bonjour à toi');
       expect((saveMessage.mock.calls[0]?.[3] as Record<string, unknown> | undefined)?.['modelMessages']).toBeUndefined();
@@ -196,7 +194,7 @@ describe('ChatOrchestrationService.finishTurn', () => {
       usage: undefined,
       startTime: Date.now(),
       attachedFileInfo: null,
-      classifiedIntent: noopIntent,
+      turnAnalysis: noopAnalysis,
     });
 
     expect(saveMessage.mock.calls[0]?.[2]).toBe('Bonjour à toi');
@@ -224,7 +222,7 @@ describe('ChatOrchestrationService.finishTurn', () => {
       },
       startTime: Date.now(),
       attachedFileInfo: null,
-      classifiedIntent: noopIntent,
+      turnAnalysis: noopAnalysis,
     });
 
     expect(saveMessage).toHaveBeenCalledTimes(1);

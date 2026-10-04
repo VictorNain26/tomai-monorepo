@@ -162,8 +162,8 @@ export const chatMessageRoutes = new Hono<AppEnv>()
           conversationHistory: turnCtx.conversationHistory,
           cognitiveProfileSummary: turnCtx.cognitiveProfileSummary,
           learningContext: turnCtx.mergedLearningContext,
-          intentReinforcement: turnCtx.intentReinforcement,
-          classifiedIntent: turnCtx.classifiedIntent,
+          turnInstruction: turnCtx.turnInstruction,
+          turnAnalysis: turnCtx.turnAnalysis,
           files: turnCtx.files,
           attachedFiles: turnCtx.attachedFiles,
           inputMode,
@@ -200,7 +200,7 @@ export const chatMessageRoutes = new Hono<AppEnv>()
             startTime,
             attachedFileInfo: turnCtx.attachedFileInfo,
             attachedFileInfos: turnCtx.attachedFileInfos,
-            classifiedIntent: turnCtx.classifiedIntent,
+            turnAnalysis: turnCtx.turnAnalysis,
           });
         } catch (error) {
           logger.error('Chat turn persistence failed', {
