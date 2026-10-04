@@ -17,6 +17,7 @@ import {
   isStepCount,
   type ToolSet,
   type LanguageModel,
+  type LanguageModelUsage,
   type FilePart,
 } from 'ai';
 import { mistralProvider } from '../../platform/ai/provider.js';
@@ -90,12 +91,40 @@ export interface StreamGenerationParams {
 
 export interface ChatStreamParams extends StreamGenerationParams {
   tools: ToolSet;
+  /** Called when the turn is cut (timeout), with the usage of the steps that finished. */
+  onAbort?: ((finishedUsage: LanguageModelUsage) => void) | undefined;
   /**
    * Test seam: inject a mock `LanguageModel` (e.g. `MockLanguageModelV4`
    * from `ai/test`) instead of the real Mistral provider. Never set in
    * production call sites.
    */
   model?: LanguageModel | undefined;
+}
+
+const add = (a: number | undefined, b: number | undefined) => (a ?? 0) + (b ?? 0);
+
+/** The usage of the steps that finished; a cut step's own usage never reaches the stream. */
+export function finishedStepsUsage(steps: readonly { usage: LanguageModelUsage }[]): LanguageModelUsage {
+  return steps.reduce<LanguageModelUsage>((sum, { usage }) => ({
+    inputTokens: add(sum.inputTokens, usage.inputTokens),
+    inputTokenDetails: {
+      noCacheTokens: add(sum.inputTokenDetails.noCacheTokens, usage.inputTokenDetails.noCacheTokens),
+      cacheReadTokens: add(sum.inputTokenDetails.cacheReadTokens, usage.inputTokenDetails.cacheReadTokens),
+      cacheWriteTokens: add(sum.inputTokenDetails.cacheWriteTokens, usage.inputTokenDetails.cacheWriteTokens),
+    },
+    outputTokens: add(sum.outputTokens, usage.outputTokens),
+    outputTokenDetails: {
+      textTokens: add(sum.outputTokenDetails.textTokens, usage.outputTokenDetails.textTokens),
+      reasoningTokens: add(sum.outputTokenDetails.reasoningTokens, usage.outputTokenDetails.reasoningTokens),
+    },
+    totalTokens: add(sum.totalTokens, usage.totalTokens),
+  }), {
+    inputTokens: 0,
+    inputTokenDetails: { noCacheTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0 },
+    outputTokens: 0,
+    outputTokenDetails: { textTokens: 0, reasoningTokens: 0 },
+    totalTokens: 0,
+  });
 }
 
 function imageParts(files?: AttachedFile[]): FilePart[] {
@@ -150,7 +179,7 @@ export function streamChat(params: ChatStreamParams) {
 
   return streamText({
     model,
-    system,
+    instructions: system,
     messages,
     tools: params.tools,
     stopWhen: isStepCount(MAX_TOOL_ITERATIONS),
@@ -167,6 +196,7 @@ export function streamChat(params: ChatStreamParams) {
       } satisfies MistralLanguageModelChatOptions,
     },
     telemetry: { functionId: 'chat-stream', recordInputs: false, recordOutputs: false },
-    abortSignal: AbortSignal.timeout(env.CHAT_STREAM_TIMEOUT_MS),
+    timeout: env.CHAT_STREAM_TIMEOUT_MS,
+    onAbort: ({ steps }) => { params.onAbort?.(finishedStepsUsage(steps)); },
   });
 }

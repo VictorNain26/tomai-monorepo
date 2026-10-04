@@ -33,7 +33,7 @@ export type TomChatMessage = UIMessage<TomMetadata, TomDataParts, TomChatTools>;
  * concatenating every `text` part in order. Used both for the incoming
  * client message (server is authoritative: only the last `UIMessage` is
  * sent, its text still needs sanitisation before hitting the model) and for
- * the outgoing `responseMessage` handed to `onFinish` (no `TextStreamPart`
+ * the outgoing `responseMessage` handed to `onEnd` (no `TextStreamPart`
  * equivalent survives past `streamText` — the UI message is the only
  * post-stream source of the final text).
  *

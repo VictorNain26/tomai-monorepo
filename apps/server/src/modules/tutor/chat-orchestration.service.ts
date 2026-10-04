@@ -7,7 +7,7 @@
  *    contexte d'apprentissage, classification d'intention, memoire
  *    episodique, memoire de matiere) exactement comme le pipeline SSE legacy
  * 3. Persister le message user AVANT le streaming (+ associer les fichiers)
- * 4. Post-processing apres le streaming (`onFinish`) : sauver le message
+ * 4. Post-processing apres le streaming (`onEnd`) : sauver le message
  *    assistant, comptabiliser tokens/cout, declencher summarization et
  *    auto-titrage en fire-and-forget — SAUTE entierement si le stream n'a
  *    produit aucun contenu (miroir du pipeline legacy, qui ne postProcess
@@ -296,7 +296,7 @@ class ChatOrchestrationService {
   }
 
   /**
-   * Post-processing apres le streaming (branche sur `onFinish` du UI
+   * Post-processing apres le streaming (branche sur `onEnd` du UI
    * Message Stream) : sauve le message assistant, comptabilise
    * tokens/cout, et declenche summarization + auto-titrage en
    * fire-and-forget. Miroir du `postProcess` du pipeline legacy — qui

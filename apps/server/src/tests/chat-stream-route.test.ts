@@ -3,7 +3,7 @@
  *
  * Covers the guards that stay plain JSON before the UI Message Stream
  * starts (auth, quota, concurrency) and the post-stream contract:
- * `content-type`/`x-vercel-ai-ui-message-stream` headers, `onFinish`
+ * `content-type`/`x-vercel-ai-ui-message-stream` headers, `onEnd`
  * persistence (user + assistant messages), concurrency release even when
  * the stream throws, no reasoning on the wire, and the usage recorded.
  */
@@ -232,7 +232,7 @@ describe('POST /api/chat/stream', () => {
     await res.text();
   });
 
-  it('persists the user message before streaming and the assistant message in onFinish', async () => {
+  it('persists the user message before streaming and the assistant message in onEnd', async () => {
     currentUser = { id: 'user-001', role: 'student', schoolLevel: 'sixieme', firstName: 'Léo' };
     const res = await app.fetch(makeRequest());
     await res.text();
@@ -263,7 +263,7 @@ describe('POST /api/chat/stream', () => {
     };
 
     // MAX_CONCURRENT_STREAMS is 2 — send 3 requests sequentially, fully
-    // consuming each stream (which drives release via onFinish/onError).
+    // consuming each stream (which drives release via onEnd/onError).
     // If the slot were never released, the 3rd request would 409.
     for (let i = 0; i < 3; i += 1) {
       const res = await app.fetch(makeRequest());
@@ -296,5 +296,32 @@ describe('POST /api/chat/stream', () => {
       totalTokens: 227,
       inputTokenDetails: { cacheReadTokens: 164 },
     });
+  });
+
+  it('counts a cut turn with the usage of its finished steps, and keeps no model messages', async () => {
+    currentUser = { id: 'user-001', role: 'student', schoolLevel: 'troisieme', firstName: 'Léo' };
+    const finished = { inputTokens: 100, outputTokens: 3, totalTokens: 103 };
+    streamChatImpl = (params) => streamText({
+      model: new MockLanguageModelV4({
+        doStream: async ({ abortSignal }) => ({
+          stream: new ReadableStream({
+            start: (controller) => {
+              controller.enqueue({ type: 'stream-start', warnings: [] });
+              abortSignal?.addEventListener('abort', () => { controller.error(abortSignal.reason); });
+            },
+          }),
+        }),
+      }),
+      prompt: 'Bonjour Tom',
+      timeout: 100,
+      onAbort: () => { (params as { onAbort: (usage: unknown) => void }).onAbort(finished); },
+    });
+
+    const res = await app.fetch(makeRequest());
+    await res.text();
+
+    const finishArgs = finishTurn.mock.calls[0]?.[0] as { usage: unknown; aborted: boolean; modelMessages: unknown };
+    expect(finishArgs).toMatchObject({ aborted: true, usage: finished });
+    expect(finishArgs.modelMessages).toBeUndefined();
   });
 });

@@ -14,7 +14,8 @@ import { describe, it, expect, afterEach } from 'bun:test';
 import { z } from 'zod';
 import { APICallError, tool, type ToolSet, simulateReadableStream, toUIMessageStream } from 'ai';
 import { MockLanguageModelV4 } from 'ai/test';
-import { streamChat, type ChatStreamParams } from '../modules/tutor/ai-chat.service.js';
+import { finishedStepsUsage, streamChat, type ChatStreamParams } from '../modules/tutor/ai-chat.service.js';
+import type { LanguageModelUsage } from 'ai';
 import { env } from '../platform/config/env.js';
 
 const baseParams: Omit<ChatStreamParams, 'model' | 'tools'> = {
@@ -170,6 +171,72 @@ describe('streamChat', () => {
     } finally {
       (env as Record<string, unknown>)['MISTRAL_RETRY_ATTEMPTS'] = configured;
     }
+  });
+});
+
+describe('a turn cut by the timeout', () => {
+  it('reports the usage of the steps that finished, the cut one being unknown', async () => {
+    const configured = env.CHAT_STREAM_TIMEOUT_MS;
+    (env as Record<string, unknown>)['CHAT_STREAM_TIMEOUT_MS'] = 200;
+    try {
+      let callIndex = 0;
+      const model = new MockLanguageModelV4({
+        doStream: async ({ abortSignal }) => {
+          callIndex += 1;
+          if (callIndex === 1) {
+            return {
+              stream: simulateReadableStream({
+                chunkDelayInMs: 0,
+                initialDelayInMs: 0,
+                chunks: [
+                  { type: 'stream-start', warnings: [] },
+                  { type: 'tool-call', toolCallId: 'call-1', toolName: 'noop_tool', input: '{}' },
+                  { type: 'finish', usage, finishReason: toolCallsFinishReason },
+                ],
+              }),
+            };
+          }
+          // The second step starts and never ends, until the timeout aborts the request as a
+          // real fetch would be.
+          return {
+            stream: new ReadableStream({
+              start: (controller) => {
+                controller.enqueue({ type: 'stream-start', warnings: [] });
+                abortSignal?.addEventListener('abort', () => { controller.error(abortSignal.reason); });
+              },
+            }),
+          };
+        },
+      });
+      let reported: LanguageModelUsage | undefined;
+
+      await Promise.resolve(streamChat({ ...baseParams, tools: noopTools, model, onAbort: (finished) => { reported = finished; } }).text).catch(() => undefined);
+
+      expect(reported?.inputTokens).toBe(1);
+      expect(reported?.outputTokens).toBe(1);
+    } finally {
+      (env as Record<string, unknown>)['CHAT_STREAM_TIMEOUT_MS'] = configured;
+    }
+  });
+
+  it('sums the usage of the finished steps', () => {
+    const step = (input: number, cached: number, output: number, reasoning: number): { usage: LanguageModelUsage } => ({
+      usage: {
+        inputTokens: input,
+        inputTokenDetails: { noCacheTokens: input - cached, cacheReadTokens: cached, cacheWriteTokens: undefined },
+        outputTokens: output,
+        outputTokenDetails: { textTokens: output - reasoning, reasoningTokens: reasoning },
+        totalTokens: input + output,
+      },
+    });
+    expect(finishedStepsUsage([step(100, 64, 3, 0), step(120, 100, 900, 880)])).toEqual({
+      inputTokens: 220,
+      inputTokenDetails: { noCacheTokens: 56, cacheReadTokens: 164, cacheWriteTokens: 0 },
+      outputTokens: 903,
+      outputTokenDetails: { textTokens: 23, reasoningTokens: 880 },
+      totalTokens: 1123,
+    });
+    expect(finishedStepsUsage([]).totalTokens).toBe(0);
   });
 });
 
