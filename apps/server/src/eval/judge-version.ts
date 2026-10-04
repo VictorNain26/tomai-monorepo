@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
+import { claimsRequest } from './claims.js';
 import { CRITERIA } from './criteria.js';
 import { extractionRequest } from './extract.js';
 import { dataset } from './index.js';
@@ -8,7 +9,7 @@ import { JUDGE } from './judge-config.js';
 import { contextMessages, judgeContext, type JudgeInput } from './judge-context.js';
 
 // A fixed item, rendered through the real templates: briefing, transcript layout, question,
-// quote retry and extractor wrapper all reach the fingerprint as the model reads them.
+// quote retry, extractor and claims wrappers all reach the fingerprint as the model reads them.
 const REFERENCE: JudgeInput = {
   ...judgeContext({ scenarioId: 'S1', exerciseId: 'M1', repetition: 1 }),
   transcript: {
@@ -25,6 +26,7 @@ const REFERENCE: JudgeInput = {
 /** Everything the judge's model is sent or set with, on the reference item. */
 export function judgePrompts(): unknown[] {
   const extraction = extractionRequest(REFERENCE);
+  const claims = claimsRequest(REFERENCE, ['Affirmation.']);
   return [
     JUDGE,
     contextMessages(REFERENCE),
@@ -33,6 +35,8 @@ export function judgePrompts(): unknown[] {
     QUOTE_RETRY,
     extraction.messages,
     z.toJSONSchema(extraction.schema),
+    claims.messages,
+    z.toJSONSchema(claims.schema),
   ];
 }
 

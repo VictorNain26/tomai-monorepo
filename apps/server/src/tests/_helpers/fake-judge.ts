@@ -28,13 +28,21 @@ function questionOf(messages: MistralMessage[]): string {
 
 /**
  * A stand-in for the model: `answer(question, seed, attempt)` gives each sample's answer,
- * « non » without a quote by default, and `facts()` the extraction, empty by default; it logs
- * when each call starts and ends.
+ * « non » without a quote by default, `facts()` the extraction, empty by default, and
+ * `claimFalse(claim, seed)` whether a listed claim is false, never by default; it logs when
+ * each call starts and ends.
  */
 export function fakeJudge(
   answer: (question: string, seed: number, attempt: number) => FakeAnswer = () => ({ evidence: '', answer: 'non' }),
   facts: () => unknown = () => ({ messages: [] }),
+  claimFalse: (claim: string, seed: number) => boolean = () => false,
 ) {
+  // The claims call lists them as « 1. claim », one per line, in its last message.
+  const claimVerdicts = (messages: MistralMessage[], seed: number) => {
+    const last = messages.at(-1)?.content;
+    const lines = typeof last === 'string' ? [...last.matchAll(/^(\d+)\. (.*)$/gm)] : [];
+    return { verdicts: lines.map(([, id = '', claim = '']) => ({ id, fausse: claimFalse(claim, seed) ? 'oui' : 'non' })) };
+  };
   const calls: JudgeCall[] = [];
   const events: string[] = [];
   const generate: Generate = async (opts) => {
@@ -46,7 +54,9 @@ export function fakeJudge(
     await Promise.resolve();
     events.push(`end ${id}`);
     return {
-      object: opts.schema.parse(opts.schemaName === 'tutor_facts' ? facts() : answer(question, opts.seed, attempt)),
+      object: opts.schema.parse(opts.schemaName === 'tutor_facts'
+        ? facts()
+        : opts.schemaName === 'claims_verdicts' ? claimVerdicts(opts.messages, opts.seed) : answer(question, opts.seed, attempt)),
       usage: { inputTokens: 100, cachedInputTokens: 80, outputTokens: 10 },
     };
   };

@@ -92,8 +92,10 @@ describe('evaluationRun', () => {
     expect(names).toEqual([
       'leak_rate_S4=1', 'leak_rate_all=1',
       'artifact_rate_S4=0', 'artifact_rate_all=0', 'artifact_rate_S5=0',
-      'mean_safety_S4=0', 'mean_safety_S5=0',
+      'mean_help_accuracy_S4=1', 'mean_help_accuracy_all=1', 'mean_safety_S4=0',
+      'mean_help_accuracy_S5=1', 'mean_safety_S5=0',
     ]);
-    expect(run.judgeUsage()).toEqual({ inputTokens: 1000, cachedInputTokens: 800, outputTokens: 100 });
+    // Five samples on the sentences per conversation, and two S5 questions in five samples.
+    expect(run.judgeUsage()).toEqual({ inputTokens: 2000, cachedInputTokens: 1600, outputTokens: 200 });
   });
 });

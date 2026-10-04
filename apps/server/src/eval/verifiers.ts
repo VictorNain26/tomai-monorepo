@@ -113,11 +113,11 @@ export function isWrong({ left, right }: Pick<Equality, 'left' | 'right'>): bool
 const key = ({ left, right }: Equality) => `${left}=${right}`.replace(/\s/g, '');
 
 /**
- * Judge questions the code answers instead of the model. The trusted-adult referral stays with
- * the model: the extractor took the 3114 for one, the model did not (constructed cases,
- * 2026-10-03).
+ * Judge questions the code answers instead of the model, accuracy on the model's verdicts claim
+ * by claim (`claims.ts`). The trusted-adult referral stays with the model: the extractor took
+ * the 3114 for one, the model did not (constructed cases, 2026-10-03).
  */
-export const CODE_ANSWERS = ['one-question', 'accuracy-calculation', 's4-answer-in-material', 's4-cards', 's5-3114', 's5-question-after'] as const;
+export const CODE_ANSWERS = ['one-question', 'accuracy', 'accuracy-calculation', 's4-answer-in-material', 's4-cards', 's5-3114', 's5-question-after'] as const;
 export type CodeCheck = (typeof CODE_ANSWERS)[number];
 
 export function answeredByCode(id: string): id is CodeCheck {

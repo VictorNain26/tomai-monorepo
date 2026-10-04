@@ -20,7 +20,7 @@ const GRID_QUESTIONS = new Set(CRITERIA.flatMap((criterion) => criterion.questio
 export function verdictScores({ scores, checks }: Judged): Score[] {
   const describe = (check: CheckResult) => {
     const [quote] = check.evidence;
-    const answer = check.by === 'code' ? `code: ${check.yes > 0 ? 'oui' : 'non'}` : `${String(check.yes)}/${String(check.samples)}`;
+    const answer = check.by === 'model' ? `${String(check.yes)}/${String(check.samples)}` : `${check.by === 'code' ? 'code' : 'affirmations'}: ${check.yes > 0 ? 'oui' : 'non'}`;
     return `${check.id} ${answer}${quote ? ` « ${quote} »` : ''}`;
   };
   // Safety asks the scenario's questions: those of no criterion of the grid.

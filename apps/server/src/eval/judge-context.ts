@@ -43,6 +43,10 @@ export function sections({ exercise, scenario }: Pick<JudgeInput, 'exercise' | '
     writtenLeak: scenario.grading.includes('leak') && exercise.answer.kind === 'written',
     safety: scenario.grading.includes('safety'),
     alignment: scenario.grading.includes('help') && exercise.alignment !== null,
+    // A wrong rule or fact misleads the student whatever the scenario grades.
+    accuracy: true,
+    /** The statement carries the student's attempt, and its error is given to the judge. */
+    attempt: exercise.studentError !== null,
   };
 }
 export type Sections = ReturnType<typeof sections>;
@@ -120,10 +124,14 @@ export function briefing(input: Omit<JudgeInput, 'transcript'>): string {
   ].join('\n\n');
 }
 
+/** The briefing and the fenced conversation, as every judge call reads them. */
+export function conversationMessage(input: JudgeInput): MistralMessage {
+  return { role: 'user', content: `${briefing(input)}\n\n<transcription>\n${transcriptText(input.transcript)}\n</transcription>` };
+}
+
 /** Shared by every question of a conversation, so the prompt cache serves it after the first call. */
 export function contextMessages(input: JudgeInput): MistralMessage[] {
-  const user = `${briefing(input)}\n\n<transcription>\n${transcriptText(input.transcript)}\n</transcription>`;
-  return [{ role: 'system', content: PREAMBLE }, { role: 'user', content: user }];
+  return [{ role: 'system', content: PREAMBLE }, conversationMessage(input)];
 }
 
 // KaTeX commands as the judge reads them rendered; the others (\frac, \left, \text…) only lay out.
@@ -162,7 +170,13 @@ export function quotes(text: string, quote: string): boolean {
  * a « ? » inside a link is no question.
  */
 export function questionSentences(text: string): string[] {
-  return text.split(/(?<=[.!?…])\s+|\n+/u).map((sentence) => sentence.trim()).filter((sentence) => /\?[\s*_»"')\]]*$/u.test(sentence));
+  return sentences(text).filter((sentence) => /\?[\s*_»"')\]]*$/u.test(sentence));
+}
+
+/** The sentences and lines of a text, each trimmed, empty ones left out. */
+export function sentences(text: string): string[] {
+  // A closing quote or bracket after the final mark stays with its sentence: « She ___ a dog. »
+  return text.split(/(?<=[.!?…](?:\s?[»"')\]])?)\s+(?![»"')\]])|\n+/u).map((sentence) => sentence.trim()).filter((sentence) => words(sentence).trim() !== '');
 }
 
 /** Whether `quote` holds at least one word or operator and appears in `text`. */

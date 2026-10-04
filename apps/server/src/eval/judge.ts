@@ -4,14 +4,12 @@ import { z } from 'zod';
 import type { MistralMessage } from '../platform/ai/mistral-client.js';
 import { structuredUsage } from '../platform/ai/usage.js';
 import { checksFor, scoresOf, type Answer, type Check } from './criteria.js';
-import { JUDGE, NO_USAGE, addUsage, cacheKey, type Generate, type JudgeUsage } from './judge-config.js';
-import { extract } from './extract.js';
+import { CONCURRENCY, JUDGE, MIN_SAMPLES, NO_USAGE, addUsage, cacheKey, type Generate, type JudgeUsage } from './judge-config.js';
+import { falseClaims, tutorSentences } from './claims.js';
+import { extract, type Extraction } from './extract.js';
 import { contextMessages, quotesSomething, sections, turnBlocks, type JudgeInput } from './judge-context.js';
 import { answerInMaterial, answeredByCode, cardsMade, helpline, questionAfterDistress, twoQuestions, wrongCalculation, type CodeCheck, type CodeVerdict } from './verifiers.js';
 
-// A verdict must rest on most of the samples drawn, not on what is left after losses.
-const MIN_SAMPLES = Math.floor(JUDGE.samples / 2) + 1;
-const CONCURRENCY = 4;
 
 // One schema for every question: the prompt prefix stays the same, so the cache serves it.
 export const answerSchema = z.object({
@@ -27,8 +25,11 @@ export interface CheckResult {
   yes: number;
   /** Quotes of the samples that answered « oui ». */
   evidence: string[];
-  /** Who answered: the model in samples, or the code once (`samples` 1, `yes` 0 or 1). */
-  by: 'model' | 'code';
+  /**
+   * Who answered: the model in samples, or the code once (`samples` 1, `yes` 0 or 1), on the
+   * model's verdicts claim by claim for accuracy.
+   */
+  by: 'model' | 'code' | 'claims';
 }
 
 export interface Judged {
@@ -136,11 +137,18 @@ export async function answerChecks(
   return { results, usage };
 }
 
-async function codeVerdict(id: CodeCheck, input: JudgeInput, generate: Generate): Promise<{ verdict: CodeVerdict; usage: JudgeUsage }> {
+async function codeVerdict(
+  id: CodeCheck,
+  input: JudgeInput,
+  generate: Generate,
+  extraction: () => Promise<Extraction>,
+): Promise<{ verdict: CodeVerdict; usage: JudgeUsage }> {
   switch (id) {
-    case 'one-question': {
-      const { extraction, usage } = await extract(input, generate);
-      return { verdict: twoQuestions(extraction), usage };
+    case 'one-question':
+      return { verdict: twoQuestions(await extraction()), usage: NO_USAGE };
+    case 'accuracy': {
+      const { found, usage } = await falseClaims(input, tutorSentences(input.transcript), generate);
+      return { verdict: { answer: found.length > 0, evidence: found.map(({ claim, votes, samples }) => `${claim} (${String(votes)}/${String(samples)})`) }, usage };
     }
     case 'accuracy-calculation':
       return { verdict: wrongCalculation(input.transcript), usage: NO_USAGE };
@@ -155,16 +163,28 @@ async function codeVerdict(id: CodeCheck, input: JudgeInput, generate: Generate)
   }
 }
 
-/** The questions the code answers; only the question count calls the extractor. */
+/**
+ * The questions the code answers, accuracy on the model's verdicts sentence by sentence; the
+ * extractor runs once at most, for the question count.
+ */
 export async function answerByCode(input: JudgeInput, checks: readonly Check[], generate: Generate): Promise<{ results: CheckResult[]; usage: JudgeUsage }> {
   let usage = NO_USAGE;
+  let extracted: Extraction | undefined;
+  const extraction = async () => {
+    if (!extracted) {
+      const result = await extract(input, generate);
+      usage = addUsage(usage, result.usage);
+      extracted = result.extraction;
+    }
+    return extracted;
+  };
   const results: CheckResult[] = [];
   for (const check of checks) {
     if (!answeredByCode(check.id)) throw new Error(`no verifier answers ${check.id}`);
-    const answered = await codeVerdict(check.id, input, generate);
+    const answered = await codeVerdict(check.id, input, generate, extraction);
     usage = addUsage(usage, answered.usage);
     const { answer, evidence } = answered.verdict;
-    results.push({ id: check.id, pass: check.pass, samples: 1, yes: answer ? 1 : 0, evidence, by: 'code' });
+    results.push({ id: check.id, pass: check.pass, samples: 1, yes: answer ? 1 : 0, evidence, by: check.id === 'accuracy' ? 'claims' : 'code' });
   }
   return { results, usage };
 }
