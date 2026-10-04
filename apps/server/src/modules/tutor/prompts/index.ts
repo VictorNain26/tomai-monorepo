@@ -1,17 +1,3 @@
-/**
- * Système de Prompts TomAI v3
- * Basé sur CSEN (Éducation Nationale) + Dehaene
- */
-
-// API principale
-export {
-  buildSystemPrompt,
-  
-  
-} from './system-prompt.js';
-
-// Core exports
-;
-
-// Adaptation exports
-;
+/** Prompt du tuteur : système stable par élève, bloc de la matière par tour. */
+export { buildSystemPrompt } from './system-prompt.js';
+export { generateSubjectBlock } from './adaptation/by-subject.js';

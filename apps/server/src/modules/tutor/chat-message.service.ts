@@ -4,9 +4,10 @@ import type { AIModel } from '../../db/schema';
 import type { Message as DbMessage } from './session.schema.js';
 import { logger } from '../../platform/observability/logger';
 import type { MessageDetails } from './chat-types';
+import type { ResponseMessage } from './chat-message-assembler.js';
 
 export class ChatMessageService {
-  async getSessionHistory(sessionId: string, options?: { limit?: number | undefined; afterMessageId?: string | undefined }): Promise<DbMessage[]> {
+  async getSessionHistory(sessionId: string, options?: { limit?: number | undefined; afterMessageId?: string | undefined }): Promise<Omit<DbMessage, 'modelMessages'>[]> {
     try {
       let sessionMessages = await messagesRepository.findBySessionId(sessionId);
 
@@ -85,6 +86,8 @@ export class ChatMessageService {
       };
       /** Input channel declared by the user's gesture (mic vs keyboard). */
       inputMode?: 'text' | 'voice';
+      /** The assistant's response messages as the model produced them, replayed next turn. */
+      modelMessages?: ResponseMessage[] | undefined;
     },
     options: { verifySessionExists?: boolean } = {}
   ): Promise<{ messageId: string; realSessionId: string }> {
@@ -128,6 +131,7 @@ export class ChatMessageService {
         responseTimeMs: metadata.responseTimeMs ?? null,
         attachedFile: metadata.attachedFile ?? null,
         messageMetadata,
+        modelMessages: metadata.modelMessages ?? null,
         createdAt: new Date()
       });
 

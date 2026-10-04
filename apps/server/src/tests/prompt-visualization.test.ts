@@ -36,7 +36,6 @@ describe('buildSystemPrompt — intégration du bloc visualisation', () => {
   const prompt = buildSystemPrompt({
     level: 'quatrieme',
     levelText: '4e',
-    subject: 'Histoire',
     firstName: 'Lea',
   });
 

@@ -94,14 +94,12 @@ function generateSubjectSpecifics(subject: string): string | null {
 }
 
 /**
- * Génère le bloc matière pour le system prompt
- * - Si subject fourni : retourne les spécificités de cette matière
- * - Sinon : retourne un fallback court (économise ~600 tokens vs ALL)
+ * Bloc de la matière, dans le message du tour : les spécificités de la matière reconnue, sinon
+ * un bloc court qui vaut pour toutes (aucune matière, « general », une matière inconnue).
  */
-export function generateSubjectBlock(subject?: string): string | null {
-  if (subject) {
-    return generateSubjectSpecifics(subject);
-  }
+export function generateSubjectBlock(subject?: string): string {
+  const specifics = subject ? generateSubjectSpecifics(subject) : null;
+  if (specifics) return specifics;
   return `<subject_specifics matiere="multi">
 Adapte ta méthode à la matière abordée : analyse textuelle en français, démarche d'investigation en sciences, analyse de sources en histoire-géo.
 </subject_specifics>`;

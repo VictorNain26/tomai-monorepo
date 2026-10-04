@@ -25,7 +25,7 @@ describe('Mistral Small 4 on the EU endpoint (real API)', () => {
     expect(HAS_MISTRAL).toBe(true);
   });
 
-  it('streams a reasoning turn with usage, then reads the prefix from cache on turn 2', async () => {
+  it('streams a reasoning turn with usage, replays it with its reasoning on turn 2, read from cache', async () => {
     const sessionId = randomUUID();
     const first = streamChat({ ...mathTurn, sessionId, content: 'Résous 2x + 3 = 11.', conversationHistory: [] });
     const firstText = await first.text;
@@ -36,6 +36,9 @@ describe('Mistral Small 4 on the EU endpoint (real API)', () => {
     expect(firstUsage.inputTokens ?? 0).toBeGreaterThan(0);
     expect(firstUsage.outputTokens ?? 0).toBeGreaterThan(0);
 
+    // Turn 1 replayed as the model produced it: Mistral must accept its thinking chunk in history.
+    const modelMessages = await first.responseMessages;
+    expect(JSON.stringify(modelMessages)).toContain('"type":"reasoning"');
     const now = new Date().toISOString();
     const second = streamChat({
       ...mathTurn,
@@ -43,10 +46,10 @@ describe('Mistral Small 4 on the EU endpoint (real API)', () => {
       content: "Je trouve x = 4, c'est juste ?",
       conversationHistory: [
         { role: 'user', content: 'Résous 2x + 3 = 11.', timestamp: now },
-        { role: 'assistant', content: firstText, timestamp: now },
+        { role: 'assistant', content: firstText, timestamp: now, modelMessages },
       ],
     });
-    await second.text;
+    expect((await second.text).length).toBeGreaterThan(0);
 
     expect((await second.usage).inputTokenDetails.cacheReadTokens ?? 0).toBeGreaterThan(0);
   }, 180_000);

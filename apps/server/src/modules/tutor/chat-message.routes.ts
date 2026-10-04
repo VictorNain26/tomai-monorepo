@@ -170,14 +170,17 @@ export const chatMessageRoutes = new Hono<AppEnv>()
 
         writer.merge(toUIMessageStream({ stream: capturedResult.stream, tools, sendReasoning: false }));
       },
-      onFinish: async ({ responseMessage }) => {
+      onFinish: async ({ responseMessage, isAborted }) => {
         try {
           const usage = capturedResult ? await capturedResult.usage : undefined;
+          const modelMessages = capturedResult ? await capturedResult.responseMessages : undefined;
           await chatOrchestrationService.finishTurn({
             sessionId: turnCtx.sessionId,
             userId: user.id,
             userContent: safeContent,
             responseMessage,
+            modelMessages,
+            aborted: isAborted,
             model: env.MISTRAL_MODEL,
             usage,
             startTime,

@@ -181,8 +181,10 @@ le 2026-10-04 : `get_student_profile`, qui renvoyait le profil déjà injecté �
 - `update_student_profile` n'écrit plus de styles d'apprentissage (neuromythe :
   Pashler 2008, Newton & Salvi 2020), la colonne est supprimée ; une écriture échouée
   revient en erreur au modèle.
-- Appels et résultats d'outils persistés dans l'historique (aujourd'hui seul le
-  texte l'est, `ChatOrchestrationService.finishTurn`).
+- Appels et résultats d'outils persistés dans l'historique avec le raisonnement
+  (`messages.model_messages`, `responseMessages` de `streamText`), rejoués au tour suivant
+  quand ils finissent sur l'assistant et que le tour n'a pas été coupé ; seul le dernier
+  message de la fenêtre garde son raisonnement (`pruneMessages`).
 - `generate_flashcards` réservé au Complet, comme la route de génération de cartes, et
   compté dans son quota (§13).
 
@@ -208,12 +210,14 @@ Ordre du prompt, du plus stable au plus variable :
 5. Résumé des tours anciens + tours récents bruts, rejoués avec leur raisonnement et leurs
    appels d'outils.
 6. Message de l'élève, **un seul message `user` par tour**, qui porte aussi ce qui change
-   d'un tour à l'autre : contrat du tour (palier autorisé, indices déjà donnés,
-   diagnostic) entre balises `<contrat>`, que seul le serveur écrit ; texte de l'élève
+   d'un tour à l'autre : bloc de la matière ; contrat du tour (palier autorisé, indices
+   déjà donnés, diagnostic) entre balises `<contrat>`, que seul le serveur écrit ; texte de l'élève
    entre `<student_message>`, ces balises neutralisées dans son texte ; faits de l'élève,
    délimités comme données. Placé avant l'historique, un
-   bloc qui change à chaque tour casserait le cache (aujourd'hui jusqu'à six `user`
-   consécutifs, `assembleChatMessages` de `modules/tutor/chat-message-assembler.ts`).
+   bloc qui change à chaque tour casserait le cache. Le prompt système dit quels blocs
+   viennent du serveur (`<subject_specifics>`, `<critical_instruction>`, `<contrat>`) ;
+   deux messages `user` de suite sont fusionnés (`assembleChatPrompt`,
+   `modules/tutor/chat-message-assembler.ts`).
 
 Aucune consigne du serveur dans un bloc déclaré non fiable : « propose des flashcards »
 est aujourd'hui écrit dans `<student_context>`, que le prompt déclare sans ordre.

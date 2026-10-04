@@ -4,7 +4,7 @@
  * Deux blocs pour le prompt caching Mistral (prompt_cache_key) :
  * - generateIdentityCore : stable entre tous les élèves (rôle, ton,
  *   honnêteté) → fait partie du préfixe cachable (facturé ~10% en cache hit).
- * - generateStudentContext : spécifique à l'élève (nom, niveau, matière),
+ * - generateStudentContext : spécifique à l'élève (nom, niveau),
  *   placé APRÈS les blocs stables (pedagogy/safety) pour ne pas casser
  *   le préfixe partagé.
  */
@@ -12,7 +12,6 @@
 interface IdentityParams {
   studentName: string;
   levelText: string;
-  subject?: string | undefined;
 }
 
 /**
@@ -38,18 +37,13 @@ Si tu ne comprends pas la demande : « Peux-tu reformuler ? »
 }
 
 /**
- * Contexte dynamique élève (nom, niveau, matière). À injecter APRÈS les
- * blocs stables pour préserver le cache-prefix.
+ * L'élève et sa classe, après les blocs stables : constants pendant la séance. La matière, qui
+ * peut changer d'un tour à l'autre, va dans le message du tour (`chat-message-assembler.ts`).
  */
 export function generateStudentContext(params: IdentityParams): string {
-  const { studentName, levelText, subject } = params;
-
-  const contextLine = subject
-    ? `Élève: ${studentName} | Niveau: ${levelText} | Matière: ${subject}`
-    : `Élève: ${studentName} | Niveau: ${levelText}`;
-
+  const { studentName, levelText } = params;
   return `<student>
-${contextLine}
+Élève: ${studentName} | Niveau: ${levelText}
 </student>`;
 }
 

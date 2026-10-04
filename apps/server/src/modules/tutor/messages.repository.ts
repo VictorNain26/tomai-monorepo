@@ -1,6 +1,10 @@
-import { eq, asc, count } from 'drizzle-orm';
+import { eq, asc, count, getTableColumns, inArray } from 'drizzle-orm';
 import { db } from '../../db/connection';
 import { messages, type Message, type NewMessage } from './session.schema.js';
+
+// The model's stored response messages are read for the replay window only (`findModelMessages`).
+const columns = getTableColumns(messages);
+const visibleColumns = Object.fromEntries(Object.entries(columns).filter(([name]) => name !== 'modelMessages')) as Omit<typeof columns, 'modelMessages'>;
 
 class MessagesRepository {
   async create(messageData: NewMessage): Promise<Message> {
@@ -16,12 +20,21 @@ class MessagesRepository {
     return message;
   }
 
-  async findBySessionId(sessionId: string): Promise<Message[]> {
+  async findBySessionId(sessionId: string): Promise<Omit<Message, 'modelMessages'>[]> {
     return await db
-      .select()
+      .select(visibleColumns)
       .from(messages)
       .where(eq(messages.sessionId, sessionId))
       .orderBy(asc(messages.createdAt));
+  }
+
+  /** The stored response messages of the given messages, for the replay window. */
+  async findModelMessages(ids: readonly string[]): Promise<{ id: string; modelMessages: unknown }[]> {
+    if (ids.length === 0) return [];
+    return await db
+      .select({ id: messages.id, modelMessages: messages.modelMessages })
+      .from(messages)
+      .where(inArray(messages.id, [...ids]));
   }
 
   /**
