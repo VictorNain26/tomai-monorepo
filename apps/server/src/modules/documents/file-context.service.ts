@@ -1,249 +1,115 @@
 import { filesRepository, type File as FileRecord } from './files.repository.js';
 import { sessionFilesRepository } from './session-files.repository.js';
 import * as storage from './storage.js';
-import { documentAnalysisService } from './document-analysis.service.js';
-import type { DocumentAnalysisResult } from './document-types.js';
+import { documentExtractionService } from './document-extraction.service.js';
+import { costTrackingService } from '../billing/index.js';
+import { env } from '../../platform/config/env.js';
 import { logger } from '../../platform/observability/logger.js';
-import type { EducationLevelType } from '../../types/index.js';
-import type { AttachedFileInfo, AttachedFileForPrompt, FileAnalysisResult, FileAnalysisOptions, MultimodalFile } from './file-context-types.js';
-import { prepareMultimodalFiles, updateFileAnalysis } from './file-multimodal.service.js';
+import type { AttachedFileInfo, AttachedFileForPrompt } from './file-context-types.js';
+
+// The attached texts of a turn share this budget, the files of the turn served first.
+const MAX_ATTACHED_CHARS = 50_000;
+const CUT = '\n\n[Contenu tronqué]';
+
+const cachedText = (educationalContext: unknown) =>
+  (educationalContext as { extractedText?: string } | null)?.extractedText ?? null;
+
+/** Each text cut to what is left of the budget, in order. */
+function bounded(files: AttachedFileForPrompt[], budget: number): { files: AttachedFileForPrompt[]; left: number } {
+  let left = budget;
+  const out = files.map((file) => {
+    if (file.text.length <= left) {
+      left -= file.text.length;
+      return file;
+    }
+    const text = left > 0 ? `${file.text.slice(0, left)}${CUT}` : CUT.trim();
+    left = 0;
+    return { ...file, text };
+  });
+  return { files: out, left };
+}
 
 class FileContextService {
-  /**
-   * Récupère le contexte de tous les fichiers attachés à une session
-   * Lit depuis la table session_files (classeur) au lieu de scanner l'historique
-   */
-  async getSessionFilesForPrompt(sessionId: string): Promise<AttachedFileForPrompt[]> {
-    try {
-      const attachedFiles = await sessionFilesRepository.findBySessionWithContext(sessionId);
+  /** The text of a file, read once and kept on its record; null when it cannot be read. */
+  private async extractedText(file: FileRecord, owner: { userId: string; sessionId: string }): Promise<string | null> {
+    const cached = cachedText(file.educationalContext);
+    if (cached) return cached;
 
-      if (attachedFiles.length === 0) {
-        return [];
-      }
-
-      logger.info('Found attached files for session', {
-        filesCount: attachedFiles.length,
-        fileNames: attachedFiles.map(f => f.fileName),
-        operation: 'get-session-files-context'
-      });
-
-      return attachedFiles
-        .map(f => {
-          const eduContext = f.educationalContext as {
-            analysisContext?: string;
-            documentType?: string;
-            subject?: string;
-          } | null;
-
-          if (!eduContext?.analysisContext) return null;
-
-          return {
-            fileName: f.fileName,
-            analysis: eduContext.analysisContext,
-            documentType: eduContext.documentType,
-            subject: eduContext.subject,
-          };
-        })
-        .filter((ctx): ctx is NonNullable<typeof ctx> => ctx !== null);
-    } catch (error) {
-      logger.error('Failed to get session files context', {
-        err: error,
-        operation: 'get-session-files-context',
-        severity: 'medium' as const
-      });
-      return [];
+    const content = await storage.getFileContent(file.storageKey);
+    if (!content) {
+      logger.error('Failed to retrieve file from storage', { fileId: file.id, operation: 'file-extraction', severity: 'medium' as const });
+      return null;
     }
+    const bytes = content.content;
+    const extraction = await documentExtractionService.extractText(
+      bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer,
+      file.mimeType,
+      file.fileName,
+    );
+    const { usage } = extraction.metadata;
+    if (usage) {
+      void costTrackingService.record({
+        ...owner,
+        aiModel: env.MISTRAL_MODEL,
+        operation: 'document-extraction',
+        tokensInput: usage.inputTokens,
+        tokensOutput: usage.outputTokens,
+        cachedTokens: usage.cachedInputTokens,
+      });
+    }
+    if (!extraction.success) {
+      logger.warn('File text not extracted', { fileId: file.id, method: extraction.metadata.extractionMethod, operation: 'file-extraction' });
+      return null;
+    }
+
+    await filesRepository
+      .mergeEducationalContext(file.id, {
+        extractedText: extraction.text,
+        extractionMethod: extraction.metadata.extractionMethod,
+        wordCount: extraction.metadata.wordCount,
+      })
+      .catch((err: unknown) => { logger.warn('Extracted text not saved', { fileId: file.id, err, operation: 'file-extraction' }); });
+    return extraction.text;
   }
 
   /**
-   * Analyse un fichier avec le pipeline complet
-   *
-   * Accepte optionnellement un FileRecord pré-chargé pour éviter un SELECT
-   * redondant quand l'appelant a déjà récupéré le fichier (ex: prepareFileContext).
+   * The texts of the files attached to the session before this turn, in the order they were
+   * attached, and of the files of this turn, read now. A file sent again with the turn counts as
+   * the turn's.
    */
-  async analyzeFileWithCache(
-    fileId: string,
-    options: FileAnalysisOptions,
-    preloadedFile?: FileRecord
-  ): Promise<FileAnalysisResult | null> {
-    try {
-      const { content: userQuestion, schoolLevel, userId } = options;
-
-      const file = preloadedFile ?? await filesRepository.findById(fileId);
-      if (!file) {
-        logger.warn('File not found in DB', { fileId, operation: 'analyze-file' });
-        return null;
-      }
-
-      const eduContext = file.educationalContext as {
-        analysisContext?: string;
-        extractedText?: string;
-        documentType?: string;
-        subject?: string;
-      } | null;
-
-      // Utiliser l'analyse en cache si disponible
-      if (eduContext?.analysisContext && !userQuestion) {
-        return {
-          analysis: eduContext.analysisContext,
-          extractedText: eduContext.extractedText,
-          fileName: file.fileName,
-          documentType: eduContext.documentType,
-          subject: eduContext.subject,
-        };
-      }
-
-      // Enrichir avec question spécifique
-      if (userQuestion && eduContext?.analysisContext) {
-        const contextualAnalysis = `ANALYSE DU DOCUMENT (${eduContext.documentType ?? 'document'} - ${eduContext.subject ?? 'matière non identifiée'}):
-${eduContext.analysisContext}
-
-QUESTION DE L'ÉLÈVE: ${userQuestion}
-
-RÉPONSE CONTEXTUALISÉE: Basé sur l'analyse du document ci-dessus, voici la réponse adaptée à votre question.`;
-
-        return {
-          analysis: contextualAnalysis,
-          extractedText: eduContext.extractedText,
-          fileName: file.fileName,
-          documentType: eduContext.documentType,
-          subject: eduContext.subject,
-        };
-      }
-
-      // Analyse complète nécessaire
-      logger.info('No cached analysis, running full pipeline', {
-        fileId,
-        fileName: file.fileName,
-        operation: 'analyze-file-pipeline'
-      });
-
-      // Récupérer le contenu depuis Scaleway
-      const fileContent = await storage.getFileContent(file.storageKey);
-      if (!fileContent) {
-        logger.error('Failed to retrieve file from storage', {
-          reason: 'Storage returned null',
-          fileId,
-          storageKey: file.storageKey,
-          operation: 'analyze-file',
-          severity: 'medium' as const
-        });
-        return null;
-      }
-
-      const isImage = file.mimeType.startsWith('image/');
-
-      let analysisResult: DocumentAnalysisResult;
-
-      if (isImage) {
-        const base64 = fileContent.content.toString('base64');
-        analysisResult = await documentAnalysisService.analyzeImage(
-          base64,
-          file.mimeType,
-          file.fileName,
-          { schoolLevel, userId, userQuestion }
-        );
-      } else {
-        analysisResult = await documentAnalysisService.analyzeDocument(
-          fileContent.content.buffer as ArrayBuffer,
-          file.fileName,
-          file.mimeType,
-          { schoolLevel, userId, userQuestion }
-        );
-      }
-
-      if (analysisResult.success) {
-        await updateFileAnalysis(file.id, analysisResult);
-
-        return {
-          analysis: analysisResult.analysis,
-          extractedText: analysisResult.extraction.text,
-          fileName: file.fileName,
-          documentType: analysisResult.classification.documentType,
-          subject: analysisResult.classification.subject,
-        };
-      }
-
-      return null;
-    } catch (error) {
-      logger.error('File analysis failed', {
-        err: error,
-        fileId,
-        operation: 'analyze-file',
-        severity: 'medium' as const
-      });
-      return null;
-    }
-  }
-
-  /**
-   * Prépare le contexte complet des fichiers pour une requête chat
-   */
-  async prepareFileContext(params: {
-    fileIds: string[];
-    content: string;
-    schoolLevel: EducationLevelType;
-    userId: string;
-    sessionId: string;
-  }): Promise<{
+  async prepareFileContext(params: { fileIds: string[]; userId: string; sessionId: string }): Promise<{
     attachedFileInfos: AttachedFileInfo[];
-    attachedFiles: AttachedFileForPrompt[];
+    sessionFiles: AttachedFileForPrompt[];
+    turnFiles: AttachedFileForPrompt[];
   }> {
-    const { fileIds, content, schoolLevel, userId, sessionId } = params;
-
-    // Batch-fetch all attached files once (1 SELECT) in parallel with session context.
-    const [fileRecords, sessionFiles] = await Promise.all([
+    const { fileIds, userId, sessionId } = params;
+    const [records, attached] = await Promise.all([
       filesRepository.findByIds(fileIds),
-      this.getSessionFilesForPrompt(sessionId)
+      sessionFilesRepository.findBySessionWithContext(sessionId),
     ]);
+    const ordered = fileIds
+      .map((id) => records.find((f) => f.id === id))
+      .filter((f): f is FileRecord => f !== undefined);
 
-    // Preserve input order and build attached metadata from preloaded records (no extra SELECT).
-    const orderedFiles = fileIds
-      .map(id => fileRecords.find(f => f.id === id))
-      .filter((f): f is NonNullable<typeof f> => f !== undefined);
-
-    const attachedFileInfos: AttachedFileInfo[] = orderedFiles.map(file => ({
-      fileName: file.fileName,
-      fileId: file.id,
-      mimeType: file.mimeType,
-      fileSizeBytes: file.sizeBytes
-    }));
-
-    // Analyze files sequentially to keep ordered prompts and avoid hammering
-    // Mistral with parallel multi-MB requests; preloaded FileRecord avoids the
-    // duplicate SELECT inside analyzeFileWithCache.
-    const analysisResults: (FileAnalysisResult | null)[] = [];
-    for (const file of orderedFiles) {
-      const result = await this.analyzeFileWithCache(file.id, { content, schoolLevel, userId }, file);
-      analysisResults.push(result);
+    // One at a time: several multi-MB images in parallel would hammer Mistral.
+    const turnTexts: AttachedFileForPrompt[] = [];
+    for (const file of ordered) {
+      const text = await this.extractedText(file, { userId, sessionId });
+      if (text) turnTexts.push({ fileId: file.id, fileName: file.fileName, text });
     }
-
-    // File analyses are returned as SEPARATE structured blocks (never prefixed
-    // into the student message). The caller wraps them in their own
-    // `<attached_file>` fence so the document body cannot be read as an
-    // instruction. Session-classeur files come first (older context), then the
-    // files attached to this turn.
-    const turnFiles: AttachedFileForPrompt[] = [];
-    for (let i = 0; i < analysisResults.length; i++) {
-      const result = analysisResults[i];
-      if (!result?.analysis) continue;
-
-      turnFiles.push({
-        fileName: attachedFileInfos[i]?.fileName ?? 'document',
-        analysis: result.analysis,
-        documentType: result.documentType,
-        subject: result.subject,
+    const sessionTexts = attached
+      .filter((f) => !fileIds.includes(f.fileId))
+      .flatMap((f) => {
+        const text = cachedText(f.educationalContext);
+        return text ? [{ fileId: f.fileId, fileName: f.fileName, text }] : [];
       });
-    }
 
+    const turn = bounded(turnTexts, MAX_ATTACHED_CHARS);
     return {
-      attachedFileInfos,
-      attachedFiles: [...sessionFiles, ...turnFiles],
+      attachedFileInfos: ordered.map((file) => ({ fileName: file.fileName, fileId: file.id, mimeType: file.mimeType, fileSizeBytes: file.sizeBytes })),
+      sessionFiles: bounded(sessionTexts, turn.left).files,
+      turnFiles: turn.files,
     };
-  }
-
-  async prepareMultimodalFiles(fileIds: string[]): Promise<MultimodalFile[]> {
-    return prepareMultimodalFiles(fileIds);
   }
 }
 

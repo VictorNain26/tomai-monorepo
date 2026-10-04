@@ -86,7 +86,7 @@ export interface StructuredResult<T> {
 // ── Helpers internes ────────────────────────────────────────────────────────
 
 /** An image for a user message, from a `data:` URI or an https URL. */
-export function imageFilePart(url: string, mediaType = 'image'): FilePart {
+function imageFilePart(url: string, mediaType = 'image'): FilePart {
   return { type: 'file', mediaType, data: new URL(url) };
 }
 

@@ -74,25 +74,15 @@ export function wrapStudentContext(
 }
 
 /**
- * Wrap each attached file's analysis as its own `<attached_file>` block. The
- * analysis is third-party content (OCR of a student's document) so it is
- * tag-stripped and fenced — it must NEVER be concatenated into the
- * `<student_message>` (where stripPromptTags would remove the fence and let
- * the document body read as outside-the-block input). Returns '' when empty.
+ * Wrap each attached file's text as its own `<attached_file>` block. The text comes from the
+ * student's file, so it is tag-stripped and fenced: it must never be concatenated into the
+ * `<student_message>` (where stripPromptTags would remove the fence). Returns '' when empty.
  */
-export function wrapAttachedFiles(
-  files: { fileName: string; analysis: string; documentType?: string | undefined; subject?: string | undefined }[],
-): string {
-  const blocks = files
-    .filter((f) => f.analysis.trim())
-    .map((f) => {
-      const type = f.documentType && f.subject ? `${f.documentType} - ${f.subject}` : 'document';
-      const safeName = stripPromptTags(f.fileName).replace(/"/g, '');
-      const safeType = stripPromptTags(type).replace(/"/g, '');
-      return `<attached_file name="${safeName}" type="${safeType}">\n${stripPromptTags(f.analysis)}\n</attached_file>`;
-    });
-
-  return blocks.join('\n\n');
+export function wrapAttachedFiles(files: readonly { fileName: string; text: string }[]): string {
+  return files
+    .filter((f) => f.text.trim())
+    .map((f) => `<attached_file name="${stripPromptTags(f.fileName).replace(/"/g, '')}">\n${stripPromptTags(f.text)}\n</attached_file>`)
+    .join('\n\n');
 }
 
 export async function getLearningContext(userId: string): Promise<string | null> {

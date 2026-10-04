@@ -15,7 +15,6 @@ describe('assembleChatPrompt', () => {
       history: [],
       subjectBlock: '<subject_specifics matiere="Mathématiques">X</subject_specifics>',
       studentContextBlock: '<student_context>\n<subject_memory>\nFractions\n</subject_memory>\n</student_context>',
-      attachedFilesBlock: '<attached_file name="a">B</attached_file>',
       turnInstruction: '<critical_instruction>C</critical_instruction>',
       inputMode: 'voice',
       studentText: 'Résous 3x + 5 = 20.',
@@ -24,16 +23,17 @@ describe('assembleChatPrompt', () => {
     expect(system).toBe('SYS');
     expect(messages).toHaveLength(1);
     const text = textOf(messages[0]);
-    const order = ['<subject_specifics', '<subject_memory>', '<attached_file', '<critical_instruction>', '[VOCAL]', '<student_message>'].map((block) => text.indexOf(block));
+    const order = ['<subject_specifics', '<subject_memory>', '<critical_instruction>', '[VOCAL]', '<student_message>'].map((block) => text.indexOf(block));
     expect(order.every((index) => index >= 0)).toBe(true);
     expect([...order].sort((a, b) => a - b)).toEqual(order);
     expect(text).toEndWith('Résous 3x + 5 = 20.\n</student_message>');
   });
 
-  it('opens the window with the exercise in progress then the summary, never in the system prompt', () => {
+  it('opens the window with the exercise in progress, the session files then the summary, never in the system prompt', () => {
     const { system, messages } = assembleChatPrompt({
       systemPrompt: 'SYS',
       exerciseBlock: '<exercise>E</exercise>',
+      attachedFilesBlock: '<attached_file name="a">B</attached_file>',
       conversationSummary: 'Résumé',
       history: [{ role: 'user', content: 'Bonjour', timestamp: at }, { role: 'assistant', content: 'Salut', timestamp: at }],
       studentText: 'Je bloque.',
@@ -41,8 +41,9 @@ describe('assembleChatPrompt', () => {
 
     expect(system).toBe('SYS');
     expect(messages[0]?.role).toBe('user');
-    expect(textOf(messages[0])).toStartWith('<exercise>E</exercise>\n\n<conversation_summary>\nRésumé\n</conversation_summary>');
+    expect(textOf(messages[0])).toStartWith('<exercise>E</exercise>\n\n<attached_file name="a">B</attached_file>\n\n<conversation_summary>\nRésumé\n</conversation_summary>');
     expect(textOf(messages.at(-1))).not.toContain('<exercise>');
+    expect(textOf(messages.at(-1))).not.toContain('<attached_file');
   });
 
   it('replays the assistant as the model produced it, keeping the reasoning of the last message only', () => {
@@ -105,16 +106,14 @@ describe('assembleChatPrompt', () => {
     expect(text).not.toContain('<critical_instruction>');
   });
 
-  it('sends the images of the turn with its text, an orphan student message included', () => {
+  it('merges an orphan student message into the turn', () => {
     const { messages } = assembleChatPrompt({
       systemPrompt: 'SYS',
       history: [{ role: 'user', content: 'orphelin', timestamp: at }],
       studentText: 'Voici mon exercice.',
-      images: [{ type: 'file', mediaType: 'image/png', data: new URL('data:image/png;base64,AAAA') }],
     });
     expect(messages).toHaveLength(1);
-    const content = messages[0]?.content;
-    expect(Array.isArray(content) && content.map((part) => part.type)).toEqual(['text', 'text', 'file']);
+    expect(textOf(messages[0])).toBe('<student_message>\norphelin\n</student_message>\n\n<student_message>\nVoici mon exercice.\n</student_message>');
   });
 });
 

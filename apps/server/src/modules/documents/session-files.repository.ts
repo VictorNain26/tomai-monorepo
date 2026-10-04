@@ -3,7 +3,7 @@
  * Gère l'attachement de fichiers du classeur aux sessions de chat
  */
 
-import { eq, and, count } from 'drizzle-orm';
+import { eq, and, asc, count } from 'drizzle-orm';
 import { db } from '../../db/connection.js';
 import { sessionFiles, files } from './files.schema.js';
 
@@ -64,12 +64,7 @@ class SessionFilesRepository {
     return rows;
   }
 
-  /**
-   * Lister les fichiers attachés avec contexte éducatif (pour injection AI).
-   *
-   * Pas de cache fichier externe (Mistral n'a pas de Files API) — les chemins
-   * multimodaux se re-construisent à partir du blob Scaleway à chaque tour.
-   */
+  /** The session's files with their educational context, in the order they were attached: the prompt keeps them stable. */
   async findBySessionWithContext(sessionId: string) {
     const rows = await db
       .select({
@@ -85,7 +80,8 @@ class SessionFilesRepository {
           eq(sessionFiles.sessionId, sessionId),
           eq(files.status, 'ready')
         )
-      );
+      )
+      .orderBy(asc(sessionFiles.attachedAt), asc(sessionFiles.id));
 
     return rows;
   }

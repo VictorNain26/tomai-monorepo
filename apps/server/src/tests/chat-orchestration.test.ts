@@ -42,12 +42,11 @@ mock.module('../modules/tutor/study-sessions.repository', () => ({
   studySessionsRepository: { updateSubject: mock(async () => {}) },
 }));
 
+interface Texts { attachedFileInfos: { fileName: string; fileId: string }[]; sessionFiles: { fileId: string; fileName: string; text: string }[]; turnFiles: { fileId: string; fileName: string; text: string }[] }
+const prepareFileContext = mock(async (): Promise<Texts> => ({ attachedFileInfos: [], sessionFiles: [], turnFiles: [] }));
 mock.module('../modules/documents/index', () => ({
   sessionFilesRepository: { attach: mock(async () => {}) },
-  fileContextService: {
-    prepareFileContext: mock(async () => ({ attachedFileInfos: [], attachedFiles: [] })),
-    prepareMultimodalFiles: mock(async () => []),
-  },
+  fileContextService: { prepareFileContext },
 }));
 
 const actualMistralHelpers = await import('../modules/tutor/mistral-helpers');
@@ -131,6 +130,20 @@ describe('ChatOrchestrationService.prepareTurn — exercise sheet', () => {
     expect(context.exerciseSheet?.statement).toBe('Exercice précédent');
     expect(currentExerciseSheet).toHaveBeenCalledWith('session-001');
     expect(prepareExerciseSheet).not.toHaveBeenCalled();
+  });
+
+  it("feeds the sheet the texts of the turn's files, and gives the writer the session's then the turn's", async () => {
+    analyseTurn.mockImplementationOnce(async () => analysis({ bringsExercise: true }));
+    prepareFileContext.mockImplementationOnce(async () => ({
+      attachedFileInfos: [{ fileName: 'photo.jpg', fileId: 'f2' }],
+      sessionFiles: [{ fileId: 'f1', fileName: 'cours.pdf', text: 'Le cours' }],
+      turnFiles: [{ fileId: 'f2', fileName: 'photo.jpg', text: 'Résous 3x + 5 = 20.' }],
+    }));
+
+    const context = await chatOrchestrationService.prepareTurn({ ...request, content: 'Voici mon exercice', fileIds: ['f2'] });
+
+    expect(prepareExerciseSheet.mock.calls[0]?.[0]).toMatchObject({ attachedFilesBlock: '<attached_file name="photo.jpg">\nRésous 3x + 5 = 20.\n</attached_file>' });
+    expect(context.attachedFiles.map((file) => file.fileId)).toEqual(['f1', 'f2']);
   });
 
   it('never falls back on the previous exercise when the new sheet failed', async () => {

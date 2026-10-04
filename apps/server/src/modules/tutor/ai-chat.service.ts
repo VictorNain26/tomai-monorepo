@@ -17,7 +17,6 @@ import {
   isStepCount,
   type ToolSet,
   type LanguageModel,
-  type FilePart,
 } from 'ai';
 import { mistralProvider } from '../../platform/ai/provider.js';
 import type { MistralLanguageModelChatOptions } from '@ai-sdk/mistral';
@@ -34,7 +33,6 @@ import {
 } from './mistral-helpers.js';
 import { calculateBudget, truncateToTokenBudget } from './token-budget.service.js';
 import { env } from '../../platform/config/env.js';
-import { imageFilePart } from '../../platform/ai/mistral-client.js';
 import type { TurnUsage } from './turn-usage.js';
 import type { TurnAnalysis } from './turn-analysis.service.js';
 import { exerciseBlock, type ExerciseSheet } from './exercise-sheet.js';
@@ -42,14 +40,7 @@ import type { EducationLevelType } from '../../types/index.js';
 import type { AttachedFileForPrompt } from '../documents/index.js';
 
 /** Bump whenever content under modules/tutor/prompts/** or shared/pedagogy/** changes. */
-const PROMPT_VERSION = '2026-10-04.3';
-
-export interface AttachedFile {
-  /** Inline base64 payload for multimodal user messages (Mistral vision). */
-  base64?: string | undefined;
-  mimeType: string;
-  contentType: 'image' | 'document';
-}
+const PROMPT_VERSION = '2026-10-05';
 
 /** @public — reachable only via the typed client's inferred route return types (apps/server build:types), not a direct import; knip false positive. */
 export interface StreamGenerationParams {
@@ -62,11 +53,9 @@ export interface StreamGenerationParams {
   cognitiveProfileSummary?: string | null | undefined;
   learningContext?: string | null | undefined;
   conversationSummary?: string | null | undefined;
-  files?: AttachedFile[] | undefined;
   /**
-   * Attached-document analyses (OCR of the student's files). Injected as a
-   * SEPARATE `<attached_file>` fenced block, never concatenated into the
-   * student message — otherwise stripPromptTags would remove the fence.
+   * The texts read from the session's files, in the order they were attached: fenced
+   * `<attached_file>` blocks that open the window, never inside the student message.
    */
   attachedFiles?: AttachedFileForPrompt[] | undefined;
   /**
@@ -97,12 +86,6 @@ export interface ChatStreamParams extends StreamGenerationParams {
    * production call sites.
    */
   model?: LanguageModel | undefined;
-}
-
-function imageParts(files?: AttachedFile[]): FilePart[] {
-  return (files ?? [])
-    .filter((f): f is AttachedFile & { base64: string } => f.contentType === 'image' && f.base64 !== undefined && f.base64 !== '')
-    .map((f) => imageFilePart(`data:${f.mimeType};base64,${f.base64}`, f.mimeType));
 }
 
 function flashcardsApproval(analysis: TurnAnalysis | undefined) {
@@ -138,7 +121,6 @@ export function streamChat(params: ChatStreamParams) {
     turnInstruction: params.turnInstruction,
     inputMode: params.inputMode,
     studentText: params.content,
-    images: imageParts(params.files),
   });
 
   params.usage?.prompt(`${system}\n${JSON.stringify(messages)}`);

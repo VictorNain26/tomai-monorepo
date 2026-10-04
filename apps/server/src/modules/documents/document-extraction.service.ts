@@ -1,21 +1,13 @@
 /**
- * Document Extraction Service - Extraction texte unifiée
- *
- * Responsabilités:
- * - Extraction PDF via unpdf (pure JS, serverless-compatible)
- * - Extraction DOCX via mammoth
- * - Extraction texte brut
- * - OCR images via Mistral Vision
- *
- * Architecture 2025: Separation of concerns
- * - Ce service extrait le TEXTE uniquement
- * - L'analyse IA est déléguée à d'autres services
+ * The text of an attached file, and nothing else: PDF through unpdf, docx through mammoth, plain
+ * text as is, an image read once by Mistral Vision (`mistral-vision.ts`).
  */
 
 import { extractText, getDocumentProxy } from 'unpdf';
 import mammoth from 'mammoth';
 import { logger } from '../../platform/observability/logger.js';
 import { extractImageWithMistralVision } from './mistral-vision.js';
+import type { StructuredUsage } from '../../platform/ai/usage.js';
 
 export interface ExtractionResult {
   success: boolean;
@@ -25,6 +17,8 @@ export interface ExtractionResult {
     wordCount: number;
     extractionMethod: 'unpdf' | 'mammoth' | 'text' | 'mistral-vision';
     extractionTimeMs: number;
+    /** Tokens of the model call, for an image. */
+    usage?: StructuredUsage;
   };
   error?: string | undefined;
 }
