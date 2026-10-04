@@ -16,14 +16,12 @@ bloquant levé).
 - **Lot en cours :** 1 — Harnais d'évaluation (`roadmap.md`). Le lot 0 est terminé : serveur
   sur Hono et outillage sur Bun (#343 à #347), refonte du serveur en modules (#348 à #354),
   lint strict (#355) et TypeScript strict (#356).
-- **Prochaine action :** point 4 du lot 1, seconde PR de la décision 3 de l'analyse
-  d'erreurs (`etudes/2026-10-03/analyse-erreurs.md`) :
-  - exactitude posée dans tous les scénarios et vérifiée affirmation par affirmation ;
-  - diagnostic réécrit contre l'erreur de l'élève ;
-  - répétition sans progression ;
-  - nouvelle mesure sur l'échantillon et les cas construits, puis nombre de tirages.
-
-  Puis baseline de Tom (point 5). Plan d'abord dans `docs/plans/`.
+- **Prochaine action :** refonte de l'agent (lot 2), demandée par Victor le 2026-10-04
+  après l'audit du prompt et des outils (lot 2 ci-dessous, « Audit de l'agent ») :
+  recherches sourcées sur la conception d'un tuteur, l'ingénierie sur Small 4 et l'AI SDK,
+  l'exactitude et les garde-fous, et audit des autres appels IA ; puis étude datée et plan
+  dans `docs/plans/`. Le plan dit comment l'avant et l'après se mesurent, la baseline
+  (point 5 du lot 1) n'étant pas encore passée.
   - La relecture des conversations, que Victor a confiée à Claude le 2026-10-03, a été
     faite par Claude.
   - Une relecture humaine d'une partie d'entre elles reste due avant toute publication
@@ -93,6 +91,15 @@ contraire.
   actuel coûte environ 0,2 centime de dollar par conversation (#375). À ce débit (100 000 tokens par minute), juger le jeu
   complet prend plusieurs heures : l'API Batch de Mistral, hors limite de débit et à
   moitié prix, est à étudier pour la baseline (point 5).
+- **Questions du juge** (point 4, `etudes/2026-10-04/questions-juge.md`) : rejugement des
+  38 conversations.
+  - L'exactitude, vérifiée phrase par phrase, trouve 3 des 5 affirmations fausses (aucune
+    avant). La moitié de ses fausses alarmes sont des phrases qui donnent la réponse
+    attendue ; la consigne le précise désormais, sans mesure : à mesurer au prochain
+    passage.
+  - `diagnosis-uses` repère les 7 erreurs non exploitées, mais n'a dit « oui » sur aucune
+    conversation réelle.
+  - `hints-repeats`, qui ne voyait aucune des 3 répétitions jugées, est retirée de la grille.
 - **Niveau de langue** (point 4) : ses deux questions au juge sont retirées, faute de
   discriminer (`etudes/2026-10-03/analyse-erreurs.md`). Avant de le réintroduire, chercher
   une mesure validée de la lisibilité d'un texte français pour des collégiens, et la
@@ -125,6 +132,24 @@ contraire.
   - point 5 : mathjs sur les calculs de la solution ;
   - point 6 : règle de la réponse jamais donnée, explication demandée au palier d'aide,
     fiches à la demande, portée collège.
+- **Audit de l'agent** (2026-10-04, code du tour de chat), en plus des défauts listés ici :
+  - aucun outil ni contexte pour vérifier : ni solution, ni erreur de l'élève, ni programme ;
+  - le prompt pousse à affirmer : « Réponds comme un professeur qui connaît son sujet »,
+    « Ne mentionne jamais : tes sources » (`prompts/core/identity.ts`) ;
+  - raisonnement seulement en 4e-3e, maths ou sciences, trois intentions
+    (`mistral-reasoning.ts`) : 4 des 5 règles fausses sont en français et en anglais ;
+  - température 0,7 sans raisonnement (`platform/config/env.ts`), borne haute de la fiche
+    de Small 4 pour `reasoning_effort="none"` ;
+  - `maxOutputTokens` de 16 384 aussi sur les tours qui raisonnent
+    (`ai-chat.service.ts`) : à retirer, décision de Victor ;
+  - « Chain-of-Thought obligatoire. Étape par étape » en maths
+    (`prompts/adaptation/by-subject.ts`) ;
+  - la consigne de tour sur une réponse proposée fait demander la démarche sans montrer
+    l'erreur, et celle sur une demande de solution permet « 1-2 questions » et une étape
+    intermédiaire (`intent-classifier.service.ts`) ;
+  - `get_student_profile` à appeler « en début de conversation » alors que le profil est
+    injecté à chaque tour ;
+  - historique rechargé en texte seul : ni raisonnement ni appels d'outils rejoués.
 - **Programme dans le contexte** (`etudes/2026-10-02/alignement.md`, § 4) : référentiel
   du niveau et de la matière de la séance injecté en bloc, constant pendant la séance ;
   `modules/tutor/prompts/adaptation/by-level.ts` réécrit par niveau à partir du
@@ -371,3 +396,10 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
   - fuite par la voix dans 2 sur 6, et dans les fiches de M1 ;
   - fiches non créées dans 2 sur 6 (un refus, un report) ;
   - détresse sans 3114 dans les 3.
+- **2026-10-04** : questions du juge au modèle, puis rejugement des 38 conversations
+  (#377) :
+  - exactitude vérifiée phrase par phrase dans tous les scénarios : 3 des 5 affirmations
+    fausses trouvées, contre aucune ;
+  - diagnostic posé contre l'erreur de l'élève : les 7 erreurs non exploitées repérées ;
+  - répétition sans progression essayée puis retirée, faute d'en repérer aucune ;
+  - puce de liste lue comme un signe moins par le code des calculs, corrigée.

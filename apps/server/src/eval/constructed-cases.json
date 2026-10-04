@@ -318,5 +318,81 @@
     ],
     "faultyTurn": 3,
     "faultyTutor": "Je vois que tu traverses un moment difficile. Ce que tu ressens est important, mais sache que tu n’es pas seul et que tu as déjà fait le premier pas en posant ta question.\n\n**Respirons un instant.** Concentrons-nous sur cette phrase ensemble. Tu es capable de le faire, et je suis là pour t’aider.\n\nReprenons :\nDans la phrase **\"Les pommes que j'ai (manger) étaient bonnes.\"**, le mot **\"que\"** remplace **\"les pommes\"**. Donc, **\"que\"** est le COD de **\"manger\"**.\n\n**Question :**\nEst-ce que le COD est placé **avant** ou **après** le verbe **\"manger\"** ?"
+  },
+  {
+    "id": "wrong-rule-F1",
+    "fault": "wrong-rule",
+    "scenarioId": "S1",
+    "exerciseId": "F1",
+    "check": "accuracy",
+    "turns": [
+      {
+        "student": "{statement}",
+        "tutor": "Avec l'auxiliaire avoir, le participe passé s'accorde avec le COD quand celui-ci est placé avant le verbe. Dans ta phrase, où est le COD ?"
+      },
+      {
+        "student": "je sais pas",
+        "tutor": "Cherche ce qu'on a mangé : quel mot le remplace devant « j'ai » ?"
+      }
+    ],
+    "faultyTurn": 1,
+    "faultyTutor": "Avec l'auxiliaire avoir, le participe passé s'accorde avec le sujet quand le COD est placé avant le verbe. Dans ta phrase, où est le COD ?"
+  },
+  {
+    "id": "wrong-rule-6-A1",
+    "fault": "wrong-rule",
+    "scenarioId": "S1",
+    "exerciseId": "6-A1",
+    "check": "accuracy",
+    "turns": [
+      {
+        "student": "{statement}",
+        "tutor": "Au présent simple, avec he, she ou it, le verbe change de forme. Mais have est irrégulier : il ne prend pas simplement un -s. Te souviens-tu de sa forme avec she ?"
+      },
+      {
+        "student": "je sais pas",
+        "tutor": "Pense à une autre phrase avec she : « She ___ a dog. » Quel mot mettrais-tu ?"
+      }
+    ],
+    "faultyTurn": 1,
+    "faultyTutor": "Au présent simple, avec he, she ou it, on ajoute simplement un -s à la fin du verbe, have compris. Que devient le verbe ici ?"
+  },
+  {
+    "id": "no-diagnosis-5-M1",
+    "fault": "no-diagnosis",
+    "scenarioId": "S1",
+    "exerciseId": "5-M1",
+    "check": "diagnosis-uses",
+    "turns": [
+      {
+        "student": "{statement}",
+        "tutor": "Tu as fait 4 + 3 = 7, puis 7 × 5 = 35 : tu as commencé par l'addition, alors que la multiplication se fait avant. Dans 4 + 3 × 5, quelle opération faut-il donc faire en premier ?"
+      },
+      {
+        "student": "je sais pas",
+        "tutor": "Rappelle-toi la règle des priorités : quelle opération passe avant l'autre ?"
+      }
+    ],
+    "faultyTurn": 1,
+    "faultyTutor": "Comment as-tu trouvé 35 ? Explique-moi ta démarche étape par étape."
+  },
+  {
+    "id": "no-diagnosis-6-M2",
+    "fault": "no-diagnosis",
+    "scenarioId": "S1",
+    "exerciseId": "6-M2",
+    "check": "diagnosis-uses",
+    "turns": [
+      {
+        "student": "{statement}",
+        "tutor": "Tes 22 cm², c'est 2 × (7 + 4) : tu as calculé le périmètre, le tour du rectangle, pas la surface qu'il couvre. Que mesure l'aire ?"
+      },
+      {
+        "student": "je sais pas",
+        "tutor": "L'aire compte les carreaux de 1 cm de côté qui remplissent le rectangle. Combien en tient une rangée de 7 cm ?"
+      }
+    ],
+    "faultyTurn": 1,
+    "faultyTutor": "Comment as-tu trouvé 22 cm² ? Détaille-moi ton calcul."
   }
 ]

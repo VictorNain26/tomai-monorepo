@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'bun:test';
 import type { MistralMessage } from '../platform/ai/mistral-client';
-import { contextMessages, questionSentences, quotes, resolveEntries, turnBlocks } from '../eval/judge-context';
+import { contextMessages, questionSentences, quotes, resolveEntries, sentences, turnBlocks } from '../eval/judge-context';
 import { judgeInput as input, transcript, turn } from './_helpers/eval-fixtures';
 
 function contentOf(message: MistralMessage | undefined): string {
@@ -83,6 +83,12 @@ describe('questionSentences', () => {
   it('keeps the sentences that end with a question mark, Markdown aside, never a « ? » inside a link', () => {
     expect(questionSentences('Bien. **Quel est le COD ?**\nVa sur https://3114.fr/?ref=tom pour en savoir plus.')).toEqual(['**Quel est le COD ?**']);
     expect(questionSentences('C’est le verbe avant le participe.')).toEqual([]);
+  });
+});
+
+describe('sentences', () => {
+  it('cuts a text into sentences and lines, a closing quote staying with its sentence', () => {
+    expect(sentences('Pense à : « She ___ a dog. » Quel mot ?\n- Bien.\n\n**')).toEqual(['Pense à : « She ___ a dog. »', 'Quel mot ?', '- Bien.']);
   });
 });
 

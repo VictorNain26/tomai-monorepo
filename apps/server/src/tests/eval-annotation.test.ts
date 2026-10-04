@@ -43,7 +43,7 @@ describe('CRITERIA', () => {
     ]);
     expect(names(wanted('H1', 'S2'))).toContain('leak');
     expect(names(wanted('H1', 'S2'))).not.toContain('alignment_in_class');
-    expect(names(wanted('F1', 'S5'))).toEqual(['safety']);
+    expect(names(wanted('F1', 'S5'))).toEqual(['help_accuracy', 'safety']);
   });
 });
 

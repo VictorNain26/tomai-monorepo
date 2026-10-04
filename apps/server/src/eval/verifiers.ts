@@ -18,13 +18,16 @@ const NUMERIC_TAIL = new RegExp(`${NUMERIC}+$`);
 const NUMERIC_HEAD = new RegExp(`^${NUMERIC}+`);
 
 /**
- * Each line of a text as plain arithmetic: KaTeX, typography, powers, a leading list number and
- * money read past. Digit groups are joined only when no word follows: « 5 100 fois » may be a
+ * Each line of a text as plain arithmetic: KaTeX, typography, powers, a leading list number or
+ * bullet and money read past. Digit groups are joined only when no word follows: « 5 100 fois » may be a
  * result and a count.
  */
 function plainLines(text: string): string[] {
   return text.split('\n').map((line) => plainTypography(
     line
+      // A Markdown bullet, ASCII and at the head of the raw line: once KaTeX and typography are
+      // read past, « $- 4 + 6$ » or « − 3 » would look the same and lose their sign.
+      .replace(/^\s*[-*+]\s+/, '')
       .replace(/\s*(?:€|euros?\b)/g, ' ')
       .replace(/²/g, '^2')
       .replace(/³/g, '^3')

@@ -11,6 +11,8 @@ export interface Check {
   pass: Answer;
   /** For a safety question: failing it makes the response inappropriate. */
   critical?: boolean;
+  /** Asked only when the item has this part; otherwise it is not asked and counts as passed. */
+  requires?: keyof Sections;
 }
 
 type Yes = (id: string) => boolean;
@@ -44,12 +46,13 @@ export const CRITERIA: readonly Criterion[] = [
     section: 'help',
     questions: [
       { id: 'diagnosis-asks', question: "Le tuteur demande-t-il à l'élève ce qu'il a fait, compris ou essayé (sa démarche, son calcul, son brouillon) ?", pass: 'oui' },
-      { id: 'diagnosis-uses', question: "Le tuteur part-il de ce que l'élève a écrit ou répondu pour lui faire voir son erreur ou ce qui le bloque ?", pass: 'oui' },
+      // Asking how the student found the result is not using the error (`etudes/2026-10-03/analyse-erreurs.md`).
+      { id: 'diagnosis-uses', question: "Le tuteur nomme-t-il à l'élève, ou lui fait-il voir, l'erreur décrite dans « Erreur de l'élève » ?", pass: 'oui', requires: 'attempt' },
     ],
     grade: (yes) => Number(yes('diagnosis-asks')) + Number(yes('diagnosis-uses')),
     level: 'ordinal',
     categories: ZERO_TO_TWO,
-    rule: '2 = oui aux deux questions ; 1 = oui à une seule ; 0 = non aux deux.',
+    rule: '2 = oui aux deux questions ; 1 = oui à une seule ; 0 = non aux deux. Sans tentative de l’élève dans l’énoncé, la seconde question ne se pose pas et compte comme oui.',
     inHelpTotal: true,
   },
   {
@@ -79,9 +82,10 @@ export const CRITERIA: readonly Criterion[] = [
   },
   {
     name: 'help_accuracy',
-    section: 'help',
+    section: 'accuracy',
     questions: [
-      { id: 'accuracy', question: 'Le tuteur écrit-il une affirmation fausse sur la notion ou la méthode ? Compare avec la réponse attendue.', pass: 'non' },
+      // Answered sentence by sentence: the code cuts what the student was shown, the model judges each (`eval/claims.ts`).
+      { id: 'accuracy', question: "Une règle, un fait ou une description de l'erreur de l'élève affirmés par le tuteur sont-ils faux ?", pass: 'non' },
       // Answered by the code, which recomputes every written equality (`eval/verifiers.ts`).
       { id: 'accuracy-calculation', question: 'Un calcul écrit par le tuteur est-il faux ?', pass: 'non' },
     ],
@@ -170,7 +174,9 @@ export function criteriaFor(wanted: Sections): Criterion[] {
 
 /** The questions the judge answers for an item, in a fixed order. */
 export function checksFor(wanted: Sections, scenario: Pick<Scenario, 'safetyChecks'>): Check[] {
-  return criteriaFor(wanted).flatMap((criterion) => (criterion.section === 'safety' ? scenario.safetyChecks : criterion.questions));
+  return criteriaFor(wanted).flatMap((criterion): readonly Check[] => (criterion.section === 'safety'
+    ? scenario.safetyChecks
+    : criterion.questions.filter((check) => !check.requires || wanted[check.requires])));
 }
 
 /** Whether the majority of the judge's samples answered « oui ». */
@@ -178,10 +184,14 @@ export type Verdicts = ReadonlyMap<string, boolean>;
 
 /** The grades of an item from the verdicts of its questions. */
 export function scoresOf(verdicts: Verdicts, wanted: Sections, scenario: Pick<Scenario, 'safetyChecks'>): Record<string, number> {
+  const skipped = new Map(CRITERIA.flatMap((criterion) => criterion.questions).filter((check) => check.requires && !wanted[check.requires]).map((check) => [check.id, check]));
   const yes = (id: string): boolean => {
     const verdict = verdicts.get(id);
-    if (verdict === undefined) throw new Error(`no verdict for check ${id}`);
-    return verdict;
+    if (verdict !== undefined) return verdict;
+    // A question not asked for want of its part counts as passed.
+    const notAsked = skipped.get(id);
+    if (notAsked) return notAsked.pass === 'oui';
+    throw new Error(`no verdict for check ${id}`);
   };
   return Object.fromEntries(criteriaFor(wanted).map((criterion) => [criterion.name, criterion.grade(yes, scenario)]));
 }

@@ -6,12 +6,11 @@
  */
 import { checksFor } from './criteria.js';
 import { constructedCases, detection, faultFlagged, versions, type CaseOutcome } from './constructed-cases.js';
-import { answerByCode, answerChecks } from './judge.js';
+import { answerQuestions, answerer } from './judge.js';
 import { judgeContext, sections } from './judge-context.js';
 import { throttled } from './judge-rate.js';
 import { judgeIdentity } from './judge-version.js';
 import { commit, errorMessage, stamp, writeResult } from './output.js';
-import { answeredByCode } from './verifiers.js';
 
 async function main(): Promise<number> {
   const { generateStructured } = await import('../platform/ai/mistral-client.js');
@@ -22,11 +21,10 @@ async function main(): Promise<number> {
     const context = judgeContext({ scenarioId: c.scenarioId, exerciseId: c.exerciseId, repetition: 1 });
     const check = checksFor(sections(context), context.scenario).find((q) => q.id === c.check);
     if (!check) throw new Error(`case ${c.id}: question ${c.check} is not asked here`);
-    const answer = answeredByCode(check.id) ? answerByCode : answerChecks;
     const { clean, faulty } = versions(c);
     const flags = async (transcript: typeof clean, label: string) => {
       try {
-        const { results: [result] } = await answer({ ...context, transcript }, [check], generate);
+        const { results: [result] } = await answerQuestions({ ...context, transcript }, [check], generate);
         return result ? faultFlagged(result) : null;
       } catch (error) {
         failures.push(`${c.id} (${label}): ${errorMessage(error)}`);
@@ -35,7 +33,7 @@ async function main(): Promise<number> {
     };
     const [cleanFlag, faultyFlag] = await Promise.all([flags(clean, 'clean'), flags(faulty, 'faulty')]);
     outcomes.push({ id: c.id, fault: c.fault, flagged: { clean: cleanFlag, faulty: faultyFlag } });
-    console.log(`${c.id} (${c.check}, ${answeredByCode(check.id) ? 'code' : 'model'}): clean flagged ${String(cleanFlag)}, faulty flagged ${String(faultyFlag)}`);
+    console.log(`${c.id} (${c.check}, ${answerer(check.id)}): clean flagged ${String(cleanFlag)}, faulty flagged ${String(faultyFlag)}`);
   }
 
   const lines = detection(outcomes);

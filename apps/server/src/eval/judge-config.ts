@@ -17,6 +17,11 @@ export const JUDGE = {
   extractionMaxTokens: 2048,
 } as const;
 
+// A verdict must rest on most of the samples drawn, not on what is left after losses.
+export const MIN_SAMPLES = Math.floor(JUDGE.samples / 2) + 1;
+/** Judge calls at once, after the first has written the shared prefix to the cache. */
+export const CONCURRENCY = 4;
+
 /** The structured call the judge needs; `generateStructured` of the server satisfies it. */
 export type Generate = <T>(opts: {
   messages: MistralMessage[];

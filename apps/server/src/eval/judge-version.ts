@@ -1,14 +1,17 @@
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
+import { claimsRequest, tutorSentences } from './claims.js';
 import { CRITERIA } from './criteria.js';
 import { extractionRequest } from './extract.js';
 import { dataset } from './index.js';
-import { QUOTE_RETRY, answerSchema, questionMessage } from './judge.js';
+import { QUOTE_RETRY, answerSchema, answerer, questionMessage } from './judge.js';
 import { JUDGE } from './judge-config.js';
 import { contextMessages, judgeContext, type JudgeInput } from './judge-context.js';
 
 // A fixed item, rendered through the real templates: briefing, transcript layout, question,
-// quote retry and extractor wrapper all reach the fingerprint as the model reads them.
+// quote retry, extractor and claims wrappers all reach the fingerprint as the model reads them.
+// Its tutor text holds a list marker, an ellipsis and a closing quote, so that a change in how
+// the sentences are cut changes the claims the model reads, and the fingerprint.
 const REFERENCE: JudgeInput = {
   ...judgeContext({ scenarioId: 'S1', exerciseId: 'M1', repetition: 1 }),
   transcript: {
@@ -16,7 +19,7 @@ const REFERENCE: JudgeInput = {
     exerciseId: 'M1',
     repetition: 1,
     turns: [
-      { student: 'Élève', text: 'Tuteur', tools: ['outil'], toolOutputs: 'sortie', cards: 'fiche', durationMs: 1 },
+      { student: 'Élève', text: '1. Une règle… sauf une exception. « Une citation. » Une question ?', tools: ['outil'], toolOutputs: 'sortie', cards: 'fiche', durationMs: 1 },
       { student: 'Élève', inputMode: 'voice', text: 'Tuteur', tools: [], toolOutputs: '', cards: '', durationMs: 1, error: 'erreur' },
     ],
   },
@@ -25,14 +28,20 @@ const REFERENCE: JudgeInput = {
 /** Everything the judge's model is sent or set with, on the reference item. */
 export function judgePrompts(): unknown[] {
   const extraction = extractionRequest(REFERENCE);
+  const claims = claimsRequest(REFERENCE, tutorSentences(REFERENCE.transcript));
   return [
     JUDGE,
     contextMessages(REFERENCE),
     z.toJSONSchema(answerSchema),
-    [...CRITERIA.flatMap((criterion) => criterion.questions), ...dataset.scenarios.flatMap((scenario) => scenario.safetyChecks)].map(questionMessage),
+    // Only the questions the model is asked: the others never reach it.
+    [...CRITERIA.flatMap((criterion) => criterion.questions), ...dataset.scenarios.flatMap((scenario) => scenario.safetyChecks)]
+      .filter((check) => answerer(check.id) === 'model')
+      .map(questionMessage),
     QUOTE_RETRY,
     extraction.messages,
     z.toJSONSchema(extraction.schema),
+    claims.messages,
+    z.toJSONSchema(claims.schema),
   ];
 }
 

@@ -3,7 +3,7 @@ import { dataset } from '../eval';
 import { casesSchema, constructedCases, detection, faultFlagged, versions } from '../eval/constructed-cases';
 
 describe('constructedCases', () => {
-  it('hold two cases for each of the eight faults, each aimed at one judge question', () => {
+  it('hold two cases for each of the eleven faults, each aimed at one judge question', () => {
     expect(constructedCases.map((c) => `${c.fault}:${c.check}`)).toEqual([
       'unrolled-method:hints-unrolls', 'unrolled-method:hints-unrolls',
       'calculation-error:accuracy-calculation', 'calculation-error:accuracy-calculation',
@@ -13,6 +13,8 @@ describe('constructedCases', () => {
       'no-3114:s5-3114', 'no-3114:s5-3114',
       'no-trusted-adult:s5-trusted-adult', 'no-trusted-adult:s5-trusted-adult',
       'question-after-distress:s5-question-after', 'question-after-distress:s5-question-after',
+      'wrong-rule:accuracy', 'wrong-rule:accuracy',
+      'no-diagnosis:diagnosis-uses', 'no-diagnosis:diagnosis-uses',
     ]);
   });
 
