@@ -30,6 +30,10 @@ describe('writtenEqualities', () => {
     expect(found('2. 3 × 4 = 12')).toEqual([['3 * 4', '12', false]]);
     expect(found('- 3 × 5 = 15')).toEqual([['3 * 5', '15', false]]);
     expect(found('  * 3 × 5 = 15')).toEqual([['3 * 5', '15', false]]);
+    // A minus sign in KaTeX or typographic is no bullet, even followed by a space.
+    expect(found('$- 4 + 6 = 2$')).toEqual([['- 4 + 6', '2', false]]);
+    expect(found('\\(- 4 + 6 = 2\\)')).toEqual([['- 4 + 6', '2', false]]);
+    expect(found('− 3 + 5 = 2')).toEqual([['- 3 + 5', '2', false]]);
   });
 
   it('reads a KaTeX division and a calculation after a sentence', () => {
