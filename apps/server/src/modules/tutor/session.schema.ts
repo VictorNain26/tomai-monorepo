@@ -181,8 +181,6 @@ export const sessionEpisodes = pgTable('session_episodes', {
   index('idx_session_episodes_user_id').on(table.userId),
   index('idx_session_episodes_created_at').on(table.createdAt),
   index('idx_session_episodes_ttl').on(table.ttlUntil),
-  index('idx_session_episodes_embedding')
-    .using('hnsw', table.summaryEmbedding.op('vector_cosine_ops')),
 ]);
 
 // Profil mémoire élève PAR MATIÈRE — agrégat pédagogique durable, distinct de
