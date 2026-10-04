@@ -67,6 +67,8 @@ export interface ChatTurnContext {
   turnAnalysis: TurnAnalysis;
   /** The exercise in progress: prepared when the student brings one, else the session's last. */
   exerciseSheet: ExerciseSheet | null;
+  /** The turn's files the user may attach: their own, uploaded, each once. */
+  fileIds: string[];
   /** The bounded texts of the session's files, then of this turn's, for `streamChat`'s `attachedFiles`. */
   attachedFiles: AttachedFileForPrompt[];
   attachedFileInfo: AttachedFileInfo | null;
@@ -183,7 +185,7 @@ class ChatOrchestrationService {
         }); });
     }
 
-    const { attachedFileInfos, sessionFiles, turnFiles } = fileContext;
+    const { attachedFileInfos, files } = fileContext;
     const attachedFileInfo = attachedFileInfos[0] ?? null;
     const hasMultipleFiles = attachedFileInfos.length > 1;
 
@@ -196,7 +198,7 @@ class ChatOrchestrationService {
           level: request.schoolLevel,
           subject: effectiveSubject,
           studentText: request.content,
-          attachedFilesBlock: turnFiles.length > 0 ? wrapAttachedFiles(turnFiles) : null,
+          attachedFilesBlock: files.length > 0 ? wrapAttachedFiles(files) : null,
         })
         : currentExerciseSheet(sessionId),
     ]);
@@ -212,7 +214,7 @@ class ChatOrchestrationService {
       sessionId,
       schoolLevel: request.schoolLevel,
       filesCount: request.fileIds.length,
-      attachedTexts: sessionFiles.length + turnFiles.length,
+      attachedTexts: files.length,
       proposesAnswer: turnAnalysis.proposesAnswer,
       bringsExercise: turnAnalysis.bringsExercise,
       asksSolution: turnAnalysis.asksSolution,
@@ -233,7 +235,8 @@ class ChatOrchestrationService {
       turnInstruction,
       turnAnalysis,
       exerciseSheet,
-      attachedFiles: [...sessionFiles, ...turnFiles],
+      fileIds: fileContext.fileIds,
+      attachedFiles: files,
       attachedFileInfo,
       ...(hasMultipleFiles && { attachedFileInfos }),
     };

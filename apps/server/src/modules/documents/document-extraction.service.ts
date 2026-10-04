@@ -6,7 +6,7 @@
 import { extractText, getDocumentProxy } from 'unpdf';
 import mammoth from 'mammoth';
 import { logger } from '../../platform/observability/logger.js';
-import { extractImageWithMistralVision } from './mistral-vision.js';
+import { readImageWithMistralVision } from './mistral-vision.js';
 import type { StructuredUsage } from '../../platform/ai/usage.js';
 
 export interface ExtractionResult {
@@ -67,7 +67,9 @@ class DocumentExtractionService {
 
       // Images - Mistral Vision OCR/description
       if (cleanMimeType.startsWith('image/')) {
-        return await extractImageWithMistralVision(buffer, cleanMimeType, startTime);
+        const { text, usage, error } = await readImageWithMistralVision(buffer, cleanMimeType);
+        const result = this.createResult(text !== '', text, 'mistral-vision', startTime, text === '' ? error ?? "Aucun contenu lu dans l'image" : undefined);
+        return usage ? { ...result, metadata: { ...result.metadata, usage } } : result;
       }
 
       // Type non supporté

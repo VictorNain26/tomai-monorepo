@@ -12,7 +12,7 @@ import type { EducationLevelType } from '../../types/index.js';
 import { ExerciseSheetSchema, keepKnownNotions, notionsFor, schoolYearOf, sheetMessages, vote, type ExerciseSheet } from './exercise-sheet.js';
 import { exerciseSheetsRepository } from './exercise-sheets.repository.js';
 
-const EXERCISE_SHEET_PROMPT_VERSION = '2026-10-04';
+const EXERCISE_SHEET_PROMPT_VERSION = '2026-10-05';
 const DRAWS = 3;
 const SHEET_TIMEOUT_MS = 20_000;
 // Small 4's model card: « 0.7 for reasoning_effort="high" » (huggingface.co/mistralai/Mistral-Small-4-119B-2603).
@@ -24,7 +24,7 @@ interface PrepareSheetParams {
   level: EducationLevelType;
   subject: string | undefined;
   studentText: string;
-  /** The text read from the attached photos and documents, fenced. */
+  /** The texts read from the session's files, oldest first, fenced. */
   attachedFilesBlock: string | null;
 }
 

@@ -71,6 +71,7 @@ class SessionFilesRepository {
         fileId: files.id,
         fileName: files.fileName,
         mimeType: files.mimeType,
+        storageKey: files.storageKey,
         educationalContext: files.educationalContext,
       })
       .from(sessionFiles)

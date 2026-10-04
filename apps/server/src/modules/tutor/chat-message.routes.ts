@@ -117,7 +117,7 @@ export const chatMessageRoutes = new Hono<AppEnv>()
         sessionId: turnCtx.sessionId,
         content: safeContent,
         inputMode,
-        fileIds,
+        fileIds: turnCtx.fileIds,
         attachedFileInfo: turnCtx.attachedFileInfo,
         attachedFileInfos: turnCtx.attachedFileInfos,
       });

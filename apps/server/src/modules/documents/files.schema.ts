@@ -29,7 +29,7 @@ export type FileStatus = (typeof fileStatusEnum.enumValues)[number];
 /**
  * Table files - Métadonnées fichiers uploadés
  * Stockage: Scaleway Object Storage (RGPD France)
- * Analyse: multimodal Mistral (base64 inline, pas de cache fichier externe)
+ * Lecture : le texte extrait une fois, gardé dans educational_context
  */
 export const files = pgTable('files', {
   id: uuid('id').primaryKey().defaultRandom(),

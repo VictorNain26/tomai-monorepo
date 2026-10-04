@@ -4,7 +4,7 @@ import { streamChat } from '../modules/tutor/ai-chat.service';
 import { generateStructured } from '../platform/ai/mistral-client';
 import { ExerciseSheetSchema, keepKnownNotions, notionsFor, sheetMessages } from '../modules/tutor/exercise-sheet';
 import { checkAnswer } from '../modules/tutor/exercise-math';
-import { extractImageWithMistralVision } from '../modules/documents/mistral-vision';
+import { readImageWithMistralVision } from '../modules/documents/mistral-vision';
 import { mistralEmbeddingsService } from '../modules/tutor/mistral-embeddings.service';
 import { getVoxtralTTSService } from '../modules/voice/voxtral-tts.service';
 import { getVoxtralTranscribeService } from '../modules/voice/voxtral-transcribe.service';
@@ -125,11 +125,10 @@ describe('Mistral Small 4 on the EU endpoint (real API)', () => {
   }, 90_000);
 
   it('reads the text of an image once, for the sheet and the tutor', async () => {
-    const result = await extractImageWithMistralVision(Uint8Array.from(Buffer.from(EQUATION_PNG, 'base64')).buffer, 'image/png', Date.now());
+    const result = await readImageWithMistralVision(Uint8Array.from(Buffer.from(EQUATION_PNG, 'base64')).buffer, 'image/png');
 
-    expect(result.success).toBe(true);
     expect(result.text.replace(/\s/g, '').toLowerCase()).toContain('3x+5=20');
-    expect(result.metadata.usage?.inputTokens).toBeGreaterThan(0);
+    expect(result.usage?.inputTokens).toBeGreaterThan(0);
   }, 60_000);
 
   it('embeds text in 1024 dimensions', async () => {

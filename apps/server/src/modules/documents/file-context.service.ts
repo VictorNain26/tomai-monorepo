@@ -1,4 +1,4 @@
-import { filesRepository, type File as FileRecord } from './files.repository.js';
+import { filesRepository } from './files.repository.js';
 import { sessionFilesRepository } from './session-files.repository.js';
 import * as storage from './storage.js';
 import { documentExtractionService } from './document-extraction.service.js';
@@ -7,38 +7,48 @@ import { env } from '../../platform/config/env.js';
 import { logger } from '../../platform/observability/logger.js';
 import type { AttachedFileInfo, AttachedFileForPrompt } from './file-context-types.js';
 
-// The attached texts of a turn share this budget, the files of the turn served first.
+// The attached texts of a turn share this budget, the newest files served first: the same files
+// get the same cut from one turn to the next, which keeps them in the cached prefix.
 const MAX_ATTACHED_CHARS = 50_000;
 const CUT = '\n\n[Contenu tronqué]';
+/** Stands for a file whose text could not be read, so the tutor knows it was sent. */
+export const UNREADABLE = '[Fichier illisible : son contenu n’a pas pu être lu.]';
 
-const cachedText = (educationalContext: unknown) =>
-  (educationalContext as { extractedText?: string } | null)?.extractedText ?? null;
+interface Readable {
+  id: string;
+  fileName: string;
+  mimeType: string;
+  storageKey: string;
+  educationalContext: unknown;
+}
 
-/** Each text cut to what is left of the budget, in order. */
-function bounded(files: AttachedFileForPrompt[], budget: number): { files: AttachedFileForPrompt[]; left: number } {
-  let left = budget;
-  const out = files.map((file) => {
-    if (file.text.length <= left) {
-      left -= file.text.length;
-      return file;
-    }
-    const text = left > 0 ? `${file.text.slice(0, left)}${CUT}` : CUT.trim();
-    left = 0;
-    return { ...file, text };
-  });
-  return { files: out, left };
+function bounded(files: AttachedFileForPrompt[]): AttachedFileForPrompt[] {
+  let left = MAX_ATTACHED_CHARS;
+  return files
+    .toReversed()
+    .map((file) => {
+      if (file.text.length <= left) {
+        left -= file.text.length;
+        return file;
+      }
+      const text = left > 0 ? `${file.text.slice(0, left)}${CUT}` : CUT.trim();
+      left = 0;
+      return { ...file, text };
+    })
+    .toReversed();
 }
 
 class FileContextService {
-  /** The text of a file, read once and kept on its record; null when it cannot be read. */
-  private async extractedText(file: FileRecord, owner: { userId: string; sessionId: string }): Promise<string | null> {
-    const cached = cachedText(file.educationalContext);
-    if (cached) return cached;
+  /** The text of a file, read once and kept on its record; a failed read is kept too, and not tried again. */
+  private async textOf(file: Readable, owner: { userId: string; sessionId: string }): Promise<string> {
+    const kept = file.educationalContext as { extractedText?: string; extractionFailed?: boolean } | null;
+    if (kept?.extractedText) return kept.extractedText;
+    if (kept?.extractionFailed) return UNREADABLE;
 
     const content = await storage.getFileContent(file.storageKey);
     if (!content) {
       logger.error('Failed to retrieve file from storage', { fileId: file.id, operation: 'file-extraction', severity: 'medium' as const });
-      return null;
+      return UNREADABLE;
     }
     const bytes = content.content;
     const extraction = await documentExtractionService.extractText(
@@ -59,56 +69,49 @@ class FileContextService {
     }
     if (!extraction.success) {
       logger.warn('File text not extracted', { fileId: file.id, method: extraction.metadata.extractionMethod, operation: 'file-extraction' });
-      return null;
     }
-
     await filesRepository
-      .mergeEducationalContext(file.id, {
-        extractedText: extraction.text,
-        extractionMethod: extraction.metadata.extractionMethod,
-        wordCount: extraction.metadata.wordCount,
-      })
-      .catch((err: unknown) => { logger.warn('Extracted text not saved', { fileId: file.id, err, operation: 'file-extraction' }); });
-    return extraction.text;
+      .mergeEducationalContext(file.id, extraction.success
+        ? { extractedText: extraction.text, extractionMethod: extraction.metadata.extractionMethod, wordCount: extraction.metadata.wordCount }
+        : { extractionFailed: true })
+      .catch((err: unknown) => { logger.warn('Extraction result not saved', { fileId: file.id, err, operation: 'file-extraction' }); });
+    return extraction.success ? extraction.text : UNREADABLE;
   }
 
   /**
-   * The texts of the files attached to the session before this turn, in the order they were
-   * attached, and of the files of this turn, read now. A file sent again with the turn counts as
-   * the turn's.
+   * The texts of the session's files, in the order they were attached, then of this turn's: only
+   * the user's own files that finished uploading. A file sent again with the turn counts as the
+   * turn's; a session file never read, attached from the binder, is read now.
    */
   async prepareFileContext(params: { fileIds: string[]; userId: string; sessionId: string }): Promise<{
+    /** The turn's files the user may attach: their own, uploaded, each once. */
+    fileIds: string[];
     attachedFileInfos: AttachedFileInfo[];
-    sessionFiles: AttachedFileForPrompt[];
-    turnFiles: AttachedFileForPrompt[];
+    files: AttachedFileForPrompt[];
   }> {
-    const { fileIds, userId, sessionId } = params;
+    const { userId, sessionId } = params;
+    const requested = [...new Set(params.fileIds)];
     const [records, attached] = await Promise.all([
-      filesRepository.findByIds(fileIds),
-      sessionFilesRepository.findBySessionWithContext(sessionId),
+      filesRepository.findReadyOwnedBy(userId, requested),
+      sessionFilesRepository.findBySessionWithContext(sessionId).catch((err: unknown) => {
+        logger.error('Session files not loaded, the turn goes on without them', { sessionId, err, operation: 'file-context', severity: 'medium' as const });
+        return [];
+      }),
     ]);
-    const ordered = fileIds
-      .map((id) => records.find((f) => f.id === id))
-      .filter((f): f is FileRecord => f !== undefined);
+    const turnFiles = requested.flatMap((id) => records.filter((f) => f.id === id));
+    const turnIds = new Set(turnFiles.map((f) => f.id));
+    const sessionFiles: Readable[] = attached.filter((f) => !turnIds.has(f.fileId)).map((f) => ({ ...f, id: f.fileId }));
 
     // One at a time: several multi-MB images in parallel would hammer Mistral.
-    const turnTexts: AttachedFileForPrompt[] = [];
-    for (const file of ordered) {
-      const text = await this.extractedText(file, { userId, sessionId });
-      if (text) turnTexts.push({ fileId: file.id, fileName: file.fileName, text });
+    const texts: AttachedFileForPrompt[] = [];
+    for (const file of [...sessionFiles, ...turnFiles]) {
+      texts.push({ fileId: file.id, fileName: file.fileName, text: await this.textOf(file, { userId, sessionId }) });
     }
-    const sessionTexts = attached
-      .filter((f) => !fileIds.includes(f.fileId))
-      .flatMap((f) => {
-        const text = cachedText(f.educationalContext);
-        return text ? [{ fileId: f.fileId, fileName: f.fileName, text }] : [];
-      });
 
-    const turn = bounded(turnTexts, MAX_ATTACHED_CHARS);
     return {
-      attachedFileInfos: ordered.map((file) => ({ fileName: file.fileName, fileId: file.id, mimeType: file.mimeType, fileSizeBytes: file.sizeBytes })),
-      sessionFiles: bounded(sessionTexts, turn.left).files,
-      turnFiles: turn.files,
+      fileIds: turnFiles.map((f) => f.id),
+      attachedFileInfos: turnFiles.map((f) => ({ fileName: f.fileName, fileId: f.id, mimeType: f.mimeType, fileSizeBytes: f.sizeBytes })),
+      files: bounded(texts),
     };
   }
 }

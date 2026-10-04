@@ -5,16 +5,26 @@ import type { ExtractionResult } from '../modules/documents/document-extraction.
 const mockLogger = createMockLogger();
 mock.module('../platform/observability/logger', () => ({ logger: mockLogger }));
 
-interface FileRow { id: string; fileName: string; mimeType: string; sizeBytes: number; storageKey: string; educationalContext: Record<string, unknown> | null }
+interface FileRow { id: string; userId: string; status: string; fileName: string; mimeType: string; sizeBytes: number; storageKey: string; educationalContext: Record<string, unknown> | null }
 let rows: FileRow[] = [];
 const mergeEducationalContext = mock(async (_id: string, _patch: Record<string, unknown>) => true);
 mock.module('../modules/documents/files.repository', () => ({
-  filesRepository: { findByIds: mock(async (ids: string[]) => rows.filter((row) => ids.includes(row.id))), mergeEducationalContext },
+  filesRepository: {
+    // As the query filters: the user's own files, uploaded.
+    findReadyOwnedBy: mock(async (userId: string, ids: readonly string[]) => rows.filter((row) => ids.includes(row.id) && row.userId === userId && row.status === 'ready')),
+    mergeEducationalContext,
+  },
 }));
 
-let attached: { fileId: string; fileName: string; mimeType: string; educationalContext: Record<string, unknown> | null }[] = [];
+let attached: { fileId: string; fileName: string; mimeType: string; storageKey: string; educationalContext: Record<string, unknown> | null }[] = [];
+let sessionFilesFail = false;
 mock.module('../modules/documents/session-files.repository', () => ({
-  sessionFilesRepository: { findBySessionWithContext: mock(async () => attached) },
+  sessionFilesRepository: {
+    findBySessionWithContext: mock(async () => {
+      if (sessionFilesFail) throw new Error('db down');
+      return attached;
+    }),
+  },
 }));
 
 const getFileContent = mock(async (_key: string): Promise<{ content: Buffer; contentType: string } | null> => {
@@ -25,7 +35,8 @@ const getFileContent = mock(async (_key: string): Promise<{ content: Buffer; con
 mock.module('../modules/documents/storage', () => ({ getFileContent }));
 
 const received: string[] = [];
-let extraction: ExtractionResult = { success: true, text: 'Résous 3x + 5 = 20.', metadata: { wordCount: 4, extractionMethod: 'mistral-vision', extractionTimeMs: 1, usage: { inputTokens: 900, cachedInputTokens: 0, outputTokens: 40 } } };
+const read = (text: string): ExtractionResult => ({ success: true, text, metadata: { wordCount: 4, extractionMethod: 'mistral-vision', extractionTimeMs: 1, usage: { inputTokens: 900, cachedInputTokens: 0, outputTokens: 40 } } });
+let extraction: ExtractionResult = read('Résous 3x + 5 = 20.');
 mock.module('../modules/documents/document-extraction.service', () => ({
   documentExtractionService: {
     extractText: mock(async (buffer: ArrayBuffer) => {
@@ -39,76 +50,106 @@ const record = mock(async (_input: unknown) => {});
 const actualBilling = await import('../modules/billing/index');
 mock.module('../modules/billing/index', () => ({ ...actualBilling, costTrackingService: { record } }));
 
-const { fileContextService } = await import('../modules/documents/file-context.service');
+const { fileContextService, UNREADABLE } = await import('../modules/documents/file-context.service');
 
-const photo: FileRow = { id: 'f-photo', fileName: 'exo.png', mimeType: 'image/png', sizeBytes: 5, storageKey: 'k-photo', educationalContext: {} };
+const photo: FileRow = { id: 'f-photo', userId: 'u1', status: 'ready', fileName: 'exo.png', mimeType: 'image/png', sizeBytes: 5, storageKey: 'k-photo', educationalContext: {} };
 const owner = { userId: 'u1', sessionId: 's1' };
+const sessionFile = (fileId: string, educationalContext: Record<string, unknown>) => ({ fileId, fileName: `${fileId}.pdf`, mimeType: 'application/pdf', storageKey: `k-${fileId}`, educationalContext });
 
 beforeEach(() => {
   rows = [photo];
   attached = [];
+  sessionFilesFail = false;
   received.length = 0;
-  extraction = { success: true, text: 'Résous 3x + 5 = 20.', metadata: { wordCount: 4, extractionMethod: 'mistral-vision', extractionTimeMs: 1, usage: { inputTokens: 900, cachedInputTokens: 0, outputTokens: 40 } } };
+  extraction = read('Résous 3x + 5 = 20.');
   mergeEducationalContext.mockClear();
   getFileContent.mockClear();
   record.mockClear();
   mockLogger.warn.mockClear();
+  mockLogger.error.mockClear();
 });
 
 describe('fileContextService.prepareFileContext', () => {
   it("reads a turn's file once, from its own bytes, keeps the text on the record and counts the vision call", async () => {
-    const { turnFiles, sessionFiles, attachedFileInfos } = await fileContextService.prepareFileContext({ fileIds: ['f-photo'], ...owner });
+    const { files, fileIds, attachedFileInfos } = await fileContextService.prepareFileContext({ fileIds: ['f-photo'], ...owner });
 
-    expect(turnFiles).toEqual([{ fileId: 'f-photo', fileName: 'exo.png', text: 'Résous 3x + 5 = 20.' }]);
-    expect(sessionFiles).toEqual([]);
+    expect(files).toEqual([{ fileId: 'f-photo', fileName: 'exo.png', text: 'Résous 3x + 5 = 20.' }]);
+    expect(fileIds).toEqual(['f-photo']);
     expect(attachedFileInfos).toEqual([{ fileName: 'exo.png', fileId: 'f-photo', mimeType: 'image/png', fileSizeBytes: 5 }]);
     expect(received).toEqual(['IMAGE']);
     expect(mergeEducationalContext).toHaveBeenCalledWith('f-photo', { extractedText: 'Résous 3x + 5 = 20.', extractionMethod: 'mistral-vision', wordCount: 4 });
     expect(record.mock.calls[0]?.[0]).toMatchObject({ operation: 'document-extraction', tokensInput: 900, tokensOutput: 40, userId: 'u1', sessionId: 's1' });
   });
 
+  it("never reads another user's file nor an unfinished upload, and leaves them out of the files to attach", async () => {
+    rows = [photo, { ...photo, id: 'f-other', userId: 'u2' }, { ...photo, id: 'f-pending', status: 'pending' }];
+
+    const { files, fileIds } = await fileContextService.prepareFileContext({ fileIds: ['f-other', 'f-pending', 'f-photo'], ...owner });
+
+    expect(fileIds).toEqual(['f-photo']);
+    expect(files.map((file) => file.fileId)).toEqual(['f-photo']);
+    expect(received).toEqual(['IMAGE']);
+  });
+
+  it('reads a file sent twice once', async () => {
+    const { files, fileIds } = await fileContextService.prepareFileContext({ fileIds: ['f-photo', 'f-photo'], ...owner });
+
+    expect(fileIds).toEqual(['f-photo']);
+    expect(files).toHaveLength(1);
+    expect(received).toHaveLength(1);
+  });
+
   it('reuses the text kept on the record without reading the file again', async () => {
     rows = [{ ...photo, educationalContext: { extractedText: 'Déjà lu' } }];
 
-    expect((await fileContextService.prepareFileContext({ fileIds: ['f-photo'], ...owner })).turnFiles[0]?.text).toBe('Déjà lu');
+    expect((await fileContextService.prepareFileContext({ fileIds: ['f-photo'], ...owner })).files[0]?.text).toBe('Déjà lu');
     expect(getFileContent).not.toHaveBeenCalled();
     expect(record).not.toHaveBeenCalled();
   });
 
-  it('leaves out a file that cannot be read, and logs it', async () => {
-    extraction = { success: false, text: '', metadata: { wordCount: 0, extractionMethod: 'unpdf', extractionTimeMs: 1 }, error: 'PDF sans texte' };
+  it('marks a file that cannot be read, keeps the failure and its cost, and does not try again', async () => {
+    extraction = { success: false, text: '', metadata: { wordCount: 0, extractionMethod: 'mistral-vision', extractionTimeMs: 1, usage: { inputTokens: 900, cachedInputTokens: 0, outputTokens: 0 } }, error: 'timeout' };
 
-    expect((await fileContextService.prepareFileContext({ fileIds: ['f-photo'], ...owner })).turnFiles).toEqual([]);
-    expect(mergeEducationalContext).not.toHaveBeenCalled();
-    expect(mockLogger.warn).toHaveBeenCalledTimes(1);
+    expect((await fileContextService.prepareFileContext({ fileIds: ['f-photo'], ...owner })).files).toEqual([{ fileId: 'f-photo', fileName: 'exo.png', text: UNREADABLE }]);
+    expect(mergeEducationalContext).toHaveBeenCalledWith('f-photo', { extractionFailed: true });
+    expect(record).toHaveBeenCalledTimes(1);
+
+    rows = [{ ...photo, educationalContext: { extractionFailed: true } }];
+    expect((await fileContextService.prepareFileContext({ fileIds: ['f-photo'], ...owner })).files[0]?.text).toBe(UNREADABLE);
+    expect(getFileContent).toHaveBeenCalledTimes(1);
   });
 
-  it("gives the session's files in their order, without the ones sent again with the turn nor the unread ones", async () => {
+  it("gives the session's files in their order before the turn's, a file sent again counting as the turn's, and reads one attached from the binder", async () => {
     rows = [{ ...photo, educationalContext: { extractedText: 'Photo' } }];
     attached = [
-      { fileId: 'f-cours', fileName: 'cours.pdf', mimeType: 'application/pdf', educationalContext: { extractedText: 'Le cours' } },
-      { fileId: 'f-photo', fileName: 'exo.png', mimeType: 'image/png', educationalContext: { extractedText: 'Photo' } },
-      { fileId: 'f-vide', fileName: 'vide.pdf', mimeType: 'application/pdf', educationalContext: {} },
-      { fileId: 'f-fiche', fileName: 'fiche.pdf', mimeType: 'application/pdf', educationalContext: { extractedText: 'La fiche' } },
+      sessionFile('cours', { extractedText: 'Le cours' }),
+      { ...sessionFile('f-photo', { extractedText: 'Photo' }), fileName: 'exo.png' },
+      sessionFile('classeur', {}),
     ];
+    extraction = read('Le document du classeur');
 
-    const { sessionFiles, turnFiles } = await fileContextService.prepareFileContext({ fileIds: ['f-photo'], ...owner });
+    const { files } = await fileContextService.prepareFileContext({ fileIds: ['f-photo'], ...owner });
 
-    expect(sessionFiles.map((file) => file.fileId)).toEqual(['f-cours', 'f-fiche']);
-    expect(turnFiles.map((file) => file.fileId)).toEqual(['f-photo']);
+    expect(files.map((file) => [file.fileId, file.text])).toEqual([['cours', 'Le cours'], ['classeur', 'Le document du classeur'], ['f-photo', 'Photo']]);
+    expect(mergeEducationalContext).toHaveBeenCalledWith('classeur', expect.objectContaining({ extractedText: 'Le document du classeur' }));
   });
 
-  it("serves the turn's files first from the budget, and cuts the session's with what is left", async () => {
+  it('serves the newest files first from the budget, so the same files get the same cut on the next turn', async () => {
     rows = [{ ...photo, educationalContext: { extractedText: 'p'.repeat(49_990) } }];
-    attached = [
-      { fileId: 'f-cours', fileName: 'cours.pdf', mimeType: 'application/pdf', educationalContext: { extractedText: 'c'.repeat(100) } },
-      { fileId: 'f-fiche', fileName: 'fiche.pdf', mimeType: 'application/pdf', educationalContext: { extractedText: 'La fiche' } },
-    ];
+    attached = [sessionFile('ancien', { extractedText: 'Le plus ancien' }), sessionFile('cours', { extractedText: 'c'.repeat(100) })];
 
-    const { sessionFiles, turnFiles } = await fileContextService.prepareFileContext({ fileIds: ['f-photo'], ...owner });
+    const turn = await fileContextService.prepareFileContext({ fileIds: ['f-photo'], ...owner });
+    expect(turn.files.map((file) => file.text)).toEqual(['[Contenu tronqué]', `${'c'.repeat(10)}\n\n[Contenu tronqué]`, 'p'.repeat(49_990)]);
 
-    expect(turnFiles[0]?.text).toHaveLength(49_990);
-    expect(sessionFiles[0]?.text).toBe(`${'c'.repeat(10)}\n\n[Contenu tronqué]`);
-    expect(sessionFiles[1]?.text).toBe('[Contenu tronqué]');
+    attached = [...attached, { ...sessionFile('f-photo', { extractedText: 'p'.repeat(49_990) }), fileName: 'exo.png' }];
+    const next = await fileContextService.prepareFileContext({ fileIds: [], ...owner });
+    expect(next.files).toEqual(turn.files);
+  });
+
+  it('goes on without the session files when they cannot be loaded, and logs it', async () => {
+    sessionFilesFail = true;
+
+    expect((await fileContextService.prepareFileContext({ fileIds: ['f-photo'], ...owner })).files.map((file) => file.fileId)).toEqual(['f-photo']);
+    expect(mockLogger.error).toHaveBeenCalledTimes(1);
   });
 });

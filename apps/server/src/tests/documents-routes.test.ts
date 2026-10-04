@@ -71,7 +71,7 @@ describe('DELETE /api/upload/file/:fileId', () => {
 });
 
 describe('GET /api/files', () => {
-  it("lists the student's files with the type and subject found by the analysis", async () => {
+  it("lists the student's files with the subject given at upload", async () => {
     const createdAt = new Date('2026-10-01T08:00:00Z');
     listedFiles = [
       { id: FILE_ID, fileName: 'ex.pdf', mimeType: 'application/pdf', sizeBytes: 12, educationalContext: { subject: 'mathematiques' }, createdAt },
