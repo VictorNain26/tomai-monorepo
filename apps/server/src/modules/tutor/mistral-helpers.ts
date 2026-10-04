@@ -28,9 +28,14 @@ export const MAX_TOOL_ITERATIONS = 5;
  */
 const TEMPLATE_TAGS = new RegExp(PROMPT_TAG.source, 'gi');
 
-/** Remove all template delimiter tags from untrusted content. */
+/** Remove all template delimiter tags from untrusted content, until removing one cannot join the text around it into another. */
 export function stripPromptTags(content: string): string {
-  return content.replace(TEMPLATE_TAGS, '');
+  let stripped = content;
+  for (let previous = ''; previous !== stripped;) {
+    previous = stripped;
+    stripped = stripped.replace(TEMPLATE_TAGS, '');
+  }
+  return stripped;
 }
 
 /**
