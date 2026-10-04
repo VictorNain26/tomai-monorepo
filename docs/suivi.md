@@ -19,8 +19,10 @@ bloquant levé).
   - Le lot 0 est terminé : serveur sur Hono et outillage sur Bun (#343 à #347), refonte du
     serveur en modules (#348 à #354), lint strict (#355) et TypeScript strict (#356).
 - **Prochaine action :** refonte de l'agent (lot 2), demandée par Victor le 2026-10-04 ;
-  étude `etudes/2026-10-04/refonte-agent.md`, ordre des PR dans `roadmap.md`. Point 2, seconde
-  PR en cours (#382) ; ensuite le point 3, fiche d'exercice : plan d'abord dans `docs/plans/`.
+  étude `etudes/2026-10-04/refonte-agent.md`, ordre des PR dans `roadmap.md`. Point 3, première
+  PR en cours (#383, analyse du tour) ; ensuite la fiche d'exercice (Small 4 en raisonnement,
+  trois tirages votés, mathjs, notions du référentiel), puis l'analyse de document réduite à une
+  extraction. Plan d'abord dans `docs/plans/`.
   - Étape à la charge de Victor avant le point 6 : approuver le texte de la réponse fixe de
     détresse.
   - Une relecture humaine d'une partie des conversations lues par Claude reste due avant
@@ -436,3 +438,9 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
   - un tour coupé pendant la création de fiches n'enregistre pas de paquet ;
   - l'usage arrive dans le flux sans `stream_options`, vérifié par un appel réel ;
   - renommages de l'AI SDK 7 : `instructions`, `onEnd`, option `timeout`.
+  Point 3 de la refonte, première PR, analyse du tour (#383) :
+  - une analyse en sortie structurée stricte remplace le classifieur d'intention : matière,
+    nouvel exercice et proposition de l'élève recopiés, demandes de solution, d'explication
+    ou de fiches ; un appel réel vérifie le schéma ;
+  - elle donne la consigne du tour, le routage du raisonnement et l'accord pour les fiches :
+    `toolApproval` refuse une création que l'élève n'a pas demandée ni acceptée.
