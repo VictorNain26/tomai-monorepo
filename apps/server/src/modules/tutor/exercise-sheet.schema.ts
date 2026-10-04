@@ -3,11 +3,15 @@ import { studySessions } from './session.schema';
 import type { ExerciseSheet } from './exercise-sheet';
 import type { MathCheck } from './exercise-math';
 
-/** The sheet of each exercise a student brings, out of the student's sight; the session's last one is the exercise in progress. */
+/**
+ * The sheet of each exercise a student brings, out of the student's sight; the session's last row
+ * is the exercise in progress. A row without a sheet is an exercise whose draws all failed: the
+ * session must not fall back on the one before.
+ */
 export const exerciseSheets = pgTable('exercise_sheets', {
   id: uuid('id').primaryKey().defaultRandom(),
   sessionId: uuid('session_id').notNull(),
-  sheet: jsonb('sheet').$type<ExerciseSheet>().notNull(),
+  sheet: jsonb('sheet').$type<ExerciseSheet>(),
   /** No majority among the draws, or an answer mathjs refutes: the diagnosis must not rely on it. */
   uncertain: boolean('uncertain').notNull(),
   mathCheck: varchar('math_check', { length: 16 }).$type<MathCheck>().notNull(),

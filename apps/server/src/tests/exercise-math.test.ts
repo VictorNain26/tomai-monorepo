@@ -31,7 +31,25 @@ describe('sameMath', () => {
     expect(sameMath('6/8', '3/4')).toBe(true);
     expect(sameMath('2(x + 1)', '2x + 2')).toBe(true);
     expect(sameMath('2(x + 1)', '2x + 1')).toBe(false);
-    expect(sameMath('sqrt(2)', '1.41')).toBe(false);
+    expect(sameMath('3.14', '3.15')).toBe(false);
+  });
+
+  it('compares expressions in several letters, which rationalize does not reduce', () => {
+    expect(sameMath('(a + b)^2', 'a^2 + 2*a*b + b^2')).toBe(true);
+    expect(sameMath('(a + b)^2', 'a^2 + b^2')).toBe(false);
+    expect(sameMath('x / (x + 1)', '1 - 1 / (x + 1)')).toBe(true);
+  });
+
+  it('refuses what it should not expand or run: big powers, functions, matrices, long input', () => {
+    expect(sameMath('(x + 1)^400', 'x')).toBeNull();
+    expect(sameMath('ones(20000, 20000)', '1')).toBeNull();
+    expect(sameMath('sqrt(2)', '1.41')).toBeNull();
+    expect(sameMath(`${'x + '.repeat(40)}1`, 'x')).toBeNull();
+    expect(equationRoots('(x + 1)^400 = 0')).toBeNull();
+  });
+
+  it('compares large roots relatively', () => {
+    expect(sameMath('x^3 = 8000000', 'x = 200')).toBe(true);
   });
 
   it('compares an equation and a value by its only root', () => {

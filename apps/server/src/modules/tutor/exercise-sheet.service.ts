@@ -14,7 +14,7 @@ import { exerciseSheetsRepository } from './exercise-sheets.repository.js';
 
 const EXERCISE_SHEET_PROMPT_VERSION = '2026-10-04';
 const DRAWS = 3;
-const SHEET_TIMEOUT_MS = 30_000;
+const SHEET_TIMEOUT_MS = 20_000;
 // Small 4's model card: « 0.7 for reasoning_effort="high" » (huggingface.co/mistralai/Mistral-Small-4-119B-2603).
 const REASONING_TEMPERATURE = 0.7;
 
@@ -24,13 +24,15 @@ interface PrepareSheetParams {
   level: EducationLevelType;
   subject: string | undefined;
   studentText: string;
+  /** The text read from the attached photos and documents, fenced. */
+  attachedFilesBlock: string | null;
 }
 
-/** The voted sheet of the exercise the student brings, stored; null when no draw succeeded. */
+/** The voted sheet of the exercise the student brings, stored; null, stored as such, when no draw succeeded. */
 export async function prepareExerciseSheet(params: PrepareSheetParams): Promise<ExerciseSheet | null> {
   const startTime = Date.now();
   const notions = notionsFor(params.level, params.subject, schoolYearOf(new Date()));
-  const messages = sheetMessages(params.level, notions, params.studentText);
+  const messages = sheetMessages(params.level, notions, params.studentText, params.attachedFilesBlock);
 
   const draws = await Promise.allSettled(Array.from({ length: DRAWS }, () => generateStructured({
     functionId: 'exercise-sheet',
@@ -50,7 +52,8 @@ export async function prepareExerciseSheet(params: PrepareSheetParams): Promise<
     }
   }
   const results = draws.flatMap((draw) => (draw.status === 'fulfilled' ? [draw.value] : []));
-  await Promise.all(results.map(({ usage }) => costTrackingService.record({
+  // Bookkeeping stays off the turn's critical path; each write logs its own failure.
+  void Promise.all(results.map(({ usage }) => costTrackingService.record({
     userId: params.userId,
     sessionId: params.sessionId,
     aiModel: env.MISTRAL_MODEL,
@@ -77,22 +80,19 @@ export async function prepareExerciseSheet(params: PrepareSheetParams): Promise<
   });
   if (!voted) {
     logger.error('Exercise sheet failed: no draw succeeded', { operation: 'exercise-sheet:error', sessionId: params.sessionId, severity: 'high' as const });
-    return null;
   }
-
-  try {
-    await exerciseSheetsRepository.create({
+  exerciseSheetsRepository
+    .create({
       sessionId: params.sessionId,
-      sheet: voted.sheet,
-      uncertain: voted.uncertain,
-      mathCheck: voted.mathCheck,
+      sheet: voted?.sheet ?? null,
+      uncertain: voted?.uncertain ?? true,
+      mathCheck: voted?.mathCheck ?? 'not-applicable',
       promptVersion: EXERCISE_SHEET_PROMPT_VERSION,
+    })
+    .catch((err: unknown) => {
+      logger.error('Exercise sheet not stored', { operation: 'exercise-sheet:store-error', sessionId: params.sessionId, err, severity: 'high' as const });
     });
-  } catch (err) {
-    // The turn still has its sheet; the next one goes on with the previous exercise.
-    logger.error('Exercise sheet not stored', { operation: 'exercise-sheet:store-error', sessionId: params.sessionId, err, severity: 'high' as const });
-  }
-  return voted.sheet;
+  return voted?.sheet ?? null;
 }
 
 /** The session's exercise in progress, or null before the first one. */

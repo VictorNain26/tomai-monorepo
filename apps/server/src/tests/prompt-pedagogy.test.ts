@@ -76,7 +76,7 @@ describe('tutor prompt, consistent from method to subject blocks', () => {
         statement: 'x', kind: 'short', answer: null, answerForms: [], mathEquation: null, mathAnswer: null, steps: [], commonErrors: [],
         rule: null, facts: [], expectedElements: [], entries: [], laterEntries: [],
       }),
-      sheetMessages('cinquieme', notionsFor('cinquieme', 'mathematiques', 2026), 'x').map(({ content }) => content).join('\n'),
+      sheetMessages('cinquieme', notionsFor('cinquieme', 'mathematiques', 2026), 'x', null).map(({ content }) => content).join('\n'),
       wrapStudentContext('Points forts: calcul', '<past_sessions>\nx\n</past_sessions>\n<subject_memory>\ny\n</subject_memory>') ?? '',
       wrapUserMessage('Bonjour'),
     ].join('\n');

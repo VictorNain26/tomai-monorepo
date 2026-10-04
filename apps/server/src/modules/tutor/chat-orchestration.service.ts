@@ -11,7 +11,7 @@ import { studySessionsRepository } from './study-sessions.repository.js';
 import { resolveEffectiveSubject, shouldPersistDetectedSubject } from './subject-resolution.js';
 import { STUDENT_SUBJECTS } from './prompts/adaptation/subjects.js';
 import { fileContextService, sessionFilesRepository, type AttachedFileInfo, type AttachedFileForPrompt } from '../documents/index.js';
-import { getLearningContext } from './mistral-helpers.js';
+import { getLearningContext, wrapAttachedFiles } from './mistral-helpers.js';
 import { summarizationService } from './summarization.service.js';
 import { autoTitleService } from './auto-title.service.js';
 import { analyseTurn, turnInstruction as instructionFor, type TurnAnalysis } from './turn-analysis.service.js';
@@ -196,13 +196,6 @@ class ChatOrchestrationService {
         }); });
     }
 
-    const [subjectMemoryBlock, exerciseSheet] = await Promise.all([
-      effectiveSubject ? subjectProfileService.formatSubjectMemoryForPrompt(request.userId, effectiveSubject) : null,
-      turnAnalysis.bringsExercise
-        ? prepareExerciseSheet({ userId: request.userId, sessionId, level: request.schoolLevel, subject: effectiveSubject, studentText: request.content })
-        : currentExerciseSheet(sessionId),
-    ]);
-
     const { attachedFileInfos, attachedFiles } = fileContext;
     const attachedFileInfo = attachedFileInfos[0] ?? null;
     const hasMultipleFiles = attachedFileInfos.length > 1;
@@ -223,6 +216,20 @@ class ChatOrchestrationService {
       remainingBudget -= f.analysis.length;
       return f;
     });
+
+    const [subjectMemoryBlock, exerciseSheet] = await Promise.all([
+      effectiveSubject ? subjectProfileService.formatSubjectMemoryForPrompt(request.userId, effectiveSubject) : null,
+      turnAnalysis.bringsExercise
+        ? prepareExerciseSheet({
+          userId: request.userId,
+          sessionId,
+          level: request.schoolLevel,
+          subject: effectiveSubject,
+          studentText: request.content,
+          attachedFilesBlock: boundedAttachedFiles.length > 0 ? wrapAttachedFiles(boundedAttachedFiles) : null,
+        })
+        : currentExerciseSheet(sessionId),
+    ]);
 
     const mergedLearningContext = [learningContext, episodicContext, subjectMemoryBlock]
       .filter((x): x is string => Boolean(x))

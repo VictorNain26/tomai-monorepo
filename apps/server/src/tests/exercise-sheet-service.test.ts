@@ -34,7 +34,7 @@ const draft = (answer: string): ExerciseSheet => ({
   steps: [], commonErrors: [], rule: null, facts: [], expectedElements: [], entries: ['invented-id'], laterEntries: [],
 });
 
-const params = { userId: 'user-1', sessionId: 'session-1', level: 'quatrieme' as const, subject: 'mathematiques', studentText: 'Résous 3x + 5 = 20.' };
+const params = { userId: 'user-1', sessionId: 'session-1', level: 'quatrieme' as const, subject: 'mathematiques', studentText: 'Résous 3x + 5 = 20.', attachedFilesBlock: null };
 
 beforeEach(() => {
   calls.length = 0;
@@ -74,19 +74,26 @@ describe('prepareExerciseSheet', () => {
     expect(mockLogger.error).toHaveBeenCalledTimes(1);
   });
 
-  it('gives no sheet and stores nothing when every draw failed', async () => {
+  it('gives no sheet when every draw failed, and stores the exercise without one so the previous is not taken back', async () => {
     replies = [new Error('timeout'), new Error('timeout'), new Error('timeout')];
 
     expect(await prepareExerciseSheet(params)).toBeNull();
-    expect(create).not.toHaveBeenCalled();
+    expect(create.mock.calls[0]?.[0]).toMatchObject({ sessionId: 'session-1', sheet: null, uncertain: true, mathCheck: 'not-applicable' });
     expect(record).not.toHaveBeenCalled();
   });
 
-  it('keeps the sheet for the turn when storing it fails', async () => {
+  it('gives the attached text to the draws', async () => {
+    replies = [draft('x = 5'), draft('x = 5'), draft('x = 5')];
+    await prepareExerciseSheet({ ...params, studentText: 'Voici mon exercice', attachedFilesBlock: '<attached_file name="photo">Résous 3x + 5 = 20.</attached_file>' });
+    expect(calls[0]?.messages.at(-1)?.content).toStartWith('<attached_file name="photo">Résous 3x + 5 = 20.</attached_file>');
+  });
+
+  it('keeps the sheet for the turn when storing it fails, and logs it', async () => {
     replies = [draft('x = 5'), draft('x = 5'), draft('x = 5')];
     create.mockImplementation(async () => { throw new Error('db down'); });
 
     expect((await prepareExerciseSheet(params))?.answer).toBe('x = 5');
+    await Bun.sleep(0);
     expect(mockLogger.error).toHaveBeenCalledTimes(1);
   });
 });

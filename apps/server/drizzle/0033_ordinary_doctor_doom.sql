@@ -1,7 +1,7 @@
 CREATE TABLE "exercise_sheets" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"session_id" uuid NOT NULL,
-	"sheet" jsonb NOT NULL,
+	"sheet" jsonb,
 	"uncertain" boolean NOT NULL,
 	"math_check" varchar(16) NOT NULL,
 	"prompt_version" varchar(32) NOT NULL,

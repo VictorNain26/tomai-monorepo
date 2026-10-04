@@ -76,7 +76,7 @@ export interface StreamGenerationParams {
   turnInstruction?: string | null | undefined;
   /** The turn's analysis: reasoning routing and the flashcards' approval. */
   turnAnalysis?: TurnAnalysis | undefined;
-  /** The exercise in progress: its statement and notions follow the system prompt. */
+  /** The exercise in progress: its statement and notions open the window. */
   exerciseSheet?: ExerciseSheet | null | undefined;
   /**
    * Input channel declared by the user's gesture (mic vs keyboard), never

@@ -120,7 +120,7 @@ describe('ChatOrchestrationService.prepareTurn — exercise sheet', () => {
 
     expect(context.exerciseSheet?.statement).toBe('Résous 3x + 5 = 20.');
     expect(prepareExerciseSheet).toHaveBeenCalledWith({
-      userId: 'user-001', sessionId: 'session-001', level: 'quatrieme', subject: 'mathematiques', studentText: 'Résous 3x + 5 = 20.',
+      userId: 'user-001', sessionId: 'session-001', level: 'quatrieme', subject: 'mathematiques', studentText: 'Résous 3x + 5 = 20.', attachedFilesBlock: null,
     });
     expect(currentExerciseSheet).not.toHaveBeenCalled();
   });

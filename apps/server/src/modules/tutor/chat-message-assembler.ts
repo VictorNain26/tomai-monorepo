@@ -39,7 +39,7 @@ export function replayable(value: unknown): ResponseMessage[] | undefined {
 
 export interface ChatTurnParts {
   systemPrompt: string;
-  /** The exercise in progress, stable while it lasts: after the system prompt, it stays in the cached prefix. */
+  /** The exercise in progress, stable while it lasts: opening the window, it stays in the cached prefix. */
   exerciseBlock?: string | null | undefined;
   /** Résumé DÉJÀ tronqué au budget (ou null/undefined si aucun). */
   conversationSummary?: string | null | undefined;
@@ -92,7 +92,7 @@ function alternate(messages: readonly ModelMessage[]): ModelMessage[] {
  * - Ce qui change d'un tour à l'autre (matière, contexte de l'élève, fichiers, consigne,
  *   marqueur vocal) va dans le message du tour, avant le texte de l'élève : placé plus tôt, il
  *   casserait le cache de l'historique.
- * - Le résumé ouvre la fenêtre.
+ * - L'exercice en cours puis le résumé ouvrent la fenêtre.
  */
 export function assembleChatPrompt(parts: ChatTurnParts): { system: string; messages: ModelMessage[] } {
   const past = pruneMessages({
@@ -103,9 +103,13 @@ export function assembleChatPrompt(parts: ChatTurnParts): { system: string; mess
     toolCalls: 'none',
     emptyMessages: 'remove',
   });
-  const summary: ModelMessage[] = parts.conversationSummary
-    ? [{ role: 'user', content: `<conversation_summary>\n${stripPromptTags(parts.conversationSummary)}\n</conversation_summary>` }]
-    : [];
+  // Untrusted text, the statement from the student included, never sits in the system prompt.
+  const opening: ModelMessage[] = [
+    ...(parts.exerciseBlock ? [{ role: 'user' as const, content: parts.exerciseBlock }] : []),
+    ...(parts.conversationSummary
+      ? [{ role: 'user' as const, content: `<conversation_summary>\n${stripPromptTags(parts.conversationSummary)}\n</conversation_summary>` }]
+      : []),
+  ];
 
   const text = [
     parts.subjectBlock,
@@ -118,6 +122,5 @@ export function assembleChatPrompt(parts: ChatTurnParts): { system: string; mess
   const images = parts.images ?? [];
   const turn: ModelMessage = { role: 'user', content: images.length > 0 ? [{ type: 'text', text }, ...images] : text };
 
-  const system = parts.exerciseBlock ? `${parts.systemPrompt}\n\n${parts.exerciseBlock}` : parts.systemPrompt;
-  return { system, messages: alternate([...summary, ...past, turn]) };
+  return { system: parts.systemPrompt, messages: alternate([...opening, ...past, turn]) };
 }

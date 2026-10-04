@@ -105,10 +105,9 @@ describe('Mistral Small 4 on the EU endpoint (real API)', () => {
 
   it('drafts an exercise sheet in reasoning under the strict schema, with the notions of the class', async () => {
     const notions = notionsFor('quatrieme', 'mathematiques', 2026);
-    const startTime = Date.now();
-    const { object, usage } = await generateStructured({
+    const { object } = await generateStructured({
       functionId: 'live-mistral-eu',
-      messages: sheetMessages('quatrieme', notions, "Résous l'équation 3x + 5 = 20. J'ai trouvé x = 20/3."),
+      messages: sheetMessages('quatrieme', notions, "Résous l'équation 3x + 5 = 20. J'ai trouvé x = 20/3.", null),
       schema: ExerciseSheetSchema,
       schemaName: 'exercise_sheet',
       reasoningEffort: 'high',
@@ -116,9 +115,6 @@ describe('Mistral Small 4 on the EU endpoint (real API)', () => {
       safePrompt: false,
       timeoutMs: 60_000,
     });
-    // Measured once for the plan: latency and output tokens of one draw.
-    console.log('exercise sheet draw', { durationMs: Date.now() - startTime, ...usage });
-
     expect(object.kind).toBe('short');
     expect(object.mathEquation).not.toBeNull();
     expect(object.mathAnswer).not.toBeNull();

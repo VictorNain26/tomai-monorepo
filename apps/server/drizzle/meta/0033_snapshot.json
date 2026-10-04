@@ -1,5 +1,5 @@
 {
-  "id": "4c83f11b-dd67-4822-8474-aff2cefe376c",
+  "id": "3a4ccf54-d974-47ad-9d22-c36c1ae50c43",
   "prevId": "f88d50fe-5eaa-4d78-90e3-3ae09bde87a1",
   "version": "7",
   "dialect": "postgresql",
@@ -313,7 +313,7 @@
           "name": "sheet",
           "type": "jsonb",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
         "uncertain": {
           "name": "uncertain",
