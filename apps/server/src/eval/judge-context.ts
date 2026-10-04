@@ -62,9 +62,9 @@ function clip(text: string): string {
   return text.length > MAX_CHANNEL_CHARS ? `${text.slice(0, MAX_CHANNEL_CHARS)} […]` : text;
 }
 
-/** The conversation cannot close its own fence: a student or a tutor writing the tag gets it neutralised. */
-function fenced(text: string): string {
-  return text.replace(/<\/?transcription>/gi, (tag) => tag.replace('<', '‹'));
+/** A text cannot close the fence it sits in: a student or a tutor writing a fence tag gets it neutralised. */
+export function fenced(text: string): string {
+  return text.replace(/<\/?(?:transcription|phrases)>/gi, (tag) => tag.replace('<', '‹'));
 }
 
 /** Each tutor turn as the judge reads it, one block per turn. */

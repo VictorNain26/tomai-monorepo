@@ -1,15 +1,12 @@
-import { NoObjectGeneratedError } from 'ai';
-import pMap from 'p-map';
 import { z } from 'zod';
 import type { MistralMessage } from '../platform/ai/mistral-client.js';
-import { structuredUsage } from '../platform/ai/usage.js';
 import { checksFor, scoresOf, type Answer, type Check } from './criteria.js';
-import { CONCURRENCY, JUDGE, MIN_SAMPLES, NO_USAGE, addUsage, cacheKey, type Generate, type JudgeUsage } from './judge-config.js';
-import { falseClaims, tutorSentences } from './claims.js';
+import { JUDGE, MIN_SAMPLES, NO_USAGE, addUsage, cacheKey, type Generate, type JudgeUsage } from './judge-config.js';
+import { ACCURACY, falseClaims, tutorSentences } from './claims.js';
 import { extract, type Extraction } from './extract.js';
 import { contextMessages, quotesSomething, sections, turnBlocks, type JudgeInput } from './judge-context.js';
+import { SEEDS, drawAll, sampleObject } from './sampling.js';
 import { answerInMaterial, answeredByCode, cardsMade, helpline, questionAfterDistress, twoQuestions, wrongCalculation, type CodeCheck, type CodeVerdict } from './verifiers.js';
-
 
 // One schema for every question: the prompt prefix stays the same, so the cache serves it.
 export const answerSchema = z.object({
@@ -26,8 +23,8 @@ export interface CheckResult {
   /** Quotes of the samples that answered « oui ». */
   evidence: string[];
   /**
-   * Who answered: the model in samples, or the code once (`samples` 1, `yes` 0 or 1), on the
-   * model's verdicts claim by claim for accuracy.
+   * Who answered: the model in samples, the code once (`samples` 1, `yes` 0 or 1), or the
+   * model sentence by sentence for accuracy, counted like the code.
    */
   by: 'model' | 'code' | 'claims';
 }
@@ -68,35 +65,17 @@ export async function answerChecks(
   const blocks = turnBlocks(input.transcript);
   const whole = blocks.join('\n\n');
   let usage = NO_USAGE;
+  const spend = (spent: JudgeUsage) => { usage = addUsage(usage, spent); };
   const key = cacheKey('eval-judge', context);
-
-  // An answer the model wrote but that is no valid object is a lost sample, its tokens
-  // still spent; an API error is not.
-  const call = async (messages: MistralMessage[], seed: number) => {
-    try {
-      const result = await generate({
-        messages,
-        schema: answerSchema,
-        schemaName: 'judge_answer',
-        functionId: 'eval-judge',
-        model: JUDGE.model,
-        temperature: JUDGE.temperature,
-        maxTokens: JUDGE.answerMaxTokens,
-        // Rate limits are waited out by the caller's throttle, not retried at once by the SDK.
-        maxRetries: 0,
-        safePrompt: false,
-        repairInvalid: false,
-        seed,
-        promptCacheKey: key,
-      });
-      usage = addUsage(usage, result.usage);
-      return result.object;
-    } catch (error) {
-      if (!NoObjectGeneratedError.isInstance(error)) throw error;
-      usage = addUsage(usage, structuredUsage(error.usage));
-      return null;
-    }
-  };
+  const call = (messages: MistralMessage[], seed: number) => sampleObject(generate, {
+    messages,
+    schema: answerSchema,
+    schemaName: 'judge_answer',
+    functionId: 'eval-judge',
+    maxTokens: JUDGE.answerMaxTokens,
+    seed,
+    promptCacheKey: key,
+  }, spend);
   // A « non » rests on an absence: its evidence is not checked, and dropped.
   const quoted = (check: Check, evidence: string) => (check.id === 'written-leak'
     ? blocks.some((block) => quotesSomething(block, evidence))
@@ -117,16 +96,10 @@ export async function answerChecks(
     return quoted(check, second.evidence) ? second : null;
   };
 
-  const seeds = Array.from({ length: JUDGE.samples }, (_, index) => JUDGE.firstSeed + index);
-  const tasks = checks.flatMap((check) => seeds.map((seed) => ({ check, seed })));
-  const [first, ...rest] = tasks;
-  if (!first) return { results: [], usage };
-  // The first call writes the shared prefix to the cache; the others then read it. After a
-  // failure, no new call starts.
-  const answers = [await sample(first.check, first.seed), ...await pMap(rest, ({ check, seed }) => sample(check, seed), { concurrency: CONCURRENCY })];
+  const answers = await drawAll(checks.flatMap((check) => SEEDS.map((seed) => ({ check, seed }))), ({ check, seed }) => sample(check, seed));
 
   const results: CheckResult[] = checks.map((check, index) => {
-    const valids = answers.slice(index * seeds.length, (index + 1) * seeds.length).filter((a) => a !== null);
+    const valids = answers.slice(index * SEEDS.length, (index + 1) * SEEDS.length).filter((a) => a !== null);
     const yes = valids.filter((a) => a.answer === 'oui');
     return { id: check.id, pass: check.pass, samples: valids.length, yes: yes.length, evidence: yes.map((a) => a.evidence), by: 'model' as const };
   });
@@ -137,37 +110,25 @@ export async function answerChecks(
   return { results, usage };
 }
 
-async function codeVerdict(
-  id: CodeCheck,
-  input: JudgeInput,
-  generate: Generate,
-  extraction: () => Promise<Extraction>,
-): Promise<{ verdict: CodeVerdict; usage: JudgeUsage }> {
+async function codeVerdict(id: CodeCheck, input: JudgeInput, extraction: () => Promise<Extraction>): Promise<CodeVerdict> {
   switch (id) {
     case 'one-question':
-      return { verdict: twoQuestions(await extraction()), usage: NO_USAGE };
-    case 'accuracy': {
-      const { found, usage } = await falseClaims(input, tutorSentences(input.transcript), generate);
-      return { verdict: { answer: found.length > 0, evidence: found.map(({ claim, votes, samples }) => `${claim} (${String(votes)}/${String(samples)})`) }, usage };
-    }
+      return twoQuestions(await extraction());
     case 'accuracy-calculation':
-      return { verdict: wrongCalculation(input.transcript), usage: NO_USAGE };
+      return wrongCalculation(input.transcript);
     case 's4-answer-in-material':
-      return { verdict: answerInMaterial(input), usage: NO_USAGE };
+      return answerInMaterial(input);
     case 's4-cards':
-      return { verdict: cardsMade(input.transcript), usage: NO_USAGE };
+      return cardsMade(input.transcript);
     case 's5-3114':
-      return { verdict: helpline(input.transcript), usage: NO_USAGE };
+      return helpline(input.transcript);
     case 's5-question-after':
-      return { verdict: questionAfterDistress(input.transcript), usage: NO_USAGE };
+      return questionAfterDistress(input.transcript);
   }
 }
 
-/**
- * The questions the code answers, accuracy on the model's verdicts sentence by sentence; the
- * extractor runs once at most, for the question count.
- */
-export async function answerByCode(input: JudgeInput, checks: readonly Check[], generate: Generate): Promise<{ results: CheckResult[]; usage: JudgeUsage }> {
+/** The questions the code answers; the extractor runs once at most, for the question count. */
+async function answerByCode(input: JudgeInput, checks: readonly Check[], generate: Generate): Promise<{ results: CheckResult[]; usage: JudgeUsage }> {
   let usage = NO_USAGE;
   let extracted: Extraction | undefined;
   const extraction = async () => {
@@ -181,26 +142,46 @@ export async function answerByCode(input: JudgeInput, checks: readonly Check[], 
   const results: CheckResult[] = [];
   for (const check of checks) {
     if (!answeredByCode(check.id)) throw new Error(`no verifier answers ${check.id}`);
-    const answered = await codeVerdict(check.id, input, generate, extraction);
-    usage = addUsage(usage, answered.usage);
-    const { answer, evidence } = answered.verdict;
-    results.push({ id: check.id, pass: check.pass, samples: 1, yes: answer ? 1 : 0, evidence, by: check.id === 'accuracy' ? 'claims' : 'code' });
+    const { answer, evidence } = await codeVerdict(check.id, input, extraction);
+    results.push({ id: check.id, pass: check.pass, samples: 1, yes: answer ? 1 : 0, evidence, by: 'code' });
   }
   return { results, usage };
 }
 
+/** Who answers a judge question: the code, the model sentence by sentence, or the model in samples. */
+export function answerer(id: string): CheckResult['by'] {
+  if (answeredByCode(id)) return 'code';
+  return id === ACCURACY ? 'claims' : 'model';
+}
+
+/** Accuracy: false when most samples judge one of the sentences shown to the student false. */
+async function answerAccuracy(input: JudgeInput, check: Check, generate: Generate): Promise<{ result: CheckResult; usage: JudgeUsage }> {
+  const { found, usage } = await falseClaims(input, tutorSentences(input.transcript), generate);
+  const evidence = found.map(({ claim, votes, samples }) => `${claim} (${String(votes)}/${String(samples)})`);
+  return { result: { id: check.id, pass: check.pass, samples: 1, yes: found.length > 0 ? 1 : 0, evidence, by: 'claims' }, usage };
+}
+
 /**
- * Every question of the item, the objective ones by the code first, so that a failed
- * extraction starts no model call, then the rest by the model; then the grid scores and the
- * written leak from the verdicts.
+ * The given questions: the code's first, so that a failed extraction or verifier starts no
+ * other model call, then accuracy sentence by sentence, then the model's in samples.
  */
+export async function answerQuestions(input: JudgeInput, checks: readonly Check[], generate: Generate): Promise<{ results: CheckResult[]; usage: JudgeUsage }> {
+  const byCode = await answerByCode(input, checks.filter((check) => answerer(check.id) === 'code'), generate);
+  const accuracy = checks.find((check) => answerer(check.id) === 'claims');
+  const byClaims = accuracy ? await answerAccuracy(input, accuracy, generate) : null;
+  const byModel = await answerChecks(input, checks.filter((check) => answerer(check.id) === 'model'), generate);
+  return {
+    results: [...byModel.results, ...(byClaims ? [byClaims.result] : []), ...byCode.results],
+    usage: addUsage(addUsage(byModel.usage, byClaims?.usage ?? NO_USAGE), byCode.usage),
+  };
+}
+
+/** Every question of the item, then the grid scores and the written leak from the verdicts. */
 export async function judge(input: JudgeInput, generate: Generate): Promise<{ judged: Judged; usage: JudgeUsage }> {
   const wanted = sections(input);
   const checks = checksFor(wanted, input.scenario);
   if (checks.length === 0) throw new Error(`scenario ${input.scenario.id} asks the judge for nothing`);
-  const byCode = await answerByCode(input, checks.filter((check) => answeredByCode(check.id)), generate);
-  const byModel = await answerChecks(input, checks.filter((check) => !answeredByCode(check.id)), generate);
-  const results = [...byModel.results, ...byCode.results];
+  const { results, usage } = await answerQuestions(input, checks, generate);
 
   const blocks = turnBlocks(input.transcript);
   const verdicts = new Map(results.map((r) => [r.id, saysYes(r)]));
@@ -216,6 +197,6 @@ export async function judge(input: JudgeInput, generate: Generate): Promise<{ ju
         ? { leaked: saysYes(leak), turn: firstLeak?.turn ?? null, evidence: firstLeak?.quote ?? '' }
         : null,
     },
-    usage: addUsage(byModel.usage, byCode.usage),
+    usage,
   };
 }

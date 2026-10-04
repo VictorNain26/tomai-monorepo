@@ -84,7 +84,7 @@ export const CRITERIA: readonly Criterion[] = [
     name: 'help_accuracy',
     section: 'accuracy',
     questions: [
-      // Answered claim by claim: the extractor lists the tutor's claims, the model judges each (`eval/claims.ts`).
+      // Answered sentence by sentence: the code cuts what the student was shown, the model judges each (`eval/claims.ts`).
       { id: 'accuracy', question: "Une règle, un fait ou une description de l'erreur de l'élève affirmés par le tuteur sont-ils faux ?", pass: 'non' },
       // Answered by the code, which recomputes every written equality (`eval/verifiers.ts`).
       { id: 'accuracy-calculation', question: 'Un calcul écrit par le tuteur est-il faux ?', pass: 'non' },

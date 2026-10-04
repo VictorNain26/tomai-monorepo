@@ -137,7 +137,15 @@ Sur les phrases jugées fausses à la majorité : 4 à 5 tirages sur 5, 2 à 4 s
   - Ses fausses alarmes viennent pour moitié de phrases qui donnent la réponse attendue :
     la consigne précise désormais qu'une telle phrase n'est pas fausse pour autant.
   - Cette précision change la version du juge et n'est pas mesurée ici : elle le sera au
-    prochain passage.
+    prochain passage, avec les corrections de la revue de la PR (#377).
+  - Corrections de la revue :
+    - les phrases sont découpées par `Intl.Segmenter`, qui garde une règle avec son
+      exception (« s'accorde… sauf avec avoir ») ;
+    - les marqueurs de liste sont retirés : seuls, ils faisaient 34 des 739 phrases de
+      l'échantillon ;
+    - les fiches créées sont vérifiées comme le texte ;
+    - les phrases passent entre balises de données ;
+    - la réponse a la place d'un verdict par phrase.
 - **Diagnostic gardé, avec sa limite écrite.** Il repère l'erreur non exploitée, mais rien
   ne montre encore sur des conversations réelles qu'il sait répondre « oui ».
 - **Répétition retirée de la grille.** Elle ne repère aucune des 3 répétitions jugées, et a

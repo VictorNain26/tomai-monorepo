@@ -61,12 +61,12 @@ describe('judge', () => {
 
   it('asks only the questions it is given', async () => {
     const item = input('M1', 'S1');
-    const [accuracy] = checksFor(sections(item), item.scenario).filter((c) => c.id === 'accuracy');
-    if (!accuracy) throw new Error('no accuracy question');
+    const [level] = checksFor(sections(item), item.scenario).filter((c) => c.id === 'level');
+    if (!level) throw new Error('no level question');
     const { generate, calls } = fakeJudge();
-    const { results } = await answerChecks(item, [accuracy], generate);
-    expect(new Set(calls.map((c) => c.question))).toEqual(new Set([question('accuracy')]));
-    expect(results).toEqual([{ id: 'accuracy', pass: 'non', samples: 5, yes: 0, evidence: [], by: 'model' }]);
+    const { results } = await answerChecks(item, [level], generate);
+    expect(new Set(calls.map((c) => c.question))).toEqual(new Set([question('level')]));
+    expect(results).toEqual([{ id: 'level', pass: 'non', samples: 5, yes: 0, evidence: [], by: 'model' }]);
   });
 
   it('lets the first call warm the cache before the others start', async () => {
@@ -220,7 +220,7 @@ describe('judge', () => {
     expect(judged.scores['help_accuracy']).toBe(0);
     const claimCalls = calls.filter((c) => c.schemaName === 'claims_verdicts');
     expect(claimCalls.map((c) => c.seed)).toEqual(Array.from({ length: JUDGE.samples }, (_, i) => JUDGE.firstSeed + i));
-    expect(contentOf(claimCalls[0]?.messages.at(-1))).toBe(`1. ${rule}\n2. Où est le COD ?`);
+    expect(contentOf(claimCalls[0]?.messages.at(-1))).toBe(`<phrases>\n1. ${rule}\n2. Où est le COD ?\n</phrases>`);
     expect(verdictScores(judged).find((s) => s.name === 'help_accuracy')?.comment).toContain(`accuracy affirmations: oui « ${rule} (4/5) »`);
     // One extraction for the question count, five sentences samples, then the model questions.
     expect(usage.inputTokens).toBe(100 * (1 + JUDGE.samples + 7 * JUDGE.samples));
