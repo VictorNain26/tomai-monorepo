@@ -45,9 +45,8 @@ export const files = pgTable('files', {
   storageBucket: varchar('storage_bucket', { length: 100 }).notNull(),
   storageRegion: varchar('storage_region', { length: 20 }).notNull().default('fr-par'),
 
-  // Contexte éducatif (résultat d'analyse)
+  // { subject, level, userId } from the upload, then { extractedText, extractionMethod, wordCount } once read.
   educationalContext: jsonb('educational_context').default(sql`'{}'::jsonb`),
-  // Structure: { analysisContext, extractedText, documentType, subject, classification, metrics }
 
   // Statut et métadonnées
   status: fileStatusEnum('status').notNull().default('pending'),

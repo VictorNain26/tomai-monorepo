@@ -12,16 +12,12 @@ export const filesRoutes = new Hono<AppEnv>()
       return c.json({
         success: true,
         files: userFiles.map(f => {
-          const eduCtx = f.educationalContext as {
-            documentType?: string;
-            subject?: string;
-          } | null;
+          const eduCtx = f.educationalContext as { subject?: string } | null;
           return {
             id: f.id,
             fileName: f.fileName,
             mimeType: f.mimeType,
             sizeBytes: f.sizeBytes,
-            documentType: eduCtx?.documentType ?? null,
             subject: eduCtx?.subject ?? null,
             createdAt: f.createdAt.toISOString(),
           };
