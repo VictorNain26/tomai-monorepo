@@ -27,7 +27,7 @@ bloquant levé).
     détresse.
   - Une relecture humaine d'une partie des conversations lues par Claude reste due avant
     toute publication (lot 4).
-- **PR ouvertes :** aucune.
+- **PR ouvertes :** #383 (point 3a de la refonte) : revue `/code-review`, corrections, CI, merge ; son plan, `docs/plans/feat-agent-turn-analysis.md`, se retire dans son dernier commit.
 - **Landing en ligne gelée** jusqu'au lot 4 : seuls des correctifs d'honnêteté ou techniques y entrent.
   L'identité visuelle est rejetée et se refait au lot 4.
 
