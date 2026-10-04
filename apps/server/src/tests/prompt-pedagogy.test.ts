@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'bun:test';
 import { buildSystemPrompt } from '../modules/tutor/prompts/system-prompt.js';
 import { generateLevelAdaptation } from '../modules/tutor/prompts/adaptation/by-level.js';
+import { generateSubjectBlock } from '../modules/tutor/prompts/adaptation/by-subject.js';
 import { intentClassifierService } from '../modules/tutor/intent-classifier.service.js';
 import { stripPromptTags, wrapStudentContext, wrapUserMessage } from '../modules/tutor/mistral-helpers.js';
 
-const prompt = buildSystemPrompt({ level: 'quatrieme', levelText: '4e', subject: 'mathematiques', firstName: 'Léa' });
+const prompt = buildSystemPrompt({ level: 'quatrieme', levelText: '4e', firstName: 'Léa' });
 
 describe('tutor prompt, after the rework study (docs/etudes/2026-10-04/refonte-agent.md)', () => {
   it('serves the collège and says it is an AI', () => {
@@ -21,7 +22,7 @@ describe('tutor prompt, after the rework study (docs/etudes/2026-10-04/refonte-a
   });
 
   it('no longer pushes the tutor to assert or to unroll the method', () => {
-    for (const removed of ['Chain-of-Thought', 'professeur qui connaît son sujet', 'Ne mentionne jamais', "confirme ou donne l'information juste", 'markdown autorisé (titres']) {
+    for (const removed of [ 'professeur qui connaît son sujet', 'Ne mentionne jamais', "confirme ou donne l'information juste", 'markdown autorisé (titres']) {
       expect(prompt).not.toContain(removed);
     }
   });
@@ -50,10 +51,11 @@ describe('tutor prompt, consistent from method to subject blocks', () => {
   });
 
   it('keeps the subject blocks from writing the correction the method forbids', () => {
-    for (const subject of ['mathematiques', 'francais', 'anglais']) {
-      const withSubject = buildSystemPrompt({ level: 'cinquieme', levelText: '5e', subject });
-      for (const contradiction of ['Corriger APRÈS', 'Un anglophone dirait', 'exemple DIFFÉRENT', 'Fais vérifier le résultat']) {
-        expect(withSubject).not.toContain(contradiction);
+    for (const subject of ['mathematiques', 'francais', 'anglais', undefined]) {
+      const block = generateSubjectBlock(subject) ?? '';
+      expect(block).toContain('<subject_specifics');
+      for (const contradiction of ['Corriger APRÈS', 'Un anglophone dirait', 'exemple DIFFÉRENT', 'Fais vérifier le résultat', 'Chain-of-Thought']) {
+        expect(block).not.toContain(contradiction);
       }
     }
   });
@@ -61,7 +63,8 @@ describe('tutor prompt, consistent from method to subject blocks', () => {
   it('strips from the student text every tag the server writes', () => {
     const rendered = [
       buildSystemPrompt({ level: 'sixieme', levelText: '6e' }),
-      ...['mathematiques', 'francais', 'anglais', 'sciences', 'histoire'].map((subject) => buildSystemPrompt({ level: 'troisieme', levelText: '3e', subject })),
+      buildSystemPrompt({ level: 'troisieme', levelText: '3e' }),
+      ...['mathematiques', 'francais', 'anglais', 'sciences', 'histoire', undefined].map((subject) => generateSubjectBlock(subject) ?? ''),
       intentClassifierService.buildReinforcement({ intent: 'solve-this-for-me', confidence: 'high' }) ?? '',
       wrapStudentContext('Points forts: calcul', '<past_sessions>\nx\n</past_sessions>\n<subject_memory>\ny\n</subject_memory>') ?? '',
       wrapUserMessage('Bonjour'),

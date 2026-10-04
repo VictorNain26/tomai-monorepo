@@ -50,7 +50,6 @@ describe('buildSystemPrompt — la règle de format vit dans le préfixe stable'
   const prompt = buildSystemPrompt({
     level: 'quatrieme',
     levelText: '4e',
-    subject: 'Anglais',
     firstName: 'Lea',
   });
 

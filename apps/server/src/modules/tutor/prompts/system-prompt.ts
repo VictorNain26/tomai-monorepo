@@ -10,28 +10,25 @@ import { generateVisualizationPolicy } from './core/visualization.js';
 import { generateResponseFormatPolicy } from './core/response-format.js';
 import { generateChatbotPedagogyPrompt } from '../../../shared/pedagogy/index.js';
 import { generateLevelAdaptation } from './adaptation/by-level.js';
-import { generateSubjectBlock } from './adaptation/by-subject.js';
 import type { EducationLevelType } from '../../../types/index.js';
 
 interface SystemPromptParams {
   level: EducationLevelType;
   levelText: string;
-  subject?: string | undefined;
   firstName?: string | undefined;
 }
 
 /**
  * Construit le prompt système complet.
  *
- * Ordre : [BLOCS STABLES] puis [BLOCS DYNAMIQUES]. Mistral applique un cache
+ * Ordre : [BLOCS STABLES] puis l'élève et sa classe. Mistral applique un cache
  * de préfixe explicite (prompt_cache_key) sur les tokens d'input stables.
  * Placer identityCore + pedagogy + safety EN PREMIER maximise la
- * portion cachable. Le contexte élève et les adaptations niveau/matière
- * arrivent après — ils changent d'un appel à l'autre mais ne cassent pas le
- * préfixe stable.
+ * portion cachable ; l'élève et sa classe ne changent pas pendant la séance.
+ * La matière, qui peut changer d'un tour à l'autre, va dans le message du tour.
  */
 export function buildSystemPrompt(params: SystemPromptParams): string {
-  const { level, levelText, subject, firstName } = params;
+  const { level, levelText, firstName } = params;
   const studentName = firstName ?? "l'élève";
 
   const parts = [
@@ -43,9 +40,8 @@ export function buildSystemPrompt(params: SystemPromptParams): string {
     generateAttachmentsPolicy(),
     generateSafetyGuardrails(),
     // ——— DYNAMIC (spécifique à l'élève / au tour) ———
-    generateStudentContext({ studentName, levelText, subject }),
+    generateStudentContext({ studentName, levelText }),
     generateLevelAdaptation(level),
-    generateSubjectBlock(subject),
   ].filter(Boolean);
 
   return parts.join('\n\n');

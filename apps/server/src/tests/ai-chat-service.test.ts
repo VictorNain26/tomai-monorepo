@@ -216,6 +216,37 @@ describe('streamChat — Mistral wire request', () => {
     expect(capture.body).not.toHaveProperty('max_tokens');
   });
 
+  it('replays a past reasoning as a thinking chunk, and sends one user message for the turn', async () => {
+    const capture: { url?: string; body?: Record<string, unknown> } = {};
+    mockMistralStream(capture);
+
+    await streamChat({
+      ...baseParams,
+      subject: 'mathematiques',
+      content: 'Je soustrais 5.',
+      intentReinforcement: '<critical_instruction>X</critical_instruction>',
+      conversationHistory: [
+        { role: 'user', content: 'Résous 3x + 5 = 20.', timestamp: '2026-10-04T10:00:00Z' },
+        {
+          role: 'assistant',
+          content: 'Que fais-tu du +5 ?',
+          timestamp: '2026-10-04T10:00:05Z',
+          modelMessages: [{ role: 'assistant', content: [{ type: 'reasoning', text: 'Il a oublié de soustraire 5.' }, { type: 'text', text: 'Que fais-tu du +5 ?' }] }],
+        },
+      ],
+      tools: noopTools,
+    }).text;
+
+    const messages = capture.body?.['messages'] as { role: string; content: unknown }[];
+    expect(messages.map((m) => m.role)).toEqual(['system', 'user', 'assistant', 'user']);
+    expect(messages[2]?.content).toEqual([
+      { type: 'thinking', thinking: [{ type: 'text', text: 'Il a oublié de soustraire 5.' }], closed: true },
+      { type: 'text', text: 'Que fais-tu du +5 ?' },
+    ]);
+    expect(JSON.stringify(messages[3]?.content)).toContain('<subject_specifics matiere=\\"Mathématiques\\">');
+    expect(JSON.stringify(messages[0]?.content)).not.toContain('subject_specifics');
+  });
+
   it("sends reasoning_effort 'none' outside the STEM hard-intent route", async () => {
     const capture: { url?: string; body?: Record<string, unknown> } = {};
     mockMistralStream(capture);

@@ -26,7 +26,7 @@ import { env } from '../config/env.js';
  * inline alongside text. The `url` shape supports both `data:` URIs and
  * absolute https URLs.
  */
-export type MistralContentPart =
+type MistralContentPart =
   | { type: 'text'; text: string }
   | { type: 'image_url'; imageUrl: string | { url: string } };
 

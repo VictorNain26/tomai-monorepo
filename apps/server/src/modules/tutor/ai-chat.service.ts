@@ -16,28 +16,24 @@ import {
   streamText,
   isStepCount,
   type ToolSet,
-  type ModelMessage,
   type LanguageModel,
-  type TextPart,
   type FilePart,
 } from 'ai';
 import { mistralProvider } from '../../platform/ai/provider.js';
 import type { MistralLanguageModelChatOptions } from '@ai-sdk/mistral';
 import { routeReasoningEffort } from './mistral-reasoning.js';
 import { logger } from '../../platform/observability/logger.js';
-import { buildSystemPrompt } from './prompts/index.js';
+import { buildSystemPrompt, generateSubjectBlock } from './prompts/index.js';
 import { getLevelText } from '../../config/education/index.js';
 import { optimizeConversationHistory } from './conversation-optimizer.js';
-import { assembleChatMessages } from './chat-message-assembler.js';
+import { assembleChatPrompt, type ResponseMessage } from './chat-message-assembler.js';
 import {
-  wrapUserMessage,
   wrapStudentContext,
   wrapAttachedFiles,
   MAX_TOOL_ITERATIONS,
 } from './mistral-helpers.js';
 import { calculateBudget, truncateToTokenBudget } from './token-budget.service.js';
 import { env } from '../../platform/config/env.js';
-import type { MistralMessage, MistralContentPart } from '../../platform/ai/mistral-client.js';
 import type { EducationLevelType } from '../../types/index.js';
 import type { AttachedFileForPrompt } from '../documents/index.js';
 
@@ -80,9 +76,8 @@ export interface StreamGenerationParams {
    */
   attachedFiles?: AttachedFileForPrompt[] | undefined;
   /**
-   * Turn-specific reinforcement block injected by the intent classifier.
-   * When non-null, prepended to the system prompt to force a stricter
-   * socratic stance (e.g. on "solve this for me" requests).
+   * Turn-specific reinforcement block injected by the intent classifier, in
+   * the turn's user message (e.g. on "solve this for me" requests).
    */
   intentReinforcement?: string | null | undefined;
   /** Classified intent for reasoning effort routing. */
@@ -97,6 +92,8 @@ export interface StreamGenerationParams {
     role: 'user' | 'assistant';
     content: string;
     timestamp: string;
+    /** The assistant's response messages as the model produced them; absent on older messages. */
+    modelMessages?: ResponseMessage[] | undefined;
     attachedFile?: HistoricalFileRef | null;
   }[];
 }
@@ -111,103 +108,10 @@ export interface ChatStreamParams extends StreamGenerationParams {
   model?: LanguageModel | undefined;
 }
 
-function buildSystemPromptForChat(params: {
-  level: StreamGenerationParams['schoolLevel'];
-  subject?: string | undefined;
-  firstName?: string | undefined;
-}): string {
-  const levelText = getLevelText(params.level);
-  return buildSystemPrompt({
-    level: params.level,
-    levelText,
-    subject: params.subject,
-    firstName: params.firstName,
-  });
-}
-
-function buildHistoryMessages(
-  history: StreamGenerationParams['conversationHistory'],
-  conversationSummary?: string | null,
-): MistralMessage[] {
-  if (history.length === 0) return [];
-
-  const optimized = optimizeConversationHistory(history, { conversationSummary });
-
-  return optimized
-    .filter(
-      (msg): msg is typeof msg & { role: 'assistant' | 'user'; content: string } =>
-        msg.role !== 'system',
-    )
-    .map((msg): MistralMessage => {
-      if (msg.role === 'assistant') {
-        return { role: 'assistant', content: msg.content };
-      }
-      return { role: 'user', content: wrapUserMessage(msg.content) };
-    });
-}
-
-function buildUserContent(content: string, files?: AttachedFile[]): string | MistralContentPart[] {
-  const wrapped = wrapUserMessage(content);
-  if (!files || files.length === 0) return wrapped;
-
-  const imageParts = files
+function imageParts(files?: AttachedFile[]): FilePart[] {
+  return (files ?? [])
     .filter((f): f is AttachedFile & { base64: string } => f.contentType === 'image' && f.base64 !== undefined && f.base64 !== '')
-    .map((f) => ({
-      type: 'image_url' as const,
-      imageUrl: { url: `data:${f.mimeType};base64,${f.base64}` },
-    }));
-
-  if (imageParts.length === 0) return wrapped;
-  return [{ type: 'text' as const, text: wrapped }, ...imageParts];
-}
-
-function requireStringContent(content: unknown, role: 'system' | 'assistant'): string {
-  if (typeof content !== 'string') {
-    throw new Error(`Expected plain string content for "${role}" message in AI SDK conversion`);
-  }
-  return content;
-}
-
-function toUserPart(part: MistralContentPart): TextPart | FilePart {
-  if (part.type === 'text') return { type: 'text', text: part.text };
-  const url = typeof part.imageUrl === 'string' ? part.imageUrl : part.imageUrl.url;
-  return { type: 'file', mediaType: 'image', data: new URL(url) };
-}
-
-/**
- * Converts the vendor-neutral `MistralMessage[]` assembly into AI SDK
- * `{ system, messages }`. Split out because `streamText` rejects a `system`
- * role inside `messages` by default (`allowSystemInMessages: false`) — the
- * system prompt must travel through the dedicated `system` option instead.
- * `assembleChatMessages` always puts the system prompt first (see its own
- * doc comment), so this never silently drops a system message elsewhere in
- * the array.
- */
-function toModelPrompt(messages: MistralMessage[]): { system: string; messages: ModelMessage[] } {
-  const [first, ...rest] = messages;
-  if (first?.role !== 'system') {
-    throw new Error('Expected the first assembled message to carry the system prompt');
-  }
-  return {
-    system: requireStringContent(first.content, 'system'),
-    messages: rest.map(toModelMessage),
-  };
-}
-
-function toModelMessage(message: MistralMessage): ModelMessage {
-  if (message.role === 'assistant') {
-    return { role: 'assistant', content: requireStringContent(message.content, 'assistant') };
-  }
-  if (message.role === 'user') {
-    const content = message.content;
-    return {
-      role: 'user',
-      content: typeof content === 'string' ? content : content.map(toUserPart),
-    };
-  }
-  // assembleChatMessages only ever emits system/user/assistant — a 'tool' or
-  // second 'system' message would mean a caller bypassed the assembler.
-  throw new Error(`Unsupported message role for AI SDK conversion: ${message.role}`);
+    .map((f) => ({ type: 'file', mediaType: 'image', data: new URL(`data:${f.mimeType};base64,${f.base64}`) }));
 }
 
 /**
@@ -215,35 +119,28 @@ function toModelMessage(message: MistralMessage): ModelMessage {
  * tool loop internally (`stopWhen: isStepCount(MAX_TOOL_ITERATIONS)`).
  */
 export function streamChat(params: ChatStreamParams) {
-  const systemPrompt = buildSystemPromptForChat({
+  const systemPrompt = buildSystemPrompt({
     level: params.schoolLevel,
-    subject: params.subject,
+    levelText: getLevelText(params.schoolLevel),
     firstName: params.firstName,
   });
 
-  const userContent = buildUserContent(params.content, params.files);
-  const studentContextBlock = wrapStudentContext(params.cognitiveProfileSummary, params.learningContext);
-  const attachedFilesBlock = params.attachedFiles?.length
-    ? wrapAttachedFiles(params.attachedFiles)
-    : '';
-  const historyMessages = buildHistoryMessages(params.conversationHistory, params.conversationSummary);
-
-  const truncatedSummary = params.conversationSummary
+  const conversationSummary = params.conversationSummary
     ? truncateToTokenBudget(params.conversationSummary, calculateBudget().summaryMaxTokens).text
     : params.conversationSummary;
 
-  const { system, messages } = toModelPrompt(
-    assembleChatMessages({
-      systemPrompt,
-      conversationSummary: truncatedSummary,
-      historyMessages,
-      studentContextBlock,
-      attachedFilesBlock,
-      intentReinforcement: params.intentReinforcement,
-      inputMode: params.inputMode,
-      userContent,
-    }),
-  );
+  const { system, messages } = assembleChatPrompt({
+    systemPrompt,
+    conversationSummary,
+    history: optimizeConversationHistory(params.conversationHistory, { conversationSummary: params.conversationSummary }),
+    subjectBlock: generateSubjectBlock(params.subject),
+    studentContextBlock: wrapStudentContext(params.cognitiveProfileSummary, params.learningContext),
+    attachedFilesBlock: params.attachedFiles?.length ? wrapAttachedFiles(params.attachedFiles) : null,
+    intentReinforcement: params.intentReinforcement,
+    inputMode: params.inputMode,
+    studentText: params.content,
+    images: imageParts(params.files),
+  });
 
   const reasoningEffort = routeReasoningEffort({
     schoolLevel: params.schoolLevel,
