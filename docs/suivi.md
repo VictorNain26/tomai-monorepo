@@ -13,19 +13,18 @@ bloquant levé).
 ## Où on en est
 
 - **Dernière mise à jour :** 2026-10-04.
-- **Lot en cours :** 1 — Harnais d'évaluation (`roadmap.md`). Le lot 0 est terminé : serveur
-  sur Hono et outillage sur Bun (#343 à #347), refonte du serveur en modules (#348 à #354),
-  lint strict (#355) et TypeScript strict (#356).
-- **Prochaine action :** refonte de l'agent (lot 2), demandée par Victor le 2026-10-04
-  après l'audit du prompt et des outils (lot 2 ci-dessous, « Audit de l'agent ») :
-  recherches sourcées sur la conception d'un tuteur, l'ingénierie sur Small 4 et l'AI SDK,
-  l'exactitude et les garde-fous, et audit des autres appels IA ; puis étude datée et plan
-  dans `docs/plans/`. Le plan dit comment l'avant et l'après se mesurent, la baseline
-  (point 5 du lot 1) n'étant pas encore passée.
-  - La relecture des conversations, que Victor a confiée à Claude le 2026-10-03, a été
-    faite par Claude.
-  - Une relecture humaine d'une partie d'entre elles reste due avant toute publication
-    (lot 4).
+- **Lot en cours :** 2 — Agent qui ne cède pas, refondu sur sources (`roadmap.md`).
+  - Du lot 1 restent la baseline, réduite aux 38 conversations de l'échantillon
+    (`etudes/2026-10-04/refonte-agent.md`, « Mesure »), les concurrents et la CI.
+  - Le lot 0 est terminé : serveur sur Hono et outillage sur Bun (#343 à #347), refonte du
+    serveur en modules (#348 à #354), lint strict (#355) et TypeScript strict (#356).
+- **Prochaine action :** refonte de l'agent (lot 2), demandée par Victor le 2026-10-04 ;
+  étude `etudes/2026-10-04/refonte-agent.md`, ordre des PR dans `roadmap.md`. Point 1, prompt
+  et outils : plan d'abord dans `docs/plans/`.
+  - Étape à la charge de Victor avant le point 6 : approuver le texte de la réponse fixe de
+    détresse.
+  - Une relecture humaine d'une partie des conversations lues par Claude reste due avant
+    toute publication (lot 4).
 - **PR ouvertes :** aucune.
 - **Landing en ligne gelée** jusqu'au lot 4 : seuls des correctifs d'honnêteté ou techniques y entrent.
   L'identité visuelle est rejetée et se refait au lot 4.
@@ -411,3 +410,10 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
   - index vectoriel retiré, jamais utilisé par la requête, qui parcourt exactement les
     épisodes de l'élève ;
   - en CI, un test d'intégration échoue au lieu d'être sauté quand la base ne répond pas.
+
+  Refonte de l'agent décidée sur sources (#379) : quatre recherches (conception d'un
+  tuteur, Small 4 et AI SDK 7, exactitude et garde-fous, autres appels IA) ; un workflow
+  tenu par le serveur (fiche d'exercice, diagnostic, palier, contrat du tour, contrôle avant
+  l'élève) ; spec corrigée (`toolApproval` au lieu de `needsApproval`, déprécié ; contrôle
+  avant l'élève et non après la génération ; ordre du contexte pour le cache) ; ordre du
+  lot 2 revu, deux passages au harnais.
