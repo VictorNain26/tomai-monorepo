@@ -38,7 +38,6 @@ describe('setupOtel with caller processors', () => {
       sessionId: 's',
       content: 'bonjour',
       schoolLevel: 'sixieme',
-      userRole: 'student',
       conversationHistory: [],
       tools: {},
       model,

@@ -21,7 +21,6 @@ mock.module('../platform/observability/logger', () => ({ logger: mockLogger }));
 interface Profile {
   strengths: string[] | null;
   weaknesses: string[] | null;
-  preferredStyle: string | null;
   observations: unknown[];
   lastUpdatedByAgent: Date | null;
 }
@@ -52,10 +51,6 @@ mock.module('../db/connection', () => ({
   db: { transaction: mock(async (fn: (tx: unknown) => Promise<unknown>) => fn({})) },
 }));
 
-mock.module('../modules/tutor/app-guide/index', () => ({
-  getAppHelpContent: mock(() => null),
-}));
-
 // Import after mocks
 const { executeTool, isDeckCreatedResult } = await import('../modules/tutor/tool-executor');
 
@@ -63,13 +58,11 @@ const baseContext = {
   userId: 'user-001',
   schoolLevel: 'troisieme' as const,
   sessionId: 'session-001',
-  userRole: 'student' as const,
 };
 
 const makeProfile = (overrides: Partial<Profile> = {}): Profile => ({
   strengths: [],
   weaknesses: [],
-  preferredStyle: null,
   observations: [],
   lastUpdatedByAgent: null,
   ...overrides,
@@ -186,13 +179,21 @@ describe('executeUpdateProfile()', () => {
       expect(updates?.strengths).toEqual(['curiosite']);
     });
 
-    it('should forward preferredStyle when provided', async () => {
+    it('never writes a learning style, a neuromyth, even when the model sends one', async () => {
       existingProfile = null;
       await executeTool('update_student_profile', {
-        observation: 'Préfère les diagrammes', subject: 'mathematiques', preferredStyle: 'visual',
+        observation: 'Préfère les diagrammes', subject: 'mathematiques', preferredStyle: 'visuel',
       }, baseContext);
-      const updates = (updateProfileSpy.mock.calls[0] as unknown[] | undefined)?.[1] as undefined | { preferredStyle?: string };
-      expect(updates?.preferredStyle).toBe('visual');
+      const updates = (updateProfileSpy.mock.calls[0] as unknown[] | undefined)?.[1] as undefined | Record<string, unknown>;
+      expect(updates).not.toHaveProperty('preferredStyle');
+    });
+
+    it('answers with an error, never « Profil mis à jour », when the write fails', async () => {
+      existingProfile = null;
+      updateProfileSpy.mockImplementationOnce(async () => { throw new Error('db down'); });
+      const result = await executeTool('update_student_profile', { observation: 'Confond aire et périmètre', subject: 'mathematiques' }, baseContext) as Record<string, unknown>;
+      expect(result['isError']).toBe(true);
+      expect(result).not.toHaveProperty('updated');
     });
 
     it('should truncate observation at 250 chars', async () => {

@@ -95,7 +95,6 @@ export const chatMessageRoutes = new Hono<AppEnv>()
     };
 
     const resolvedSchoolLevel = schoolLevel ?? (isEducationLevel(user.schoolLevel) ? user.schoolLevel : 'sixieme');
-    const userRole = user.role === 'parent' ? 'parent' : 'student';
 
     let turnCtx: Awaited<ReturnType<typeof chatOrchestrationService.prepareTurn>>;
     try {
@@ -141,7 +140,6 @@ export const chatMessageRoutes = new Hono<AppEnv>()
           userId: user.id,
           sessionId: turnCtx.sessionId,
           schoolLevel: resolvedSchoolLevel,
-          userRole,
           emitDeckCreated: d => { writer.write({ type: 'data-deck-created', data: d }); },
         });
 
@@ -152,7 +150,6 @@ export const chatMessageRoutes = new Hono<AppEnv>()
           schoolLevel: resolvedSchoolLevel,
           firstName: firstName ?? user.firstName ?? undefined,
           sessionId: turnCtx.sessionId,
-          userRole,
           conversationSummary: turnCtx.conversationSummary,
           conversationHistory: turnCtx.conversationHistory,
           cognitiveProfileSummary: turnCtx.cognitiveProfileSummary,

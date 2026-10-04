@@ -9,7 +9,6 @@
 import { generateCards, learningService, getLevelConfig } from '../learning/index.js';
 import { cognitiveProfileService } from './cognitive-profile.service.js';
 import { makeToolError, type ToolResult } from './tool-errors.js';
-import { getAppHelpContent } from './app-guide/index.js';
 import { logger } from '../../platform/observability/logger.js';
 import type { EducationLevelType } from '../../types/index.js';
 
@@ -17,7 +16,6 @@ interface ToolExecutionContext {
   userId: string;
   schoolLevel: EducationLevelType;
   sessionId: string;
-  userRole: 'student' | 'parent';
 }
 
 /**
@@ -89,14 +87,8 @@ async function executeToolOnce(
     case 'generate_flashcards':
       return await executeGenerateFlashcards(args, context);
 
-    case 'get_student_profile':
-      return await executeGetProfile(context);
-
     case 'update_student_profile':
       return await executeUpdateProfile(args, context);
-
-    case 'get_app_help':
-      return executeGetAppHelp(args, context);
 
     default:
       return makeToolError('validation', `Outil inconnu: ${toolName}`);
@@ -172,50 +164,6 @@ async function executeGenerateFlashcards(
   return deckResult;
 }
 
-function executeGetAppHelp(
-  args: Record<string, unknown>,
-  context: ToolExecutionContext
-): object {
-  const topic = typeof args['topic'] === 'string' ? args['topic'] : '';
-  const content = getAppHelpContent(topic, context.userRole);
-
-  if (!content) {
-    return {
-      found: false,
-      message: `Sujet "${topic}" non reconnu. Sujets disponibles : overview, navigation, chat, flashcards, files, subscription, profile.`,
-    };
-  }
-
-  return {
-    found: true,
-    topic,
-    role: context.userRole,
-    guide: content,
-  };
-}
-
-async function executeGetProfile(context: ToolExecutionContext): Promise<object> {
-  const profile = await cognitiveProfileService.getProfile(context.userId);
-
-  if (!profile) {
-    return {
-      exists: false,
-      message: "Pas de profil cognitif pour cet élève. C'est peut-être sa première interaction.",
-    };
-  }
-
-  return {
-    exists: true,
-    strengths: profile.strengths,
-    weaknesses: profile.weaknesses,
-    preferredStyle: profile.preferredStyle,
-    observations: ((profile.observations as { observation: string }[] | null) ?? [])
-      .slice(-5)
-      .map((o) => o.observation),
-    lastUpdated: profile.lastUpdatedByAgent?.toISOString() ?? null,
-  };
-}
-
 async function executeUpdateProfile(
   args: Record<string, unknown>,
   context: ToolExecutionContext,
@@ -234,7 +182,6 @@ async function executeUpdateProfile(
 
   const strengthRaw = typeof args['strength'] === 'string' ? args['strength'].trim().slice(0, 100) : undefined;
   const weaknessRaw = typeof args['weakness'] === 'string' ? args['weakness'].trim().slice(0, 100) : undefined;
-  const preferredStyle = typeof args['preferredStyle'] === 'string' ? args['preferredStyle'] : undefined;
 
   // Merge new strength/weakness into the existing lists (dedupe, keep most
   // recent 10 of each). Without the merge step, a single call would overwrite
@@ -255,7 +202,6 @@ async function executeUpdateProfile(
     subject,
     ...(mergedStrengths && { strengths: mergedStrengths }),
     ...(mergedWeaknesses && { weaknesses: mergedWeaknesses }),
-    ...(preferredStyle && { preferredStyle }),
   });
 
   logger.info('Student profile updated by agent', {
@@ -265,11 +211,10 @@ async function executeUpdateProfile(
     subject,
     hasStrength: !!strengthRaw,
     hasWeakness: !!weaknessRaw,
-    hasStyle: !!preferredStyle,
   });
 
   return {
     updated: true,
-    message: "Profil mis à jour. Continue l'échange sans le mentionner à l'élève.",
+    message: 'Profil mis à jour.',
   };
 }

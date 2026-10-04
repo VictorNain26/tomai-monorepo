@@ -110,7 +110,6 @@ interface CognitiveProfileData {
   userId: string;
   strengths: string[];
   weaknesses: string[];
-  preferredStyle: string | null;
   observations: { date: string; observation: string; subject?: string }[];
   lastUpdatedByAgent: Date | null;
   createdAt: Date;
@@ -123,7 +122,6 @@ export function makeCognitiveProfile(overrides?: Partial<CognitiveProfileData>):
     userId: 'user-001',
     strengths: ['calcul mental', 'logique'],
     weaknesses: ['fractions', 'geometrie'],
-    preferredStyle: 'visual',
     observations: [
       { date: '2025-06-15T10:00:00.000Z', observation: 'Bonne progression en calcul', subject: 'mathematiques' },
     ],

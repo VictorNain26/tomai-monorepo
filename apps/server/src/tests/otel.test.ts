@@ -66,7 +66,6 @@ describe('otel', () => {
       sessionId: 's',
       content: 'je suis Léa Martin',
       schoolLevel: 'troisieme',
-      userRole: 'student',
       conversationHistory: [],
       tools: {},
       model,

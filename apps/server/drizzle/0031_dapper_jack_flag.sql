@@ -1,0 +1,1 @@
+ALTER TABLE "student_cognitive_profiles" DROP COLUMN "preferred_style";

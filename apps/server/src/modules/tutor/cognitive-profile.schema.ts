@@ -15,7 +15,6 @@ export const studentCognitiveProfiles = pgTable('student_cognitive_profiles', {
   // Profil cognitif (mis à jour par l'agent)
   strengths: jsonb('strengths').default(sql`'[]'::jsonb`),
   weaknesses: jsonb('weaknesses').default(sql`'[]'::jsonb`),
-  preferredStyle: varchar('preferred_style', { length: 50 }),
 
   // Historique des observations (append-only, max 50 entries)
   observations: jsonb('observations').default(sql`'[]'::jsonb`),

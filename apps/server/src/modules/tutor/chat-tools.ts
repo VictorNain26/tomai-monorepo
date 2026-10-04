@@ -17,7 +17,6 @@ export interface ChatToolContext {
   userId: string;
   sessionId: string;
   schoolLevel: EducationLevelType;
-  userRole: 'student' | 'parent';
   emitDeckCreated: (data: DeckCreatedData) => void;
 }
 
@@ -33,8 +32,6 @@ const generateFlashcardsSchema = z.object({
     .optional()
     .describe('Nombre de cartes à générer (5 par défaut)'),
 });
-
-const getStudentProfileSchema = z.object({});
 
 const updateStudentProfileSchema = z.object({
   observation: z
@@ -58,33 +55,20 @@ const updateStudentProfileSchema = z.object({
     .describe(
       "Ajoute une faiblesse au profil si l'élève bute de façon récurrente sur un point (ex: \"Oublie la retenue en addition posée\").",
     ),
-  preferredStyle: z
-    .enum(['visuel', 'auditif', 'kinesthesique', 'lecture-ecriture', 'mixte'])
-    .optional()
-    .describe("Style d'apprentissage observé. À ne renseigner qu'après plusieurs indices clairs."),
 });
 
-const getAppHelpSchema = z.object({
-  topic: z
-    .enum(['overview', 'navigation', 'chat', 'flashcards', 'files', 'subscription', 'profile'])
-    .describe(
-      'Le sujet de la question: overview (vue générale), navigation (onglets), chat (conversation), flashcards (révision), files (fichiers/photos), subscription (abonnement), profile (paramètres)',
-    ),
-});
-
-/** 4 outils exposés à l'agent chat, au format AI SDK `ToolSet`. */
+/** Les outils exposés à l'agent chat, au format AI SDK `ToolSet`. */
 export function buildChatTools(ctx: ChatToolContext): ToolSet {
   const executionContext = {
     userId: ctx.userId,
     sessionId: ctx.sessionId,
     schoolLevel: ctx.schoolLevel,
-    userRole: ctx.userRole,
   };
 
   return {
     generate_flashcards: tool({
       description:
-        'Génère des cartes de révision (flashcards, QCM, vrai/faux) sur un sujet. TOUJOURS demander confirmation avant de générer ("Veux-tu que je crée des cartes ?").',
+        "Crée des cartes de révision (flashcards, QCM, vrai/faux) sur une notion. Si l'élève demande des cartes ou des fiches, crée-les sans redemander son accord. Sinon, propose-les et attends qu'il accepte.",
       inputSchema: generateFlashcardsSchema,
       execute: async (input) => {
         const result = await executeTool('generate_flashcards', input, executionContext);
@@ -100,25 +84,11 @@ export function buildChatTools(ctx: ChatToolContext): ToolSet {
       },
     }),
 
-    get_student_profile: tool({
-      description:
-        "Consulte le profil cognitif de l'élève (forces, faiblesses, style d'apprentissage). Appelle-le en début de conversation pour personnaliser ton approche.",
-      inputSchema: getStudentProfileSchema,
-      execute: async () => executeTool('get_student_profile', {}, executionContext),
-    }),
-
     update_student_profile: tool({
       description:
-        "Enregistre une observation pédagogique dans le profil cognitif de l'élève (force, faiblesse, style observé). À n'appeler que lorsqu'une observation est NOUVELLE, FACTUELLE et PERTINENTE sur plusieurs tours — pas à chaque message. Une observation au plus par réponse.",
+        "Enregistre une observation pédagogique dans le profil de l'élève (force ou difficulté). À n'appeler que lorsqu'une observation est NOUVELLE, FACTUELLE et PERTINENTE sur plusieurs tours — pas à chaque message. Une observation au plus par réponse.",
       inputSchema: updateStudentProfileSchema,
       execute: async (input) => executeTool('update_student_profile', input, executionContext),
-    }),
-
-    get_app_help: tool({
-      description:
-        "Guide d'utilisation de l'application Tom. OBLIGATOIRE pour toute question sur l'app (navigation, fonctionnalités, abonnement). Ne réponds JAMAIS aux questions sur l'app sans consulter cet outil.",
-      inputSchema: getAppHelpSchema,
-      execute: async (input) => executeTool('get_app_help', input, executionContext),
     }),
   };
 }

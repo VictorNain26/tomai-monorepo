@@ -51,7 +51,7 @@ export const cognitiveProfileService = {
 
     const hasStrengths = strengths !== null && strengths.length > 0;
     const hasWeaknesses = weaknesses !== null && weaknesses.length > 0;
-    const hasData = hasStrengths || hasWeaknesses || profile.preferredStyle !== null;
+    const hasData = hasStrengths || hasWeaknesses;
 
     if (!hasData) return null;
 
@@ -62,9 +62,6 @@ export const cognitiveProfileService = {
     }
     if (weaknesses && weaknesses.length > 0) {
       parts.push(`Points à travailler: ${weaknesses.join(', ')}`);
-    }
-    if (profile.preferredStyle) {
-      parts.push(`Style préféré: ${profile.preferredStyle}`);
     }
     if (observations && observations.length > 0) {
       const recent = observations.slice(-3);
@@ -77,14 +74,14 @@ export const cognitiveProfileService = {
   },
 
   /**
-   * Met à jour le profil cognitif (upsert)
+   * Met à jour le profil cognitif (upsert). Un échec remonte : l'outil qui l'appelle ne doit
+   * pas répondre « Profil mis à jour ».
    */
   async updateProfile(
     userId: string,
     updates: {
       strengths?: string[];
       weaknesses?: string[];
-      preferredStyle?: string;
       observation?: string;
       subject?: string;
     }
@@ -111,7 +108,6 @@ export const cognitiveProfileService = {
           .set({
             ...(updates.strengths && { strengths: updates.strengths }),
             ...(updates.weaknesses && { weaknesses: updates.weaknesses }),
-            ...(updates.preferredStyle && { preferredStyle: updates.preferredStyle }),
             observations: newObservations,
             lastUpdatedByAgent: new Date(),
             updatedAt: new Date(),
@@ -130,7 +126,6 @@ export const cognitiveProfileService = {
           userId,
           strengths: updates.strengths ?? [],
           weaknesses: updates.weaknesses ?? [],
-          preferredStyle: updates.preferredStyle,
           observations,
           lastUpdatedByAgent: new Date(),
         });
@@ -142,6 +137,7 @@ export const cognitiveProfileService = {
         err: error,
         severity: 'medium' as const,
       });
+      throw error;
     }
   },
 };
