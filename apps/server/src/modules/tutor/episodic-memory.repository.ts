@@ -1,4 +1,4 @@
-import { and, desc, eq, gt, isNull, or, sql } from 'drizzle-orm';
+import { and, desc, eq, gte, isNull, or, sql } from 'drizzle-orm';
 import type { SQL } from 'drizzle-orm';
 import { db } from '../../db/connection';
 import { sessionEpisodes, type NewSessionEpisode } from './session.schema.js';
@@ -37,9 +37,13 @@ class EpisodicMemoryRepository {
       .where(
         and(
           eq(sessionEpisodes.userId, userId),
-          or(isNull(sessionEpisodes.ttlUntil), gt(sessionEpisodes.ttlUntil, sql`now()`)),
+          // The app clock, as the TTL and the purge (`lt(ttlUntil, now)`) use: an episode is
+          // either read or purged, never both nor neither.
+          or(isNull(sessionEpisodes.ttlUntil), gte(sessionEpisodes.ttlUntil, new Date())),
         ),
       )
+      // An exact scan of the student's own episodes, a few per month: an approximate vector
+      // index would pick the nearest episodes of all students, then filter the student out.
       .orderBy(desc(similarityExpr))
       .limit(limit);
   }
