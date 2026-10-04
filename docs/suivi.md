@@ -19,8 +19,9 @@ bloquant levé).
   - Le lot 0 est terminé : serveur sur Hono et outillage sur Bun (#343 à #347), refonte du
     serveur en modules (#348 à #354), lint strict (#355) et TypeScript strict (#356).
 - **Prochaine action :** refonte de l'agent (lot 2), demandée par Victor le 2026-10-04 ;
-  étude `etudes/2026-10-04/refonte-agent.md`, ordre des PR dans `roadmap.md`. Point 1 en PR
-  (#380) ; ensuite le point 2, socle du tour : plan d'abord dans `docs/plans/`.
+  étude `etudes/2026-10-04/refonte-agent.md`, ordre des PR dans `roadmap.md`. Point 2,
+  première PR en cours (#381) ; ensuite sa seconde PR (outils stricts, renommages de l'AI SDK
+  7, usage d'un tour coupé), puis le point 3.
   - Étape à la charge de Victor avant le point 6 : approuver le texte de la réponse fixe de
     détresse.
   - Une relecture humaine d'une partie des conversations lues par Claude reste due avant
@@ -133,11 +134,9 @@ contraire.
 - **Audit de l'agent** (2026-10-04, code du tour de chat), en plus des défauts listés ici :
   - aucun outil ni contexte pour vérifier : ni solution, ni erreur de l'élève, ni programme
     (point 3) ;
-  - raisonnement seulement en 4e-3e, maths ou sciences, trois intentions
-    (`mistral-reasoning.ts`) : 4 des 5 règles fausses sont en français et en anglais ; il
-    passe à la fiche (point 3) ;
-  - historique rechargé en texte seul : ni raisonnement ni appels d'outils rejoués
-    (point 2).
+  - raisonnement seulement en 4e-3e, maths ou sciences, trois intentions, et sur toute
+    réponse proposée depuis #380 (`mistral-reasoning.ts`) : 4 des 5 règles fausses étaient en
+    français et en anglais ; il passe à la fiche (point 3).
 - **Programme dans le contexte** : les notions de l'exercice, prises dans le référentiel,
   entrent dans la fiche (point 3), plutôt que le programme entier de la matière
   (`etudes/2026-10-04/refonte-agent.md`, « Contexte et mémoire »). Les consignes chiffrées
@@ -420,3 +419,11 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
     matière, en attendant la fiche (point 3) ;
   - le chat refuse un niveau hors collège, que le prompt ne sert pas ;
   - balises du prompt toutes neutralisées dans le texte de l'élève, vérifié par un test.
+  Point 2 de la refonte, première PR, socle du tour (#381) :
+  - historique rejoué tel que le modèle l'a produit, raisonnement et appels d'outils
+    compris (`messages.model_messages`), vérifié sur le fil : le raisonnement repart en bloc
+    `thinking` ;
+  - routes de lecture limitées au texte vu par l'élève, sous test ;
+  - un seul message `user` par tour, le résumé dans le premier message de la fenêtre ;
+  - bloc de la matière dans le message du tour : le prompt système ne change plus d'un tour à
+    l'autre.
