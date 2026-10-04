@@ -115,6 +115,15 @@ describe('Tool Executor', () => {
       expect(result['deckId']).toBeDefined();
     });
 
+    it('saves no deck when the turn was cut while the cards were written', async () => {
+      mockTxInsert.mockClear();
+      const cut = new AbortController();
+      cut.abort();
+      const result = await executeTool('generate_flashcards', { topic: 'Fractions', subject: 'mathematiques' }, baseContext, cut.signal) as Record<string, unknown>;
+      expect(result).toMatchObject({ isError: true, errorCategory: 'transient' });
+      expect(mockTxInsert).not.toHaveBeenCalled();
+    });
+
     it('should generate without a topic context', async () => {
       const result = await executeTool('generate_flashcards', {
         topic: 'Fractions', subject: 'mathematiques',

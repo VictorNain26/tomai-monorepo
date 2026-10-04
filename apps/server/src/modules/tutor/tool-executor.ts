@@ -49,7 +49,8 @@ export function isDeckCreatedResult(value: unknown): value is DeckCreatedToolRes
 export async function executeTool(
   toolName: string,
   args: Record<string, unknown>,
-  context: ToolExecutionContext
+  context: ToolExecutionContext,
+  signal?: AbortSignal,
 ): Promise<ToolResult | object> {
   const startTime = Date.now();
 
@@ -60,7 +61,7 @@ export async function executeTool(
   });
 
   try {
-    return await executeToolOnce(toolName, args, context);
+    return await executeToolOnce(toolName, args, context, signal);
   } catch (error) {
     logger.error('Tool execution failed', {
       operation: 'tool-executor:error',
@@ -81,11 +82,12 @@ export async function executeTool(
 async function executeToolOnce(
   toolName: string,
   args: Record<string, unknown>,
-  context: ToolExecutionContext
+  context: ToolExecutionContext,
+  signal?: AbortSignal,
 ): Promise<object> {
   switch (toolName) {
     case 'generate_flashcards':
-      return await executeGenerateFlashcards(args, context);
+      return await executeGenerateFlashcards(args, context, signal);
 
     case 'update_student_profile':
       return await executeUpdateProfile(args, context);
@@ -101,7 +103,8 @@ async function executeToolOnce(
 
 async function executeGenerateFlashcards(
   args: Record<string, unknown>,
-  context: ToolExecutionContext
+  context: ToolExecutionContext,
+  signal?: AbortSignal,
 ): Promise<object> {
   const topic = typeof args['topic'] === 'string' ? args['topic'] : '';
   const subject = typeof args['subject'] === 'string' ? args['subject'] : '';
@@ -127,6 +130,11 @@ async function executeGenerateFlashcards(
   }
 
   const successResult = result;
+
+  // A turn cut while the cards were written leaves no deck the student would never hear of.
+  if (signal?.aborted) {
+    return makeToolError('transient', "Le tour a été interrompu : aucune carte n'a été enregistrée.");
+  }
 
   // Persist deck + cards via the shared LearningService transaction
   // (same code path as POST /api/learning/generate).

@@ -88,6 +88,8 @@ export class ChatMessageService {
       inputMode?: 'text' | 'voice';
       /** The assistant's response messages as the model produced them, replayed next turn. */
       modelMessages?: ResponseMessage[] | undefined;
+      /** The turn was cut (timeout, error): the text is what the student saw of it. */
+      cut?: boolean | undefined;
     },
     options: { verifySessionExists?: boolean } = {}
   ): Promise<{ messageId: string; realSessionId: string }> {
@@ -118,6 +120,9 @@ export class ChatMessageService {
       }
       if (metadata.inputMode) {
         messageMetadata['inputMode'] = metadata.inputMode;
+      }
+      if (metadata.cut) {
+        messageMetadata['cut'] = true;
       }
 
       const message = await messagesRepository.create({

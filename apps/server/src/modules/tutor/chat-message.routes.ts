@@ -11,7 +11,8 @@
 
 import { Hono } from 'hono';
 import { z } from 'zod';
-import { createUIMessageStream, createUIMessageStreamResponse, toUIMessageStream, type LanguageModelUsage } from 'ai';
+import { createUIMessageStream, createUIMessageStreamResponse, toUIMessageStream } from 'ai';
+import { TurnUsage } from './turn-usage.js';
 import { requireUser, validate, type AppEnv } from '../../platform/http/context.js';
 import { createRateLimitMiddleware, RateLimitPresets } from '../../platform/http/rate-limit.js';
 import { chatOrchestrationService, ChatOrchestrationError } from './chat-orchestration.service.js';
@@ -139,8 +140,7 @@ export const chatMessageRoutes = new Hono<AppEnv>()
 
     const startTime = Date.now();
     let capturedResult: ReturnType<typeof streamChat> | undefined;
-    // Set when the turn is cut: the usage of its finished steps, the only one the stream gives.
-    let cutUsage: LanguageModelUsage | undefined;
+    const turnUsage = new TurnUsage();
 
     const stream = createUIMessageStream<TomChatMessage>({
       execute: ({ writer }) => {
@@ -168,30 +168,33 @@ export const chatMessageRoutes = new Hono<AppEnv>()
           attachedFiles: turnCtx.attachedFiles,
           inputMode,
           tools,
-          onAbort: (usage) => { cutUsage = usage; },
+          usage: turnUsage,
         });
 
         writer.merge(toUIMessageStream({ stream: capturedResult.stream, tools, sendReasoning: false }));
       },
-      onEnd: async ({ responseMessage, isAborted }) => {
+      onEnd: async ({ responseMessage }) => {
         try {
-          if (isAborted) {
-            logger.warn('Chat turn cut: the usage of the cut step is unknown', {
+          // Wait for the model's side to end, whatever ends it (finish, timeout, error), even
+          // when the client left first: only then is the usage complete.
+          await capturedResult?.steps.then(() => undefined, () => undefined);
+          const { usage, cut } = turnUsage.read();
+          if (cut) {
+            logger.warn('Chat turn cut: the cut call is estimated', {
               userId: user.id,
               sessionId: turnCtx.sessionId,
               requestId,
-              operation: 'chat-stream:aborted',
+              operation: 'chat-stream:cut',
             });
           }
-          const usage = isAborted ? cutUsage : capturedResult ? await capturedResult.usage : undefined;
-          const modelMessages = isAborted || !capturedResult ? undefined : await capturedResult.responseMessages;
+          const modelMessages = cut || !capturedResult ? undefined : await capturedResult.responseMessages;
           await chatOrchestrationService.finishTurn({
             sessionId: turnCtx.sessionId,
             userId: user.id,
             userContent: safeContent,
             responseMessage,
             modelMessages,
-            aborted: isAborted,
+            aborted: cut,
             model: env.MISTRAL_MODEL,
             usage,
             startTime,
@@ -205,7 +208,7 @@ export const chatMessageRoutes = new Hono<AppEnv>()
             userId: user.id,
             sessionId: turnCtx.sessionId,
             requestId,
-            operation: 'chat-stream:onfinish-error',
+            operation: 'chat-stream:onend-error',
             severity: 'high' as const,
           });
         } finally {

@@ -58,7 +58,7 @@ describe('Mistral Small 4 on the EU endpoint (real API)', () => {
     expect((await second.usage).inputTokenDetails.cacheReadTokens ?? 0).toBeGreaterThan(0);
   }, 180_000);
 
-  it('accepts the chat tools in strict mode and fills their input', async () => {
+  it('accepts the chat tools in strict mode and fills a valid input', async () => {
     const tools = buildChatTools({ userId: 'live-user', sessionId: randomUUID(), schoolLevel: 'troisieme', emitDeckCreated: () => undefined });
     const asks: [string, string][] = [
       ['generate_flashcards', 'Crée-moi 5 cartes de révision sur le théorème de Pythagore, en mathématiques.'],
@@ -72,10 +72,14 @@ describe('Mistral Small 4 on the EU endpoint (real API)', () => {
         toolChoice: 'required',
         // The call is returned, never run: no database is touched.
         toolApproval: { generate_flashcards: 'denied', update_student_profile: 'denied' },
+        // The chat's own settings (ai-chat.service.ts).
+        providerOptions: { mistral: { parallelToolCalls: false, reasoningEffort: 'none' } },
         prompt,
         maxOutputTokens: 512,
       });
       expect(result.toolCalls.map((call) => call.toolName)).toEqual([name]);
+      // An input outside the schema would still be returned, marked invalid.
+      expect(result.toolCalls.map((call) => call.invalid ?? false)).toEqual([false]);
     }
   }, 60_000);
 

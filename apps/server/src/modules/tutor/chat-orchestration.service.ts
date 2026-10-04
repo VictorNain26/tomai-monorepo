@@ -99,7 +99,7 @@ interface FinishTurnParams {
   responseMessage: TomChatMessage;
   /** The turn's response messages as the model produced them, reasoning and tool calls included. */
   modelMessages?: ResponseMessage[] | undefined;
-  /** The stream was cut: its response messages miss what the student saw of the last step. */
+  /** The turn was cut (timeout, error): its response messages miss what the student saw of the last call. */
   aborted?: boolean | undefined;
   model: string;
   usage: LanguageModelUsage | undefined;
@@ -344,6 +344,7 @@ class ChatOrchestrationService {
       // Kept only when they can be replayed as they are: a cut turn, or one that ended on a tool
       // result at the step limit, replays as its text.
       modelMessages: aborted ? undefined : replayable(modelMessages),
+      cut: aborted,
     }, { verifySessionExists: false });
 
     logger.info('Streaming message saved', {
@@ -364,6 +365,8 @@ class ChatOrchestrationService {
       });
     });
 
+    // A cut answer is no ground for a title.
+    if (aborted) return;
     autoTitleService.generateTitleIfNeeded(sessionId, userContent, fullContent).catch((err: unknown) => {
       logger.warn('Background auto-title failed', {
         err: err,

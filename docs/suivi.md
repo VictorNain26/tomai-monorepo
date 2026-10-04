@@ -430,6 +430,9 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
     l'autre.
   Point 2 de la refonte, seconde PR (#382) :
   - outils en mode strict, acceptés par Mistral et remplis par un appel réel ;
-  - un tour coupé compte l'usage de ses pas terminés, sans garder de messages du modèle ;
+  - chaque appel au modèle terminé compte exactement, même si le tour est coupé ensuite ; un
+    appel coupé en cours est estimé, et le tour, marqué coupé, ne garde pas les messages du
+    modèle ni ne donne de titre ;
+  - un tour coupé pendant la création de fiches n'enregistre pas de paquet ;
   - l'usage arrive dans le flux sans `stream_options`, vérifié par un appel réel ;
   - renommages de l'AI SDK 7 : `instructions`, `onEnd`, option `timeout`.

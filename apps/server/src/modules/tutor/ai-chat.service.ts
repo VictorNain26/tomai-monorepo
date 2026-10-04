@@ -17,7 +17,6 @@ import {
   isStepCount,
   type ToolSet,
   type LanguageModel,
-  type LanguageModelUsage,
   type FilePart,
 } from 'ai';
 import { mistralProvider } from '../../platform/ai/provider.js';
@@ -36,6 +35,7 @@ import {
 import { calculateBudget, truncateToTokenBudget } from './token-budget.service.js';
 import { env } from '../../platform/config/env.js';
 import { imageFilePart } from '../../platform/ai/mistral-client.js';
+import type { TurnUsage } from './turn-usage.js';
 import type { EducationLevelType } from '../../types/index.js';
 import type { AttachedFileForPrompt } from '../documents/index.js';
 
@@ -91,40 +91,14 @@ export interface StreamGenerationParams {
 
 export interface ChatStreamParams extends StreamGenerationParams {
   tools: ToolSet;
-  /** Called when the turn is cut (timeout), with the usage of the steps that finished. */
-  onAbort?: ((finishedUsage: LanguageModelUsage) => void) | undefined;
+  /** Counts the turn's usage as it goes, so that a cut or failed turn is counted too. */
+  usage?: TurnUsage | undefined;
   /**
    * Test seam: inject a mock `LanguageModel` (e.g. `MockLanguageModelV4`
    * from `ai/test`) instead of the real Mistral provider. Never set in
    * production call sites.
    */
   model?: LanguageModel | undefined;
-}
-
-const add = (a: number | undefined, b: number | undefined) => (a ?? 0) + (b ?? 0);
-
-/** The usage of the steps that finished; a cut step's own usage never reaches the stream. */
-export function finishedStepsUsage(steps: readonly { usage: LanguageModelUsage }[]): LanguageModelUsage {
-  return steps.reduce<LanguageModelUsage>((sum, { usage }) => ({
-    inputTokens: add(sum.inputTokens, usage.inputTokens),
-    inputTokenDetails: {
-      noCacheTokens: add(sum.inputTokenDetails.noCacheTokens, usage.inputTokenDetails.noCacheTokens),
-      cacheReadTokens: add(sum.inputTokenDetails.cacheReadTokens, usage.inputTokenDetails.cacheReadTokens),
-      cacheWriteTokens: add(sum.inputTokenDetails.cacheWriteTokens, usage.inputTokenDetails.cacheWriteTokens),
-    },
-    outputTokens: add(sum.outputTokens, usage.outputTokens),
-    outputTokenDetails: {
-      textTokens: add(sum.outputTokenDetails.textTokens, usage.outputTokenDetails.textTokens),
-      reasoningTokens: add(sum.outputTokenDetails.reasoningTokens, usage.outputTokenDetails.reasoningTokens),
-    },
-    totalTokens: add(sum.totalTokens, usage.totalTokens),
-  }), {
-    inputTokens: 0,
-    inputTokenDetails: { noCacheTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0 },
-    outputTokens: 0,
-    outputTokenDetails: { textTokens: 0, reasoningTokens: 0 },
-    totalTokens: 0,
-  });
 }
 
 function imageParts(files?: AttachedFile[]): FilePart[] {
@@ -160,6 +134,8 @@ export function streamChat(params: ChatStreamParams) {
     studentText: params.content,
     images: imageParts(params.files),
   });
+
+  params.usage?.prompt(`${system}\n${JSON.stringify(messages)}`);
 
   const reasoningEffort = routeReasoningEffort({
     schoolLevel: params.schoolLevel,
@@ -197,6 +173,13 @@ export function streamChat(params: ChatStreamParams) {
     },
     telemetry: { functionId: 'chat-stream', recordInputs: false, recordOutputs: false },
     timeout: env.CHAT_STREAM_TIMEOUT_MS,
-    onAbort: ({ steps }) => { params.onAbort?.(finishedStepsUsage(steps)); },
+    onLanguageModelCallStart: () => { params.usage?.callStarted(); },
+    onChunk: ({ chunk }) => {
+      if (chunk.type === 'text-delta' || chunk.type === 'reasoning-delta') params.usage?.delta(chunk.text);
+    },
+    onLanguageModelCallEnd: ({ usage }) => { params.usage?.callEnded(usage); },
+    onError: ({ error }) => {
+      logger.error('Chat stream failed', { operation: 'chat-stream:error', sessionId: params.sessionId, err: error, severity: 'high' as const });
+    },
   });
 }
