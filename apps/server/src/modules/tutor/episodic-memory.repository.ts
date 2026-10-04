@@ -1,4 +1,4 @@
-import { and, desc, eq, sql } from 'drizzle-orm';
+import { and, desc, eq, gt, isNull, or, sql } from 'drizzle-orm';
 import type { SQL } from 'drizzle-orm';
 import { db } from '../../db/connection';
 import { sessionEpisodes, type NewSessionEpisode } from './session.schema.js';
@@ -37,7 +37,7 @@ class EpisodicMemoryRepository {
       .where(
         and(
           eq(sessionEpisodes.userId, userId),
-          sql`${sessionEpisodes.ttlUntil} IS NULL OR ${sessionEpisodes.ttlUntil} > NOW()`,
+          or(isNull(sessionEpisodes.ttlUntil), gt(sessionEpisodes.ttlUntil, sql`now()`)),
         ),
       )
       .orderBy(desc(similarityExpr))
