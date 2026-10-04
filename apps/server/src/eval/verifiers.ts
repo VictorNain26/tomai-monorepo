@@ -18,8 +18,8 @@ const NUMERIC_TAIL = new RegExp(`${NUMERIC}+$`);
 const NUMERIC_HEAD = new RegExp(`^${NUMERIC}+`);
 
 /**
- * Each line of a text as plain arithmetic: KaTeX, typography, powers, a leading list number and
- * money read past. Digit groups are joined only when no word follows: « 5 100 fois » may be a
+ * Each line of a text as plain arithmetic: KaTeX, typography, powers, a leading list number or
+ * bullet and money read past. Digit groups are joined only when no word follows: « 5 100 fois » may be a
  * result and a count.
  */
 function plainLines(text: string): string[] {
@@ -33,7 +33,7 @@ function plainLines(text: string): string[] {
       .replace(/\^\{([^{}]*)\}/g, '^($1)'),
   )
     .replace(/(\d) (?=\d{3}(?!\d|\s*\p{L}))/gu, '$1')
-    .replace(/^\s*\d+[.)]\s+/, '')
+    .replace(/^\s*(?:\d+[.)]|[-*+])\s+/, '')
     .replace(/÷/g, '/')
     .replace(/×/g, '*'));
 }

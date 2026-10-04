@@ -28,6 +28,8 @@ describe('writtenEqualities', () => {
     expect(found('3 × 1,50 € = 4,50 €')).toEqual([['3 * 1.50', '4.50', false]]);
     expect(found('4 × 3 = 13 cm')).toEqual([['4 * 3', '13', true]]);
     expect(found('2. 3 × 4 = 12')).toEqual([['3 * 4', '12', false]]);
+    expect(found('- 3 × 5 = 15')).toEqual([['3 * 5', '15', false]]);
+    expect(found('  * 3 × 5 = 15')).toEqual([['3 * 5', '15', false]]);
   });
 
   it('reads a KaTeX division and a calculation after a sentence', () => {
