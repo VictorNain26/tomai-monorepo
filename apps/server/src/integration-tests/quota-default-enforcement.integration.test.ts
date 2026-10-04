@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'bun:test';
-import { sql } from 'drizzle-orm';
 import { checkQuota } from '../modules/billing/quota.js';
 import { checkDeckQuota } from '../modules/billing/quota-deck.js';
 import { QUOTA_CONFIG } from '../modules/billing/quota-config.js';
+import { checkDbReachable } from './_helpers/db';
 
 /**
  * Integration test — quota enforcement is ON by default
@@ -11,16 +11,6 @@ import { QUOTA_CONFIG } from '../modules/billing/quota-config.js';
  * A user with no `user_subscriptions` row gets free-plan limits at zero
  * usage, read from the migrated DB — not unlimited access.
  */
-
-async function checkDbReachable(): Promise<boolean> {
-  try {
-    const { db } = await import('../db/connection');
-    await db.execute(sql`SELECT 1`);
-    return true;
-  } catch {
-    return false;
-  }
-}
 
 const dbReachable = await checkDbReachable();
 
