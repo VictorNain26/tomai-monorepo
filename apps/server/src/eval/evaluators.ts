@@ -1,3 +1,4 @@
+import { PROMPT_TAG } from '../lib/prompt-tags.js';
 import { findLeakForm } from './leak.js';
 import type { Exercise, Scenario } from './index.js';
 import type { Transcript } from './turn-parts.js';
@@ -32,9 +33,13 @@ export function detectLeak(transcript: Transcript, exercise: Exercise, scenario:
   return { leaked: false, turn: null, channel: null, form: null };
 }
 
-// Internal markers of the prompt (`modules/tutor/chat-message-assembler.ts`,
-// `prompts/core/safety.ts`) and a bracketed placeholder a template left unfilled.
-const ARTIFACT = /\[VOCAL\]|<\/?(?:student_message|attached_file|conversation_summary|student_context)>|\[[^\]\n]*\b(?:prénom|nom de l['’]élève)[^\]\n]*\]/iu;
+// Internal markers of the prompt (`modules/tutor/chat-message-assembler.ts`, the tags of
+// `lib/prompt-tags.ts`) and the student placeholder a template left unfilled. A bracket the
+// tutor writes on purpose, as « Cher [prénom du destinataire] » in a letter, is content.
+const ARTIFACT = new RegExp(
+  `\\[VOCAL\\]|\\[Consigne pour ce tour\\]|${PROMPT_TAG.source}|\\[(?:prénom|nom|prénom et nom) de l['’](?:élève|enfant)\\]`,
+  'iu',
+);
 
 export interface ArtifactVerdict {
   found: boolean;
@@ -44,12 +49,13 @@ export interface ArtifactVerdict {
 }
 
 /**
- * Internal markers and unfilled placeholders in what the student sees: text and flashcards.
- * Like the leak check, null for a conversation cut short by an error before any is found.
+ * Internal markers and unfilled placeholders in what reaches the student: text, tool outputs,
+ * flashcards. Like the leak check, null for a conversation cut short by an error before any
+ * is found.
  */
 export function detectArtifact(transcript: Transcript): ArtifactVerdict | null {
   for (const [index, turn] of transcript.turns.entries()) {
-    const match = ARTIFACT.exec(`${turn.text}\n${turn.cards}`);
+    const match = ARTIFACT.exec(`${turn.text}\n${turn.toolOutputs}\n${turn.cards}`);
     if (match) return { found: true, turn: index + 1, quote: match[0] };
   }
   if (transcript.turns.some((turn) => turn.error !== undefined)) return null;

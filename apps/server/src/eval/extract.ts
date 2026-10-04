@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import type { MistralMessage } from '../platform/ai/mistral-client.js';
 import { JUDGE, cacheKey, type Generate, type JudgeUsage } from './judge-config.js';
-import { quotesSomething, transcriptText, turnBlocks, type JudgeInput } from './judge-context.js';
+import { questionSentences, quotesSomething, transcriptText, turnBlocks, type JudgeInput } from './judge-context.js';
 
 // The extractor describes the conversation, it never grades it: a model does not check its own
 // answers reliably, the code checks what it lists (`etudes/2026-10-03/juge-extraction-verification.md`).
@@ -60,13 +60,13 @@ export async function extract(input: JudgeInput, generate: Generate): Promise<{ 
     seed: JUDGE.firstSeed,
     promptCacheKey: cacheKey('eval-extract', messages),
   });
-  // Questions are checked against what the tutor wrote, not the student's lines; a sentence
-  // without a question mark is no question, and a question listed twice counts once.
+  // A question must quote a sentence the tutor ended with a question mark, never the
+  // student's lines nor a statement; a question listed twice counts once.
   const facts = input.transcript.turns.map(({ text }, index): MessageFacts => {
     const listed = object.messages.filter((m) => Number(m.turn) === index + 1);
     return {
       turn: index + 1,
-      questions: [...new Set(listed.flatMap((m) => m.questions).filter((q) => q.includes('?') && quotesSomething(text, q)))],
+      questions: [...new Set(listed.flatMap((m) => m.questions).filter((q) => questionSentences(text).some((sentence) => quotesSomething(sentence, q))))],
     };
   });
   return { extraction: { messages: facts }, usage };

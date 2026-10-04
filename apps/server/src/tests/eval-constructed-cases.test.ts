@@ -12,7 +12,7 @@ describe('constructedCases', () => {
       'written-answer:written-leak', 'written-answer:written-leak',
       'no-3114:s5-3114', 'no-3114:s5-3114',
       'no-trusted-adult:s5-trusted-adult', 'no-trusted-adult:s5-trusted-adult',
-      'back-to-exercise:s5-back-to-exercise', 'back-to-exercise:s5-back-to-exercise',
+      'question-after-distress:s5-question-after', 'question-after-distress:s5-question-after',
     ]);
   });
 
@@ -26,15 +26,17 @@ describe('constructedCases', () => {
     }
   });
 
-  it('reject a case on an unknown exercise, a question not asked, a missing statement or an unchanged message', () => {
+  it('reject a case on an unknown exercise, a question not asked, a missing statement, an unchanged message or a distress fault before the end', () => {
     const [base] = constructedCases;
-    if (!base) throw new Error('no case');
+    const distress = constructedCases.find((c) => c.check === 's5-question-after');
+    if (!base || !distress) throw new Error('no case');
     const result = casesSchema.safeParse([
       { ...base, id: 'a', exerciseId: 'X9' },
       { ...base, id: 'b', check: 's5-3114' },
       { ...base, id: 'c', turns: [{ student: 'aide-moi', tutor: 'Oui.' }, ...base.turns.slice(1)] },
       { ...base, id: 'd', faultyTutor: base.turns[base.faultyTurn - 1]?.tutor },
       { ...base, id: 'd', faultyTurn: 9 },
+      { ...distress, id: 'e', faultyTurn: 2, faultyTutor: 'On reprend : quel est le COD ?' },
     ]);
     expect(result.error?.issues.map((i) => i.message)).toEqual([
       'case a: no exercise X9 in scenario S1',
@@ -43,6 +45,7 @@ describe('constructedCases', () => {
       'case d: the faulty message is the clean one',
       'case d: duplicate id',
       'case d: the faulty turn is past the conversation',
+      'case e: the reply to the distress message is the last one',
     ]);
   });
 });

@@ -54,6 +54,8 @@ export const labelsFile = z.object({
   annotator: z.string().min(1),
   date: z.string(),
   results: z.string(),
+  /** Per criterion, the rule it was graded under (`describeCriterion` at the time). */
+  rules: z.record(z.string(), z.string()),
   conversations: z.array(z.object({
     key: z.string(),
     traceId: z.string(),
@@ -92,10 +94,31 @@ export function fileValues(
   rows: readonly { traceId: string; scenarioId: string; exerciseId: string; repetition: number }[],
 ): Map<string, Map<string, number>> {
   const keys = new Map(rows.map((row) => [row.traceId, `${row.scenarioId}:${row.exerciseId}:${String(row.repetition)}`]));
+  const stale = new Set(staleCriteria(file));
   return new Map(file.conversations.map(({ key, traceId, labels }) => {
     if (keys.get(traceId) !== key) throw new Error(`labels ${key} (${traceId}) are not a conversation of this run`);
-    return [traceId, labelValues(labels)];
+    return [traceId, labelValues(Object.fromEntries(Object.entries(labels).filter(([name]) => !stale.has(name))))];
   }));
+}
+
+/**
+ * Criteria of a labels file graded under another rule than the judge's, or gone from the grid:
+ * their grades are not compared.
+ */
+export function staleCriteria(file: Pick<z.infer<typeof labelsFile>, 'rules' | 'conversations'>): string[] {
+  const graded = new Set(file.conversations.flatMap(({ labels }) => Object.keys(labels)));
+  return [...graded].filter((name) => {
+    const criterion = CRITERIA.find((c) => c.name === name);
+    return !criterion || file.rules[name] !== describeCriterion(criterion);
+  });
+}
+
+/** The ids of the stored score configs that still match a criterion: grades under any other are stale. */
+export function currentConfigIds(configs: readonly { id: string; name: string; isArchived: boolean; description?: string | null; categories?: readonly { value: number; label: string }[] }[]): string[] {
+  return configs.filter((config) => {
+    const criterion = CRITERIA.find((c) => c.name === config.name);
+    return !config.isArchived && criterion !== undefined && matchesCriterion(config, criterion);
+  }).map((config) => config.id);
 }
 
 /** The grades of one conversation of a labels file, failing on a criterion or label the grid lacks. */

@@ -1,7 +1,7 @@
 /**
  * `bun run eval`: replays the scenarios of the dataset against the agent, through the real
  * chat route, and records an experiment in Langfuse. Transcripts, verdicts and the run
- * evaluations (leak rates, means) are written to `eval-results/`: Langfuse only stores run
+ * evaluations (leak and artifact rates, means) are written to `eval-results/`: Langfuse only stores run
  * evaluations for an experiment on a dataset it hosts, and this one runs on local data.
  *
  * Tracing must be in place before the app is imported, as in `src/index.ts`: the app goes

@@ -29,6 +29,11 @@ describe('stripPromptTags', () => {
     expect(stripPromptTags('<pedagogy>x</pedagogy>')).toBe('x');
   });
 
+  it('retire aussi les tags de rôle, d\'élève et de pièces jointes du system prompt', () => {
+    expect(stripPromptTags('<role>x</role><student>y</student><attachments>z</attachments>')).toBe('xyz');
+    expect(stripPromptTags('<students>reste</students>')).toBe('<students>reste</students>');
+  });
+
   it('retire les tags porteurs d\'attributs', () => {
     expect(stripPromptTags('<attached_file name="a.pdf">doc</attached_file>')).toBe('doc');
   });

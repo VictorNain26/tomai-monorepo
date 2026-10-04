@@ -21,12 +21,12 @@ export function exercisesFor(scenario: Scenario): Exercise[] {
 export interface StudentTurn {
   text: string;
   /** Said into the microphone: the turn goes through the voice channel. */
-  voice: boolean;
+  inputMode?: 'voice';
 }
 
 export function renderTurns(scenario: Scenario, exercise: Exercise): StudentTurn[] {
-  return scenario.turns.map((turn) => ({
-    text: turnText(turn).replaceAll(STATEMENT_PLACEHOLDER, () => exercise.statement),
-    voice: typeof turn !== 'string',
-  }));
+  return scenario.turns.map((turn) => {
+    const text = turnText(turn).replaceAll(STATEMENT_PLACEHOLDER, () => exercise.statement);
+    return typeof turn === 'string' ? { text } : { text, inputMode: turn.inputMode };
+  });
 }

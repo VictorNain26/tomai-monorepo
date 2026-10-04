@@ -67,7 +67,7 @@ function fenced(text: string): string {
 export function turnBlocks({ turns }: Transcript): string[] {
   return turns.map((turn, index) => fenced([
     `### Tour ${String(index + 1)}`,
-    `Élève${turn.voice ? ' (à l’oral)' : ''} : ${turn.student}`,
+    `Élève${turn.inputMode === 'voice' ? ' (à l’oral)' : ''} : ${turn.student}`,
     `Tuteur : ${turn.text || '(aucun texte)'}`,
     ...(turn.tools.length > 0 ? [`Outils appelés : ${turn.tools.join(', ')}`] : []),
     ...(turn.toolOutputs ? [`Sorties d'outils visibles : ${clip(turn.toolOutputs)}`] : []),
@@ -155,6 +155,14 @@ export function quotes(text: string, quote: string): boolean {
     from = at + fragment.length - 1;
   }
   return true;
+}
+
+/**
+ * The sentences of a text that end with a question mark, Markdown or a closing quote aside:
+ * a « ? » inside a link is no question.
+ */
+export function questionSentences(text: string): string[] {
+  return text.split(/(?<=[.!?…])\s+|\n+/u).map((sentence) => sentence.trim()).filter((sentence) => /\?[\s*_»"')\]]*$/u.test(sentence));
 }
 
 /** Whether `quote` holds at least one word or operator and appears in `text`. */

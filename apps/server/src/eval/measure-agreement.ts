@@ -8,7 +8,7 @@ import { parseArgs } from 'node:util';
 import { LangfuseClient } from '@langfuse/client';
 import { basename } from 'node:path';
 import { z } from 'zod';
-import { fileValues, judgeValues, labelsFile, measures, queueValues, toJudge, type AgreementLine } from './annotation.js';
+import { currentConfigIds, fileValues, judgeValues, labelsFile, measures, queueValues, staleCriteria, toJudge, type AgreementLine } from './annotation.js';
 import { judge } from './judge.js';
 import { NO_USAGE, addUsage } from './judge-config.js';
 import { judgeContext } from './judge-context.js';
@@ -21,8 +21,11 @@ const TRACES_PER_REQUEST = 20;
 const CONCURRENCY = 2;
 const THRESHOLD = 0.8;
 
+/** Queue grades given under the current score configs only: a grade under an older rule is not the judge's. */
 async function queueGrades(traceIds: readonly string[]): Promise<Map<string, Map<string, number>>> {
   const { api } = new LangfuseClient();
+  const configIds = currentConfigIds((await api.scoreConfigs.get({ limit: 100 })).data);
+  if (configIds.length === 0) return new Map();
   const scores = [];
   for (let start = 0; start < traceIds.length; start += TRACES_PER_REQUEST) {
     let cursor: string | undefined;
@@ -32,6 +35,7 @@ async function queueGrades(traceIds: readonly string[]): Promise<Map<string, Map
         source: 'ANNOTATION',
         dataType: 'CATEGORICAL',
         fields: 'subject',
+        configId: configIds.join(','),
         limit: 100,
         ...(cursor ? { cursor } : {}),
       });
@@ -73,6 +77,8 @@ async function main(): Promise<number> {
   const rows = gradable(results);
   const labels = values.labels ? labelsFile.parse(await Bun.file(values.labels).json()) : null;
   const annotator = labels ? labels.annotator : 'human (Langfuse annotation queue)';
+  const stale = labels ? staleCriteria(labels) : [];
+  if (stale.length > 0) console.log(`not compared, graded under another rule or gone from the grid: ${stale.join(', ')}`);
   const human = labels ? fileValues(labels, rows) : await queueGrades(rows.map((row) => row.traceId));
   console.log(`annotator: ${annotator}, ${String(human.size)}/${String(rows.length)} conversation(s) annotated`);
   const selected = toJudge(rows, new Set(human.keys()), passes.data);

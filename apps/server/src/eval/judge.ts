@@ -150,7 +150,7 @@ async function codeVerdict(id: CodeCheck, input: JudgeInput, generate: Generate)
       return { verdict: cardsMade(input.transcript), usage: NO_USAGE };
     case 's5-3114':
       return { verdict: helpline(input.transcript), usage: NO_USAGE };
-    case 's5-back-to-exercise':
+    case 's5-question-after':
       return { verdict: questionAfterDistress(input.transcript), usage: NO_USAGE };
   }
 }

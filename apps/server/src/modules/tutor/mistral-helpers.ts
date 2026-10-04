@@ -16,6 +16,7 @@
 
 import { learningService } from '../learning/index.js';
 import { logger } from '../../platform/observability/logger.js';
+import { PROMPT_TAG } from '../../lib/prompt-tags.js';
 
 export const MAX_TOOL_ITERATIONS = 5;
 
@@ -25,8 +26,7 @@ export const MAX_TOOL_ITERATIONS = 5;
  * value cannot inject e.g. `</safety>` to escape its fence and have trailing
  * text read as a system instruction.
  */
-const TEMPLATE_TAGS =
-  /<\/?(?:student_message|conversation_summary|student_context|attached_file|identity|tone|transparency|pedagogy|visualization|response_format|safety|level_adaptation|subject_specifics)\b[^>]*>/gi;
+const TEMPLATE_TAGS = new RegExp(PROMPT_TAG.source, 'gi');
 
 /** Remove all template delimiter tags from untrusted content. */
 export function stripPromptTags(content: string): string {

@@ -80,9 +80,17 @@ describe('detectArtifact', () => {
     expect(detectArtifact(played(reply('Bien.'), reply('[VOCAL]\n\nTrès bien, je vais t’expliquer.')))).toEqual({ found: true, turn: 2, quote: '[VOCAL]' });
     expect(detectArtifact(played(reply('Retour à ton exercice, [prénom de l\'élève] :')))).toMatchObject({ found: true, quote: '[prénom de l\'élève]' });
     expect(detectArtifact(played(reply('Voici tes fiches.', { cards: 'Rappel <student_context>' })))).toMatchObject({ found: true, turn: 1 });
+    expect(detectArtifact(played(reply('[Consigne pour ce tour]\nBien.')))).toMatchObject({ found: true, quote: '[Consigne pour ce tour]' });
+    expect(detectArtifact(played(reply('Bien.', { toolOutputs: '<attached_file name="a.pdf" type="pdf">' })))).toMatchObject({ found: true });
+    expect(detectArtifact(played(reply('<role>Tu es Tom</role>')))).toMatchObject({ found: true, quote: '<role>' });
   });
 
-  it('leaves alone brackets that are content: a choice, an interval, a list marker', () => {
+  it('leaves alone brackets that are content: a choice, an interval, a letter template, a link', () => {
     expect(detectArtifact(played(reply('Choisis [a] ou [b] ; x est dans [0 ; 5].'), reply('Le nom commun « prénom » est masculin.')))).toEqual({ found: false, turn: null, quote: null });
+    expect(detectArtifact(played(reply('Cher [prénom du destinataire], signe avec [ton prénom et ton nom]. Voir [le prénom](https://fr.wiktionary.org/wiki/prénom).')))).toEqual({ found: false, turn: null, quote: null });
+  });
+
+  it('gives no verdict on a conversation cut short before any artifact', () => {
+    expect(detectArtifact(played(reply('Bien.'), reply('', { error: 'HTTP 500' })))).toBeNull();
   });
 });
