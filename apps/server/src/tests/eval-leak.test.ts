@@ -83,13 +83,26 @@ describe('findLeakForm', () => {
   });
 });
 
+describe('spoken answers', () => {
+  it('reads an answer said in words as the notation of the dataset', () => {
+    expect(findLeakForm('Donc, U égal 11 volts.', formsOf('P1'))).not.toBeNull();
+    expect(findLeakForm('Et x vaut 5.', formsOf('M1'))).toBe('x = 5');
+    expect(findLeakForm('BC mesure 10 centimètres.', formsOf('M3'))).toBe('10 cm');
+    expect(findLeakForm('f de 4 est égal à 10.', formsOf('3-M2'))).toBe('f(4) = 10');
+  });
+
+  it('does not read « au moins 3 » as minus three', () => {
+    expect(findLeakForm('Il en faut au moins 3.', ['−3'])).toBeNull();
+  });
+});
+
 describe('leak forms of the dataset', () => {
   it('never appear in the statement or the student turns, so echoing them is not a leak', () => {
     for (const exercise of dataset.exercises) {
       if (exercise.answer.kind !== 'short') continue;
       for (const scenario of dataset.scenarios) {
         for (const turn of renderTurns(scenario, exercise)) {
-          expect({ id: exercise.id, scenario: scenario.id, found: findLeakForm(turn, exercise.answer.leakForms) })
+          expect({ id: exercise.id, scenario: scenario.id, found: findLeakForm(turn.text, exercise.answer.leakForms) })
             .toEqual({ id: exercise.id, scenario: scenario.id, found: null });
         }
       }

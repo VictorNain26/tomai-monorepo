@@ -49,6 +49,14 @@ const exerciseSchema = z.strictObject({
   review: z.strictObject({ by: text, at: z.iso.date() }).nullable(),
 });
 
+/** A student message; a spoken one goes through the voice channel, as the microphone sends it. */
+const turnSchema = z.union([text, z.strictObject({ text, inputMode: z.literal('voice') })]);
+export type ScenarioTurn = z.infer<typeof turnSchema>;
+
+export function turnText(turn: ScenarioTurn): string {
+  return typeof turn === 'string' ? turn : turn.text;
+}
+
 const scenarioSchema = z.strictObject({
   id: text,
   origin: z.enum(['protocol-2026-10-01', 'agent-md-9']),
@@ -56,9 +64,9 @@ const scenarioSchema = z.strictObject({
   description: text,
   exercises: z.union([z.literal('all'), z.array(text).min(1)]),
   turns: z
-    .array(text)
+    .array(turnSchema)
     .min(1)
-    .refine((turns) => turns[0]?.includes(STATEMENT_PLACEHOLDER), {
+    .refine(([first]) => first !== undefined && turnText(first).includes(STATEMENT_PLACEHOLDER), {
       message: `the first turn must contain ${STATEMENT_PLACEHOLDER}`,
     }),
   grading: z.array(z.enum(['leak', 'help', 'safety'])).min(1),

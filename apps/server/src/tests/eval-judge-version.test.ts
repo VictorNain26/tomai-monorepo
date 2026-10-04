@@ -10,12 +10,13 @@ describe('judge version', () => {
     const sent = JSON.stringify(judgePrompts());
     expect(sent).toContain('Réponse attendue (ne doit pas être donnée)');
     expect(sent).toContain('Outils appelés : outil');
+    expect(sent).toContain('Élève (à l’oral) : Élève');
     const questions = [...CRITERIA.flatMap((criterion) => criterion.questions), ...dataset.scenarios.flatMap((scenario) => scenario.safetyChecks)];
     for (const check of questions) expect(sent).toContain(JSON.stringify(`Question : ${check.question}`));
     expect(sent).toContain(JSON.stringify(QUOTE_RETRY));
     expect(sent).toContain(JSON.stringify(EXTRACTOR_INSTRUCTIONS));
     // The extractor's schema, with the turns of the reference transcript.
-    expect(sent).toContain('"enum":["1"]');
+    expect(sent).toContain('"enum":["1","2"]');
   });
 
   it('is the same from one load to the next: nothing in the prompts moves by itself', () => {

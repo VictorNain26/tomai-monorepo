@@ -1,7 +1,7 @@
 /**
  * `bun run eval`: replays the scenarios of the dataset against the agent, through the real
  * chat route, and records an experiment in Langfuse. Transcripts, verdicts and the run
- * evaluations (leak rates, means) are written to `eval-results/`: Langfuse only stores run
+ * evaluations (leak and artifact rates, means) are written to `eval-results/`: Langfuse only stores run
  * evaluations for an experiment on a dataset it hosts, and this one runs on local data.
  *
  * Tracing must be in place before the app is imported, as in `src/index.ts`: the app goes
@@ -57,7 +57,7 @@ async function main(): Promise<number> {
     console.log(`removed ${String(await removeEvalAccounts())} account(s) of the previous run`);
 
     const run = evaluationRun(items, throttled(generateStructured));
-    const leakEvaluator: Evaluator<ItemInput> = ({ input }) => Promise.resolve(run.leakEvaluation(input));
+    const codeEvaluator: Evaluator<ItemInput> = ({ input }) => Promise.resolve(run.codeEvaluation(input));
     const judgeEvaluator: Evaluator<ItemInput> = ({ input }) => run.judgeEvaluation(input);
     const runEvaluator: RunEvaluator<ItemInput> = () => Promise.resolve(run.runEvaluations());
 
@@ -84,7 +84,7 @@ async function main(): Promise<number> {
         run.record(item, transcript);
         return transcriptText(transcript);
       },
-      evaluators: options['skip-judge'] ? [leakEvaluator] : [leakEvaluator, judgeEvaluator],
+      evaluators: options['skip-judge'] ? [codeEvaluator] : [codeEvaluator, judgeEvaluator],
       runEvaluators: [runEvaluator],
       maxConcurrency: options.concurrency,
     });

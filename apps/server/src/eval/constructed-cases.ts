@@ -14,7 +14,7 @@ const caseSchema = z.strictObject({
   fault: text,
   scenarioId: text,
   exerciseId: text,
-  /** The judge question that must flag the fault (`eval/checks.ts`, or a scenario safety question). */
+  /** The judge question that must flag the fault (`eval/criteria.ts`, or a scenario safety question). */
   check: text,
   turns: z.array(z.strictObject({ student: text, tutor: text })).min(1),
   /** 1-based turn whose tutor message carries the fault. */
@@ -45,6 +45,8 @@ export const casesSchema = z.array(caseSchema).superRefine((cases, ctx) => {
     if (!checksFor(sections({ exercise, scenario }), scenario).some((check) => check.id === c.check)) issue(`question ${c.check} is not asked here`);
     const turn = c.turns[c.faultyTurn - 1];
     if (!turn) issue('the faulty turn is past the conversation');
+    // The code reads the reply to the last message, the distress one (`verifiers.ts`).
+    else if (c.check === 's5-question-after' && c.faultyTurn !== c.turns.length) issue('the reply to the distress message is the last one');
     else if (turn.tutor === c.faultyTutor) issue('the faulty message is the clean one');
   }
 });

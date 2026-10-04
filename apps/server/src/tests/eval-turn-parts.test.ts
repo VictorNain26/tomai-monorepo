@@ -1,11 +1,22 @@
 import { describe, it, expect } from 'bun:test';
-import { collectStrings, cookieHeader, readTurnParts } from '../eval/turn-parts';
+import { collectStrings, cookieHeader, deckText, readTurnParts } from '../eval/turn-parts';
 import type { TomChatMessage } from '../modules/tutor/chat-ui-message';
 
 describe('collectStrings', () => {
   it('keeps every string leaf on its own line, newlines included', () => {
     expect(collectStrings({ cards: [{ front: 'Calcule', back: 'Étapes :\nx = 5' }], count: 2, ok: true, none: null }))
       .toBe('Calcule\nÉtapes :\nx = 5\n2');
+  });
+});
+
+describe('deckText', () => {
+  it('keeps what the revision screen shows: title, description and card text, never ids, dates or answer indexes', () => {
+    const deck = {
+      deck: { id: 'd-19', userId: 'u', title: 'Priorités', description: null, createdAt: '2026-10-04T14:19:22.123Z', cardCount: 19 },
+      cards: [{ id: 'c1', content: { sentence: '4 + 3 × 5 = ___', options: ['35', '19'], correctIndex: 1 }, fsrsData: { due: '2026-10-05' }, position: 19 }],
+    };
+    expect(deckText(deck)).toBe('Priorités\n4 + 3 × 5 = ___\n35\n19');
+    expect(deckText({ ...deck, cards: [] })).toBe('Priorités');
   });
 });
 

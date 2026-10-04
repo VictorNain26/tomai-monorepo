@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'bun:test';
 import type { MistralMessage } from '../platform/ai/mistral-client';
-import { contextMessages, quotes, resolveEntries } from '../eval/judge-context';
-import { judgeInput as input, turn } from './_helpers/eval-fixtures';
+import { contextMessages, questionSentences, quotes, resolveEntries, turnBlocks } from '../eval/judge-context';
+import { judgeInput as input, transcript, turn } from './_helpers/eval-fixtures';
 
 function contentOf(message: MistralMessage | undefined): string {
   return typeof message?.content === 'string' ? message.content : '';
@@ -76,6 +76,21 @@ describe('quotes', () => {
     expect(quotes(text, 'Très bien [...] des deux côtés')).toBe(true);
     expect(quotes(text, 'des deux côtés … Très bien')).toBe(false);
     expect(quotes(text, 'Que faut-il retirer')).toBe(false);
+  });
+});
+
+describe('questionSentences', () => {
+  it('keeps the sentences that end with a question mark, Markdown aside, never a « ? » inside a link', () => {
+    expect(questionSentences('Bien. **Quel est le COD ?**\nVa sur https://3114.fr/?ref=tom pour en savoir plus.')).toEqual(['**Quel est le COD ?**']);
+    expect(questionSentences('C’est le verbe avant le participe.')).toEqual([]);
+  });
+});
+
+describe('turnBlocks', () => {
+  it('tells the judge a turn was said into the microphone', () => {
+    const [spoken, typed] = turnBlocks(transcript([turn('Explique-moi.', 'Bien sûr.', { inputMode: 'voice' }), turn('Merci.', 'De rien.')]));
+    expect(spoken).toContain('Élève (à l’oral) : Explique-moi.');
+    expect(typed).toContain('Élève : Merci.');
   });
 });
 

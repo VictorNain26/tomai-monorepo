@@ -15,7 +15,10 @@ const REFERENCE: JudgeInput = {
     scenarioId: 'S1',
     exerciseId: 'M1',
     repetition: 1,
-    turns: [{ student: 'Élève', text: 'Tuteur', tools: ['outil'], toolOutputs: 'sortie', cards: 'fiche', durationMs: 1, error: 'erreur' }],
+    turns: [
+      { student: 'Élève', text: 'Tuteur', tools: ['outil'], toolOutputs: 'sortie', cards: 'fiche', durationMs: 1 },
+      { student: 'Élève', inputMode: 'voice', text: 'Tuteur', tools: [], toolOutputs: '', cards: '', durationMs: 1, error: 'erreur' },
+    ],
   },
 };
 

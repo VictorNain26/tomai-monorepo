@@ -1,11 +1,12 @@
-import { DefaultChatTransport, readUIMessageStream } from 'ai';
+import { readUIMessageStream, type DefaultChatTransport } from 'ai';
 import { z } from 'zod';
 import { app } from '../app.js';
 import { createStudentAccount, usersRepository } from '../modules/auth/index.js';
 import type { TomChatMessage } from '../modules/tutor/index.js';
-import { renderTurns, type Exercise, type Scenario } from './index.js';
+import { chatTransport, sendTurn } from './chat-request.js';
+import { renderTurns, type Exercise, type Scenario, type StudentTurn } from './index.js';
 import { errorMessage } from './output.js';
-import { collectStrings, cookieHeader, readTurnParts, type Transcript, type TutorTurn } from './turn-parts.js';
+import { cookieHeader, deckText, readTurnParts, type Transcript, type TutorTurn } from './turn-parts.js';
 
 const ORIGIN = 'http://eval.local';
 const newSessionBody = z.object({ sessionId: z.string().min(1) });
@@ -48,26 +49,20 @@ async function newSession(cookie: string): Promise<string> {
 async function deckCards(deckId: string, cookie: string): Promise<string> {
   const response = await call(`/api/learning/decks/${deckId}`, cookie);
   if (!response.ok) throw new Error(`deck ${deckId}: HTTP ${String(response.status)}`);
-  return collectStrings(await response.json());
+  return deckText(await response.json());
 }
 
 async function playTurn(
   transport: DefaultChatTransport<TomChatMessage>,
   sessionId: string,
   cookie: string,
-  student: string,
+  student: StudentTurn,
 ): Promise<TutorTurn> {
   const started = performance.now();
   let message: TomChatMessage | undefined;
   let error: string | undefined;
   try {
-    const stream = await transport.sendMessages({
-      trigger: 'submit-message',
-      chatId: sessionId,
-      messageId: undefined,
-      abortSignal: undefined,
-      messages: [{ id: crypto.randomUUID(), role: 'user', parts: [{ type: 'text', text: student }] }],
-    });
+    const stream = await sendTurn(transport, sessionId, student);
     for await (const update of readUIMessageStream<TomChatMessage>({ stream, terminateOnError: true })) {
       message = update;
     }
@@ -83,7 +78,8 @@ async function playTurn(
     error ??= errorMessage(caught);
   }
   return {
-    student,
+    student: student.text,
+    ...(student.inputMode && { inputMode: student.inputMode }),
     ...parts,
     cards,
     durationMs: Math.round(performance.now() - started),
@@ -117,13 +113,7 @@ export async function playConversation(scenario: Scenario, exercise: Exercise, r
   });
   const cookie = await signIn(username, password);
   const sessionId = await newSession(cookie);
-  const transport = new DefaultChatTransport<TomChatMessage>({
-    api: `${ORIGIN}/api/chat/stream`,
-    fetch: inProcessFetch(cookie),
-    prepareSendMessagesRequest: ({ messages }) => ({
-      body: { message: messages.at(-1), sessionId, schoolLevel: exercise.level },
-    }),
-  });
+  const transport = chatTransport(`${ORIGIN}/api/chat/stream`, inProcessFetch(cookie), sessionId, exercise.level);
   const turns: TutorTurn[] = [];
   for (const student of renderTurns(scenario, exercise)) {
     const turn = await playTurn(transport, sessionId, cookie, student);

@@ -16,15 +16,14 @@ bloquant levé).
 - **Lot en cours :** 1 — Harnais d'évaluation (`roadmap.md`). Le lot 0 est terminé : serveur
   sur Hono et outillage sur Bun (#343 à #347), refonte du serveur en modules (#348 à #354),
   lint strict (#355) et TypeScript strict (#356).
-- **Prochaine action :** point 4 du lot 1, le juge et le harnais corrigés selon
-  l'analyse d'erreurs (`etudes/2026-10-03/analyse-erreurs.md`, décisions 2 et 3) :
+- **Prochaine action :** point 4 du lot 1, seconde PR de la décision 3 de l'analyse
+  d'erreurs (`etudes/2026-10-03/analyse-erreurs.md`) :
   - exactitude posée dans tous les scénarios et vérifiée affirmation par affirmation ;
   - diagnostic réécrit contre l'erreur de l'élève ;
-  - questions de détresse et de fiches refaites ;
-  - tours vocaux et fiches confirmées joués en S4 ;
-  - questions qui ne discriminent pas retirées.
+  - répétition sans progression ;
+  - nouvelle mesure sur l'échantillon et les cas construits, puis nombre de tirages.
 
-  Puis nouvelle mesure et baseline de Tom (point 5). Plan d'abord dans `docs/plans/`.
+  Puis baseline de Tom (point 5). Plan d'abord dans `docs/plans/`.
   - La relecture des conversations, que Victor a confiée à Claude le 2026-10-03, a été
     faite par Claude.
   - Une relecture humaine d'une partie d'entre elles reste due avant toute publication
@@ -94,6 +93,10 @@ contraire.
   actuel coûte environ 0,2 centime de dollar par conversation (#375). À ce débit (100 000 tokens par minute), juger le jeu
   complet prend plusieurs heures : l'API Batch de Mistral, hors limite de débit et à
   moitié prix, est à étudier pour la baseline (point 5).
+- **Niveau de langue** (point 4) : ses deux questions au juge sont retirées, faute de
+  discriminer (`etudes/2026-10-03/analyse-erreurs.md`). Avant de le réintroduire, chercher
+  une mesure validée de la lisibilité d'un texte français pour des collégiens, et la
+  mesurer contre une annotation.
 - **Évaluations du run dans Langfuse** (point 5) : taux de fuite et moyennes ne restent
   que dans `eval-results/` tant que l'expérience tourne sur des données locales ; un
   dataset hébergé par Langfuse les y enverrait, à décider avec la baseline.
@@ -358,3 +361,13 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
   - le juge rate les affirmations fausses, dont 3 jamais soumises à `accuracy`, ainsi que
     le retour à l'exercice après la détresse ;
   - corrections du juge puis de Tom décidées sur sources, dans l'ordre de la roadmap.
+  Le harnais joue ce que fait la production (#376) :
+  - S4 confirme les fiches et demande l'explication au micro ;
+  - fuite de S4, fiches créées et question après la détresse répondues par le code ;
+  - balises et gabarits comptés ;
+  - questions qui ne discriminaient pas retirées.
+
+  Premier passage S4 et S5 :
+  - fuite par la voix dans 2 sur 6, et dans les fiches de M1 ;
+  - fiches non créées dans 2 sur 6 (un refus, un report) ;
+  - détresse sans 3114 dans les 3.
