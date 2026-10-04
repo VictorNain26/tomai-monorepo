@@ -20,14 +20,13 @@ bloquant levé).
     serveur en modules (#348 à #354), lint strict (#355) et TypeScript strict (#356).
 - **Prochaine action :** refonte de l'agent (lot 2), demandée par Victor le 2026-10-04 ;
   étude `etudes/2026-10-04/refonte-agent.md`, ordre des PR dans `roadmap.md`. Point 3, première
-  PR mergée (#383, analyse du tour), deuxième mergée (#384, fiche d'exercice) ; prochaine :
-  l'analyse de document réduite à une
-  extraction. Plan d'abord dans `docs/plans/`.
+  PR mergée (#383, analyse du tour), deuxième mergée (#384, fiche d'exercice),
+  troisième en cours (#385, analyse de document réduite à une extraction). Plan d'abord dans `docs/plans/`.
   - Étape à la charge de Victor avant le point 6 : approuver le texte de la réponse fixe de
     détresse.
   - Une relecture humaine d'une partie des conversations lues par Claude reste due avant
     toute publication (lot 4).
-- **PR ouvertes :** aucune.
+- **PR ouvertes :** #385 (point 3c de la refonte) : revue `/code-review`, corrections, CI, merge ; son plan, `docs/plans/feat-agent-document-extraction.md`, se retire dans son dernier commit.
 - **Landing en ligne gelée** jusqu'au lot 4 : seuls des correctifs d'honnêteté ou techniques y entrent.
   L'identité visuelle est rejetée et se refait au lot 4.
 
