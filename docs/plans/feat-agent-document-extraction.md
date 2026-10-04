@@ -35,9 +35,10 @@ traitée deux fois avant le premier mot »). Chemins relatifs à `apps/server/sr
    - les fichiers de la séance, dans l'ordre où ils ont été joints, ouvrent la fenêtre après
      l'exercice et avant le résumé : stables d'un tour à l'autre, ils restent dans le préfixe
      mis en cache ;
-   - la fiche d'exercice lit les fichiers joints au tour ;
-   - le budget de 50 000 caractères passe dans `file-context.service.ts`, servi d'abord aux
-     fichiers du tour ;
+   - la fiche d'exercice lit tous les fichiers de la séance, du plus ancien au plus récent :
+     un exercice peut renvoyer à une photo envoyée plus tôt ;
+   - le budget de 50 000 caractères passe dans `file-context.service.ts`, servi d'abord aux
+     fichiers les plus récents : les mêmes fichiers gardent la même coupe d'un tour à l'autre ;
    - les fichiers de la séance sont lus dans l'ordre d'attache : la requête n'avait pas
      d'`orderBy`, l'ordre pouvait changer d'un tour à l'autre et casser le cache.
 4. **Prompt** : la section des pièces jointes parle du texte lu sur une photo ou un document,
@@ -46,6 +47,14 @@ traitée deux fois avant le premier mot »). Chemins relatifs à `apps/server/sr
    fichiers, fichiers dans l'ouverture et pas dans le message du tour, fiche nourrie des
    fichiers du tour ; un appel réel lit une image de texte ; il remplace le test réel
    du carré rouge, instable (« noir » deux fois sur trois passages).
+
+6. **Ce que la revue a ajouté** :
+   - un tour ne lit et n'attache que les fichiers de l'utilisateur, envoyés jusqu'au bout :
+     avant, n'importe quel identifiant de fichier était lu, facturé, injecté et attaché ;
+   - un fichier illisible apparaît comme tel, l'échec gardé pour ne pas relire, l'usage d'un
+     appel de vision raté compté ;
+   - un fichier du classeur jamais lu est lu au tour suivant ;
+   - plafond de sortie de la vision à 4 096 : une page dense ne coupe plus le JSON.
 
 ## Hors périmètre
 
