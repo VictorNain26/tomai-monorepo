@@ -17,7 +17,7 @@ const assistantRow = {
   aiModel: 'mistral-small-2603',
   attachedFile: null,
   modelMessages,
-  messageMetadata: { classifiedIntent: { intent: 'check-my-answer', confidence: 'high' } },
+  messageMetadata: { turnAnalysis: { proposesAnswer: true, asksSolution: false } },
 };
 
 mock.module('../platform/observability/logger', () => ({ logger: createMockLogger() }));
@@ -51,7 +51,7 @@ describe('chat read routes', () => {
       expect(body).toContain('Que fais-tu du +5 ?');
       expect(body).not.toContain('La réponse est x = 5.');
       expect(body).not.toContain('modelMessages');
-      expect(body).not.toContain('classifiedIntent');
+      expect(body).not.toContain('turnAnalysis');
     }
   });
 });

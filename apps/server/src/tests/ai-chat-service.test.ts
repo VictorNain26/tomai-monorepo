@@ -16,6 +16,7 @@ import { APICallError, tool, type ToolSet, simulateReadableStream, toUIMessageSt
 import { MockLanguageModelV4 } from 'ai/test';
 import { streamChat, type ChatStreamParams } from '../modules/tutor/ai-chat.service.js';
 import { TurnUsage } from '../modules/tutor/turn-usage.js';
+import { analysis } from './_helpers/turn-analysis';
 import { env } from '../platform/config/env.js';
 
 const baseParams: Omit<ChatStreamParams, 'model' | 'tools'> = {
@@ -174,6 +175,77 @@ describe('streamChat', () => {
   });
 });
 
+describe('flashcards confirmed by the code', () => {
+  it('makes cards only when the turn analysis read a request or an agreement', async () => {
+    for (const wantsFlashcards of [true, false]) {
+      let made = 0;
+      let callIndex = 0;
+      const model = new MockLanguageModelV4({
+        doStream: async () => {
+          callIndex += 1;
+          if (callIndex === 1) {
+            return {
+              stream: simulateReadableStream({
+                chunkDelayInMs: 0,
+                initialDelayInMs: 0,
+                chunks: [
+                  { type: 'stream-start', warnings: [] },
+                  { type: 'tool-call', toolCallId: 'call-1', toolName: 'generate_flashcards', input: '{}' },
+                  { type: 'finish', usage, finishReason: toolCallsFinishReason },
+                ],
+              }),
+            };
+          }
+          return { stream: simulateReadableStream({ chunkDelayInMs: 0, initialDelayInMs: 0, chunks: [{ type: 'stream-start', warnings: [] }, finishStreamPart()] }) };
+        },
+      });
+      const tools: ToolSet = {
+        generate_flashcards: tool({ inputSchema: z.object({}), execute: async () => { made += 1; return 'deck'; } }),
+      };
+
+      await streamChat({ ...baseParams, tools, model, turnAnalysis: analysis({ wantsFlashcards }) }).text;
+
+      expect(made).toBe(wantsFlashcards ? 1 : 0);
+    }
+  });
+
+  it('tells the model why cards are denied, and removes the tool after a denial instead of spending the steps', async () => {
+    for (const [turnAnalysis, reason] of [
+      [analysis(), "L'élève n'a pas demandé de cartes"],
+      [analysis({ error: 'timeout' }), 'Les cartes ne peuvent pas être créées à ce tour'],
+    ] as const) {
+      let callIndex = 0;
+      const model = new MockLanguageModelV4({
+        doStream: async () => {
+          callIndex += 1;
+          return {
+            stream: simulateReadableStream({
+              chunkDelayInMs: 0,
+              initialDelayInMs: 0,
+              chunks: [
+                { type: 'stream-start', warnings: [] },
+                { type: 'tool-call', toolCallId: `call-${callIndex}`, toolName: 'generate_flashcards', input: '{}' },
+                { type: 'finish', usage, finishReason: toolCallsFinishReason },
+              ],
+            }),
+          };
+        },
+      });
+      const tools: ToolSet = {
+        ...noopTools,
+        generate_flashcards: tool({ inputSchema: z.object({}), execute: async () => 'deck' }),
+      };
+
+      await streamChat({ ...baseParams, tools, model, turnAnalysis }).text;
+
+      const [first, second] = model.doStreamCalls;
+      expect(first?.tools?.map((t) => t.name)).toEqual(['noop_tool', 'generate_flashcards']);
+      expect(second?.tools?.map((t) => t.name)).toEqual(['noop_tool']);
+      expect(JSON.stringify(second?.prompt.at(-1))).toContain(reason);
+    }
+  });
+});
+
 describe('a turn cut by the timeout', () => {
   it('counts the call that ended exactly, and the one cut while streaming as estimated', async () => {
     const configured = env.CHAT_STREAM_TIMEOUT_MS;
@@ -254,7 +326,7 @@ describe('streamChat — Mistral wire request', () => {
     const result = streamChat({
       ...baseParams,
       subject: 'mathematiques',
-      classifiedIntent: { intent: 'solve-this-for-me', confidence: 'high' },
+      turnAnalysis: analysis({ subject: 'mathematiques', asksSolution: true }),
       tools: noopTools,
     });
     await result.text;
@@ -275,7 +347,7 @@ describe('streamChat — Mistral wire request', () => {
       ...baseParams,
       subject: 'mathematiques',
       content: 'Je soustrais 5.',
-      intentReinforcement: '<critical_instruction>X</critical_instruction>',
+      turnInstruction: '<critical_instruction>X</critical_instruction>',
       conversationHistory: [
         { role: 'user', content: 'Résous 3x + 5 = 20.', timestamp: '2026-10-04T10:00:00Z' },
         {

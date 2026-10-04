@@ -51,7 +51,7 @@ d'agent reste la nôtre ([regional inference](https://docs.mistral.ai/inference/
 | Rôle | Modèle | Réglage |
 |---|---|---|
 | Chat élève, texte et image | **Mistral Small 4** `mistral-small-2603` | rédaction sans raisonnement, l'exactitude passant par la fiche d'exercice, produite en `high` sans plafond de tokens (décision de Victor, 2026-10-04) ; température 0,7, dans la plage de la fiche Hugging Face de Small 4 pour `none` ; `promptCacheKey` par session |
-| Résumés, génération de cartes, analyse de document, titres, classification d'intention | Mistral Small 4 `mistral-small-2603` | `reasoningEffort: 'none'` ; sortie structurée stricte |
+| Résumés, génération de cartes, analyse de document, titres, analyse du tour (`turn-analysis.service.ts`) | Mistral Small 4 `mistral-small-2603` | `reasoningEffort: 'none'` ; sortie structurée stricte |
 | Modération entrée/sortie | `mistral-moderation-2603` | Seuils par catégorie (§5) |
 | STT / TTS | Voxtral via `@mistralai/mistralai` (`audio.*`) | Timeout explicite |
 | Juge d'évaluation | Mistral Small 4 `mistral-small-2603` | Questions oui/non en JSON strict, cinq tirages, référence fournie |
@@ -139,12 +139,12 @@ modèle sans prévenir et invalide l'évaluation. Chaque prompt porte une versio
   que la part de la fiche que le palier autorise.
 - Suppression du « Chain-of-Thought obligatoire » (bloc maths de `SUBJECT_SPECIFICS`,
   `modules/tutor/prompts/adaptation/by-subject.ts`) et de la règle contradictoire de
-  `IntentClassifierService.buildReinforcement` (« révéler une étape intermédiaire » après
-  deux ou trois échanges).
+  l'ancien classifieur d'intention (« révéler une étape intermédiaire » après deux ou trois
+  échanges) : faites (#380), le classifieur remplacé par l'analyse du tour.
 - **Périmètre V1 : collège (6e → 3e)**, comme `SUBJECTS_BY_LEVEL`
   (`services/education.service.ts`). Le prompt cesse d'annoncer « CP → Terminale »
   (`modules/tutor/prompts/core/identity.ts`, `modules/tutor/prompts/core/safety.ts`).
-- **Une seule taxonomie** `config/subjects.ts` : familles pour le classifieur,
+- **Une seule taxonomie** `config/subjects.ts` : familles pour l'analyse du tour,
   slugs fins pour les outils ; `histoire-geo` fusionné, `italien` ajouté. Elle
   remplace `STUDENT_SUBJECTS`, `SUBJECT_SLUGS`, `COLLEGE_SUBJECTS`,
   `normalizeSubject`, `SUBJECT_MAPPING`, `STEM_SUBJECTS` et le `'général'`
@@ -437,6 +437,6 @@ succès). Coûts mesurés : `etudes/2026-10-01/couts.md` ; défauts du code 
   génération ou de l'outil du chat.
 - Le résumé de conversation est incrémental : il ne se relance qu'après un nombre fixe de
   nouveaux messages, comptés hors de la fenêtre gardée en clair.
-- Chaque appel IA (chat, classifieur, titre, résumé, analyse de photo, cartes, embeddings,
+- Chaque appel IA (chat, analyse du tour, titre, résumé, analyse de photo, cartes, embeddings,
   STT, TTS) est tracé dans `cost_tracking`, à une précision inférieure au centime.
 - Le quota gratuit se fixe sur le coût mesuré, une fois ces corrections faites.

@@ -2,7 +2,8 @@ import { describe, expect, it } from 'bun:test';
 import { buildSystemPrompt } from '../modules/tutor/prompts/system-prompt.js';
 import { generateLevelAdaptation } from '../modules/tutor/prompts/adaptation/by-level.js';
 import { generateSubjectBlock } from '../modules/tutor/prompts/adaptation/by-subject.js';
-import { intentClassifierService } from '../modules/tutor/intent-classifier.service.js';
+import { turnInstruction } from '../modules/tutor/turn-analysis.service.js';
+import { analysis } from './_helpers/turn-analysis';
 import { stripPromptTags, wrapStudentContext, wrapUserMessage } from '../modules/tutor/mistral-helpers.js';
 
 const prompt = buildSystemPrompt({ level: 'quatrieme', levelText: '4e', firstName: 'Léa' });
@@ -69,7 +70,7 @@ describe('tutor prompt, consistent from method to subject blocks', () => {
       buildSystemPrompt({ level: 'sixieme', levelText: '6e' }),
       buildSystemPrompt({ level: 'troisieme', levelText: '3e' }),
       ...['mathematiques', 'francais', 'anglais', 'sciences', 'histoire', undefined].map((subject) => generateSubjectBlock(subject)),
-      intentClassifierService.buildReinforcement({ intent: 'solve-this-for-me', confidence: 'high' }) ?? '',
+      turnInstruction(analysis({ asksSolution: true })) ?? '',
       wrapStudentContext('Points forts: calcul', '<past_sessions>\nx\n</past_sessions>\n<subject_memory>\ny\n</subject_memory>') ?? '',
       wrapUserMessage('Bonjour'),
     ].join('\n');

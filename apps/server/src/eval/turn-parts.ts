@@ -52,9 +52,12 @@ export function deckText(json: unknown): string {
   return [deck.title, deck.description ?? '', ...cards.map((card) => collectStrings(card.content, false))].filter(Boolean).join('\n');
 }
 
-/** What a tutor message shows: its text, the tools it called, their outputs, the decks created. */
+/**
+ * What a tutor message shows: its text, the tools it called, their outputs, the decks created. A
+ * call the code denied ran nothing and is left out.
+ */
 export function readTurnParts(parts: TomChatMessage['parts']): Pick<TutorTurn, 'text' | 'tools' | 'toolOutputs'> & { deckIds: string[] } {
-  const toolParts = parts.filter(isToolUIPart);
+  const toolParts = parts.filter(isToolUIPart).filter((part) => part.state !== 'output-denied');
   const dataParts = parts.filter(isDataUIPart);
   return {
     text: parts.filter(isTextUIPart).map((part) => part.text).join(''),

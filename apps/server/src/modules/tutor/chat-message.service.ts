@@ -5,6 +5,7 @@ import type { Message as DbMessage } from './session.schema.js';
 import { logger } from '../../platform/observability/logger';
 import type { MessageDetails } from './chat-types';
 import type { ResponseMessage } from './chat-message-assembler.js';
+import type { TurnAnalysis } from './turn-analysis.service.js';
 
 export class ChatMessageService {
   async getSessionHistory(sessionId: string, options?: { limit?: number | undefined; afterMessageId?: string | undefined }): Promise<Omit<DbMessage, 'modelMessages'>[]> {
@@ -75,15 +76,10 @@ export class ChatMessageService {
         fileSizeBytes?: number;
       }[];
       /**
-       * Pre-generation intent classification for this assistant turn. Not
-       * rendered to the client — retained for evals, cohort analysis, and
-       * offline quality reviews.
+       * The turn's analysis, read before the answer. Never rendered to the client: kept for
+       * evals and offline reviews.
        */
-      classifiedIntent?: {
-        intent: string;
-        confidence: 'low' | 'medium' | 'high';
-        error?: string;
-      };
+      turnAnalysis?: TurnAnalysis;
       /** Input channel declared by the user's gesture (mic vs keyboard). */
       inputMode?: 'text' | 'voice';
       /** The assistant's response messages as the model produced them, replayed next turn. */
@@ -115,8 +111,8 @@ export class ChatMessageService {
       if (metadata.attachedFiles && metadata.attachedFiles.length > 1) {
         messageMetadata['attachedFiles'] = metadata.attachedFiles;
       }
-      if (metadata.classifiedIntent) {
-        messageMetadata['classifiedIntent'] = metadata.classifiedIntent;
+      if (metadata.turnAnalysis) {
+        messageMetadata['turnAnalysis'] = metadata.turnAnalysis;
       }
       if (metadata.inputMode) {
         messageMetadata['inputMode'] = metadata.inputMode;

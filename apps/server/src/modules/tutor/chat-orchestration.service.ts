@@ -23,7 +23,7 @@ import { fileContextService, sessionFilesRepository, type AttachedFileInfo, type
 import { getLearningContext } from './mistral-helpers.js';
 import { summarizationService } from './summarization.service.js';
 import { autoTitleService } from './auto-title.service.js';
-import { intentClassifierService, type ClassifiedIntent } from './intent-classifier.service.js';
+import { analyseTurn, turnInstruction as instructionFor, type TurnAnalysis } from './turn-analysis.service.js';
 import { cognitiveProfileService } from './cognitive-profile.service.js';
 import { costTrackingService, incrementTokenUsage } from '../billing/index.js';
 import { episodicMemoryService } from './episodic-memory.service.js';
@@ -73,8 +73,8 @@ export interface ChatTurnContext {
   cognitiveProfileSummary: string | null;
   /** Learning context (FSRS due cards) + episodic memory + subject memory, merged into one block. */
   mergedLearningContext: string | null;
-  intentReinforcement: string | null;
-  classifiedIntent: ClassifiedIntent;
+  turnInstruction: string | null;
+  turnAnalysis: TurnAnalysis;
   /** Multimodal files (images) for Mistral vision, ready for `streamChat`'s `files` param. */
   files: AttachedFile[];
   /** Bounded document analyses (OCR), ready for `streamChat`'s `attachedFiles` param. */
@@ -106,7 +106,7 @@ interface FinishTurnParams {
   startTime: number;
   attachedFileInfo: AttachedFileInfo | null;
   attachedFileInfos?: AttachedFileInfo[] | undefined;
-  classifiedIntent: ClassifiedIntent;
+  turnAnalysis: TurnAnalysis;
 }
 
 class ChatOrchestrationService {
@@ -150,18 +150,18 @@ class ChatOrchestrationService {
       };
     });
 
-    // Context assembly (parallel) — intent classification and episodic
+    // Context assembly (parallel) — the turn analysis and episodic
     // memory run alongside file/profile/learning context assembly so none
-    // of them add end-to-end latency on the critical path. Classification
-    // failures fall back to intent='unknown' (logged at high severity in
-    // the service, not a silent fallback); episodic memory returns [] on
-    // miss/error with its own logging.
+    // of them add end-to-end latency on the critical path. An analysis that
+    // fails gives an empty analysis (logged at high severity in the service,
+    // not a silent fallback); episodic memory returns [] on miss/error with
+    // its own logging.
     const [
       fileContext,
       multimodalFiles,
       cognitiveProfileSummary,
       learningContext,
-      classifiedIntent,
+      turnAnalysis,
       relevantEpisodes,
     ] = await Promise.all([
       fileContextService.prepareFileContext({
@@ -174,17 +174,17 @@ class ChatOrchestrationService {
       fileContextService.prepareMultimodalFiles(request.fileIds),
       cognitiveProfileService.getProfileSummary(request.userId),
       getLearningContext(request.userId),
-      intentClassifierService.classify(request.content, request.schoolLevel),
+      analyseTurn(request.content, conversationHistory.findLast(turn => turn.role === 'assistant')?.content ?? null),
       episodicMemoryService.retrieveRelevant(request.userId, request.content, 3),
     ]);
 
-    const intentReinforcement = intentClassifierService.buildReinforcement(classifiedIntent);
+    const turnInstruction = instructionFor(turnAnalysis);
     const episodicContext = episodicMemoryService.formatEpisodesForPrompt(relevantEpisodes);
 
     // Subject: use the detected one (reliable) for the prompt, fall back to the
     // session's stored subject then the client hint. Persist on the first
     // confident detection (anti-thrash) so the conversation gets a real subject.
-    const detectedSubject = classifiedIntent.subject;
+    const detectedSubject = turnAnalysis.subject;
     const requestedSubject =
       request.requestedSubject && (STUDENT_SUBJECTS as readonly string[]).includes(request.requestedSubject)
         ? request.requestedSubject
@@ -241,9 +241,11 @@ class ChatOrchestrationService {
       schoolLevel: request.schoolLevel,
       filesCount: request.fileIds.length,
       multimodalFilesCount: multimodalFiles.length,
-      intent: classifiedIntent.intent,
-      intentConfidence: classifiedIntent.confidence,
-      intentReinforced: intentReinforcement !== null,
+      proposesAnswer: turnAnalysis.proposesAnswer,
+      bringsExercise: turnAnalysis.bringsExercise,
+      asksSolution: turnAnalysis.asksSolution,
+      wantsFlashcards: turnAnalysis.wantsFlashcards,
+      turnInstructed: turnInstruction !== null,
       episodesRetrieved: relevantEpisodes.length,
       operation: 'chat-orchestration:context-ready',
     });
@@ -255,8 +257,8 @@ class ChatOrchestrationService {
       conversationHistory,
       cognitiveProfileSummary,
       mergedLearningContext,
-      intentReinforcement,
-      classifiedIntent,
+      turnInstruction,
+      turnAnalysis,
       files: multimodalFiles.map(f => ({
         base64: f.base64,
         mimeType: f.mimeType,
@@ -305,7 +307,7 @@ class ChatOrchestrationService {
    * persiste, mais les tokens factures sont comptes.
    */
   async finishTurn(params: FinishTurnParams): Promise<void> {
-    const { sessionId, userId, userContent, responseMessage, modelMessages, aborted, model, usage, startTime, attachedFileInfo, attachedFileInfos, classifiedIntent } = params;
+    const { sessionId, userId, userContent, responseMessage, modelMessages, aborted, model, usage, startTime, attachedFileInfo, attachedFileInfos, turnAnalysis } = params;
     const fullContent = extractTextFromParts(responseMessage.parts);
     const tokensUsed = usage?.totalTokens ?? 0;
 
@@ -340,7 +342,7 @@ class ChatOrchestrationService {
       responseTimeMs: Date.now() - startTime,
       ...(attachedFileInfo && { attachedFile: attachedFileInfo }),
       ...(attachedFileInfos && { attachedFiles: attachedFileInfos }),
-      classifiedIntent,
+      turnAnalysis,
       // Kept only when they can be replayed as they are: a cut turn, or one that ended on a tool
       // result at the step limit, replays as its text.
       modelMessages: aborted ? undefined : replayable(modelMessages),

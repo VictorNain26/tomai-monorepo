@@ -36,6 +36,7 @@ import { calculateBudget, truncateToTokenBudget } from './token-budget.service.j
 import { env } from '../../platform/config/env.js';
 import { imageFilePart } from '../../platform/ai/mistral-client.js';
 import type { TurnUsage } from './turn-usage.js';
+import type { TurnAnalysis } from './turn-analysis.service.js';
 import type { EducationLevelType } from '../../types/index.js';
 import type { AttachedFileForPrompt } from '../documents/index.js';
 
@@ -47,12 +48,6 @@ export interface AttachedFile {
   base64?: string | undefined;
   mimeType: string;
   contentType: 'image' | 'document';
-}
-
-interface ClassifiedIntent {
-  intent: string;
-  confidence: 'low' | 'medium' | 'high';
-  error?: string;
 }
 
 /** @public — reachable only via the typed client's inferred route return types (apps/server build:types), not a direct import; knip false positive. */
@@ -74,12 +69,12 @@ export interface StreamGenerationParams {
    */
   attachedFiles?: AttachedFileForPrompt[] | undefined;
   /**
-   * Turn-specific reinforcement block injected by the intent classifier, in
+   * Turn-specific reinforcement block derived from the turn analysis, in
    * the turn's user message (e.g. on "solve this for me" requests).
    */
-  intentReinforcement?: string | null | undefined;
-  /** Classified intent for reasoning effort routing. */
-  classifiedIntent?: ClassifiedIntent | undefined;
+  turnInstruction?: string | null | undefined;
+  /** The turn's analysis: reasoning routing and the flashcards' approval. */
+  turnAnalysis?: TurnAnalysis | undefined;
   /**
    * Input channel declared by the user's gesture (mic vs keyboard), never
    * inferred by the model. When 'voice', a turn note is injected so Tom answers
@@ -107,6 +102,13 @@ function imageParts(files?: AttachedFile[]): FilePart[] {
     .map((f) => imageFilePart(`data:${f.mimeType};base64,${f.base64}`, f.mimeType));
 }
 
+function flashcardsApproval(analysis: TurnAnalysis | undefined) {
+  if (analysis?.wantsFlashcards) return 'approved';
+  return analysis?.error === undefined
+    ? { type: 'denied' as const, reason: "L'élève n'a pas demandé de cartes : propose-les-lui, sans les créer." }
+    : { type: 'denied' as const, reason: "Les cartes ne peuvent pas être créées à ce tour : si l'élève en a demandé, dis-le-lui et propose de réessayer." };
+}
+
 /**
  * Streams the assistant's response for one chat turn, running the agentic
  * tool loop internally (`stopWhen: isStepCount(MAX_TOOL_ITERATIONS)`).
@@ -129,7 +131,7 @@ export function streamChat(params: ChatStreamParams) {
     subjectBlock: generateSubjectBlock(params.subject),
     studentContextBlock: wrapStudentContext(params.cognitiveProfileSummary, params.learningContext),
     attachedFilesBlock: params.attachedFiles?.length ? wrapAttachedFiles(params.attachedFiles) : null,
-    intentReinforcement: params.intentReinforcement,
+    turnInstruction: params.turnInstruction,
     inputMode: params.inputMode,
     studentText: params.content,
     images: imageParts(params.files),
@@ -140,7 +142,7 @@ export function streamChat(params: ChatStreamParams) {
   const reasoningEffort = routeReasoningEffort({
     schoolLevel: params.schoolLevel,
     subject: params.subject,
-    intent: params.classifiedIntent?.intent,
+    analysis: params.turnAnalysis,
   });
 
   const model = params.model ?? mistralProvider()(env.MISTRAL_MODEL);
@@ -158,6 +160,14 @@ export function streamChat(params: ChatStreamParams) {
     instructions: system,
     messages,
     tools: params.tools,
+    // Cards are made when the student asks for them or accepts them, as the turn analysis read
+    // it; denied, the call returns to the model with the reason.
+    toolApproval: { generate_flashcards: flashcardsApproval(params.turnAnalysis) },
+    // Denial holds for the whole turn: a model that calls again would only spend steps.
+    prepareStep: ({ steps }) =>
+      params.turnAnalysis?.wantsFlashcards || !steps.some((step) => step.toolCalls.some((call) => call.toolName === 'generate_flashcards'))
+        ? undefined
+        : { activeTools: Object.keys(params.tools).filter((name) => name !== 'generate_flashcards') },
     stopWhen: isStepCount(MAX_TOOL_ITERATIONS),
     temperature: env.MISTRAL_TEMPERATURE,
     // No output cap on a reasoning turn: the thinking counts in completion_tokens and a cap

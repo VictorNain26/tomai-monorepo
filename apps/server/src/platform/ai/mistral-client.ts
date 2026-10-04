@@ -5,7 +5,7 @@
  * module keeps the two remaining non-chat-stream shapes:
  *
  * - `generateText` — completion non-streaming simple (vision, analyse doc, résumé, titre…)
- * - `generateStructured` — sortie structurée Zod en JSON Schema, strict par défaut (intent classifier, épisodes…) ; les cartes passent `strict: false`
+ * - `generateStructured` — sortie structurée Zod en JSON Schema, strict par défaut (analyse du tour, épisodes…) ; les cartes passent `strict: false`
  *
  * Both go through `mistralProvider` (`platform/ai/provider.ts`, EU endpoint).
  * Every call runs with `reasoningEffort: 'none'`: reasoning is reserved to the
