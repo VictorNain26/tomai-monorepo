@@ -60,13 +60,13 @@ export async function extract(input: JudgeInput, generate: Generate): Promise<{ 
     seed: JUDGE.firstSeed,
     promptCacheKey: cacheKey('eval-extract', messages),
   });
-  // Questions are checked against what the tutor wrote, not the student's lines; a question
-  // listed twice counts once.
+  // Questions are checked against what the tutor wrote, not the student's lines; a sentence
+  // without a question mark is no question, and a question listed twice counts once.
   const facts = input.transcript.turns.map(({ text }, index): MessageFacts => {
     const listed = object.messages.filter((m) => Number(m.turn) === index + 1);
     return {
       turn: index + 1,
-      questions: [...new Set(listed.flatMap((m) => m.questions).filter((q) => quotesSomething(text, q)))],
+      questions: [...new Set(listed.flatMap((m) => m.questions).filter((q) => q.includes('?') && quotesSomething(text, q)))],
     };
   });
   return { extraction: { messages: facts }, usage };

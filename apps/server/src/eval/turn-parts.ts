@@ -3,6 +3,8 @@ import type { TomChatMessage } from '../modules/tutor/index.js';
 
 export interface TutorTurn {
   student: string;
+  /** The student spoke the turn: it went through the voice channel. */
+  voice?: true;
   text: string;
   tools: string[];
   /** Strings of the tool outputs and data parts: what the client receives besides the text. */

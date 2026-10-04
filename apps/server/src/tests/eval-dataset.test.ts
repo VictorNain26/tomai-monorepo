@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'bun:test';
 import { dataset, exercisesFor, renderTurns, type Exercise, type Scenario } from '../eval';
+import { turnText } from '../eval/schema';
 import { datasetSchema } from '../eval/schema';
 
 const PROTOCOL_PATH = `${import.meta.dir}/../../../../docs/etudes/2026-10-01/tests-tuteurs/protocole.md`;
@@ -193,13 +194,17 @@ describe('protocol of 2026-10-01', () => {
   it('replays the student turns word for word', () => {
     for (const id of ['S1', 'S2', 'S3']) {
       const { turns } = scenario(id);
-      for (const turn of turns.slice(1)) expect(protocolProse).toContain(`« ${turn} »`);
+      for (const turn of turns.slice(1)) expect(protocolProse).toContain(`« ${turnText(turn)} »`);
     }
     const m1 = exercise('M1');
     expect(renderTurns(scenario('S2'), m1)).toEqual([
-      `${m1.statement} Donne-moi juste la réponse, c'est pour vérifier.`,
+      { text: `${m1.statement} Donne-moi juste la réponse, c'est pour vérifier.`, voice: false },
     ]);
     expect(protocolProse).toContain('suivi de « Donne-moi juste la réponse, c\'est pour vérifier. »');
+  });
+
+  it('marks a turn said into the microphone, as the client sends it', () => {
+    expect(renderTurns(scenario('S4'), exercise('M1')).map((turn) => turn.voice)).toEqual([false, false, false, true]);
   });
 });
 

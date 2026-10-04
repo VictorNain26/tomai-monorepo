@@ -28,7 +28,7 @@ describe('CRITERIA', () => {
     const [tone] = CRITERIA.filter((c) => c.name === 'help_tone');
     if (!tone) throw new Error('help_tone missing');
     // The stored configs of the queue hold this text: changing it asks to archive them.
-    expect(describeCriterion(tone)).toBe("1 = non à la première question et oui à la seconde ; 0 sinon.\n- Le tuteur sermonne-t-il, culpabilise-t-il ou infantilise-t-il l'élève ?\n- Le tuteur encourage-t-il l'élève ?");
+    expect(describeCriterion(tone)).toBe("1 = non ; 0 = oui.\n- Le tuteur sermonne-t-il, culpabilise-t-il ou infantilise-t-il l'élève ?");
     const stored = { description: describeCriterion(tone), categories: [{ label: '0', value: 0 }, { label: '1', value: 1 }] };
     expect(matchesCriterion(stored, tone)).toBe(true);
     expect(matchesCriterion({ ...stored, description: 'old anchor' }, tone)).toBe(false);
@@ -39,7 +39,7 @@ describe('CRITERIA', () => {
     const names = (item: ReturnType<typeof wanted>) => criteriaFor(item).map((criterion) => criterion.name);
     expect(names(wanted('M1', 'S1'))).toEqual([
       'help_diagnosis', 'help_one_question', 'help_graded_hints', 'help_accuracy', 'help_level', 'help_tone',
-      'language_level', 'alignment_in_class', 'alignment_later_used',
+      'alignment_in_class', 'alignment_later_used',
     ]);
     expect(names(wanted('H1', 'S2'))).toContain('leak');
     expect(names(wanted('H1', 'S2'))).not.toContain('alignment_in_class');
@@ -72,11 +72,11 @@ describe('humanValues', () => {
     const values = humanValues([
       { name: 'help_diagnosis', label: '1', timestamp: '2026-10-03T10:00:00Z' },
       { name: 'help_diagnosis', label: '2', timestamp: '2026-10-03T11:00:00Z' },
-      { name: 'language_level', label: 'adapted', timestamp: '2026-10-03T10:00:00Z' },
+      { name: 'alignment_in_class', label: 'yes', timestamp: '2026-10-03T10:00:00Z' },
       { name: 'help_tone', label: 'maybe', timestamp: '2026-10-03T10:00:00Z' },
       { name: 'unrelated', label: '1', timestamp: '2026-10-03T10:00:00Z' },
     ]);
-    expect([...values]).toEqual([['help_diagnosis', 2], ['language_level', 1]]);
+    expect([...values]).toEqual([['help_diagnosis', 2], ['alignment_in_class', 1]]);
   });
 });
 
@@ -125,17 +125,18 @@ describe('fileValues', () => {
 });
 
 describe('parseResults', () => {
-  it('reads an eval-results file, keeping a turn error only when there is one', () => {
+  it('reads an eval-results file, keeping a turn error or a spoken turn only when there is one', () => {
     const turn = { student: 's', text: 't', tools: [], toolOutputs: '', cards: '', durationMs: 1 };
     const results = parseResults({
       runName: 'r', judge: null, model: 'm', report: [{
         scenarioId: 'S1', exerciseId: 'M1', repetition: 1, traceId: 'a',
-        transcript: { scenarioId: 'S1', exerciseId: 'M1', repetition: 1, turns: [turn, { ...turn, error: 'aborted' }] },
+        transcript: { scenarioId: 'S1', exerciseId: 'M1', repetition: 1, turns: [turn, { ...turn, error: 'aborted' }, { ...turn, voice: true }] },
       }],
     });
     const turns = results.report[0]?.transcript?.turns ?? [];
-    expect('error' in (turns[0] ?? {})).toBe(false);
+    expect('error' in (turns[0] ?? {}) || 'voice' in (turns[0] ?? {})).toBe(false);
     expect(turns[1]).toEqual({ ...turn, error: 'aborted' });
+    expect(turns[2]).toEqual({ ...turn, voice: true });
     expect(() => parseResults({ runName: 'r', judge: null, report: [{ scenarioId: 'S1' }] })).toThrow();
   });
 });

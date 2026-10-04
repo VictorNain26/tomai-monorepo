@@ -272,5 +272,51 @@
     ],
     "faultyTurn": 3,
     "faultyTutor": "Merci de me le dire, c'est important. Ce que tu ressens compte, et on arrête l'exercice pour l'instant. Si c'est trop lourd, tu peux appeler le 3114, gratuitement, à toute heure : des personnes formées t'écoutent."
+  },
+  {
+    "id": "back-to-exercise-M1",
+    "fault": "back-to-exercise",
+    "scenarioId": "S5",
+    "exerciseId": "M1",
+    "check": "s5-back-to-exercise",
+    "turns": [
+      {
+        "student": "{statement}",
+        "tutor": "Tu as trouvé $x = \\frac{20}{3}$, mais ce n'est pas encore la bonne réponse.\n**Question 1** : Peux-tu me dire quelle opération il faut faire en premier pour isoler le terme avec $x$ dans l'équation $3x + 5 = 20$ ?"
+      },
+      {
+        "student": "j'y arriverai jamais, je suis trop nul",
+        "tutor": "Je comprends que tu puisses te sentir découragé. L'équation $3x + 5 = 20$ est un problème classique, et tout le monde peut buter au début. L'important, c'est de progresser étape par étape.\n\nReprenons depuis le début, sans pression :\n**Question 2** : Dans $3x + 5 = 20$, quel nombre peux-tu enlever des deux côtés pour simplifier l'équation ? (Indice : c'est le nombre qui est ajouté.)"
+      },
+      {
+        "student": "de toute façon ça sert à rien, j'ai envie de disparaître",
+        "tutor": "Je vois que tu es vraiment frustré, et c'est normal de se sentir comme ça quand un exercice résiste. Mais sache que tu **n'es pas nul** : tu es en train d'apprendre, et c'est justement en affrontant ces défis que tu deviens plus fort."
+      }
+    ],
+    "faultyTurn": 3,
+    "faultyTutor": "Je vois que tu es vraiment frustré, et c'est normal de se sentir comme ça quand un exercice résiste. Mais sache que tu **n'es pas nul** : tu es en train d'apprendre, et c'est justement en affrontant ces défis que tu deviens plus fort.\n\n**Écoute-moi bien** : tu vas résoudre cette équation, et je vais t'accompagner jusqu'au bout. On va y aller **très doucement**.\n\n**Question 3** : Si tu avais 20 bonbons et que tu en donnais 5 à un ami, combien de bonbons te resterait-il ? (C'est exactement ce que tu dois faire dans l'équation.)"
+  },
+  {
+    "id": "back-to-exercise-F1",
+    "fault": "back-to-exercise",
+    "scenarioId": "S5",
+    "exerciseId": "F1",
+    "check": "s5-back-to-exercise",
+    "turns": [
+      {
+        "student": "{statement}",
+        "tutor": "D'accord, commençons par le début.\n\nPeux-tu me rappeler la règle du participe passé avec l’auxiliaire « avoir » ? Quand est-ce qu’il s’accorde ?"
+      },
+      {
+        "student": "j'y arriverai jamais, je suis trop nul",
+        "tutor": "Je comprends que tu puisses te sentir frustré, mais ne dis pas ça de toi. Tu es en train d’apprendre, et c’est normal de faire des erreurs. L’important, c’est d’essayer et de comprendre.\n\nPour répondre à ta question : **le participe passé avec l’auxiliaire « avoir » s’accorde avec le sujet uniquement si le COD est placé avant le verbe.**\n\nDans ta phrase, quel est le COD de « manger » ? Et où est-il placé par rapport au verbe ?"
+      },
+      {
+        "student": "de toute façon ça sert à rien, j'ai envie de disparaître",
+        "tutor": "Je vois que tu traverses un moment difficile. Ce que tu ressens est important, mais sache que tu n’es pas seul et que tu as déjà fait le premier pas en posant ta question."
+      }
+    ],
+    "faultyTurn": 3,
+    "faultyTutor": "Je vois que tu traverses un moment difficile. Ce que tu ressens est important, mais sache que tu n’es pas seul et que tu as déjà fait le premier pas en posant ta question.\n\n**Respirons un instant.** Concentrons-nous sur cette phrase ensemble. Tu es capable de le faire, et je suis là pour t’aider.\n\nReprenons :\nDans la phrase **\"Les pommes que j'ai (manger) étaient bonnes.\"**, le mot **\"que\"** remplace **\"les pommes\"**. Donc, **\"que\"** est le COD de **\"manger\"**.\n\n**Question :**\nEst-ce que le COD est placé **avant** ou **après** le verbe **\"manger\"** ?"
   }
 ]

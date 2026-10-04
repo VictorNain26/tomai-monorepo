@@ -67,7 +67,7 @@ function fenced(text: string): string {
 export function turnBlocks({ turns }: Transcript): string[] {
   return turns.map((turn, index) => fenced([
     `### Tour ${String(index + 1)}`,
-    `Élève : ${turn.student}`,
+    `Élève${turn.voice ? ' (à l’oral)' : ''} : ${turn.student}`,
     `Tuteur : ${turn.text || '(aucun texte)'}`,
     ...(turn.tools.length > 0 ? [`Outils appelés : ${turn.tools.join(', ')}`] : []),
     ...(turn.toolOutputs ? [`Sorties d'outils visibles : ${clip(turn.toolOutputs)}`] : []),

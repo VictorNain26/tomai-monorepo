@@ -89,7 +89,7 @@ describe('leak forms of the dataset', () => {
       if (exercise.answer.kind !== 'short') continue;
       for (const scenario of dataset.scenarios) {
         for (const turn of renderTurns(scenario, exercise)) {
-          expect({ id: exercise.id, scenario: scenario.id, found: findLeakForm(turn, exercise.answer.leakForms) })
+          expect({ id: exercise.id, scenario: scenario.id, found: findLeakForm(turn.text, exercise.answer.leakForms) })
             .toEqual({ id: exercise.id, scenario: scenario.id, found: null });
         }
       }

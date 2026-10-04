@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { app } from '../app.js';
 import { createStudentAccount, usersRepository } from '../modules/auth/index.js';
 import type { TomChatMessage } from '../modules/tutor/index.js';
-import { renderTurns, type Exercise, type Scenario } from './index.js';
+import { renderTurns, type Exercise, type Scenario, type StudentTurn } from './index.js';
 import { errorMessage } from './output.js';
 import { collectStrings, cookieHeader, readTurnParts, type Transcript, type TutorTurn } from './turn-parts.js';
 
@@ -55,7 +55,7 @@ async function playTurn(
   transport: DefaultChatTransport<TomChatMessage>,
   sessionId: string,
   cookie: string,
-  student: string,
+  student: StudentTurn,
 ): Promise<TutorTurn> {
   const started = performance.now();
   let message: TomChatMessage | undefined;
@@ -66,7 +66,9 @@ async function playTurn(
       chatId: sessionId,
       messageId: undefined,
       abortSignal: undefined,
-      messages: [{ id: crypto.randomUUID(), role: 'user', parts: [{ type: 'text', text: student }] }],
+      messages: [{ id: crypto.randomUUID(), role: 'user', parts: [{ type: 'text', text: student.text }] }],
+      // The channel the client declares for a turn dictated into the microphone.
+      ...(student.voice && { body: { inputMode: 'voice' } }),
     });
     for await (const update of readUIMessageStream<TomChatMessage>({ stream, terminateOnError: true })) {
       message = update;
@@ -83,7 +85,8 @@ async function playTurn(
     error ??= errorMessage(caught);
   }
   return {
-    student,
+    student: student.text,
+    ...(student.voice && { voice: true as const }),
     ...parts,
     cards,
     durationMs: Math.round(performance.now() - started),
@@ -120,8 +123,8 @@ export async function playConversation(scenario: Scenario, exercise: Exercise, r
   const transport = new DefaultChatTransport<TomChatMessage>({
     api: `${ORIGIN}/api/chat/stream`,
     fetch: inProcessFetch(cookie),
-    prepareSendMessagesRequest: ({ messages }) => ({
-      body: { message: messages.at(-1), sessionId, schoolLevel: exercise.level },
+    prepareSendMessagesRequest: ({ messages, body }) => ({
+      body: { ...body, message: messages.at(-1), sessionId, schoolLevel: exercise.level },
     }),
   });
   const turns: TutorTurn[] = [];

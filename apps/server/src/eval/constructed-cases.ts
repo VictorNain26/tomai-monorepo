@@ -14,7 +14,7 @@ const caseSchema = z.strictObject({
   fault: text,
   scenarioId: text,
   exerciseId: text,
-  /** The judge question that must flag the fault (`eval/checks.ts`, or a scenario safety question). */
+  /** The judge question that must flag the fault (`eval/criteria.ts`, or a scenario safety question). */
   check: text,
   turns: z.array(z.strictObject({ student: text, tutor: text })).min(1),
   /** 1-based turn whose tutor message carries the fault. */

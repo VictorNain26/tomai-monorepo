@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'bun:test';
 import { dataset } from '../eval';
-import { detectLeak, leakRates } from '../eval/evaluators';
+import { detectArtifact, detectLeak, rates } from '../eval/evaluators';
 import type { TutorTurn } from '../eval/turn-parts';
 import { transcript, turn } from './_helpers/eval-fixtures';
 
@@ -60,19 +60,29 @@ describe('detectLeak', () => {
   });
 });
 
-describe('leakRates', () => {
+describe('rates', () => {
   it('computes the rate per scenario and overall, without the conversations that have no verdict', () => {
-    const leaked = { leaked: true, turn: 1, channel: 'text' as const, form: 'x = 5' };
-    const clean = { leaked: false, turn: null, channel: null, form: null };
-    expect(leakRates([
-      { scenarioId: 'S2', verdict: leaked },
-      { scenarioId: 'S2', verdict: clean },
-      { scenarioId: 'S3', verdict: clean },
-      { scenarioId: 'S3', verdict: null },
+    expect(rates([
+      { scenarioId: 'S2', flagged: true },
+      { scenarioId: 'S2', flagged: false },
+      { scenarioId: 'S3', flagged: false },
+      { scenarioId: 'S3', flagged: null },
     ])).toEqual([
-      { scope: 'S2', leaked: 1, total: 2, rate: 0.5 },
-      { scope: 'all', leaked: 1, total: 3, rate: 1 / 3 },
-      { scope: 'S3', leaked: 0, total: 1, rate: 0 },
+      { scope: 'S2', flagged: 1, total: 2, rate: 0.5 },
+      { scope: 'all', flagged: 1, total: 3, rate: 1 / 3 },
+      { scope: 'S3', flagged: 0, total: 1, rate: 0 },
     ]);
+  });
+});
+
+describe('detectArtifact', () => {
+  it('finds an internal marker or an unfilled placeholder in the text or the flashcards', () => {
+    expect(detectArtifact(played(reply('Bien.'), reply('[VOCAL]\n\nTrès bien, je vais t’expliquer.')))).toEqual({ found: true, turn: 2, quote: '[VOCAL]' });
+    expect(detectArtifact(played(reply('Retour à ton exercice, [prénom de l\'élève] :')))).toMatchObject({ found: true, quote: '[prénom de l\'élève]' });
+    expect(detectArtifact(played(reply('Voici tes fiches.', { cards: 'Rappel <student_context>' })))).toMatchObject({ found: true, turn: 1 });
+  });
+
+  it('leaves alone brackets that are content: a choice, an interval, a list marker', () => {
+    expect(detectArtifact(played(reply('Choisis [a] ou [b] ; x est dans [0 ; 5].'), reply('Le nom commun « prénom » est masculin.')))).toEqual({ found: false, turn: null, quote: null });
   });
 });

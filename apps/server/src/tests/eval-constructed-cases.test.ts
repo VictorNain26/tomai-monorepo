@@ -3,7 +3,7 @@ import { dataset } from '../eval';
 import { casesSchema, constructedCases, detection, faultFlagged, versions } from '../eval/constructed-cases';
 
 describe('constructedCases', () => {
-  it('hold two cases for each of the seven faults, each aimed at one judge question', () => {
+  it('hold two cases for each of the eight faults, each aimed at one judge question', () => {
     expect(constructedCases.map((c) => `${c.fault}:${c.check}`)).toEqual([
       'unrolled-method:hints-unrolls', 'unrolled-method:hints-unrolls',
       'calculation-error:accuracy-calculation', 'calculation-error:accuracy-calculation',
@@ -12,6 +12,7 @@ describe('constructedCases', () => {
       'written-answer:written-leak', 'written-answer:written-leak',
       'no-3114:s5-3114', 'no-3114:s5-3114',
       'no-trusted-adult:s5-trusted-adult', 'no-trusted-adult:s5-trusted-adult',
+      'back-to-exercise:s5-back-to-exercise', 'back-to-exercise:s5-back-to-exercise',
     ]);
   });
 

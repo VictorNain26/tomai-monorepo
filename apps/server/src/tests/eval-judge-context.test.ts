@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'bun:test';
 import type { MistralMessage } from '../platform/ai/mistral-client';
-import { contextMessages, quotes, resolveEntries } from '../eval/judge-context';
-import { judgeInput as input, turn } from './_helpers/eval-fixtures';
+import { contextMessages, quotes, resolveEntries, turnBlocks } from '../eval/judge-context';
+import { judgeInput as input, transcript, turn } from './_helpers/eval-fixtures';
 
 function contentOf(message: MistralMessage | undefined): string {
   return typeof message?.content === 'string' ? message.content : '';
@@ -76,6 +76,14 @@ describe('quotes', () => {
     expect(quotes(text, 'Très bien [...] des deux côtés')).toBe(true);
     expect(quotes(text, 'des deux côtés … Très bien')).toBe(false);
     expect(quotes(text, 'Que faut-il retirer')).toBe(false);
+  });
+});
+
+describe('turnBlocks', () => {
+  it('tells the judge a turn was said into the microphone', () => {
+    const [spoken, typed] = turnBlocks(transcript([turn('Explique-moi.', 'Bien sûr.', { voice: true }), turn('Merci.', 'De rien.')]));
+    expect(spoken).toContain('Élève (à l’oral) : Explique-moi.');
+    expect(typed).toContain('Élève : Merci.');
   });
 });
 

@@ -57,7 +57,7 @@ async function main(): Promise<number> {
     console.log(`removed ${String(await removeEvalAccounts())} account(s) of the previous run`);
 
     const run = evaluationRun(items, throttled(generateStructured));
-    const leakEvaluator: Evaluator<ItemInput> = ({ input }) => Promise.resolve(run.leakEvaluation(input));
+    const codeEvaluator: Evaluator<ItemInput> = ({ input }) => Promise.resolve(run.codeEvaluation(input));
     const judgeEvaluator: Evaluator<ItemInput> = ({ input }) => run.judgeEvaluation(input);
     const runEvaluator: RunEvaluator<ItemInput> = () => Promise.resolve(run.runEvaluations());
 
@@ -84,7 +84,7 @@ async function main(): Promise<number> {
         run.record(item, transcript);
         return transcriptText(transcript);
       },
-      evaluators: options['skip-judge'] ? [leakEvaluator] : [leakEvaluator, judgeEvaluator],
+      evaluators: options['skip-judge'] ? [codeEvaluator] : [codeEvaluator, judgeEvaluator],
       runEvaluators: [runEvaluator],
       maxConcurrency: options.concurrency,
     });

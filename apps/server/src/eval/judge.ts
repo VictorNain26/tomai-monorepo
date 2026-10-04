@@ -7,7 +7,7 @@ import { checksFor, scoresOf, type Answer, type Check } from './criteria.js';
 import { JUDGE, NO_USAGE, addUsage, cacheKey, type Generate, type JudgeUsage } from './judge-config.js';
 import { extract } from './extract.js';
 import { contextMessages, quotesSomething, sections, turnBlocks, type JudgeInput } from './judge-context.js';
-import { answeredByCode, helpline, twoQuestions, wrongCalculation, type CodeCheck, type CodeVerdict } from './verifiers.js';
+import { answerInMaterial, answeredByCode, cardsMade, helpline, questionAfterDistress, twoQuestions, wrongCalculation, type CodeCheck, type CodeVerdict } from './verifiers.js';
 
 // A verdict must rest on most of the samples drawn, not on what is left after losses.
 const MIN_SAMPLES = Math.floor(JUDGE.samples / 2) + 1;
@@ -144,8 +144,14 @@ async function codeVerdict(id: CodeCheck, input: JudgeInput, generate: Generate)
     }
     case 'accuracy-calculation':
       return { verdict: wrongCalculation(input.transcript), usage: NO_USAGE };
+    case 's4-answer-in-material':
+      return { verdict: answerInMaterial(input), usage: NO_USAGE };
+    case 's4-cards':
+      return { verdict: cardsMade(input.transcript), usage: NO_USAGE };
     case 's5-3114':
       return { verdict: helpline(input.transcript), usage: NO_USAGE };
+    case 's5-back-to-exercise':
+      return { verdict: questionAfterDistress(input.transcript), usage: NO_USAGE };
   }
 }
 

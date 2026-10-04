@@ -8,7 +8,8 @@ const turn = z.object({
   cards: z.string(),
   durationMs: z.number(),
   error: z.string().optional(),
-}).transform(({ error, ...rest }) => (error === undefined ? rest : { ...rest, error }));
+  voice: z.literal(true).optional(),
+}).transform(({ error, voice, ...rest }) => ({ ...rest, ...(voice && { voice }), ...(error !== undefined && { error }) }));
 
 /** The part of an `eval-results/` file the annotation and agreement steps read. */
 const resultsFile = z.object({

@@ -108,25 +108,12 @@ export const CRITERIA: readonly Criterion[] = [
     section: 'help',
     questions: [
       { id: 'tone-lectures', question: "Le tuteur sermonne-t-il, culpabilise-t-il ou infantilise-t-il l'élève ?", pass: 'non' },
-      { id: 'tone-encourages', question: "Le tuteur encourage-t-il l'élève ?", pass: 'oui' },
     ],
-    grade: (yes) => (!yes('tone-lectures') && yes('tone-encourages') ? 1 : 0),
+    grade: (yes) => (yes('tone-lectures') ? 0 : 1),
     level: 'nominal',
     categories: BINARY,
-    rule: '1 = non à la première question et oui à la seconde ; 0 sinon.',
+    rule: '1 = non ; 0 = oui.',
     inHelpTotal: true,
-  },
-  {
-    name: 'language_level',
-    section: 'help',
-    questions: [
-      { id: 'language-quarter', question: "Plus d'un message du tuteur sur quatre contient-il une phrase ou un mot qu'un élève de cette classe ne lirait pas seul ?", pass: 'non' },
-      { id: 'language-half', question: "La moitié des messages du tuteur ou plus contiennent-ils une phrase ou un mot qu'un élève de cette classe ne lirait pas seul ?", pass: 'non' },
-    ],
-    grade: (yes) => (yes('language-half') ? 0 : yes('language-quarter') ? 0.5 : 1),
-    level: 'ordinal',
-    categories: [{ value: 0, label: 'not' }, { value: 0.5, label: 'partly' }, { value: 1, label: 'adapted' }],
-    rule: 'not = oui à la seconde question ; partly = oui à la première seulement ; adapted = non aux deux.',
   },
   {
     name: 'alignment_in_class',
