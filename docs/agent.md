@@ -108,6 +108,18 @@ modèle sans prévenir et invalide l'évaluation. Chaque prompt porte une versio
   d'apprentissage), RCT LearnLM collège (44,3 % des éditions humaines servent à
   éviter la frustration), Sweller 2019 (exemples résolus pour le novice).
 - **Diagnostic de l'erreur avant toute aide** (Wang et al., NAACL 2024).
+- **La réponse de l'exercice n'est jamais donnée, qu'il s'agisse d'un fait ou d'un
+  raisonnement** : dans un devoir, le fait demandé est ce que l'élève doit rendre. Un fait
+  d'appui (définition, règle) se donne après une vraie tentative, et une bonne réponse de
+  l'élève se confirme (décision du 2026-10-04, `etudes/2026-10-03/analyse-erreurs.md`).
+- **Solution de référence côté serveur** : en début d'exercice, Small 4 le résout hors de
+  la vue de l'élève et mathjs vérifie les calculs ; le tuteur la reçoit avec les erreurs
+  fréquentes, et le contrôle de fuite s'y compare. Appui : Bastani 2025 et Kestin 2025
+  fournissent une solution correcte au modèle ; seul, GPT-4 ne donnait la bonne réponse
+  que 51 % du temps (Bastani). Sa justesse se mesure sur le jeu d'évaluation.
+- **Une explication demandée, à l'écrit comme à l'oral, reste au palier d'aide** ; le
+  canal vocal ne change que la forme. En S4, « explique-le à l'oral », tapé, faisait
+  dérouler la solution ; le canal vocal lui-même n'est pas encore joué par le harnais.
 - Suppression du « Chain-of-Thought obligatoire » (bloc maths de `SUBJECT_SPECIFICS`,
   `modules/tutor/prompts/adaptation/by-subject.ts`) et de la règle contradictoire de
   `IntentClassifierService.buildReinforcement` (« révéler une étape intermédiaire » après
@@ -131,7 +143,7 @@ modèle sans prévenir et invalide l'évaluation. Chaque prompt porte une versio
 |---|---|---|
 | Modération d'entrée | `mistral-moderation-2603` sur le message de l'élève avant l'appel ; catégories Sexual, Self-Harm, Jailbreaking, PII, Violence | Avant `streamText` |
 | Modération de sortie | Même modèle sur la réponse ; blocage et réponse de repli | Après génération, avant persistance |
-| Détresse | Classifieur indépendant du prompt (catégorie Self-Harm + règles) ; réponse de soutien, numéros d'aide vérifiés sur service-public.fr, alerte au parent. C'est la seule alerte que reçoit le parent | Même point d'entrée |
+| Détresse | Classifieur indépendant du prompt (catégorie Self-Harm + règles en français, testés sur des phrases d'élèves) ; réponse fixe rédigée et approuvée par un humain, avec le 3114 et un adulte de confiance, puis fin de la conversation (Crawford et Glatard, CMAJ 2026) ; numéros d'aide vérifiés sur service-public.fr, alerte au parent. C'est la seule alerte que reçoit le parent | Même point d'entrée |
 | Fuite de réponse | Palier d'aide imposé par le serveur (§4) ; contrôle de fuite du lot 1 réutilisé en production si son coût le permet | Assembleur de tour |
 | Aucune solution montrée par accident | Le raisonnement du modèle ne quitte jamais le serveur (`sendReasoning: false` de `toUIMessageStream`, `modules/tutor/chat-message.routes.ts`) ; aucune balise interne, étape de calcul cachée, résultat d'outil brut ni bloc de contexte n'arrive dans ce que voit ou entend l'élève. Le contrôle de fuite porte sur tout ce qui l'atteint : texte, lecture vocale, fiches, titre de séance, messages d'erreur | Sortie du flux, outils, TTS |
 | Confirmation avant création de cartes | `needsApproval` de l'AI SDK sur `generate_flashcards`, pas la seule description de l'outil | `chat-tools.ts` |
