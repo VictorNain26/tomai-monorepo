@@ -11,12 +11,12 @@
 
 import { Hono } from 'hono';
 import { z } from 'zod';
-import { createUIMessageStream, createUIMessageStreamResponse, toUIMessageStream } from 'ai';
+import { createUIMessageStream, createUIMessageStreamResponse } from 'ai';
 import { TurnUsage } from './turn-usage.js';
 import { requireUser, validate, type AppEnv } from '../../platform/http/context.js';
 import { createRateLimitMiddleware, RateLimitPresets } from '../../platform/http/rate-limit.js';
 import { chatOrchestrationService, ChatOrchestrationError } from './chat-orchestration.service.js';
-import { streamChat } from './ai-chat.service.js';
+import { runControlledTurn, type ControlledTurn } from './controlled-turn.js';
 import { buildChatTools } from './chat-tools.js';
 import { extractTextFromParts, sanitizePrompt, type TomChatMessage } from './chat-ui-message.js';
 import { checkQuota } from '../billing/index.js';
@@ -139,11 +139,11 @@ export const chatMessageRoutes = new Hono<AppEnv>()
     }
 
     const startTime = Date.now();
-    let capturedResult: ReturnType<typeof streamChat> | undefined;
+    let controlled: ControlledTurn | undefined;
     const turnUsage = new TurnUsage();
 
     const stream = createUIMessageStream<TomChatMessage>({
-      execute: ({ writer }) => {
+      execute: async ({ writer }) => {
         const tools = buildChatTools({
           userId: user.id,
           sessionId: turnCtx.sessionId,
@@ -151,7 +151,7 @@ export const chatMessageRoutes = new Hono<AppEnv>()
           emitDeckCreated: d => { writer.write({ type: 'data-deck-created', data: d }); },
         });
 
-        capturedResult = streamChat({
+        controlled = await runControlledTurn(writer, {
           userId: user.id,
           content: safeContent,
           subject: turnCtx.subject,
@@ -170,15 +170,19 @@ export const chatMessageRoutes = new Hono<AppEnv>()
           inputMode,
           tools,
           usage: turnUsage,
+        }, {
+          sheet: turnCtx.exerciseSheet,
+          uncertain: turnCtx.exerciseUncertain,
+          diagnosis: turnCtx.exerciseProgress?.diagnosis ?? null,
+          studentText: safeContent,
+          pastStudentTexts: turnCtx.conversationHistory.filter((turn) => turn.role === 'user').map((turn) => turn.content),
         });
-
-        writer.merge(toUIMessageStream({ stream: capturedResult.stream, tools, sendReasoning: false }));
       },
       onEnd: async ({ responseMessage }) => {
         try {
           // Wait for the model's side to end, whatever ends it (finish, timeout, error), even
           // when the client left first: only then is the usage complete.
-          await capturedResult?.steps.then(() => undefined, () => undefined);
+          await Promise.all((controlled?.results ?? []).map(result => Promise.resolve(result.steps).then(() => undefined, () => undefined)));
           const { usage, cut } = turnUsage.read();
           if (cut) {
             logger.warn('Chat turn cut: the cut call is estimated', {
@@ -188,7 +192,8 @@ export const chatMessageRoutes = new Hono<AppEnv>()
               operation: 'chat-stream:cut',
             });
           }
-          const modelMessages = cut || !capturedResult ? undefined : await capturedResult.responseMessages;
+          // The text the student read replays as the model produced it; the fixed reply as text.
+          const modelMessages = cut || !controlled?.kept ? undefined : await controlled.kept.responseMessages;
           await chatOrchestrationService.finishTurn({
             sessionId: turnCtx.sessionId,
             userId: user.id,
@@ -203,6 +208,9 @@ export const chatMessageRoutes = new Hono<AppEnv>()
             attachedFileInfos: turnCtx.attachedFileInfos,
             turnAnalysis: turnCtx.turnAnalysis,
             exerciseProgress: turnCtx.exerciseProgress,
+            ...(controlled && controlled.outcome !== 'passed' && {
+              outputCheck: { findings: controlled.findings.map(finding => finding.kind), outcome: controlled.outcome },
+            }),
           });
         } catch (error) {
           logger.error('Chat turn persistence failed', {

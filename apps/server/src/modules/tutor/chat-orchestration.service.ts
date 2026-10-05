@@ -10,26 +10,23 @@ import { chatMessageService } from './chat-message.service.js';
 import { studySessionsRepository } from './study-sessions.repository.js';
 import { resolveEffectiveSubject, shouldPersistDetectedSubject } from './subject-resolution.js';
 import { STUDENT_SUBJECTS } from './prompts/adaptation/subjects.js';
-import { fileContextService, sessionFilesRepository, type AttachedFileInfo, type AttachedFileForPrompt } from '../documents/index.js';
+import { fileContextService, sessionFilesRepository } from '../documents/index.js';
 import { getLearningContext, wrapAttachedFiles } from './mistral-helpers.js';
 import { summarizationService } from './summarization.service.js';
 import { autoTitleService } from './auto-title.service.js';
-import { analyseTurn, turnInstruction as instructionFor, type TurnAnalysis } from './turn-analysis.service.js';
-import { prepareExerciseTurn, type ExerciseChange } from './exercise-turn.js';
+import { analyseTurn, turnInstruction as instructionFor } from './turn-analysis.service.js';
+import { prepareExerciseTurn } from './exercise-turn.js';
 import { hintOf } from './hint-ladder.js';
-import type { Diagnosis } from './exercise-diagnosis.service.js';
-import type { ExerciseSheet } from './exercise-sheet.js';
+import type { ChatTurnContext, FinishTurnParams, PersistUserTurnParams, PrepareTurnRequest } from './chat-turn.types.js';
 import { exerciseSheetsRepository } from './exercise-sheets.repository.js';
 import { cognitiveProfileService } from './cognitive-profile.service.js';
 import { costTrackingService, incrementTokenUsage } from '../billing/index.js';
 import { episodicMemoryService } from './episodic-memory.service.js';
 import { subjectProfileService } from './subject-profile.service.js';
 import { logger } from '../../platform/observability/logger.js';
-import { extractTextFromParts, type TomChatMessage } from './chat-ui-message.js';
-import type { LanguageModelUsage } from 'ai';
+import { extractTextFromParts } from './chat-ui-message.js';
 import { replayable, type HistoryTurn, type ResponseMessage } from './chat-message-assembler.js';
 import { messagesRepository } from './messages.repository.js';
-import type { EducationLevelType } from '../../types/index.js';
 
 /**
  * An assistant message's stored response messages, replayed as they are; an unreadable or
@@ -46,72 +43,6 @@ export function readStoredResponseMessages(value: unknown, messageId: string): R
     });
   }
   return messages;
-}
-
-interface PrepareTurnRequest {
-  userId: string;
-  sessionId?: string | undefined;
-  requestedSubject?: string | undefined;
-  content: string;
-  fileIds: string[];
-  schoolLevel: EducationLevelType;
-}
-
-/** @public — reachable only via the typed client's inferred route return types (apps/server build:types), not a direct import; knip false positive. */
-export interface ChatTurnContext {
-  sessionId: string;
-  subject?: string;
-  conversationSummary: string | null;
-  conversationHistory: HistoryTurn[];
-  cognitiveProfileSummary: string | null;
-  /** Learning context (FSRS due cards) + episodic memory + subject memory, merged into one block. */
-  mergedLearningContext: string | null;
-  turnInstruction: string | null;
-  turnAnalysis: TurnAnalysis;
-  /** The exercise in progress: prepared when the student brings one, else the session's, unless solved. */
-  exerciseSheet: ExerciseSheet | null;
-  /** The exercise's progress under a contract, for `finishTurn` to keep the tutor's message. */
-  exerciseProgress: ExerciseProgress | null;
-  /** The turn's files the user may attach: their own, uploaded, each once. */
-  fileIds: string[];
-  /** The bounded texts of the session's files, then of this turn's, for `streamChat`'s `attachedFiles`. */
-  attachedFiles: AttachedFileForPrompt[];
-  attachedFileInfo: AttachedFileInfo | null;
-  attachedFileInfos?: AttachedFileInfo[];
-}
-
-interface PersistUserTurnParams {
-  sessionId: string;
-  content: string;
-  inputMode?: 'text' | 'voice' | undefined;
-  fileIds: string[];
-  attachedFileInfo: AttachedFileInfo | null;
-  attachedFileInfos?: AttachedFileInfo[] | undefined;
-}
-
-interface FinishTurnParams {
-  sessionId: string;
-  userId: string;
-  userContent: string;
-  responseMessage: TomChatMessage;
-  /** The turn's response messages as the model produced them, reasoning and tool calls included. */
-  modelMessages?: ResponseMessage[] | undefined;
-  /** The turn was cut (timeout, error): its response messages miss what the student saw of the last call. */
-  aborted?: boolean | undefined;
-  model: string;
-  usage: LanguageModelUsage | undefined;
-  startTime: number;
-  attachedFileInfo: AttachedFileInfo | null;
-  attachedFileInfos?: AttachedFileInfo[] | undefined;
-  turnAnalysis: TurnAnalysis;
-  exerciseProgress?: ExerciseProgress | null | undefined;
-}
-
-interface ExerciseProgress {
-  id: string | null;
-  hintLevel: number;
-  diagnosis: Diagnosis | null;
-  change: ExerciseChange;
 }
 
 class ChatOrchestrationService {
@@ -253,6 +184,7 @@ class ChatOrchestrationService {
       turnInstruction,
       turnAnalysis,
       exerciseSheet: exercise?.sheet ?? null,
+      exerciseUncertain: exercise?.uncertain ?? false,
       exerciseProgress: exercise && hintLevel !== null && change ? { id: exercise.id, hintLevel, diagnosis, change } : null,
       fileIds: fileContext.fileIds,
       attachedFiles: files,
@@ -298,7 +230,7 @@ class ChatOrchestrationService {
    * persiste, mais les tokens factures sont comptes.
    */
   async finishTurn(params: FinishTurnParams): Promise<void> {
-    const { sessionId, userId, userContent, responseMessage, modelMessages, aborted, model, usage, startTime, attachedFileInfo, attachedFileInfos, turnAnalysis, exerciseProgress } = params;
+    const { sessionId, userId, userContent, responseMessage, modelMessages, aborted, model, usage, startTime, attachedFileInfo, attachedFileInfos, turnAnalysis, exerciseProgress, outputCheck } = params;
     const fullContent = extractTextFromParts(responseMessage.parts);
     const tokensUsed = usage?.totalTokens ?? 0;
 
@@ -335,6 +267,7 @@ class ChatOrchestrationService {
       ...(attachedFileInfos && { attachedFiles: attachedFileInfos }),
       turnAnalysis,
       ...(exerciseProgress && { exerciseTurn: { diagnosis: exerciseProgress.diagnosis, hintLevel: exerciseProgress.hintLevel } }),
+      ...(outputCheck && { outputCheck }),
       // Kept only when they can be replayed as they are: a cut turn, or one that ended on a tool
       // result at the step limit, replays as its text.
       modelMessages: aborted ? undefined : replayable(modelMessages),

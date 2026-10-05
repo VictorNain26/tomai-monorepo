@@ -1,0 +1,82 @@
+/** The shapes of a chat turn: what `prepareTurn` gathers and what `finishTurn` records. */
+
+import type { LanguageModelUsage } from 'ai';
+import type { AttachedFileInfo, AttachedFileForPrompt } from '../documents/index.js';
+import type { EducationLevelType } from '../../types/index.js';
+import type { HistoryTurn, ResponseMessage } from './chat-message-assembler.js';
+import type { OutputCheckRecord } from './chat-message.service.js';
+import type { TomChatMessage } from './chat-ui-message.js';
+import type { Diagnosis } from './exercise-diagnosis.service.js';
+import type { ExerciseSheet } from './exercise-sheet.js';
+import type { ExerciseChange } from './exercise-turn.js';
+import type { TurnAnalysis } from './turn-analysis.service.js';
+
+export interface PrepareTurnRequest {
+  userId: string;
+  sessionId?: string | undefined;
+  requestedSubject?: string | undefined;
+  content: string;
+  fileIds: string[];
+  schoolLevel: EducationLevelType;
+}
+
+/** @public — reachable only via the typed client's inferred route return types (apps/server build:types), not a direct import; knip false positive. */
+export interface ChatTurnContext {
+  sessionId: string;
+  subject?: string;
+  conversationSummary: string | null;
+  conversationHistory: HistoryTurn[];
+  cognitiveProfileSummary: string | null;
+  /** Learning context (FSRS due cards) + episodic memory + subject memory, merged into one block. */
+  mergedLearningContext: string | null;
+  turnInstruction: string | null;
+  turnAnalysis: TurnAnalysis;
+  /** The exercise in progress: prepared when the student brings one, else the session's, unless solved. */
+  exerciseSheet: ExerciseSheet | null;
+  /** The sheet's answer is not one to hold the tutor to. */
+  exerciseUncertain: boolean;
+  /** The exercise's progress under a contract, for `finishTurn` to keep the tutor's message. */
+  exerciseProgress: ExerciseProgress | null;
+  /** The turn's files the user may attach: their own, uploaded, each once. */
+  fileIds: string[];
+  /** The bounded texts of the session's files, then of this turn's, for `streamChat`'s `attachedFiles`. */
+  attachedFiles: AttachedFileForPrompt[];
+  attachedFileInfo: AttachedFileInfo | null;
+  attachedFileInfos?: AttachedFileInfo[];
+}
+
+export interface PersistUserTurnParams {
+  sessionId: string;
+  content: string;
+  inputMode?: 'text' | 'voice' | undefined;
+  fileIds: string[];
+  attachedFileInfo: AttachedFileInfo | null;
+  attachedFileInfos?: AttachedFileInfo[] | undefined;
+}
+
+export interface FinishTurnParams {
+  sessionId: string;
+  userId: string;
+  userContent: string;
+  responseMessage: TomChatMessage;
+  /** The turn's response messages as the model produced them, reasoning and tool calls included. */
+  modelMessages?: ResponseMessage[] | undefined;
+  /** The turn was cut (timeout, error): its response messages miss what the student saw of the last call. */
+  aborted?: boolean | undefined;
+  model: string;
+  usage: LanguageModelUsage | undefined;
+  startTime: number;
+  attachedFileInfo: AttachedFileInfo | null;
+  attachedFileInfos?: AttachedFileInfo[] | undefined;
+  turnAnalysis: TurnAnalysis;
+  exerciseProgress?: ExerciseProgress | null | undefined;
+  /** What the check before the student held back, when it did. */
+  outputCheck?: OutputCheckRecord | undefined;
+}
+
+interface ExerciseProgress {
+  id: string | null;
+  hintLevel: number;
+  diagnosis: Diagnosis | null;
+  change: ExerciseChange;
+}

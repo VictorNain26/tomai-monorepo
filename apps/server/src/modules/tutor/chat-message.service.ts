@@ -8,6 +8,11 @@ import type { ResponseMessage } from './chat-message-assembler.js';
 import type { TurnAnalysis } from './turn-analysis.service.js';
 import type { Diagnosis } from './exercise-diagnosis.service.js';
 
+export interface OutputCheckRecord {
+  findings: ('answer' | 'tag' | 'equality')[];
+  outcome: 'regenerated' | 'fallback';
+}
+
 export class ChatMessageService {
   async getSessionHistory(sessionId: string, options?: { limit?: number | undefined; afterMessageId?: string | undefined }): Promise<Omit<DbMessage, 'modelMessages'>[]> {
     try {
@@ -83,6 +88,8 @@ export class ChatMessageService {
       turnAnalysis?: TurnAnalysis;
       /** The diagnosis and the level of this turn's help, under a contract; kept for evals. */
       exerciseTurn?: { diagnosis: Diagnosis | null; hintLevel: number } | undefined;
+      /** What the check before the student held back, and what replaced it; kept for evals. */
+      outputCheck?: OutputCheckRecord | undefined;
       /** Input channel declared by the user's gesture (mic vs keyboard). */
       inputMode?: 'text' | 'voice';
       /** The assistant's response messages as the model produced them, replayed next turn. */
@@ -119,6 +126,9 @@ export class ChatMessageService {
       }
       if (metadata.exerciseTurn) {
         messageMetadata['exerciseTurn'] = metadata.exerciseTurn;
+      }
+      if (metadata.outputCheck) {
+        messageMetadata['outputCheck'] = metadata.outputCheck;
       }
       if (metadata.inputMode) {
         messageMetadata['inputMode'] = metadata.inputMode;
