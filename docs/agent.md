@@ -236,7 +236,11 @@ la PR C. Le taux `cacheRead` est suivi dans Langfuse.
 Mémoire : faits extraits **en plus** des tours bruts, pas à leur place
 (LongMemEval : +9,4 pts de rappel). Extraction d'épisode à l'inactivité et à la
 fermeture, plus seulement au reset explicite. Le raisonnement des tours précédents
-est rejoué tel quel, comme le demande Mistral.
+est rejoué tel quel, comme le demande Mistral. Le résumé de conversation est incrémental :
+l'ancien résumé et les seuls messages qu'il ne couvre pas, hors des dix derniers ; l'épisode
+d'une séance close en part, avec les échanges qu'il ne couvre pas encore. Les séances passées
+sont rappelées une fois par séance, au premier message assez long, et gardées sur la séance
+(`study_sessions.recalled_episodes`) : le même bloc à chaque tour.
 
 ## 8. Sorties structurées
 
