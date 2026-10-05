@@ -39,7 +39,7 @@ reasoning, moderation, prompt caching, known limitations), le
 ## 2. Modèles
 
 Chat, vision et sorties structurées passent par l'AI SDK (`ai`, `@ai-sdk/mistral`) ;
-embeddings et voix par le SDK Mistral (`@mistralai/mistralai`). Tous visent l'endpoint
+modération et voix par le SDK Mistral (`@mistralai/mistralai`). Tous visent l'endpoint
 UE `https://api.eu.mistral.ai` (origine nue, `MISTRAL_SERVER_URL` refuse tout chemin ;
 inférence garantie en Europe, +10 %). Le Zero Data Retention de l'organisation est
 requis avant tout utilisateur réel ; il n'est pas encore demandé (`suivi.md`,
@@ -177,18 +177,15 @@ en zone intermédiaire (McBain 2025).
 
 ## 6. Outils
 
-Deux outils (`chat-tools.ts`) : `generate_flashcards` et `update_student_profile`. Supprimés
-le 2026-10-04 : `get_student_profile`, qui renvoyait le profil déjà injecté à chaque tour, et
-`get_app_help`, guide d'une application mobile qui n'existe plus ; le client web du lot 3
-écrira le sien. Quatre ou cinq outils sont un plafond, pas une cible ; tous en `strict: true`.
+Un outil (`chat-tools.ts`) : `generate_flashcards`. Supprimés le 2026-10-04 :
+`get_student_profile`, qui renvoyait le profil déjà injecté à chaque tour, et `get_app_help`,
+guide d'une application mobile qui n'existe plus ; le client web du lot 3 écrira le sien.
+Supprimé le 2026-10-06 avec la mémoire entre séances (§7) : `update_student_profile`. Quatre ou cinq outils sont un plafond, pas une cible ; tous en `strict: true`.
 
 - Descriptions réécrites : format d'entrée, exemple, cas limite, quand l'utiliser
   plutôt qu'un autre outil.
 - Erreurs structurées `{ isError, errorCategory: transient|validation|business|permission, isRetryable, message }` ;
   un résultat vide n'est jamais une erreur (`tool-errors.ts` étendu).
-- `update_student_profile` n'écrit plus de styles d'apprentissage (neuromythe :
-  Pashler 2008, Newton & Salvi 2020), la colonne est supprimée ; une écriture échouée
-  revient en erreur au modèle.
 - Appels et résultats d'outils persistés dans l'historique avec le raisonnement
   (`messages.model_messages`, `responseMessages` de `streamText`), rejoués au tour suivant
   quand ils finissent sur l'assistant et que le tour n'a pas été coupé ; seul le dernier
@@ -227,20 +224,18 @@ Ordre du prompt, du plus stable au plus variable :
    deux messages `user` de suite sont fusionnés (`assembleChatPrompt`,
    `modules/tutor/chat-message-assembler.ts`).
 
-Aucune consigne du serveur dans un bloc déclaré non fiable : « propose des flashcards »
-est aujourd'hui écrit dans `<student_context>`, que le prompt déclare sans ordre.
+Aucune consigne du serveur dans un bloc déclaré non fiable : le bloc `<student_context>`,
+qui portait « propose des flashcards », est supprimé avec la mémoire entre séances.
 
 `promptCacheKey` = identifiant de session (recommandation Mistral), en place depuis
 la PR C. Le taux `cacheRead` est suivi dans Langfuse.
 
-Mémoire : faits extraits **en plus** des tours bruts, pas à leur place
-(LongMemEval : +9,4 pts de rappel). Extraction d'épisode à l'inactivité et à la
-fermeture, plus seulement au reset explicite. Le raisonnement des tours précédents
-est rejoué tel quel, comme le demande Mistral. Le résumé de conversation est incrémental :
-l'ancien résumé et les seuls messages qu'il ne couvre pas, hors des dix derniers ; l'épisode
-d'une séance close en part, avec les échanges qu'il ne couvre pas encore. Les séances passées
-sont rappelées une fois par séance, au premier message assez long, et gardées sur la séance
-(`study_sessions.recalled_episodes`) : le même bloc à chaque tour.
+Mémoire : celle de la séance seulement. Le raisonnement des tours précédents est rejoué
+tel quel, comme le demande Mistral. Le résumé de conversation est incrémental : l'ancien
+résumé et les seuls messages qu'il ne couvre pas, hors des dix derniers. Aucune mémoire d'une
+séance à l'autre depuis le 2026-10-06 (épisodes, embeddings, profils) : la vision ne la
+promet pas, rien ne la mesurait (le harnais joue une séance neuve), ses seuils étaient
+inventés ; elle ne reviendrait que mesurée.
 
 ## 8. Sorties structurées
 
@@ -395,10 +390,9 @@ d'exercices, transcriptions et résultats sont publiables et rejouables par un t
 
 ## 10. Élève et parents
 
-- Profil de l'élève fait d'**observations structurées** (concept, preuve, date,
-  confiance), inspectable et modifiable par l'élève et le parent.
-  `difficulties` alimenté automatiquement ; les colonnes `frustration*` sans
-  écrivain sont supprimées.
+- Aucun profil de l'élève gardé d'une séance à l'autre (§7) : le profil cognitif, notes
+  libres du modèle sur un enfant, sans durée ni accès pour l'élève ou le parent, est supprimé
+  le 2026-10-06, avec le profil par matière.
 - **Le parent voit un résumé de la semaine et l'alerte de détresse, jamais les
   conversations** : ce qui a été travaillé, ce qui résiste. La détresse est la seule
   alerte (§5). L'élève sait ce que voit son parent. L'accès aux messages complets d'une
@@ -445,6 +439,6 @@ succès). Coûts mesurés : `etudes/2026-10-01/couts.md` ; défauts du code 
   génération ou de l'outil du chat.
 - Le résumé de conversation est incrémental : il ne se relance qu'après un nombre fixe de
   nouveaux messages, comptés hors de la fenêtre gardée en clair.
-- Chaque appel IA (chat, analyse du tour, titre, résumé, lecture d'image, cartes, embeddings,
-  STT, TTS) est tracé dans `cost_tracking`, à une précision inférieure au centime.
+- Chaque appel IA (chat, analyse du tour, titre, résumé, lecture d'image, cartes, STT, TTS)
+  est tracé dans `cost_tracking`, à une précision inférieure au centime.
 - Le quota gratuit se fixe sur le coût mesuré, une fois ces corrections faites.

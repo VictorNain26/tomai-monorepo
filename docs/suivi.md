@@ -27,10 +27,16 @@ bloquant levé).
   Premier passage fait le 2026-10-05 : il a trouvé l'analyse du tour qui ratait les énoncés,
   corrigée (#391). Appels du SDK Mistral retentés, modération comprise sur un appel bloqué (#392).
   S4 repassé : aucune fuite sur 6. Point 7 terminé : appels annexes (#393), logs sans contenu
-  d'élève (#394), mémoire (#395). Prochaine : le point 8, quotas et coûts, puis le passage de fin. Plan d'abord dans `docs/plans/`.
+  d'élève (#394), mémoire (#395). Nettoyage demandé par Victor le 2026-10-06, en trois PR : la
+  mémoire entre séances, en revue (#396) ; les colonnes et tables jamais lues ; les restes hors
+  vision et une migration de base unique, qui emporte pgvector. Puis le point 8, quotas et coûts,
+  et le passage de fin.
+  - Décidé le 2026-10-06, sur délégation de Victor : le quota compte le coût réel (cache à
+    10 %, lecture vocale comprise) ; l'outil de fiches est imposé par le code quand l'analyse
+    du tour relève une demande ou un accord. Plan d'abord dans `docs/plans/`.
   - Une relecture humaine d'une partie des conversations lues par Claude reste due avant
     toute publication (lot 4).
-- **PR ouvertes :** aucune.
+- **PR ouvertes :** #396, mémoire entre séances supprimée.
 - **Landing en ligne gelée** jusqu'au lot 4 : seuls des correctifs d'honnêteté ou techniques y entrent.
   L'identité visuelle est rejetée et se refait au lot 4.
 
@@ -154,15 +160,11 @@ contraire.
   - l'outil `generate_flashcards` du chat (`modules/tutor/chat-tools.ts`) n'a ni contrôle
     de plan ni quota de cartes, alors que la route `/api/learning/generate` réserve les
     fiches au Complet ;
-  - le résumé de conversation se relance à chaque tour après le 10e
-    (`modules/tutor/summarization.service.ts` : le seuil de 10 nouveaux messages se compte
-    depuis le dernier message résumé, alors que 10 messages restent toujours hors du
-    résumé) ;
   - le quota compte `usage.totalTokens` (`ChatOrchestrationService.finishTurn`) : les tokens
     en cache au prix plein alors qu'ils coûtent 10 %, raisonnement compris ; le préfixe fixe
     consomme 63 % de la fenêtre gratuite ;
-  - classifieur d'intention, titre, résumé, analyse de photo, cartes, embeddings, STT et
-    TTS n'écrivent rien dans `cost_tracking` : seul le tour de chat y est tracé ;
+  - analyse du tour, titre, résumé, cartes, STT et TTS n'écrivent rien dans
+    `cost_tracking` : seuls le chat, la fiche, le diagnostic et l'extraction y sont tracés ;
   - `cost_tracking.cost_cents` est un entier : un tour (environ 0,05 centime) s'arrondit
     à 0.
 - **TTS** : une seule voix, française (`fr_marie_*`) ; `/api/tts` n'accepte et n'annonce
@@ -575,3 +577,11 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
     messages tant que rien ne correspond, une panne ne figeant rien ;
   - historique du tour lu après le résumé, sans charger la séance, avec dix messages de
     marge sur le lot ; un résumé n'écrase plus un résumé plus récent.
+
+- **2026-10-06** : nettoyage demandé par Victor, d'après un inventaire du code serveur confronté
+  à la vision. Mémoire entre séances supprimée (#396) : épisodes et embeddings, profils
+  cognitif et par matière, outil `update_student_profile`, contexte d'apprentissage et bloc
+  `<student_context>`, purge de rétention qui ne purgeait qu'eux. La vision ne la promet pas,
+  le harnais ne la mesurait pas (séance neuve), ses seuils étaient inventés (similarité 0,6,
+  90 et 180 jours) ; le profil cognitif gardait, sans durée ni accès, des notes libres du
+  modèle sur un enfant.

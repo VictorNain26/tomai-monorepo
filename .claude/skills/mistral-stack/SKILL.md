@@ -1,6 +1,6 @@
 ---
 name: mistral-stack
-description: Choisir le modèle Mistral et l'appeler correctement — chat, raisonnement, vision, sorties structurées, embeddings, TTS/STT, cache de prompt, coût. À utiliser quand on ajoute ou modifie un appel IA côté serveur, qu'on hésite entre deux modèles, ou qu'un coût de tokens dérape. Toute la stack IA est Mistral, endpoint UE.
+description: Choisir le modèle Mistral et l'appeler correctement — chat, raisonnement, vision, sorties structurées, modération, TTS/STT, cache de prompt, coût. À utiliser quand on ajoute ou modifie un appel IA côté serveur, qu'on hésite entre deux modèles, ou qu'un coût de tokens dérape. Toute la stack IA est Mistral, endpoint UE.
 ---
 
 # Stack IA — casting et réglages
@@ -16,7 +16,6 @@ variable `MISTRAL_SERVER_URL`). Référence de conception : `docs/agent.md` §
 | Lecture d'image (transcription seule), résumés, cartes, titres, analyse du tour, diagnostic | `mistral-small-2603` | `reasoningEffort: 'none'` (défaut de `platform/ai/mistral-client.ts`) |
 | Fiche d'exercice | `mistral-small-2603` | `reasoningEffort: 'high'` passé à `generateStructured`, sans plafond de tokens, température 0,7, trois tirages votés (`modules/tutor/exercise-sheet.service.ts`) |
 | Modération de sortie | `mistral-moderation-2603` (gratuit) | `platform/ai/moderation.ts` : drapeaux au seuil de Mistral, catégories bloquantes listées dans `OUTPUT_BLOCKING` ; indisponible = rien ne part sans contrôle |
-| Embeddings mémoire épisodique | `MISTRAL_EMBED_MODEL` (1024D) | — |
 | STT / TTS | `voxtral-mini-2602` / `voxtral-mini-tts-2603` | STT en français imposé (sans langue, les réponses courtes basculent en anglais, mesuré) ; TTS en voix preset `fr_marie_neutral` (champ `language` refusé par l'API) |
 
 Un seul modèle texte : une seule variable (`MISTRAL_MODEL`), un seul cache, une seule
@@ -38,7 +37,7 @@ modèle et de prix sans prévenir (docs.mistral.ai/inference/model-lifecycle).
   envoyé que pour les IDs de sa liste interne : vérifier qu'un nouveau modèle y figure.
 - Pas de `safePrompt` : déprécié par Mistral, retiré au lot 2. Ce qui atteint l'élève
   (message, cartes, titre) passe par la modération (`platform/ai/moderation.ts`) ; le résumé
-  et l'épisode, jamais montrés, non.
+  de séance, jamais montré, non.
 
 ## Coût
 

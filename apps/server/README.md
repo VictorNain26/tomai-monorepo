@@ -29,7 +29,6 @@ curl http://localhost:3000/health
 | ORM | Drizzle ORM 0.45 |
 | Auth | Better Auth 1.7 + Google OAuth |
 | AI Chat | Mistral Small 4 (`mistral-small-2603`, streaming + tools + vision), endpoint UE |
-| Embeddings | `mistral-embed-2312` 1024D (mémoire épisodique, pgvector) |
 | Stockage | Scaleway Object Storage (S3, RGPD France) |
 | STT | Voxtral (`voxtral-mini-2602`) |
 | TTS | Voxtral (`voxtral-mini-tts-2603`) |
