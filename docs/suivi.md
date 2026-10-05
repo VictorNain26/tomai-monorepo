@@ -555,9 +555,11 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
     retiré ; l'audio passé avec ses seuls octets, sans le pool d'un `Buffer` autour.
 
   Point 7 de la refonte, logs sans contenu d'élève (#394), recensés par l'AST de TypeScript :
-  - erreurs de l'AI SDK qui recopient la sortie du modèle ou l'entrée d'un outil
-    (`TypeValidationError`, `JSONParseError`, `InvalidToolInputError`) : message et pile
-    sans ce contenu, cause comprise ;
+  - erreurs nettoyées par famille, aux trois frontières qui recopient du contenu : la base
+    (paramètres de requête, valeur refusée), l'AI SDK (sortie du modèle, entrée d'un outil,
+    erreurs qu'une relance enveloppe), le SDK Mistral (corps de réponse) ; pile prise après
+    le message, cause comprise ;
   - titre de séance, sujet saisi, nom de fichier, détail postgres et message brut des cartes
     retirés des logs ;
-  - clé de stockage sans le nom de fichier, qui partait aussi dans les journaux du stockage.
+  - clé de stockage et URL d'upload sans le nom de fichier, qui partait aussi dans les
+    journaux du stockage.

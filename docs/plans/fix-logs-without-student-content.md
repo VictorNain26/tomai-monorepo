@@ -21,16 +21,35 @@ Toutes les clés passées au logger, relevées par l'AST de TypeScript hors test
   dans les journaux du stockage objet ;
 - **message d'erreur brut** des cartes (`_actualError`), hors du serializer.
 
+### Après revue
+
+La liste de trois classes laissait passer d'autres messages qui recopient du contenu,
+vérifiés dans les paquets installés :
+- `DrizzleQueryError` (drizzle-orm 0.45) écrit les paramètres de la requête, donc tout texte
+  d'élève écrit en base ; postgres recopie une valeur refusée dans son message ;
+- les erreurs du SDK Mistral (2.7.0) recopient le corps de la réponse ;
+- `RetryError` de l'AI SDK reprend le message des erreurs qu'elle enveloppe ;
+- un texte de modèle dont une ligne commence par « at » passait le filtre de la pile ;
+- l'URL présignée porte les en-têtes `x-amz-meta-*` dans sa requête : le nom de fichier y
+  était encore.
+
 ## Tâches
 
-1. Serializer : pour ces trois erreurs de l'AI SDK, le message sans le contenu, sur
-   `message`, `stack` et chaque `cause`.
+1. Serializer, par famille, aux trois frontières qui portent du contenu :
+   - base : le texte SQL sans les paramètres ; postgres, son code SQLSTATE, sa table, sa
+     colonne et sa contrainte ;
+   - SDK Mistral : le nom et le statut HTTP ;
+   - AI SDK : le nom ; l'outil d'une entrée invalide ; une relance, ses tentatives et sa
+     raison, sa dernière erreur en cause ; les messages fixes de `NoObjectGeneratedError` ;
+   - la pile, prise après le message exact, sans filtre sur son contenu.
 2. Appels : titre, sujet saisi, nom de fichier, `pgDetail` et `_actualError` retirés ; une
-   longueur ou un identifiant à la place quand il sert.
-3. Clé de stockage sans le nom de fichier (`uploads/{userId}/{timestamp}-{fileId}`) : rien ne
-   le relit, le nom reste en base.
-4. Tests : erreurs de l'AI SDK sérialisées sans leur contenu, cause comprise ; clé de
-   stockage ; appels sans les champs retirés.
+   longueur ou un drapeau à la place quand il sert ; les champs postgres de la création de
+   séance, toujours vides (lus sur l'erreur de drizzle), retirés : la cause les porte.
+3. Clé de stockage sans le nom de fichier, avec son extension
+   (`uploads/{userId}/{timestamp}-{fileId}.pdf`) ; le nom n'est plus signé dans l'URL
+   d'upload ; il reste en base.
+4. Tests : chaque famille d'erreurs sans son contenu, cause et pile comprises ; clé et URL
+   signée ; logs de la séance et des cartes sans le sujet saisi, en succès et en échec.
 5. `docs/suivi.md`.
 
 ## Validation
