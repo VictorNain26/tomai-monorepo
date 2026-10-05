@@ -10,6 +10,7 @@
 import { generateText } from '../../platform/ai/mistral-client.js';
 import { studySessionsRepository } from './study-sessions.repository.js';
 import { logger } from '../../platform/observability/logger.js';
+import { titlePasses, type OutputCheckContext } from './output-check.js';
 
 const AUTO_TITLE_PROMPT_VERSION = '2026-05-18';
 
@@ -45,6 +46,7 @@ class AutoTitleService {
     sessionId: string,
     userMessage: string,
     assistantResponse: string,
+    check: OutputCheckContext,
   ): Promise<void> {
     try {
       const session = await studySessionsRepository.findById(sessionId);
@@ -79,6 +81,12 @@ class AutoTitleService {
         logger.warn('Auto-title too short, skipping', {
           sessionId, title, operation: 'auto-title:rejected',
         });
+        return;
+      }
+
+      // The title reaches the student: checked as the tutor's message is.
+      if (!(await titlePasses(title, check))) {
+        logger.warn('Auto-title held back by the check', { sessionId, operation: 'auto-title:held' });
         return;
       }
 

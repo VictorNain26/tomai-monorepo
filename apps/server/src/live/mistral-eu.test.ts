@@ -6,6 +6,7 @@ import { ExerciseSheetSchema, keepKnownNotions, notionsFor, sheetMessages } from
 import { checkAnswer } from '../modules/tutor/exercise-math';
 import { diagnose } from '../modules/tutor/exercise-diagnosis.service';
 import { readImageWithMistralVision } from '../modules/documents/mistral-vision';
+import { moderateReply, moderateTexts } from '../platform/ai/moderation';
 import { mistralEmbeddingsService } from '../modules/tutor/mistral-embeddings.service';
 import { getVoxtralTTSService } from '../modules/voice/voxtral-tts.service';
 import { getVoxtralTranscribeService } from '../modules/voice/voxtral-transcribe.service';
@@ -64,7 +65,7 @@ describe('Mistral Small 4 on the EU endpoint (real API)', () => {
   }, 180_000);
 
   it('accepts the chat tools in strict mode and fills a valid input', async () => {
-    const tools = buildChatTools({ userId: 'live-user', sessionId: randomUUID(), schoolLevel: 'troisieme', emitDeckCreated: () => undefined });
+    const tools = buildChatTools({ userId: 'live-user', sessionId: randomUUID(), schoolLevel: 'troisieme', check: { sheet: null, uncertain: false, diagnosis: null, studentText: '', pastStudentTexts: [] }, emitDeckCreated: () => undefined });
     const asks: [string, string][] = [
       ['generate_flashcards', 'Crée-moi 5 cartes de révision sur le théorème de Pythagore, en mathématiques.'],
       ['update_student_profile', "Note dans mon profil que je confonds l'aire et le périmètre, en mathématiques."],
@@ -137,6 +138,11 @@ describe('Mistral Small 4 on the EU endpoint (real API)', () => {
     expect(diagnosis.verdict).toBe('incorrect');
     expect(diagnosis.decidedBy).toBe('mathjs');
   }, 60_000);
+
+  it('moderates a reply and texts on the EU endpoint, a tutoring exchange flagged in none of the blocking categories', async () => {
+    expect(await moderateReply("J'ai trouvé x = 20/3.", 'Regarde le + 5 : que fais-tu pour l’enlever des deux côtés ?')).toEqual([]);
+    expect(await moderateTexts(['Le théorème de Pythagore', 'Les accords du participe passé'])).toEqual([[], []]);
+  }, 30_000);
 
   it('reads the text of an image once, for the sheet and the tutor', async () => {
     const result = await readImageWithMistralVision(Uint8Array.from(Buffer.from(EQUATION_PNG, 'base64')).buffer, 'image/png');

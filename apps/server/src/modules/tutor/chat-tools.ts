@@ -11,12 +11,15 @@ import { tool, type ToolSet, type InferUITools } from 'ai';
 import { executeTool, isDeckCreatedResult } from './tool-executor.js';
 import type { EducationLevelType } from '../../types/index.js';
 import type { DeckCreatedData } from './chat-ui-message.js';
+import type { OutputCheckContext } from './output-check.js';
 import { SUBJECT_SLUGS } from '../../lib/subjects.js';
 
 export interface ChatToolContext {
   userId: string;
   sessionId: string;
   schoolLevel: EducationLevelType;
+  /** What the cards are checked against before they are stored. */
+  check: OutputCheckContext;
   emitDeckCreated: (data: DeckCreatedData) => void;
 }
 
@@ -63,6 +66,7 @@ export function buildChatTools(ctx: ChatToolContext): ToolSet {
     userId: ctx.userId,
     sessionId: ctx.sessionId,
     schoolLevel: ctx.schoolLevel,
+    check: ctx.check,
   };
 
   return {

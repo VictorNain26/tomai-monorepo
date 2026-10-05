@@ -1,12 +1,27 @@
 import './_helpers/mistral-env';
-import { describe, it, expect } from 'bun:test';
+import { describe, it, expect, beforeEach, mock } from 'bun:test';
 import { z } from 'zod';
 import { simulateReadableStream, tool, type InferUIMessageChunk, type UIMessageStreamWriter } from 'ai';
 import { MockLanguageModelV4 } from 'ai/test';
-import { runControlledTurn } from '../modules/tutor/controlled-turn';
-import { FALLBACK_REPLY, type OutputCheckContext } from '../modules/tutor/output-check';
+import type { OutputCheckContext } from '../modules/tutor/output-check';
 import type { TomChatMessage } from '../modules/tutor/chat-ui-message';
 import type { ExerciseSheet } from '../modules/tutor/exercise-sheet';
+
+// Moderation is a network call: stubbed, with what each test needs.
+/** What moderation answers, one per call, in order; past the end, nothing flagged. */
+let moderationReplies: (string[] | Error)[] = [];
+mock.module('../platform/ai/moderation', () => ({
+  moderateReply: mock(async () => {
+    const reply = moderationReplies.shift() ?? [];
+    if (reply instanceof Error) throw reply;
+    return reply;
+  }),
+  moderateTexts: mock(async (texts: string[]) => texts.map(() => [])),
+}));
+
+const { runControlledTurn } = await import('../modules/tutor/controlled-turn');
+const { FALLBACK_REPLY } = await import('../modules/tutor/output-check');
+
 
 type Chunk = InferUIMessageChunk<TomChatMessage>;
 
@@ -97,6 +112,8 @@ const noop = { noop_tool: tool({ description: 'noop', inputSchema: z.object({}),
 const texts = (chunks: Chunk[]) => chunks.flatMap((chunk) => (chunk.type === 'text-delta' ? [chunk.delta] : []));
 
 describe('runControlledTurn', () => {
+  beforeEach(() => { moderationReplies = []; });
+
   it('writes a text that passes the check in one block, after the other parts and before the end', async () => {
     const out = writer();
     const turn = await runControlledTurn(out.write, { ...base, tools: noop, model: model(['Que fais-tu ', 'du + 5 ?']) }, check);
@@ -166,6 +183,27 @@ describe('runControlledTurn', () => {
     expect(texts(out.chunks)).toEqual([FALLBACK_REPLY]);
     const types = out.chunks.map((chunk) => chunk.type);
     expect(types.indexOf('error')).toBeGreaterThan(types.indexOf('text-delta'));
+  });
+
+  it('regenerates a text moderation holds back, and keeps what was held', async () => {
+    moderationReplies = [['violence_and_threats'], []];
+    const out = writer();
+    const llm = model(['Texte retenu.'], ['Que fais-tu du + 5 ?']);
+    const turn = await runControlledTurn(out.write, { ...base, tools: noop, model: llm }, check);
+
+    expect(turn).toMatchObject({ outcome: 'regenerated', text: 'Que fais-tu du + 5 ?', findings: [{ kind: 'moderation', categories: ['violence_and_threats'] }] });
+    expect(texts(out.chunks)).toEqual(['Que fais-tu du + 5 ?']);
+    expect(JSON.stringify(llm.doStreamCalls[1]?.prompt.at(-1))).toContain('retenue par la modération');
+  });
+
+  it('sends the fixed reply without regenerating when moderation cannot answer: nothing reaches the student unchecked', async () => {
+    moderationReplies = [new Error('moderation down')];
+    const out = writer();
+    const llm = model(['Que fais-tu du + 5 ?'], ['Autre.']);
+    const turn = await runControlledTurn(out.write, { ...base, tools: noop, model: llm }, check);
+
+    expect(turn).toMatchObject({ outcome: 'fallback', findings: [{ kind: 'unmoderated' }], text: FALLBACK_REPLY });
+    expect(llm.doStreamCalls).toHaveLength(1);
   });
 
   it('writes nothing for a turn without text', async () => {

@@ -8,6 +8,7 @@
  * tool-executor.test.ts).
  */
 
+import { noExercise } from './_helpers/output-check';
 import { describe, it, expect, mock } from 'bun:test';
 import { asSchema, type ToolSet } from 'ai';
 import type { TomMetadata } from '../modules/tutor/chat-ui-message';
@@ -32,6 +33,7 @@ const baseContext = {
   userId: 'user-001',
   sessionId: 'session-001',
   schoolLevel: 'troisieme' as const,
+  check: noExercise,
   emitDeckCreated: mock(() => {}),
 };
 

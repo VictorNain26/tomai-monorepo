@@ -17,6 +17,13 @@ import { MockLanguageModelV4 } from 'ai/test';
 import type { AppEnv } from '../platform/http/context';
 import { createMockLogger } from './_helpers/mock-logger';
 
+// Moderation is a network call: stubbed, nothing flagged.
+mock.module('../platform/ai/moderation', () => ({
+  moderateReply: mock(async () => []),
+  moderateTexts: mock(async (texts: string[]) => texts.map(() => [])),
+}));
+
+
 // ============================================
 // MOCKS (must be before any import of the real modules)
 // ============================================

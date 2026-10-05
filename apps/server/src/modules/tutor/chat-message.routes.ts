@@ -17,6 +17,7 @@ import { requireUser, validate, type AppEnv } from '../../platform/http/context.
 import { createRateLimitMiddleware, RateLimitPresets } from '../../platform/http/rate-limit.js';
 import { chatOrchestrationService, ChatOrchestrationError } from './chat-orchestration.service.js';
 import { runControlledTurn, type ControlledTurn } from './controlled-turn.js';
+import type { OutputCheckContext } from './output-check.js';
 import { buildChatTools } from './chat-tools.js';
 import { extractTextFromParts, sanitizePrompt, type TomChatMessage } from './chat-ui-message.js';
 import { checkQuota } from '../billing/index.js';
@@ -143,12 +144,22 @@ export const chatMessageRoutes = new Hono<AppEnv>()
     let controlledTurn: Promise<ControlledTurn> | undefined;
     const turnUsage = new TurnUsage();
 
+    // What reaches the student is checked against: the message, the cards, the title.
+    const check: OutputCheckContext = {
+      sheet: turnCtx.exerciseSheet,
+      uncertain: turnCtx.exerciseUncertain,
+      diagnosis: turnCtx.exerciseProgress?.diagnosis ?? null,
+      studentText: safeContent,
+      pastStudentTexts: turnCtx.conversationHistory.filter((turn) => turn.role === 'user').map((turn) => turn.content),
+    };
+
     const stream = createUIMessageStream<TomChatMessage>({
       execute: async ({ writer }) => {
         const tools = buildChatTools({
           userId: user.id,
           sessionId: turnCtx.sessionId,
           schoolLevel: resolvedSchoolLevel,
+          check,
           emitDeckCreated: d => { writer.write({ type: 'data-deck-created', data: d }); },
         });
 
@@ -171,13 +182,7 @@ export const chatMessageRoutes = new Hono<AppEnv>()
           inputMode,
           tools,
           usage: turnUsage,
-        }, {
-          sheet: turnCtx.exerciseSheet,
-          uncertain: turnCtx.exerciseUncertain,
-          diagnosis: turnCtx.exerciseProgress?.diagnosis ?? null,
-          studentText: safeContent,
-          pastStudentTexts: turnCtx.conversationHistory.filter((turn) => turn.role === 'user').map((turn) => turn.content),
-        });
+        }, check);
         await controlledTurn;
       },
       onEnd: async ({ responseMessage }) => {
@@ -211,6 +216,7 @@ export const chatMessageRoutes = new Hono<AppEnv>()
             attachedFileInfos: turnCtx.attachedFileInfos,
             turnAnalysis: turnCtx.turnAnalysis,
             exerciseProgress: turnCtx.exerciseProgress,
+            check,
             ...(controlled && controlled.outcome !== 'passed' && {
               outputCheck: { findings: controlled.findings.map(finding => finding.kind), outcome: controlled.outcome },
             }),
