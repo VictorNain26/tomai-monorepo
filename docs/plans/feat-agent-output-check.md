@@ -30,6 +30,19 @@ modération de sortie et porte les contrôles sur les fiches de révision et le 
    égalité fausse), le flux (texte retenu écrit d'un bloc, outils transmis, régénération,
    repli, persistance du texte envoyé).
 
+5. **Ce que la revue a ajouté** :
+   - le flux est gardé entier : un texte qui passe part tel qu'il est venu, ses morceaux dans
+     leur ordre ;
+   - pas de régénération sur un tour coupé, ni après un appel d'outil, dont l'effet reste : la
+     réponse de repli directement ; la conversation rejouée garde les appels d'outils, avec le
+     texte lu ;
+   - si l'élève part avant la fin, la fin du tour attend le tour contrôlé et stocke son texte ;
+   - une réponse juste se confirme dans n'importe quelle notation ; « 3 fois 4 » de l'élève
+     vaut « 3 × 4 » pour l'exemption des égalités ;
+   - la régénération n'est plus invitée à « réécrire » un texte qu'elle ne voit pas.
+   - Rejetés : montrer le premier texte à la régénération (ce serait redonner la réponse au
+     rédacteur) ; la latence d'un message entier (décision de l'étude, « À chaque tour », 7).
+
 ## Hors périmètre
 
 - Modération de sortie, fiches de révision et titre : PR suivante.
