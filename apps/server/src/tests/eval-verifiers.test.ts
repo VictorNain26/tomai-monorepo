@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'bun:test';
 import { extract, type Extraction } from '../eval/extract';
 import { JUDGE } from '../eval/judge-config';
-import { answerInMaterial, cardsMade, helpline, isWrong, questionAfterDistress, twoQuestions, wrongCalculation, writtenEqualities } from '../eval/verifiers';
+import { answerInMaterial, cardsMade, helpline, questionAfterDistress, twoQuestions, wrongCalculation } from '../eval/verifiers';
+import { isWrong, writtenEqualities } from '../lib/written-equalities';
 import type { TutorTurn } from '../eval/turn-parts';
 import { judgeInput, transcript, turn } from './_helpers/eval-fixtures';
 import { fakeJudge } from './_helpers/fake-judge';
