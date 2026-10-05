@@ -25,11 +25,11 @@ bloquant levé).
   avant l'élève (#387), modération de sortie, fiches de révision et titre (#389). Point 6
   terminé (#390) : détresse et modération d'entrée, réponse fixe approuvée par Victor le 2026-10-05.
   Premier passage fait le 2026-10-05 : il a trouvé l'analyse du tour qui ratait les énoncés,
-  corrigée (#391). Prochaine : une nouvelle tentative de la modération sur une panne
-  passagère, S4 repassé une fois, puis le point 7. Plan d'abord dans `docs/plans/`.
+  corrigée (#391). Appels du SDK Mistral retentés sur 429 et 5xx, en revue (#392).
+  Prochaine : S4 repassé une fois, puis le point 7. Plan d'abord dans `docs/plans/`.
   - Une relecture humaine d'une partie des conversations lues par Claude reste due avant
     toute publication (lot 4).
-- **PR ouvertes :** aucune.
+- **PR ouvertes :** #392, nouvelles tentatives des appels du SDK Mistral.
 - **Landing en ligne gelée** jusqu'au lot 4 : seuls des correctifs d'honnêteté ou techniques y entrent.
   L'identité visuelle est rejetée et se refait au lot 4.
 
@@ -527,4 +527,6 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
     passages, aucune fausse alarme sur 7 messages sans exercice, l'exercice en cours recopié
     gardé (par le code quand l'énoncé revient mot pour mot) (#391) ;
   - incident Mistral pendant le passage, modération en 503 et en timeout : deux réponses
-    remplacées par le repli.
+    remplacées par le repli ; le client du SDK Mistral (modération, embeddings, voix) ne
+    retentait rien, il retente désormais 429 et 5xx sur 3 s, jamais un timeout, que toutes les
+    tentatives partagent (#392).

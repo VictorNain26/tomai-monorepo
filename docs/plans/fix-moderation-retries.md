@@ -22,18 +22,20 @@ Les appels qui passent par l'AI SDK retentent, eux, `MISTRAL_RETRY_ATTEMPTS` foi
 
 ## Tâches
 
-1. `platform/ai/mistral-sdk.ts` : `retryConfig` en `backoff`, erreurs de connexion comprises,
-   fenêtre de 3 s, sous le plus court timeout des appels du SDK (modération, 5 s) : un appel
-   arrivé à son timeout est déjà hors de la fenêtre et échoue aussitôt. Un appel bloqué reste
-   un échec, et la réponse de repli part comme aujourd'hui.
-2. Tests, `fetch` simulé : un 503 puis une réponse, le résultat arrive en deux appels ; une
-   400 n'est pas retentée ; un appel bloqué échoue à son timeout en un seul appel ; la fenêtre
-   reste sous le timeout de la modération.
+1. `platform/ai/mistral-sdk.ts` : `retryConfig` en `backoff` sur 429 et 5xx, fenêtre de 3 s,
+   sans les erreurs de connexion ni les timeouts. Retenter un timeout boucle jusqu'à la fin de
+   la fenêtre : mesuré, un appel bloqué à 500 ms de timeout durait 3,8 s ; et le timeout
+   global se règle par l'environnement, donc aucune fenêtre ne reste sûrement en dessous. Un
+   appel bloqué reste un échec à son timeout, et la réponse de repli part comme aujourd'hui.
+2. Tests contre un vrai serveur local, derrière le vrai `fetch` : un 503 puis une réponse, le
+   résultat arrive en deux requêtes ; une 400 n'est pas retentée ; un appel bloqué échoue à
+   son timeout en une requête.
 3. `docs/suivi.md`.
 
 ## Hors périmètre
 
-- Un timeout par tentative : le SDK n'en a pas, et le construire serait du code maison.
+- Un timeout par tentative, qui permettrait de retenter un appel bloqué : le SDK n'en a pas,
+  et le construire serait du code maison.
 - S4 repassé une fois après cette PR, annoncé.
 
 ## Validation
