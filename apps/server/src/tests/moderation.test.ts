@@ -14,7 +14,8 @@ const chatCalls: unknown[][] = [];
 const textCalls: unknown[][] = [];
 let results: ReturnType<typeof result>[] = [];
 mock.module('../platform/ai/mistral-sdk', () => ({
-  getMistralSdk: () => ({
+  MODERATION_TIMEOUT_MS: 5000,
+  getModerationSdk: () => ({
     classifiers: {
       moderateChat: mock(async (...args: unknown[]) => { chatCalls.push(args); return { id: 'm', model: 'mistral-moderation-2603', results }; }),
       moderate: mock(async (...args: unknown[]) => { textCalls.push(args); return { id: 'm', model: 'mistral-moderation-2603', results }; }),

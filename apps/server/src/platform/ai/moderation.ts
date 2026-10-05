@@ -7,10 +7,9 @@
 
 import type { ModerationObject } from '@mistralai/mistralai/models/components';
 import { logger } from '../observability/logger.js';
-import { getMistralSdk } from './mistral-sdk.js';
+import { getModerationSdk, MODERATION_TIMEOUT_MS } from './mistral-sdk.js';
 
 const MODERATION_MODEL = 'mistral-moderation-2603';
-const MODERATION_TIMEOUT_MS = 5_000;
 
 /**
  * The categories that hold back an output. `health`, `financial` and `law` stay out (a biology or
@@ -44,7 +43,7 @@ function resultsFor(results: readonly ModerationObject[], count: number): Modera
  */
 export async function moderateReply(studentText: string, reply: string): Promise<string[]> {
   if (!studentText.trim()) return (await moderateTexts([reply]))[0] ?? [];
-  const response = await getMistralSdk().classifiers.moderateChat(
+  const response = await getModerationSdk().classifiers.moderateChat(
     { model: MODERATION_MODEL, inputs: [{ role: 'user', content: studentText }, { role: 'assistant', content: reply }] },
     { timeoutMs: MODERATION_TIMEOUT_MS },
   );
@@ -54,7 +53,7 @@ export async function moderateReply(studentText: string, reply: string): Promise
 /** The blocking categories of each text, in order. Throws when moderation is unavailable. */
 export async function moderateTexts(texts: readonly string[]): Promise<string[][]> {
   if (texts.length === 0) return [];
-  const response = await getMistralSdk().classifiers.moderate(
+  const response = await getModerationSdk().classifiers.moderate(
     { model: MODERATION_MODEL, inputs: [...texts] },
     { timeoutMs: MODERATION_TIMEOUT_MS },
   );
@@ -81,7 +80,7 @@ export async function moderateStudentTurn(lastTutorText: string | null, studentT
     ...(lastTutorText ? [{ role: 'assistant' as const, content: lastTutorText }] : []),
     { role: 'user' as const, content: studentText },
   ];
-  const response = await getMistralSdk().classifiers.moderateChat({ model: MODERATION_MODEL, inputs }, { timeoutMs: MODERATION_TIMEOUT_MS });
+  const response = await getModerationSdk().classifiers.moderateChat({ model: MODERATION_MODEL, inputs }, { timeoutMs: MODERATION_TIMEOUT_MS });
   const [result] = resultsFor(response.results, 1);
   return {
     flagged: INPUT_RECORDED.filter((category) => result?.categories?.[category] === true),
