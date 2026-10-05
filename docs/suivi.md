@@ -30,10 +30,7 @@ bloquant levé).
   d'élève (#394), mémoire (#395). Nettoyage demandé par Victor le 2026-10-06, en trois PR : la
   mémoire entre séances, en revue (#396) ; les colonnes et tables jamais lues ; les restes hors
   vision et une migration de base unique, qui emporte pgvector. Puis le point 8, quotas et coûts,
-  et le passage de fin.
-  - Décidé le 2026-10-06, sur délégation de Victor : le quota compte le coût réel (cache à
-    10 %, lecture vocale comprise) ; l'outil de fiches est imposé par le code quand l'analyse
-    du tour relève une demande ou un accord. Plan d'abord dans `docs/plans/`.
+  et le passage de fin. Plan d'abord dans `docs/plans/`.
   - Une relecture humaine d'une partie des conversations lues par Claude reste due avant
     toute publication (lot 4).
 - **PR ouvertes :** #396, mémoire entre séances supprimée.
@@ -584,4 +581,5 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
   `<student_context>`, purge de rétention qui ne purgeait qu'eux. La vision ne la promet pas,
   le harnais ne la mesurait pas (séance neuve), ses seuils étaient inventés (similarité 0,6,
   90 et 180 jours) ; le profil cognitif gardait, sans durée ni accès, des notes libres du
-  modèle sur un enfant.
+  modèle sur un enfant. La page de confidentialité de la landing, qui décrivait ce profil et
+  une mémoire de 90 jours, dit ce qui est : aucun profil, une séance ne sert pas à la suivante.

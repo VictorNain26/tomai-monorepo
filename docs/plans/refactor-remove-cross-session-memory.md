@@ -41,6 +41,18 @@ Toute la mémoire d'une séance à l'autre part. La séance garde son résumé i
   avec la troisième PR du nettoyage, qui repart d'une migration de base unique (aucune base
   déployée).
 
+## Après revue
+
+- La page de confidentialité de la landing décrivait le profil d'apprentissage et une mémoire
+  de 90 jours : correctif d'honnêteté, permis pendant le gel (`apps/landing/CLAUDE.md`).
+- Mock mort de `getReviewSignals`, commentaires et noms périmés (SDK, migrateur,
+  `.env.example`, test d'intégration des cartes dues), lignes vides laissées par les
+  suppressions ; la règle de test pointait vers le mock retiré.
+- Les décisions du point 8 sortent de cette PR, hors de son périmètre : elles vont avec la
+  PR des coûts.
+- Écarté : garder `student_context` et ses voisines dans les balises retirées du texte de
+  l'élève. Plus aucun gabarit ni le prompt ne les emploient : pour le modèle, c'est du texte.
+
 ## Validation
 
 `bun run typecheck`, `bun run lint`, `bunx knip`, `bun run test`, `db:check`,

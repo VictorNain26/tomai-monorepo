@@ -27,4 +27,4 @@ tiennent tant que la landing est gelée et se revoient au lot 4.
 Piège connu de `bun run test:integration` : `src/integration-tests/api-endpoints.test.ts`
 mocke `drizzle-orm` partiellement — tout nouveau module importé par la chaîne
 `app.ts`/`platform/lifecycle/server-lifecycle.ts` qui tire les schémas Drizzle doit être mocké dans ce fichier
-(pattern : voir le mock de `retention-purge.service`).
+(pattern : voir le mock de `modules/learning/index`).
