@@ -38,8 +38,9 @@ COPY packages/eslint-config/package.json ./packages/eslint-config/
 RUN --mount=type=cache,target=/root/.bun/install/cache \
     bun install --frozen-lockfile --ignore-scripts --filter tomai-server
 
-# Sources
+# Sources, and the test runner the typecheck and the lint read too
 COPY apps/server/src/ ./apps/server/src/
+COPY apps/server/scripts/ ./apps/server/scripts/
 COPY apps/server/tsconfig*.json apps/server/eslint.config.mjs ./apps/server/
 COPY packages/eslint-config/*.js ./packages/eslint-config/
 COPY tsconfig.base.json turbo.json ./
