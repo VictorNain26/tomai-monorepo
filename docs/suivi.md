@@ -28,12 +28,12 @@ bloquant levé).
   corrigée (#391). Appels du SDK Mistral retentés, modération comprise sur un appel bloqué (#392).
   S4 repassé : aucune fuite sur 6. Point 7 terminé : appels annexes (#393), logs sans contenu
   d'élève (#394), mémoire (#395). Nettoyage demandé par Victor le 2026-10-06, en trois PR : la
-  mémoire entre séances, en revue (#396) ; les colonnes et tables jamais lues ; les restes hors
+  mémoire entre séances, faite (#396) ; les colonnes et tables jamais lues ; les restes hors
   vision et une migration de base unique, qui emporte pgvector. Puis le point 8, quotas et coûts,
   et le passage de fin. Plan d'abord dans `docs/plans/`.
   - Une relecture humaine d'une partie des conversations lues par Claude reste due avant
     toute publication (lot 4).
-- **PR ouvertes :** #396, mémoire entre séances supprimée.
+- **PR ouvertes :** aucune.
 - **Landing en ligne gelée** jusqu'au lot 4 : seuls des correctifs d'honnêteté ou techniques y entrent.
   L'identité visuelle est rejetée et se refait au lot 4.
 
