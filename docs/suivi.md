@@ -26,11 +26,11 @@ bloquant levé).
   terminé (#390) : détresse et modération d'entrée, réponse fixe approuvée par Victor le 2026-10-05.
   Premier passage fait le 2026-10-05 : il a trouvé l'analyse du tour qui ratait les énoncés,
   corrigée (#391). Appels du SDK Mistral retentés, modération comprise sur un appel bloqué (#392).
-  S4 repassé : aucune fuite sur 6. Point 7 en cours : appels annexes faits (#393) ; logs sans
-  contenu d'élève faits (#394) ; mémoire en revue (#395). Ensuite, le point 8. Plan d'abord dans `docs/plans/`.
+  S4 repassé : aucune fuite sur 6. Point 7 terminé : appels annexes (#393), logs sans contenu
+  d'élève (#394), mémoire (#395). Prochaine : le point 8, quotas et coûts, puis le passage de fin. Plan d'abord dans `docs/plans/`.
   - Une relecture humaine d'une partie des conversations lues par Claude reste due avant
     toute publication (lot 4).
-- **PR ouvertes :** #395, la mémoire.
+- **PR ouvertes :** aucune.
 - **Landing en ligne gelée** jusqu'au lot 4 : seuls des correctifs d'honnêteté ou techniques y entrent.
   L'identité visuelle est rejetée et se refait au lot 4.
 
