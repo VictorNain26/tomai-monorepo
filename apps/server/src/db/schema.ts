@@ -16,7 +16,6 @@ export * from '../modules/billing/cost-tracking.schema';
 export * from '../modules/billing/billing.schema';
 export * from '../modules/documents/files.schema';
 export * from '../modules/learning/decks.schema';
-export * from '../modules/tutor/cognitive-profile.schema';
 export {
   userRelations,
   studySessionsRelations,

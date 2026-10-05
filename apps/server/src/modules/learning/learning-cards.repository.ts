@@ -149,23 +149,6 @@ class LearningCardsRepository {
 
     return result?.count ?? 0;
   }
-
-  async listWeakSubjects(userId: string, limit: number): Promise<{ subject: string; totalLapses: number }[]> {
-    return db
-      .select({
-        subject: learningDecks.subject,
-        totalLapses: sql<number>`sum((${learningCards.fsrsData}->>'lapses')::int)::int`,
-      })
-      .from(learningCards)
-      .innerJoin(learningDecks, eq(learningCards.deckId, learningDecks.id))
-      .where(and(
-        eq(learningDecks.userId, userId),
-        sql`(${learningCards.fsrsData}->>'lapses')::int > 0`
-      ))
-      .groupBy(learningDecks.subject)
-      .orderBy(sql`sum((${learningCards.fsrsData}->>'lapses')::int) desc`)
-      .limit(limit);
-  }
 }
 
 export const learningCardsRepository = new LearningCardsRepository();

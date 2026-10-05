@@ -14,7 +14,6 @@ describe('assembleChatPrompt', () => {
       systemPrompt: 'SYS',
       history: [],
       subjectBlock: '<subject_specifics matiere="Mathématiques">X</subject_specifics>',
-      studentContextBlock: '<student_context>\n<subject_memory>\nFractions\n</subject_memory>\n</student_context>',
       turnInstruction: '<critical_instruction>C</critical_instruction>',
       inputMode: 'voice',
       studentText: 'Résous 3x + 5 = 20.',
@@ -23,7 +22,7 @@ describe('assembleChatPrompt', () => {
     expect(system).toBe('SYS');
     expect(messages).toHaveLength(1);
     const text = textOf(messages[0]);
-    const order = ['<subject_specifics', '<subject_memory>', '<critical_instruction>', '[VOCAL]', '<student_message>'].map((block) => text.indexOf(block));
+    const order = ['<subject_specifics', '<critical_instruction>', '[VOCAL]', '<student_message>'].map((block) => text.indexOf(block));
     expect(order.every((index) => index >= 0)).toBe(true);
     expect([...order].sort((a, b) => a - b)).toEqual(order);
     expect(text).toEndWith('Résous 3x + 5 = 20.\n</student_message>');

@@ -77,12 +77,6 @@ mock.module('../platform/http/rate-limit', () => ({
   createRateLimitMiddleware: () => (_c: unknown, next: () => Promise<void>) => next(),
   RateLimitPresets: { api: {} },
 }));
-// Retention purge — its real module pulls the Drizzle schemas, whose
-// `relations` import the partial drizzle-orm mock above doesn't provide.
-mock.module('../modules/tutor/retention-purge.service', () => ({
-  purgeExpiredData: mock(async () => ({ episodesDeleted: 0, profilesDeleted: 0 })),
-  startRetentionPurgeScheduler: () => () => {},
-}));
 
 // Auth middleware — mutable user for auth tests
 let authUser: Record<string, unknown> | null = null;
@@ -202,7 +196,6 @@ import * as costTrackingSchema from '../modules/billing/cost-tracking.schema';
 import * as billingSchema from '../modules/billing/billing.schema';
 import * as filesSchema from '../modules/documents/files.schema';
 import * as decksSchema from '../modules/learning/decks.schema';
-import * as cognitiveProfileSchema from '../modules/tutor/cognitive-profile.schema';
 mock.module('../db/schema', () => ({
   ...authSchema,
   ...familySchema,
@@ -212,7 +205,6 @@ mock.module('../db/schema', () => ({
   ...billingSchema,
   ...filesSchema,
   ...decksSchema,
-  ...cognitiveProfileSchema,
 }));
 mock.module('../modules/documents/files.repository', () => ({
   filesRepository: { findByUserId: mock(async () => []), findById: mock(async () => null) },

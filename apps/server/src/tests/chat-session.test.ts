@@ -136,13 +136,6 @@ mock.module('drizzle-orm', () => ({
   eq: (...args: unknown[]) => ({ type: 'eq', args }),
 }));
 
-// The real service pulls schema symbols this file's partial `../db/schema`
-// mock does not provide.
-mock.module('../modules/tutor/episodic-memory.service', () => ({
-  episodicMemoryService: {
-    extractAndStore: mock(async () => {}),
-  },
-}));
 
 // Import after mocks
 const { ChatSessionService } = await import('../modules/tutor/chat-session.service');

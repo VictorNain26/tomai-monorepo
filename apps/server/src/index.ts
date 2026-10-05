@@ -20,19 +20,15 @@ const { app, initializeServices } = await import('./app');
 const { logger } = await import('./platform/observability/logger.js');
 const { env } = await import('./platform/config/env.js');
 const { closeConnection } = await import('./db/connection.js');
-const { startRetentionPurgeScheduler } = await import('./modules/tutor/index.js');
 const { createGracefulShutdown } = await import('./platform/lifecycle/graceful-shutdown.js');
 
 const PORT = env.PORT;
 let server: ReturnType<typeof Bun.serve> | undefined;
-let stopRetentionPurge: (() => void) | undefined;
 
 async function startServer() {
   try {
     // Initialiser les services (DB connection, AI, etc.)
     await initializeServices();
-    // Background jobs are registered here, at the composition root, not in platform.
-    stopRetentionPurge = startRetentionPurgeScheduler();
 
     // idleTimeout 30 s: Bun's default (10 s) would cut a chat stream while the model thinks.
     server = Bun.serve({
@@ -64,7 +60,6 @@ const shutdown = createGracefulShutdown(
   [
     // Lets in-flight requests, chat streams included, finish.
     { name: 'server.stop', run: () => server?.stop() },
-    { name: 'retentionPurge.stop', run: () => stopRetentionPurge?.() },
     { name: 'otel.shutdown', run: shutdownOtel },
     { name: 'sentry.close', run: () => Sentry.close(2000) },
     { name: 'db.close', run: closeConnection },

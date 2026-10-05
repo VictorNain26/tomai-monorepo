@@ -3,7 +3,7 @@
  *
  * - Résume les anciens messages pour garder le contexte pédagogique
  * - Incrémental : l'ancien résumé et les seuls messages qu'il ne couvre pas, jamais toute la
- *   conversation ; ce résumé nourrit aussi l'épisode de la séance (episodic-memory.service.ts)
+ *   conversation
  * - Asynchrone (fire-and-forget) pour ne pas bloquer le streaming
  *
  * Tâche templatée, modèle de chat par défaut.

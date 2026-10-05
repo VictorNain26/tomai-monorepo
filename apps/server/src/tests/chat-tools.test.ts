@@ -50,10 +50,7 @@ describe('TomMetadata', () => {
 describe('buildChatTools', () => {
   it('exposes exactly the declared tool keys', () => {
     const tools = buildChatTools(baseContext);
-    expect(Object.keys(tools).sort()).toEqual([
-      'generate_flashcards',
-      'update_student_profile',
-    ]);
+    expect(Object.keys(tools)).toEqual(['generate_flashcards']);
   });
 
   describe('input JSON Schema', () => {
@@ -84,18 +81,6 @@ describe('buildChatTools', () => {
       const props = await propertiesOf('generate_flashcards');
       expect(props['cardCount']?.['minimum']).toBe(3);
       expect(props['cardCount']?.['maximum']).toBe(10);
-    });
-
-    it('update_student_profile.subject is free text (no enum)', async () => {
-      const props = await propertiesOf('update_student_profile');
-      expect(props['subject']?.['enum']).toBeUndefined();
-    });
-
-    it('update_student_profile bounds observation, strength and weakness', async () => {
-      const props = await propertiesOf('update_student_profile');
-      expect(props['observation']?.['maxLength']).toBe(250);
-      expect(props['strength']?.['maxLength']).toBe(100);
-      expect(props['weakness']?.['maxLength']).toBe(100);
     });
   });
 

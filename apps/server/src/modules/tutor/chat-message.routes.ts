@@ -223,8 +223,6 @@ export const chatMessageRoutes = new Hono<AppEnv>()
           sessionId: turnCtx.sessionId,
           conversationSummary: turnCtx.conversationSummary,
           conversationHistory: turnCtx.conversationHistory,
-          cognitiveProfileSummary: turnCtx.cognitiveProfileSummary,
-          learningContext: turnCtx.mergedLearningContext,
           turnInstruction: turnCtx.turnInstruction,
           turnAnalysis: turnCtx.turnAnalysis,
           exerciseSheet: turnCtx.exerciseSheet,

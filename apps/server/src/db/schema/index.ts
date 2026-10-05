@@ -5,14 +5,13 @@ import { studySessions, messages } from '../../modules/tutor/session.schema';
 import { progress } from './progress.schema';
 import { costTracking } from '../../modules/billing/cost-tracking.schema';
 import { learningDecks } from '../../modules/learning/decks.schema';
-import { studentCognitiveProfiles } from '../../modules/tutor/cognitive-profile.schema';
 import { files, sessionFiles } from '../../modules/documents/files.schema';
 
 // =============================================
 // CROSS-DOMAIN RELATIONS
 // =============================================
 
-export const userRelations = relations(user, ({ many, one }) => ({
+export const userRelations = relations(user, ({ many }) => ({
   // Parent-child junction links
   asParentLinks: many(parentChild, { relationName: 'pc_parent' }),
   asChildLinks: many(parentChild, { relationName: 'pc_child' }),
@@ -31,12 +30,6 @@ export const userRelations = relations(user, ({ many, one }) => ({
 
   // Learning Tools (Flashcards, QCM, Vrai/Faux)
   learningDecks: many(learningDecks),
-
-  // Cognitive Profile (agent-updated)
-  cognitiveProfile: one(studentCognitiveProfiles, {
-    fields: [user.id],
-    references: [studentCognitiveProfiles.userId],
-  }),
 }));
 
 export const studySessionsRelations = relations(studySessions, ({ one, many }) => ({
@@ -76,4 +69,3 @@ export * from '../../modules/billing/cost-tracking.schema';
 export * from '../../modules/billing/billing.schema';
 export * from '../../modules/documents/files.schema';
 export * from '../../modules/learning/decks.schema';
-export * from '../../modules/tutor/cognitive-profile.schema';
