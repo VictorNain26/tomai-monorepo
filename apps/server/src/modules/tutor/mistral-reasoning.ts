@@ -39,18 +39,21 @@ interface ReasoningRouteParams {
   subject?: string | undefined;
   /** The turn's analysis; without it, "none". */
   analysis?: Pick<TurnAnalysis, 'proposesAnswer' | 'asksSolution' | 'asksExplanation'> | undefined;
+  /** The turn follows a contract: the sheet and the diagnosis carry the exactness. */
+  contracted?: boolean | undefined;
 }
 
 /**
  * Decide whether the next chat turn warrants `reasoning_effort: "high"`.
  *
- * Rule: a proposed answer always reasons; otherwise STEM subject AND college+ level AND a
- * request for the solution or an explanation, all three, or "none".
+ * Rule: a turn under a contract writes without reasoning (`docs/etudes/2026-10-04/refonte-agent.md`,
+ * « À chaque tour », 6). Without one, a proposed answer always reasons; otherwise STEM subject
+ * AND college+ level AND a request for the solution or an explanation, all three, or "none".
  */
 export function routeReasoningEffort(params: ReasoningRouteParams): ReasoningEffort {
-  const { schoolLevel, subject, analysis } = params;
-  // A verdict on the student's answer must be right, whatever the subject: the tutor has no
-  // reference to check against until the exercise sheet exists.
+  const { schoolLevel, subject, analysis, contracted } = params;
+  if (contracted) return 'none';
+  // Without a sheet, a verdict on the student's answer has no reference to check against.
   if (analysis?.proposesAnswer) return 'high';
   if (!COLLEGE_AND_UP.has(schoolLevel)) return 'none';
   if (!subject || !STEM_SUBJECTS.has(subject)) return 'none';

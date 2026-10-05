@@ -11,6 +11,7 @@ import { costTrackingService } from '../billing/index.js';
 import type { EducationLevelType } from '../../types/index.js';
 import { ExerciseSheetSchema, keepKnownNotions, notionsFor, schoolYearOf, sheetMessages, vote, type ExerciseSheet } from './exercise-sheet.js';
 import { exerciseSheetsRepository } from './exercise-sheets.repository.js';
+import { KEPT_HINTS, type Hint } from './hint-ladder.js';
 
 const EXERCISE_SHEET_PROMPT_VERSION = '2026-10-05';
 const DRAWS = 3;
@@ -28,8 +29,22 @@ interface PrepareSheetParams {
   attachedFilesBlock: string | null;
 }
 
-/** The voted sheet of the exercise the student brings, stored; null, stored as such, when no draw succeeded. */
-export async function prepareExerciseSheet(params: PrepareSheetParams): Promise<ExerciseSheet | null> {
+/** The exercise in progress, its id null when it could not be stored. */
+export interface ExerciseState {
+  id: string | null;
+  /** Null when no draw succeeded: the exercise has no sheet, and the previous one is not taken back. */
+  sheet: ExerciseSheet | null;
+  uncertain: boolean;
+  hintLevel: number;
+  stepsDone: number;
+  /** The tutor's last messages on the exercise. */
+  hints: Hint[];
+  /** Ended by a right final answer; a new attempt reopens it. */
+  solved: boolean;
+}
+
+/** The exercise the student brings, its sheet voted and stored. */
+export async function prepareExerciseSheet(params: PrepareSheetParams): Promise<ExerciseState> {
   const startTime = Date.now();
   const notions = notionsFor(params.level, params.subject, schoolYearOf(new Date()));
   const messages = sheetMessages(params.level, notions, params.studentText, params.attachedFilesBlock);
@@ -81,7 +96,9 @@ export async function prepareExerciseSheet(params: PrepareSheetParams): Promise<
   if (!voted) {
     logger.error('Exercise sheet failed: no draw succeeded', { operation: 'exercise-sheet:error', sessionId: params.sessionId, severity: 'high' as const });
   }
-  exerciseSheetsRepository
+  // Awaited: the turn needs the row to keep the exercise's progress. A failure leaves the turn
+  // with its sheet and no progress kept.
+  const id = await exerciseSheetsRepository
     .create({
       sessionId: params.sessionId,
       sheet: voted?.sheet ?? null,
@@ -91,11 +108,22 @@ export async function prepareExerciseSheet(params: PrepareSheetParams): Promise<
     })
     .catch((err: unknown) => {
       logger.error('Exercise sheet not stored', { operation: 'exercise-sheet:store-error', sessionId: params.sessionId, err, severity: 'high' as const });
+      return null;
     });
-  return voted?.sheet ?? null;
+  return { id, sheet: voted?.sheet ?? null, uncertain: voted?.uncertain ?? true, hintLevel: 0, stepsDone: 0, hints: [], solved: false };
 }
 
-/** The session's exercise in progress, or null before the first one. */
-export async function currentExerciseSheet(sessionId: string): Promise<ExerciseSheet | null> {
-  return (await exerciseSheetsRepository.findLatest(sessionId))?.sheet ?? null;
+/** The session's last exercise, solved or not: its statement stays before the tutor. */
+export async function currentExercise(sessionId: string): Promise<ExerciseState | null> {
+  const row = await exerciseSheetsRepository.findLatest(sessionId);
+  if (!row) return null;
+  return {
+    id: row.id,
+    sheet: row.sheet,
+    uncertain: row.uncertain,
+    hintLevel: row.hintLevel,
+    stepsDone: row.stepsDone,
+    hints: row.hints.slice(-KEPT_HINTS),
+    solved: row.solvedAt !== null,
+  };
 }

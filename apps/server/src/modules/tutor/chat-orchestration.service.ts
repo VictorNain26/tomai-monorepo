@@ -15,8 +15,11 @@ import { getLearningContext, wrapAttachedFiles } from './mistral-helpers.js';
 import { summarizationService } from './summarization.service.js';
 import { autoTitleService } from './auto-title.service.js';
 import { analyseTurn, turnInstruction as instructionFor, type TurnAnalysis } from './turn-analysis.service.js';
-import { currentExerciseSheet, prepareExerciseSheet } from './exercise-sheet.service.js';
+import { prepareExerciseTurn, type ExerciseChange } from './exercise-turn.js';
+import { hintOf } from './hint-ladder.js';
+import type { Diagnosis } from './exercise-diagnosis.service.js';
 import type { ExerciseSheet } from './exercise-sheet.js';
+import { exerciseSheetsRepository } from './exercise-sheets.repository.js';
 import { cognitiveProfileService } from './cognitive-profile.service.js';
 import { costTrackingService, incrementTokenUsage } from '../billing/index.js';
 import { episodicMemoryService } from './episodic-memory.service.js';
@@ -65,8 +68,10 @@ export interface ChatTurnContext {
   mergedLearningContext: string | null;
   turnInstruction: string | null;
   turnAnalysis: TurnAnalysis;
-  /** The exercise in progress: prepared when the student brings one, else the session's last. */
+  /** The exercise in progress: prepared when the student brings one, else the session's, unless solved. */
   exerciseSheet: ExerciseSheet | null;
+  /** The exercise's progress under a contract, for `finishTurn` to keep the tutor's message. */
+  exerciseProgress: ExerciseProgress | null;
   /** The turn's files the user may attach: their own, uploaded, each once. */
   fileIds: string[];
   /** The bounded texts of the session's files, then of this turn's, for `streamChat`'s `attachedFiles`. */
@@ -99,6 +104,14 @@ interface FinishTurnParams {
   attachedFileInfo: AttachedFileInfo | null;
   attachedFileInfos?: AttachedFileInfo[] | undefined;
   turnAnalysis: TurnAnalysis;
+  exerciseProgress?: ExerciseProgress | null | undefined;
+}
+
+interface ExerciseProgress {
+  id: string | null;
+  hintLevel: number;
+  diagnosis: Diagnosis | null;
+  change: ExerciseChange;
 }
 
 class ChatOrchestrationService {
@@ -139,6 +152,8 @@ class ChatOrchestrationService {
       };
     });
 
+    const lastTutorText = conversationHistory.findLast(turn => turn.role === 'assistant')?.content ?? null;
+
     // Context assembly (parallel) — the turn analysis and episodic
     // memory run alongside file/profile/learning context assembly so none
     // of them add end-to-end latency on the critical path. An analysis that
@@ -155,11 +170,10 @@ class ChatOrchestrationService {
       fileContextService.prepareFileContext({ fileIds: request.fileIds, userId: request.userId, sessionId }),
       cognitiveProfileService.getProfileSummary(request.userId),
       getLearningContext(request.userId),
-      analyseTurn(request.content, conversationHistory.findLast(turn => turn.role === 'assistant')?.content ?? null),
+      analyseTurn(request.content, lastTutorText),
       episodicMemoryService.retrieveRelevant(request.userId, request.content, 3),
     ]);
 
-    const turnInstruction = instructionFor(turnAnalysis);
     const episodicContext = episodicMemoryService.formatEpisodesForPrompt(relevantEpisodes);
 
     // Subject: use the detected one (reliable) for the prompt, fall back to the
@@ -189,19 +203,21 @@ class ChatOrchestrationService {
     const attachedFileInfo = attachedFileInfos[0] ?? null;
     const hasMultipleFiles = attachedFileInfos.length > 1;
 
-    const [subjectMemoryBlock, exerciseSheet] = await Promise.all([
+    const [subjectMemoryBlock, exerciseTurn] = await Promise.all([
       effectiveSubject ? subjectProfileService.formatSubjectMemoryForPrompt(request.userId, effectiveSubject) : null,
-      turnAnalysis.bringsExercise
-        ? prepareExerciseSheet({
-          userId: request.userId,
-          sessionId,
-          level: request.schoolLevel,
-          subject: effectiveSubject,
-          studentText: request.content,
-          attachedFilesBlock: files.length > 0 ? wrapAttachedFiles(files) : null,
-        })
-        : currentExerciseSheet(sessionId),
+      prepareExerciseTurn({
+        userId: request.userId,
+        sessionId,
+        level: request.schoolLevel,
+        subject: effectiveSubject,
+        analysis: turnAnalysis,
+        studentText: request.content,
+        lastTutorText,
+        attachedFilesBlock: files.length > 0 ? wrapAttachedFiles(files) : null,
+      }),
     ]);
+    const { exercise, diagnosis, hintLevel, contract, change } = exerciseTurn;
+    const turnInstruction = contract ?? instructionFor(turnAnalysis);
 
     const mergedLearningContext = [learningContext, episodicContext, subjectMemoryBlock]
       .filter((x): x is string => Boolean(x))
@@ -220,7 +236,9 @@ class ChatOrchestrationService {
       asksSolution: turnAnalysis.asksSolution,
       wantsFlashcards: turnAnalysis.wantsFlashcards,
       turnInstructed: turnInstruction !== null,
-      exerciseSheet: exerciseSheet !== null,
+      exerciseSheet: Boolean(exercise?.sheet),
+      hintLevel,
+      verdict: diagnosis?.verdict,
       episodesRetrieved: relevantEpisodes.length,
       operation: 'chat-orchestration:context-ready',
     });
@@ -234,7 +252,8 @@ class ChatOrchestrationService {
       mergedLearningContext,
       turnInstruction,
       turnAnalysis,
-      exerciseSheet,
+      exerciseSheet: exercise?.sheet ?? null,
+      exerciseProgress: exercise && hintLevel !== null && change ? { id: exercise.id, hintLevel, diagnosis, change } : null,
       fileIds: fileContext.fileIds,
       attachedFiles: files,
       attachedFileInfo,
@@ -279,7 +298,7 @@ class ChatOrchestrationService {
    * persiste, mais les tokens factures sont comptes.
    */
   async finishTurn(params: FinishTurnParams): Promise<void> {
-    const { sessionId, userId, userContent, responseMessage, modelMessages, aborted, model, usage, startTime, attachedFileInfo, attachedFileInfos, turnAnalysis } = params;
+    const { sessionId, userId, userContent, responseMessage, modelMessages, aborted, model, usage, startTime, attachedFileInfo, attachedFileInfos, turnAnalysis, exerciseProgress } = params;
     const fullContent = extractTextFromParts(responseMessage.parts);
     const tokensUsed = usage?.totalTokens ?? 0;
 
@@ -315,11 +334,20 @@ class ChatOrchestrationService {
       ...(attachedFileInfo && { attachedFile: attachedFileInfo }),
       ...(attachedFileInfos && { attachedFiles: attachedFileInfos }),
       turnAnalysis,
+      ...(exerciseProgress && { exerciseTurn: { diagnosis: exerciseProgress.diagnosis, hintLevel: exerciseProgress.hintLevel } }),
       // Kept only when they can be replayed as they are: a cut turn, or one that ended on a tool
       // result at the step limit, replays as its text.
       modelMessages: aborted ? undefined : replayable(modelMessages),
       cut: aborted,
     }, { verifySessionExists: false });
+
+    // The turn's change on the exercise counts once the student has seen the answer: a cut or
+    // empty turn moves nothing.
+    if (exerciseProgress?.id && !aborted) {
+      void exerciseSheetsRepository
+        .recordTurn(exerciseProgress.id, { ...exerciseProgress.change, hint: hintOf(exerciseProgress.hintLevel, fullContent) })
+        .catch((err: unknown) => { logger.error('Exercise turn not stored', { sessionId, err, operation: 'chat-orchestration:exercise', severity: 'medium' as const }); });
+    }
 
     logger.info('Streaming message saved', {
       userId,

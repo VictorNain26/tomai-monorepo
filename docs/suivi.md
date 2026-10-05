@@ -20,9 +20,10 @@ bloquant levé).
     serveur en modules (#348 à #354), lint strict (#355) et TypeScript strict (#356).
 - **Prochaine action :** refonte de l'agent (lot 2), demandée par Victor le 2026-10-04 ;
   étude `etudes/2026-10-04/refonte-agent.md`, ordre des PR dans `roadmap.md`. Point 3 terminé :
-  analyse du tour (#383), fiche d'exercice (#384), analyse de document réduite à une extraction (#385). Prochaine : point 4,
-  diagnostic contre la fiche, palier décidé par le code et contrat du tour. Plan d'abord dans
-  `docs/plans/`.
+  analyse du tour (#383), fiche d'exercice (#384), analyse de document réduite à une extraction (#385). Point 4 terminé (#386,
+  diagnostic contre la fiche, palier décidé par le code et contrat du tour). Prochaine : point 5,
+  contrôle avant l'élève et modération de sortie, sur le message, les fiches de révision et le
+  titre. Plan d'abord dans `docs/plans/`.
   - Étape à la charge de Victor avant le point 6 : approuver le texte de la réponse fixe de
     détresse.
   - Une relecture humaine d'une partie des conversations lues par Claude reste due avant
@@ -468,3 +469,12 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
     la fiche les lit tous ; un fichier illisible apparaît comme tel ;
   - un tour ne lit et n'attache que les fichiers de l'utilisateur, envoyés jusqu'au bout :
     n'importe quel identifiant était lu, facturé, injecté et attaché, testé sur postgres.
+  Point 4 de la refonte, diagnostic, palier et contrat du tour (#386) :
+  - une proposition de l'élève est jugée contre la fiche par Small 4, mathjs tranchant là où
+    il sait (équations, valeurs égales à la réponse) ; type d'erreur selon Bridge ;
+  - le palier est tenu par le code, par exercice : il monte sur une proposition fausse, jamais
+    sans tentative, descend sur une étape juste ; une réponse finale juste termine l'exercice ;
+  - le contrat du tour donne au rédacteur le diagnostic, le palier et la seule part de la fiche
+    que le palier autorise, jamais la réponse ; sous contrat, la rédaction se fait sans
+    raisonnement ;
+  - ce que le tour change s'écrit une fois le tour vu, en une requête atomique.

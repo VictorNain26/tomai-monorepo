@@ -19,7 +19,7 @@ import { costTracking } from '../../db/schema.js';
 import { logger } from '../../platform/observability/logger.js';
 import { env } from '../../platform/config/env.js';
 
-type AiOperation = 'chat' | 'summarization' | 'auto-title' | 'card-generation' | 'document-extraction' | 'exercise-sheet';
+type AiOperation = 'chat' | 'summarization' | 'auto-title' | 'card-generation' | 'document-extraction' | 'exercise-sheet' | 'exercise-diagnosis';
 
 interface CostRecordInput {
   userId: string;

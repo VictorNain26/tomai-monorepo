@@ -22,7 +22,11 @@ describe('routeReasoningEffort', () => {
     expect(routeReasoningEffort({ schoolLevel: 'troisieme', analysis: analysis({ asksSolution: true }) })).toBe('none');
   });
 
-  it('reasons on a proposed answer whatever the level and subject: the verdict must be right', () => {
+  it('writes without reasoning under a contract: the sheet and the diagnosis carry the exactness', () => {
+    expect(routeReasoningEffort({ schoolLevel: 'troisieme', subject: 'mathematiques', analysis: analysis({ proposesAnswer: true, asksSolution: true }), contracted: true })).toBe('none');
+  });
+
+  it('reasons on a proposed answer without a contract, whatever the level and subject: the verdict must be right', () => {
     for (const subject of ['francais', 'langues', 'mathematiques'] as const) {
       expect(routeReasoningEffort({ schoolLevel: 'sixieme', subject, analysis: analysis({ proposesAnswer: true }) })).toBe('high');
     }

@@ -40,7 +40,7 @@ import type { EducationLevelType } from '../../types/index.js';
 import type { AttachedFileForPrompt } from '../documents/index.js';
 
 /** Bump whenever content under modules/tutor/prompts/** or shared/pedagogy/** changes. */
-const PROMPT_VERSION = '2026-10-05';
+const PROMPT_VERSION = '2026-10-05.2';
 
 /** @public — reachable only via the typed client's inferred route return types (apps/server build:types), not a direct import; knip false positive. */
 export interface StreamGenerationParams {
@@ -67,6 +67,8 @@ export interface StreamGenerationParams {
   turnAnalysis?: TurnAnalysis | undefined;
   /** The exercise in progress: its statement and notions open the window. */
   exerciseSheet?: ExerciseSheet | null | undefined;
+  /** The turn instruction is the exercise's contract: the turn writes without reasoning. */
+  contracted?: boolean | undefined;
   /**
    * Input channel declared by the user's gesture (mic vs keyboard), never
    * inferred by the model. When 'voice', a turn note is injected so Tom answers
@@ -129,6 +131,7 @@ export function streamChat(params: ChatStreamParams) {
     schoolLevel: params.schoolLevel,
     subject: params.subject,
     analysis: params.turnAnalysis,
+    contracted: params.contracted,
   });
 
   const model = params.model ?? mistralProvider()(env.MISTRAL_MODEL);
