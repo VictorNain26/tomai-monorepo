@@ -26,11 +26,11 @@ bloquant levé).
   terminé (#390) : détresse et modération d'entrée, réponse fixe approuvée par Victor le 2026-10-05.
   Premier passage fait le 2026-10-05 : il a trouvé l'analyse du tour qui ratait les énoncés,
   corrigée (#391). Appels du SDK Mistral retentés, modération comprise sur un appel bloqué (#392).
-  S4 repassé : aucune fuite sur 6. Point 7 en cours : appels annexes faits (#393) ; prochaine,
-  logs sans contenu d'élève, puis mémoire. Plan d'abord dans `docs/plans/`.
+  S4 repassé : aucune fuite sur 6. Point 7 en cours : appels annexes faits (#393) ; logs sans
+  contenu d'élève en revue (#394) ; prochaine, la mémoire. Plan d'abord dans `docs/plans/`.
   - Une relecture humaine d'une partie des conversations lues par Claude reste due avant
     toute publication (lot 4).
-- **PR ouvertes :** aucune.
+- **PR ouvertes :** #394, logs sans contenu d'élève.
 - **Landing en ligne gelée** jusqu'au lot 4 : seuls des correctifs d'honnêteté ou techniques y entrent.
   L'identité visuelle est rejetée et se refait au lot 4.
 
@@ -553,3 +553,11 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
   - transcription : le français reste imposé, la mesure infirme l'étude (sans langue,
     « Non. » devient « No. ») ; `detectedLanguage`, qui renvoyait la langue forcée,
     retiré ; l'audio passé avec ses seuls octets, sans le pool d'un `Buffer` autour.
+
+  Point 7 de la refonte, logs sans contenu d'élève (#394), recensés par l'AST de TypeScript :
+  - erreurs de l'AI SDK qui recopient la sortie du modèle ou l'entrée d'un outil
+    (`TypeValidationError`, `JSONParseError`, `InvalidToolInputError`) : message et pile
+    sans ce contenu, cause comprise ;
+  - titre de séance, sujet saisi, nom de fichier, détail postgres et message brut des cartes
+    retirés des logs ;
+  - clé de stockage sans le nom de fichier, qui partait aussi dans les journaux du stockage.
