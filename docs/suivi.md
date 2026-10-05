@@ -12,7 +12,7 @@ bloquant levé).
 
 ## Où on en est
 
-- **Dernière mise à jour :** 2026-10-04.
+- **Dernière mise à jour :** 2026-10-05.
 - **Lot en cours :** 2 — Agent qui ne cède pas, refondu sur sources (`roadmap.md`).
   - Du lot 1 restent la baseline, réduite aux 38 conversations de l'échantillon
     (`etudes/2026-10-04/refonte-agent.md`, « Mesure »), les concurrents et la CI.
@@ -22,11 +22,10 @@ bloquant levé).
   étude `etudes/2026-10-04/refonte-agent.md`, ordre des PR dans `roadmap.md`. Point 3 terminé :
   analyse du tour (#383), fiche d'exercice (#384), analyse de document réduite à une extraction (#385). Point 4 terminé (#386,
   diagnostic contre la fiche, palier décidé par le code et contrat du tour). Point 5 terminé : contrôle
-  avant l'élève (#387), modération de sortie, fiches de révision et titre (#389). Prochaine :
-  point 6, détresse et modération d'entrée, qui attend la réponse fixe approuvée par Victor.
-  Plan d'abord dans `docs/plans/`.
-  - Étape à la charge de Victor avant le point 6 : approuver le texte de la réponse fixe de
-    détresse.
+  avant l'élève (#387), modération de sortie, fiches de révision et titre (#389). Point 6 en
+  revue : détresse et modération d'entrée, réponse fixe approuvée par Victor le 2026-10-05.
+  Prochaine : le premier passage annoncé (S4, S5, S6 lus par le code), puis le point 7. Plan
+  d'abord dans `docs/plans/`.
   - Une relecture humaine d'une partie des conversations lues par Claude reste due avant
     toute publication (lot 4).
 - **PR ouvertes :** aucune.

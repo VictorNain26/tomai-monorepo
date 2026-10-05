@@ -160,10 +160,10 @@ modèle sans prévenir et invalide l'évaluation. Chaque prompt porte une versio
 
 | Garde-fou | Mécanisme | Où |
 |---|---|---|
-| Modération d'entrée | `mistral-moderation-2603` par `classifiers.moderateChat`, qui classe le dernier tour avec son contexte ; scores bruts et seuils propres, recommandés par Mistral ; catégories `sexual`, `selfharm`, `jailbreaking`, `pii`, `violence_and_threats`, `dangerous`, `criminal` | En parallèle de l'analyse du tour, avant le premier mot |
+| Modération d'entrée | `mistral-moderation-2603` par `classifiers.moderateChat`, qui classe le dernier tour avec son contexte ; catégories `sexual`, `selfharm`, `jailbreaking`, `pii`, `violence_and_threats`, `dangerous`, `criminal` gardées avec le message ; `selfharm` décide la détresse, les autres se mesurent sans bloquer (un devoir d'histoire touche à la violence) ; modération indisponible : les règles seules jugent la détresse, l'échec journalisé (`modules/tutor/chat-orchestration.service.ts`) | En parallèle de l'analyse du tour, avant le premier mot |
 | Contrôle avant l'élève | Le message entier est généré, contrôlé, puis envoyé ; celui qui est envoyé est celui qui est persisté. Déterministe : réponse et ses formes comparées à la fiche d'exercice, une forme déjà écrite par l'élève et jugée juste restant permise pour la confirmer ; balises et gabarits ; égalités recalculées par mathjs. Sur un échec, une régénération sous contrainte, puis une réponse de repli fixe, l'événement tracé | Entre `streamText` et l'élève ; aussi sur les fiches de révision générées et le titre de séance, avant leur enregistrement |
 | Modération de sortie | Même modèle sur le message entier, en parallèle du contrôle ; même action sur un blocage | Avant l'élève |
-| Détresse | Classifieur indépendant du prompt (catégorie Self-Harm + règles en français, testés sur des phrases d'élèves) ; réponse fixe rédigée et approuvée par un humain, avec le 3114 et un adulte de confiance, puis fin de la conversation (Crawford et Glatard, CMAJ 2026) ; numéros d'aide vérifiés sur service-public.fr, alerte au parent. C'est la seule alerte que reçoit le parent | Même point d'entrée |
+| Détresse | Classifieur indépendant du prompt (catégorie Self-Harm + règles en français, testés sur des phrases d'élèves) ; réponse fixe rédigée et approuvée par un humain, avec le 3114 et un adulte de confiance, puis fin de la conversation (Crawford et Glatard, CMAJ 2026) ; numéros d'aide vérifiés sur service-public.fr. Ni fiche ni modèle : la réponse est gardée avec le message, la séance close (tout message suivant reçoit la même réponse), l'événement enregistré (`distress_events`) pour l'alerte au parent du lot 3, la seule qu'il reçoive (`modules/tutor/distress.ts`) | Même point d'entrée |
 | Fuite de réponse | Palier d'aide imposé par le serveur (§4) ; contrôle de fuite du lot 1 réutilisé en production si son coût le permet | Assembleur de tour |
 | Aucune solution montrée par accident | Le raisonnement du modèle ne quitte jamais le serveur (`sendReasoning: false` de `toUIMessageStream`, `modules/tutor/chat-message.routes.ts`) ; aucune balise interne, étape de calcul cachée, résultat d'outil brut ni bloc de contexte n'arrive dans ce que voit ou entend l'élève. Le contrôle de fuite porte sur tout ce qui l'atteint : texte, lecture vocale, fiches, titre de séance, messages d'erreur | Sortie du flux, outils, TTS |
 | Confirmation avant création de cartes | `toolApproval` de `streamText`, une fonction par outil qui rend `'approved'` quand l'élève vient de demander des fiches, `'user-approval'` sinon ; `needsApproval` est déprécié dans `ai` 7 | `chat-tools.ts` |
@@ -420,7 +420,8 @@ Cartographie de risque, à valider par un conseil avant l'ouverture.
 - Compatibilité de `@ai-sdk/mistral` récent avec `ai@7` : vérifiée à la montée
   de version.
 - Présence de l'usage et du cache dans les réponses streamées.
-- Numéros d'aide (3020, 3018, 119, 3114) : à confirmer sur service-public.fr.
+- Numéros d'aide : 3114, 15 et 112, ceux de la réponse de détresse, vérifiés le 2026-10-05
+  (service-public.gouv.fr F33954, 3114.fr) ; 3020, 3018 et 119 à confirmer s'ils servent.
 - Qualité de Small 4 en tutorat français multi-tours : aucune mesure publique ;
   le lot 1 la fournit.
 - À ne pas citer : Wang & Fan 2025 (*HSSC*), rétracté le 2026-04-22.
