@@ -38,6 +38,15 @@ relatifs à `apps/server/src/`.
 4. **Tests** : catégories bloquantes ou non, indisponibilité, message bloqué puis régénéré,
    cartes écartées, titre refusé ; un appel réel vérifie la forme de la réponse de modération.
 
+5. **Ce que la revue a ajouté** :
+   - les cartes ne passent plus par les égalités (un énoncé vrai-faux, une erreur fréquente, une
+     option fausse le sont exprès) ; une forme de moins de trois caractères ne compte pas sur une
+     carte ;
+   - une réponse de modération incomplète vaut indisponibilité ; un tour sans texte (une photo)
+     modère la réponse seule ;
+   - le titre du paquet est contrôlé comme celui de la séance ;
+   - une modération indisponible sur les cartes se distingue d'un refus (erreur transitoire, 503).
+
 ## Validation
 
 `bun run typecheck`, `bun run lint`, `bunx knip`, `bun run test` ; `bun run test:live` une fois.
