@@ -30,6 +30,9 @@ relatifs à `apps/server/src/`.
    qui échoue est écartée, et sans carte restante l'outil le dit au modèle. Même contrôle sur la
    génération hors conversation (`POST /api/learning/generate`), sans exercice.
    - `collectStrings` (texte d'une carte, sans ses index) passe d'`eval/turn-parts.ts` à `lib/`.
+   - Le filtre vit dans `learning/card-check.ts`{n}: `tutor` importe déjà `learning`, l'inverse
+     ferait un cycle{n}; l'appelant lui donne sa vérification déterministe. Hors conversation,
+     balises et égalités{n}; sans carte restante, la route répond 422.
 3. **Titre de séance** : contrôlé de même avant d'être enregistré ; refusé, la séance garde son
    titre par défaut.
 4. **Tests** : catégories bloquantes ou non, indisponibilité, message bloqué puis régénéré,
