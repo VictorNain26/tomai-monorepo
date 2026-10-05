@@ -1,0 +1,1 @@
+ALTER TABLE "study_sessions" ADD COLUMN "recalled_episodes" text;

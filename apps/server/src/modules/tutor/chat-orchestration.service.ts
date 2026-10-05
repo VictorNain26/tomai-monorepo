@@ -138,14 +138,14 @@ class ChatOrchestrationService {
       cognitiveProfileSummary,
       learningContext,
       turnAnalysis,
-      relevantEpisodes,
+      episodicContext,
       inputModeration,
     ] = await Promise.all([
       fileContextService.prepareFileContext({ fileIds: request.fileIds, userId: request.userId, sessionId }),
       cognitiveProfileService.getProfileSummary(request.userId),
       getLearningContext(request.userId),
       analyseTurn(request.content, lastTutorText, current?.sheet?.statement ?? null),
-      episodicMemoryService.retrieveRelevant(request.userId, request.content, 3),
+      episodicMemoryService.recallForSession({ sessionId, userId: request.userId, content: request.content, stored: sessionSummary?.recalledEpisodes ?? null }),
       moderateInput(lastTutorText, request.content),
     ]);
 
@@ -154,7 +154,6 @@ class ChatOrchestrationService {
     const distress = distressIn(sessionId, request.content, inputModeration);
     if (distress) return distress;
 
-    const episodicContext = episodicMemoryService.formatEpisodesForPrompt(relevantEpisodes);
 
     // Subject: use the detected one (reliable) for the prompt, fall back to the
     // session's stored subject then the client hint. Persist on the first
@@ -220,7 +219,7 @@ class ChatOrchestrationService {
       exerciseSheet: Boolean(exercise?.sheet),
       hintLevel,
       verdict: diagnosis?.verdict,
-      episodesRetrieved: relevantEpisodes.length,
+      pastSessionsRecalled: episodicContext !== null,
       operation: 'chat-orchestration:context-ready',
     });
 

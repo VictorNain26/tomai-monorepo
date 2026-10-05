@@ -105,6 +105,7 @@ export class ChatSessionService {
   async getSessionWithSummary(sessionId: string): Promise<{
     conversationSummary: string | null;
     summaryUpToMessageId: string | null;
+    recalledEpisodes: string | null;
     subject: string | null;
   } | null> {
     try {
@@ -114,6 +115,7 @@ export class ChatSessionService {
       return {
         conversationSummary: session.conversationSummary ?? null,
         summaryUpToMessageId: session.summaryUpToMessageId ?? null,
+        recalledEpisodes: session.recalledEpisodes ?? null,
         subject: session.subject,
       };
     } catch (_error) {

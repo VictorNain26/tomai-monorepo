@@ -23,6 +23,7 @@ export interface CreateStudySessionInput {
  */
 interface UpdateStudySessionInput {
   topic?: string;
+  recalledEpisodes?: string;
   status?: 'draft' | 'active' | 'paused' | 'completed' | 'abandoned' | 'timeout' | 'error';
   endedAt?: Date;
   durationMinutes?: number;

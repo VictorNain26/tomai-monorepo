@@ -253,6 +253,13 @@
       "when": 1791203863152,
       "tag": "0035_sweet_brood",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1791216001682,
+      "tag": "0036_rich_silhouette",
+      "breakpoints": true
     }
   ]
 }

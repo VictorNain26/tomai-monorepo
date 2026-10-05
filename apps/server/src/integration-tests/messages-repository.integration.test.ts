@@ -32,4 +32,21 @@ describe.skipIf(!dbReachable)('messagesRepository — stored model messages read
     expect(await messagesRepository.findModelMessages([reply.id])).toEqual([{ id: reply.id, modelMessages }]);
     expect(await messagesRepository.findModelMessages([])).toEqual([]);
   });
+
+  it("reads and counts the session's messages after a given one, all of them without one", async () => {
+    const { db } = await import('../db/connection');
+    const { studySessions } = await import('../modules/tutor/session.schema');
+    const { messagesRepository } = await import('../modules/tutor/messages.repository');
+    const [session] = await db.insert(studySessions).values({ userId: studentId }).returning({ id: studySessions.id });
+    const [other] = await db.insert(studySessions).values({ userId: studentId }).returning({ id: studySessions.id });
+    if (!session || !other) throw new Error('session not created');
+    const created = [];
+    for (const content of ['un', 'deux', 'trois', 'quatre']) created.push(await messagesRepository.create({ sessionId: session.id, role: 'user', content }));
+    await messagesRepository.create({ sessionId: other.id, role: 'user', content: 'ailleurs' });
+
+    expect((await messagesRepository.findAfter(session.id, created[1]?.id ?? null)).map((m) => m.content)).toEqual(['trois', 'quatre']);
+    expect(await messagesRepository.countAfter(session.id, created[1]?.id ?? null)).toBe(2);
+    expect((await messagesRepository.findAfter(session.id, null)).map((m) => m.content)).toEqual(['un', 'deux', 'trois', 'quatre']);
+    expect(await messagesRepository.countAfter(session.id, null)).toBe(4);
+  });
 });

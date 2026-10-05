@@ -59,6 +59,8 @@ export const studySessions = pgTable('study_sessions', {
   // Résumé conversationnel (SummaryBuffer pattern)
   conversationSummary: text('conversation_summary'),
   summaryUpToMessageId: uuid('summary_up_to_message_id'),
+  /** The past sessions recalled at the first turn, kept for the whole session; '' when none matched, null before. */
+  recalledEpisodes: text('recalled_episodes'),
 
   // Métadonnées
   // CRITICAL FIX: JSONB default must use sql`'{}'::jsonb` NOT .default({})
