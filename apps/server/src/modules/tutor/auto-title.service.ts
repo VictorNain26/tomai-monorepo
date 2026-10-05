@@ -12,7 +12,7 @@ import { studySessionsRepository } from './study-sessions.repository.js';
 import { logger } from '../../platform/observability/logger.js';
 import { titlePasses, type OutputCheckContext } from './output-check.js';
 
-const AUTO_TITLE_PROMPT_VERSION = '2026-05-18';
+const AUTO_TITLE_PROMPT_VERSION = '2026-10-05';
 
 const TITLE_PROMPT = `Génère un titre COURT (10-50 caractères) pour cette conversation de tutorat scolaire.
 

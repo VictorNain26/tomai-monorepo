@@ -11,7 +11,7 @@ import { logger } from '../../platform/observability/logger.js';
 import { stripPromptTags } from './mistral-helpers.js';
 import { STUDENT_SUBJECTS } from './prompts/adaptation/subjects.js';
 
-const TURN_ANALYSIS_PROMPT_VERSION = '2026-10-05';
+const TURN_ANALYSIS_PROMPT_VERSION = '2026-10-05.2';
 const MAX_CHARS = 4000;
 
 const TurnAnalysisSchema = z.object({
