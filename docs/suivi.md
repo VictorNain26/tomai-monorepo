@@ -229,12 +229,12 @@ contraire.
 Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pas.
 
 - **Bun 1.4.2** plante par intermittence sous `bun test --isolate` (« Segmentation fault »,
-  « bug in Bun, not your code ») : deux fois sur onze passages en local, puis en CI le
-  2026-10-02 (run 37003790891 de #360, trace dans `JSFinalizationRegistry::takeDeadHoldingsValue`).
-  Bug déjà suivi chez Bun : oven-sh/bun#44161, ouvert, même trace, aucun correctif ; la
-  1.4.2 est la dernière version. En attendant : relancer le job en échec après avoir vérifié
-  dans le log que toutes les assertions passent et que la sortie est ce plantage. Monter
-  de version dès qu'une release le corrige.
+  trace dans `JSFinalizationRegistry::takeDeadHoldingsValue`) : bug de Bun, oven-sh/bun#44161,
+  ouvert, aucun correctif, la 1.4.2 est la dernière version. Il touchait environ trois passages
+  sur quatre en local, aussi le pre-push. Les tests tournent donc un processus par fichier
+  (`apps/server/scripts/run-tests.ts`) : aucun contexte retiré, le chemin qui plante ne s'exécute
+  pas. Revenir à `bun test --isolate` dès qu'une release corrige #44161 ; `test:watch` y est
+  resté.
 - **Sentry v11** : `apps/landing/next.config.*` importe `withSentryConfig` depuis
   `@sentry/nextjs`, déprécié (avertissement de `next typegen`) ; passer à
   `@sentry/nextjs/config` avant de monter en v11.
@@ -488,5 +488,3 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
     l'événement est gardé avec le message ;
   - la détection de fuite, la typographie et la lecture des égalités passent dans `lib/`, un seul
     exemplaire pour le harnais et le tuteur.
-  - Bun 1.4.2 plante (segfault) en fin de `bun test src/tests --isolate`, en local environ trois
-    fois sur quatre avec ou sans les changements, zéro test en échec : à instruire à part.
