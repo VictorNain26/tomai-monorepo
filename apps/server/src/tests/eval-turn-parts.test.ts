@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'bun:test';
-import { collectStrings, cookieHeader, deckText, readTurnParts } from '../eval/turn-parts';
+import { cookieHeader, deckText, readTurnParts } from '../eval/turn-parts';
+import { collectStrings } from '../lib/collect-strings';
 import type { TomChatMessage } from '../modules/tutor/chat-ui-message';
 
 describe('collectStrings', () => {
