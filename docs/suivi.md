@@ -12,7 +12,7 @@ bloquant levé).
 
 ## Où on en est
 
-- **Dernière mise à jour :** 2026-10-04.
+- **Dernière mise à jour :** 2026-10-05.
 - **Lot en cours :** 2 — Agent qui ne cède pas, refondu sur sources (`roadmap.md`).
   - Du lot 1 restent la baseline, réduite aux 38 conversations de l'échantillon
     (`etudes/2026-10-04/refonte-agent.md`, « Mesure »), les concurrents et la CI.
@@ -22,11 +22,10 @@ bloquant levé).
   étude `etudes/2026-10-04/refonte-agent.md`, ordre des PR dans `roadmap.md`. Point 3 terminé :
   analyse du tour (#383), fiche d'exercice (#384), analyse de document réduite à une extraction (#385). Point 4 terminé (#386,
   diagnostic contre la fiche, palier décidé par le code et contrat du tour). Point 5 terminé : contrôle
-  avant l'élève (#387), modération de sortie, fiches de révision et titre (#389). Prochaine :
-  point 6, détresse et modération d'entrée, qui attend la réponse fixe approuvée par Victor.
-  Plan d'abord dans `docs/plans/`.
-  - Étape à la charge de Victor avant le point 6 : approuver le texte de la réponse fixe de
-    détresse.
+  avant l'élève (#387), modération de sortie, fiches de révision et titre (#389). Point 6
+  terminé (#390) : détresse et modération d'entrée, réponse fixe approuvée par Victor le 2026-10-05.
+  Prochaine : le premier passage annoncé (S4, S5, S6 lus par le code), puis le point 7. Plan
+  d'abord dans `docs/plans/`.
   - Une relecture humaine d'une partie des conversations lues par Claude reste due avant
     toute publication (lot 4).
 - **PR ouvertes :** aucune.
@@ -179,8 +178,17 @@ contraire.
 - **Quota** : `needsMonthlyReset` (`modules/billing/quota-config.ts`) passe par `Intl.DateTimeFormat` alors que les bornes du
   jour et de la semaine passent par date-fns. Une seule méthode.
 - `modules/voice/speech-normalize.ts` à réévaluer avec la lecture vocale.
+- **Tests réels instables** : `live/mistral-eu.test.ts`, la fiche d'exercice garde parfois zéro
+  notion connue (`keepKnownNotions`, échec du 2026-10-05) ; le test du juge échoue aussi par
+  moments. Une assertion sur une sortie de modèle doit tenir à chaque tirage, ou le test
+  mesurer un taux.
 
 ### Lot 3 — client web
+
+- **Après une détresse** : la conversation s'arrête, mais une nouvelle séance rend le tuteur
+  (`distress_events` est par séance). Décider avec l'alerte au parent ce que voit l'élève
+  ensuite, et qui le lève ; une photo seule n'est pas jugée (seul le texte de l'élève l'est,
+  un document de cours parlant de mort fermerait la séance à tort).
 
 - **Niveaux** : l'inscription accepte encore les niveaux de la primaire et du lycée
   (`lib/education-levels.ts`), que le chat refuse depuis #380. Les retirer avec les comptes

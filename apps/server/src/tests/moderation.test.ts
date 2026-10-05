@@ -22,7 +22,7 @@ mock.module('../platform/ai/mistral-sdk', () => ({
   }),
 }));
 
-const { moderateReply, moderateTexts, OUTPUT_BLOCKING } = await import('../platform/ai/moderation');
+const { moderateReply, moderateStudentTurn, moderateTexts, OUTPUT_BLOCKING } = await import('../platform/ai/moderation');
 
 beforeEach(() => {
   chatCalls.length = 0;
@@ -71,5 +71,32 @@ describe('moderateTexts', () => {
     expect(textCalls[0]?.[0]).toEqual({ model: 'mistral-moderation-2603', inputs: ['a', 'b'] });
     expect(await moderateTexts([])).toEqual([]);
     expect(textCalls).toHaveLength(1);
+  });
+});
+
+describe('moderateStudentTurn', () => {
+  it("classifies the student's message after the tutor's last one, and keeps the recorded categories with the selfharm score", async () => {
+    results = [result(['selfharm', 'violence_and_threats', 'health'])];
+    expect(await moderateStudentTurn('Que fais-tu du + 5 ?', "j'ai envie de disparaître")).toEqual({
+      flagged: ['selfharm', 'violence_and_threats'],
+      selfharmScore: 0.9,
+    });
+    expect(chatCalls[0]).toEqual([
+      { model: 'mistral-moderation-2603', inputs: [{ role: 'assistant', content: 'Que fais-tu du + 5 ?' }, { role: 'user', content: "j'ai envie de disparaître" }] },
+      { timeoutMs: 5000 },
+    ]);
+  });
+
+  it('keeps a missing selfharm score missing: it is not a low one', async () => {
+    results = [{ categories: { selfharm: true }, categoryScores: {} }];
+    expect(await moderateStudentTurn(null, 'adieu')).toEqual({ flagged: ['selfharm'], selfharmScore: null });
+  });
+
+  it('classifies the message alone at the start of a session, and throws without a result', async () => {
+    results = [result([])];
+    expect(await moderateStudentTurn(null, 'Bonjour')).toEqual({ flagged: [], selfharmScore: 0.001 });
+    expect(chatCalls[0]?.[0]).toEqual({ model: 'mistral-moderation-2603', inputs: [{ role: 'user', content: 'Bonjour' }] });
+    results = [];
+    expect(moderateStudentTurn(null, 'Bonjour')).rejects.toThrow('Moderation returned 0 results for 1 inputs');
   });
 });

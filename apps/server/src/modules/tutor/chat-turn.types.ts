@@ -10,6 +10,7 @@ import type { Diagnosis } from './exercise-diagnosis.service.js';
 import type { ExerciseSheet } from './exercise-sheet.js';
 import type { ExerciseChange } from './exercise-turn.js';
 import type { TurnAnalysis } from './turn-analysis.service.js';
+import type { DistressSource } from './distress.js';
 
 export interface PrepareTurnRequest {
   userId: string;
@@ -22,6 +23,9 @@ export interface PrepareTurnRequest {
 
 /** @public — reachable only via the typed client's inferred route return types (apps/server build:types), not a direct import; knip false positive. */
 export interface ChatTurnContext {
+  kind: 'tutor';
+  /** The categories input moderation flagged, kept with the message; null when it could not answer, absent without text. */
+  inputModeration?: string[] | null;
   sessionId: string;
   subject?: string;
   conversationSummary: string | null;
@@ -52,6 +56,7 @@ export interface PersistUserTurnParams {
   fileIds: string[];
   attachedFileInfo: AttachedFileInfo | null;
   attachedFileInfos?: AttachedFileInfo[] | undefined;
+  inputModeration?: string[] | null | undefined;
 }
 
 export interface FinishTurnParams {
@@ -82,4 +87,13 @@ interface ExerciseProgress {
   hintLevel: number;
   diagnosis: Diagnosis | null;
   change: ExerciseChange;
+}
+
+/** A turn the code answers with the fixed distress reply, without the model. */
+export interface DistressTurn {
+  kind: 'distress';
+  sessionId: string;
+  /** Who saw the distress, or `closed` for a message in a session distress already closed. */
+  source: DistressSource | 'closed';
+  selfharmScore: number | null;
 }

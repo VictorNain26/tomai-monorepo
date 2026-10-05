@@ -60,3 +60,31 @@ export async function moderateTexts(texts: readonly string[]): Promise<string[][
   );
   return resultsFor(response.results, texts.length).map(blocking);
 }
+
+/**
+ * The categories kept with a student's message. `selfharm` decides distress (`distress.ts`); the
+ * others are measured, not blocking: a history homework touches violence, and an injection stays
+ * the student's text, which the turn contract and the output checks frame.
+ */
+const INPUT_RECORDED = ['selfharm', 'sexual', 'jailbreaking', 'pii', 'violence_and_threats', 'dangerous', 'criminal'] as const;
+
+export interface InputModeration {
+  /** The recorded categories Mistral flags. */
+  flagged: string[];
+  /** Null when Mistral returns no score: a missing score is not a low one. */
+  selfharmScore: number | null;
+}
+
+/** The student's message moderated, the tutor's last message for context. Throws when moderation is unavailable. */
+export async function moderateStudentTurn(lastTutorText: string | null, studentText: string): Promise<InputModeration> {
+  const inputs = [
+    ...(lastTutorText ? [{ role: 'assistant' as const, content: lastTutorText }] : []),
+    { role: 'user' as const, content: studentText },
+  ];
+  const response = await getMistralSdk().classifiers.moderateChat({ model: MODERATION_MODEL, inputs }, { timeoutMs: MODERATION_TIMEOUT_MS });
+  const [result] = resultsFor(response.results, 1);
+  return {
+    flagged: INPUT_RECORDED.filter((category) => result?.categories?.[category] === true),
+    selfharmScore: result?.categoryScores?.['selfharm'] ?? null,
+  };
+}

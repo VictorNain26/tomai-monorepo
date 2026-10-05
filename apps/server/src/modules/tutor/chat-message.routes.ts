@@ -6,7 +6,7 @@
  * history and streams the response as the standard AI SDK UI Message
  * Stream protocol (`createUIMessageStream`/`createUIMessageStreamResponse`).
  * Guards (quota, concurrency, sanitisation) run BEFORE the stream starts and
- * stay plain JSON responses, unchanged from the legacy SSE route.
+ * stay plain JSON responses, except on a distress, which gets the fixed reply.
  */
 
 import { Hono } from 'hono';
@@ -18,6 +18,9 @@ import { createRateLimitMiddleware, RateLimitPresets } from '../../platform/http
 import { chatOrchestrationService, ChatOrchestrationError } from './chat-orchestration.service.js';
 import { runControlledTurn, type ControlledTurn } from './controlled-turn.js';
 import type { OutputCheckContext } from './output-check.js';
+import type { DistressTurn } from './chat-turn.types.js';
+import { DISTRESS_REPLY } from './distress.js';
+import { answerDistress } from './distress.service.js';
 import { buildChatTools } from './chat-tools.js';
 import { extractTextFromParts, sanitizePrompt, type TomChatMessage } from './chat-ui-message.js';
 import { checkQuota } from '../billing/index.js';
@@ -45,6 +48,31 @@ const streamBody = z.object({
 
 const aiRateLimit = createRateLimitMiddleware(RateLimitPresets.ai);
 
+/** The fixed reply streamed. A turn that could not be stored is logged, never kept from the student. */
+async function distressResponse(turn: DistressTurn, params: { userId: string; requestId: string; content: string; inputMode?: 'text' | 'voice' | undefined }): Promise<Response> {
+  try {
+    await answerDistress({ turn, userId: params.userId, content: params.content, inputMode: params.inputMode });
+  } catch (error) {
+    logger.error('Distress turn not stored', {
+      err: error,
+      userId: params.userId,
+      sessionId: turn.sessionId,
+      requestId: params.requestId,
+      operation: 'distress:store-error',
+      severity: 'critical' as const,
+    });
+  }
+  return createUIMessageStreamResponse({
+    stream: createUIMessageStream<TomChatMessage>({
+      execute: ({ writer }) => {
+        writer.write({ type: 'text-start', id: 'distress' });
+        writer.write({ type: 'text-delta', id: 'distress', delta: DISTRESS_REPLY });
+        writer.write({ type: 'text-end', id: 'distress' });
+      },
+    }),
+  });
+}
+
 // Mounted under /api/chat by app.ts. The ai rate limit keys by user id, so it
 // runs after requireUser.
 export const chatMessageRoutes = new Hono<AppEnv>()
@@ -56,11 +84,25 @@ export const chatMessageRoutes = new Hono<AppEnv>()
 
     const fileIds = fileIdsBody ?? [];
     const safeContent = sanitizePrompt(extractTextFromParts((message as { parts?: unknown } | null)?.parts));
+    const turnParams = { userId: user.id, requestId, content: safeContent, inputMode };
+
+    // A refused request still gets the fixed reply on a distress: it calls no model.
+    const unlessDistress = async (refusal: Response): Promise<Response> => {
+      try {
+        const turn = await chatOrchestrationService.screenDistress({ userId: user.id, sessionId, content: safeContent });
+        return turn ? await distressResponse(turn, turnParams) : refusal;
+      } catch (error) {
+        if (!(error instanceof ChatOrchestrationError)) {
+          logger.error('Distress screening failed on a refused request', { err: error, userId: user.id, requestId, operation: 'distress:screen-error', severity: 'high' as const });
+        }
+        return refusal;
+      }
+    };
 
     // 1. Quota check
     const quotaCheck = await checkQuota(user.id);
     if (!quotaCheck.allowed) {
-      return c.json({
+      return unlessDistress(c.json({
         error: {
           code: 'QUOTA_EXCEEDED' as const,
           message: quotaCheck.message ?? 'Limite atteinte. Réessaie bientôt.',
@@ -72,7 +114,7 @@ export const chatMessageRoutes = new Hono<AppEnv>()
           plan: quotaCheck.plan,
         },
         requestId,
-      }, 429);
+      }, 429));
     }
 
     // 2. Content validation
@@ -83,7 +125,7 @@ export const chatMessageRoutes = new Hono<AppEnv>()
     // 3. Concurrent stream limit
     const currentStreams = activeStreams.get(user.id) ?? 0;
     if (currentStreams >= MAX_CONCURRENT_STREAMS) {
-      return c.json(toErrorResponse(new AppError('CONCURRENT_STREAM'), requestId), 409);
+      return unlessDistress(c.json(toErrorResponse(new AppError('CONCURRENT_STREAM'), requestId), 409));
     }
     activeStreams.set(user.id, currentStreams + 1);
 
@@ -101,7 +143,7 @@ export const chatMessageRoutes = new Hono<AppEnv>()
     if (!isCollegeLevel(resolvedSchoolLevel)) {
       releaseStream();
       const appError = new AppError('VALIDATION_ERROR', `school level ${resolvedSchoolLevel} is outside the collège`);
-      return c.json(toErrorResponse(appError, requestId), appError.statusCode);
+      return unlessDistress(c.json(toErrorResponse(appError, requestId), appError.statusCode));
     }
 
     let turnCtx: Awaited<ReturnType<typeof chatOrchestrationService.prepareTurn>>;
@@ -114,14 +156,17 @@ export const chatMessageRoutes = new Hono<AppEnv>()
         fileIds,
         schoolLevel: resolvedSchoolLevel,
       });
-      await chatOrchestrationService.persistUserTurn({
-        sessionId: turnCtx.sessionId,
-        content: safeContent,
-        inputMode,
-        fileIds: turnCtx.fileIds,
-        attachedFileInfo: turnCtx.attachedFileInfo,
-        attachedFileInfos: turnCtx.attachedFileInfos,
-      });
+      if (turnCtx.kind === 'tutor') {
+        await chatOrchestrationService.persistUserTurn({
+          sessionId: turnCtx.sessionId,
+          content: safeContent,
+          inputMode,
+          fileIds: turnCtx.fileIds,
+          attachedFileInfo: turnCtx.attachedFileInfo,
+          attachedFileInfos: turnCtx.attachedFileInfos,
+          inputModeration: turnCtx.inputModeration,
+        });
+      }
     } catch (error) {
       releaseStream();
       if (error instanceof ChatOrchestrationError) {
@@ -137,6 +182,12 @@ export const chatMessageRoutes = new Hono<AppEnv>()
         severity: 'high' as const,
       });
       return c.json(toErrorResponse(new AppError('INTERNAL_ERROR'), requestId), 500);
+    }
+
+    // A distress gets the fixed reply, never the model.
+    if (turnCtx.kind === 'distress') {
+      releaseStream();
+      return distressResponse(turnCtx, turnParams);
     }
 
     const startTime = Date.now();

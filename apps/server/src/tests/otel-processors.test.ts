@@ -12,7 +12,8 @@ const { streamChat } = await import('../modules/tutor/ai-chat.service');
 describe('setupOtel with caller processors', () => {
   it('sends the AI SDK spans to the processors it is given', async () => {
     const exporter = new InMemorySpanExporter();
-    setupOtel([new SimpleSpanProcessor(exporter)]);
+    const processor = new SimpleSpanProcessor(exporter);
+    setupOtel([processor]);
     const model = new MockLanguageModelV4({
       doStream: async () => ({
         stream: simulateReadableStream({
@@ -43,6 +44,9 @@ describe('setupOtel with caller processors', () => {
       tools: {},
       model,
     }).consumeStream();
+    // NodeSDK detects the resource attributes asynchronously, and the processor exports a span
+    // only once they are in: under load, after the stream ends.
+    await processor.forceFlush();
 
     expect(exporter.getFinishedSpans().length).toBeGreaterThan(0);
     await shutdownOtel();

@@ -17,7 +17,10 @@ import { autoTitleService } from './auto-title.service.js';
 import { analyseTurn, turnInstruction as instructionFor } from './turn-analysis.service.js';
 import { prepareExerciseTurn } from './exercise-turn.js';
 import { hintOf } from './hint-ladder.js';
-import type { ChatTurnContext, FinishTurnParams, PersistUserTurnParams, PrepareTurnRequest } from './chat-turn.types.js';
+import type { ChatTurnContext, DistressTurn, FinishTurnParams, PersistUserTurnParams, PrepareTurnRequest } from './chat-turn.types.js';
+import { detectDistress } from './distress.js';
+import { closedForDistress } from './distress.service.js';
+import { moderateStudentTurn, type InputModeration } from '../../platform/ai/moderation.js';
 import { exerciseSheetsRepository } from './exercise-sheets.repository.js';
 import { cognitiveProfileService } from './cognitive-profile.service.js';
 import { costTrackingService, incrementTokenUsage } from '../billing/index.js';
@@ -44,25 +47,63 @@ export function readStoredResponseMessages(value: unknown, messageId: string): R
   return messages;
 }
 
+/**
+ * The student's message moderated: undefined when it has no text, null when moderation could not
+ * answer, the rules then judging distress alone.
+ */
+async function moderateInput(lastTutorText: string | null, studentText: string): Promise<InputModeration | null | undefined> {
+  if (!studentText.trim()) return undefined;
+  try {
+    return await moderateStudentTurn(lastTutorText, studentText);
+  } catch (err) {
+    logger.error('Input moderation unavailable, distress judged by the rules alone', { operation: 'moderation:input-error', err, severity: 'high' as const });
+    return null;
+  }
+}
+
+/** Distress in the student's message, and who saw it; null when neither moderation nor the rules did. */
+function distressIn(sessionId: string, content: string, moderation: InputModeration | null | undefined): DistressTurn | null {
+  const source = detectDistress(content, moderation?.flagged.includes('selfharm') ?? false);
+  return source ? { kind: 'distress', sessionId, source, selfharmScore: moderation?.selfharmScore ?? null } : null;
+}
+
+const closedTurn = (sessionId: string): DistressTurn => ({ kind: 'distress', sessionId, source: 'closed', selfharmScore: null });
+
+/** The given session when it is the student's (else `ChatOrchestrationError`), or their active one. */
+async function resolveSession(request: Pick<PrepareTurnRequest, 'userId' | 'sessionId'>): Promise<string> {
+  if (!request.sessionId?.trim()) return chatSessionService.getOrCreateActiveSession(request.userId);
+  const session = await chatSessionService.getSession(request.sessionId);
+  if (session?.userId !== request.userId) {
+    throw new ChatOrchestrationError('Session not found or access denied', 403);
+  }
+  return request.sessionId;
+}
+
 class ChatOrchestrationService {
+  /**
+   * Distress alone, for a request the route refuses (quota, concurrent streams, level): the
+   * fixed reply calls no model, so no limit keeps it from the student.
+   */
+  async screenDistress(request: Pick<PrepareTurnRequest, 'userId' | 'sessionId' | 'content'>): Promise<DistressTurn | null> {
+    const sessionId = await resolveSession(request);
+    if (await closedForDistress(sessionId)) return closedTurn(sessionId);
+    const history = await chatMessageService.getSessionHistory(sessionId, { limit: 20 });
+    const lastTutorText = history.findLast(msg => msg.role === 'assistant')?.content ?? null;
+    return distressIn(sessionId, request.content, await moderateInput(lastTutorText, request.content));
+  }
+
   /**
    * Resolves (or creates) the session, loads its history and summary, then assembles the turn's
    * context. Throws `ChatOrchestrationError` when the given session is missing or someone else's.
    */
-  async prepareTurn(request: PrepareTurnRequest): Promise<ChatTurnContext> {
-    let sessionId: string;
-
-    if (request.sessionId?.trim()) {
-      const session = await chatSessionService.getSession(request.sessionId);
-      if (session?.userId !== request.userId) {
-        throw new ChatOrchestrationError('Session not found or access denied', 403);
-      }
-      sessionId = request.sessionId;
-    } else {
-      sessionId = await chatSessionService.getOrCreateActiveSession(request.userId);
-    }
-
-    const sessionSummary = await chatSessionService.getSessionWithSummary(sessionId);
+  async prepareTurn(request: PrepareTurnRequest): Promise<ChatTurnContext | DistressTurn> {
+    const sessionId = await resolveSession(request);
+    const [closed, sessionSummary] = await Promise.all([
+      closedForDistress(sessionId),
+      chatSessionService.getSessionWithSummary(sessionId),
+    ]);
+    // The conversation stopped at a distress: any later message gets the fixed reply again.
+    if (closed) return closedTurn(sessionId);
 
     const sessionHistory = await chatMessageService.getSessionHistory(sessionId, {
       limit: 20,
@@ -96,13 +137,20 @@ class ChatOrchestrationService {
       learningContext,
       turnAnalysis,
       relevantEpisodes,
+      inputModeration,
     ] = await Promise.all([
       fileContextService.prepareFileContext({ fileIds: request.fileIds, userId: request.userId, sessionId }),
       cognitiveProfileService.getProfileSummary(request.userId),
       getLearningContext(request.userId),
       analyseTurn(request.content, lastTutorText),
       episodicMemoryService.retrieveRelevant(request.userId, request.content, 3),
+      moderateInput(lastTutorText, request.content),
     ]);
+
+    // Distress before anything else: no sheet, no tutor, the fixed reply. The turn analysis,
+    // run alongside so moderation adds no wait to every turn, is dropped.
+    const distress = distressIn(sessionId, request.content, inputModeration);
+    if (distress) return distress;
 
     const episodicContext = episodicMemoryService.formatEpisodesForPrompt(relevantEpisodes);
 
@@ -174,6 +222,8 @@ class ChatOrchestrationService {
     });
 
     return {
+      kind: 'tutor',
+      ...(inputModeration !== undefined && { inputModeration: inputModeration?.flagged ?? null }),
       sessionId,
       ...(effectiveSubject !== undefined && { subject: effectiveSubject }),
       conversationSummary: sessionSummary?.conversationSummary ?? null,
@@ -208,6 +258,7 @@ class ChatOrchestrationService {
           ...(params.attachedFileInfos && { attachedFiles: params.attachedFileInfos }),
         }),
         ...(params.inputMode && { inputMode: params.inputMode }),
+        ...(params.inputModeration !== undefined && { inputModeration: params.inputModeration }),
       },
       { verifySessionExists: false },
     );
