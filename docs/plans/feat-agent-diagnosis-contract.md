@@ -15,8 +15,11 @@ tour », 3 à 5), `docs/agent.md` § 4. Chemins relatifs à `apps/server/src/`.
      la première étape fausse ; le type d'erreur selon les catégories de Bridge (« Guess »,
      « Misinterpret », « Careless », « Right-idea », « Imprecise », « Not-sure », « N/A »,
      https://arxiv.org/html/2310.10648) ; la proposition en forme mathjs ;
-   - mathjs tranche quand il sait lire : une proposition équivalente à la réponse est juste
-     si elle est sous forme résolue, une étape juste sinon ; non équivalente, elle est fausse ;
+   - mathjs tranche là où il sait : une équation de l'élève doit garder les racines de celle
+     de l'énoncé (juste une fois résolue, étape juste avant, fausse sinon) ; une valeur égale
+     à la réponse est la réponse ; une valeur différente peut être un résultat intermédiaire
+     juste, mathjs ne fait que réfuter un « juste » du modèle ; une expression égale à la
+     réponse peut être l'énoncé recopié, le modèle en juge ;
    - fiche incertaine : pas de diagnostic, « le diagnostic ne tranche pas » ; un échec de
      l'appel vaut indécidable, journalisé.
    - Une erreur n'est pas cherchée derrière une réponse juste.
@@ -48,6 +51,21 @@ tour », 3 à 5), `docs/agent.md` § 4. Chemins relatifs à `apps/server/src/`.
    (montée, descente, plafond, message sans tentative), contrat (ce qu'il montre par palier,
    jamais la réponse), orchestration, indices gardés ; un appel réel vérifie le schéma du
    diagnostic.
+
+7. **Ce que la revue a ajouté** :
+   - ce que le tour change sur l'exercice (palier, étapes justes, fin ou réouverture, message
+     du tuteur) s'écrit en une seule requête atomique une fois le tour vu, jamais pour un tour
+     coupé ; deux tours simultanés comptent tous les deux ;
+   - l'étape intermédiaire montrée suit les étapes justes de l'élève, pas les messages du
+     tuteur ;
+   - un exercice résolu garde son énoncé devant le tuteur, sans contrat ; une nouvelle
+     tentative le rouvre ; une partie juste d'un exercice à plusieurs questions est une étape
+     juste ;
+   - tous les champs de la fiche sont débarrassés des balises dans le prompt du diagnostic ;
+   - les messages gardés sont coupés sur un point de code.
+   - Rejeté : raisonner sous contrat quand le diagnostic ne tranche pas. La rédaction se fait
+     sans raisonnement (étude, « À chaque tour », 6) ; une proposition non jugée reçoit
+     « demande-lui comment il a trouvé ».
 
 ## Hors périmètre
 
