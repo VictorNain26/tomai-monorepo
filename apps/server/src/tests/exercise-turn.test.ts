@@ -15,7 +15,7 @@ const state = (overrides: Partial<ExerciseState> = {}): ExerciseState => ({ id: 
 
 let current: ExerciseState | null = state();
 const prepareExerciseSheet = mock(async (_params: unknown): Promise<ExerciseState> => state({ id: 'ex-new', hintLevel: 0 }));
-mock.module('../modules/tutor/exercise-sheet.service', () => ({ prepareExerciseSheet, currentExercise: mock(async () => current) }));
+mock.module('../modules/tutor/exercise-sheet.service', () => ({ prepareExerciseSheet }));
 
 let verdict: Diagnosis['verdict'] = 'incorrect';
 const diagnose = mock(async (_sheet: ExerciseSheet, _turn: unknown): Promise<Diagnosis> => ({ verdict, firstWrongStep: null, errorType: 'careless', proposalMath: null, decidedBy: 'model' }));
@@ -25,7 +25,7 @@ mock.module('../modules/tutor/exercise-diagnosis.service', () => ({ diagnose }))
 const { prepareExerciseTurn } = await import('../modules/tutor/exercise-turn');
 
 const params = (overrides: Partial<Parameters<typeof prepareExerciseTurn>[0]> = {}) => ({
-  userId: 'u1', sessionId: 's1', level: 'quatrieme' as const, subject: 'mathematiques', analysis: analysis(),
+  userId: 'u1', sessionId: 's1', level: 'quatrieme' as const, subject: 'mathematiques', analysis: analysis(), current,
   studentText: 'Je bloque', lastTutorText: 'Que cherches-tu ?', attachedFilesBlock: null, ...overrides,
 });
 
@@ -84,6 +84,18 @@ describe('prepareExerciseTurn', () => {
     expect(diagnose).not.toHaveBeenCalled();
     expect(turn.hintLevel).toBe(1);
     expect(turn.contract).toContain('ne peut pas être jugée avec sûreté');
+  });
+
+  it('keeps the exercise in progress when its statement comes back with a new try, the level with it', async () => {
+    current = state({ hintLevel: 2 });
+    const turn = await prepareExerciseTurn(params({
+      analysis: analysis({ bringsExercise: true, proposesAnswer: true }),
+      studentText: "Résous 3x+5 = 20. J'ai réessayé, je trouve x = 4.",
+    }));
+
+    expect(prepareExerciseSheet).not.toHaveBeenCalled();
+    expect(turn.exercise?.id).toBe('ex-1');
+    expect(turn.hintLevel).toBe(3);
   });
 
   it('prepares the sheet of a new exercise, and diagnoses a proposal brought with it', async () => {

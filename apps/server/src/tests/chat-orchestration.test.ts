@@ -66,7 +66,7 @@ mock.module('../modules/tutor/auto-title.service', () => ({
   autoTitleService: { generateTitleIfNeeded },
 }));
 
-const analyseTurn = mock(async () => analysis());
+const analyseTurn = mock(async (_studentText: string, _lastTutorText: string | null, _currentStatement: string | null) => analysis());
 const turnInstruction = mock((): string | null => null);
 mock.module('../modules/tutor/turn-analysis.service', () => ({
   analyseTurn,
@@ -109,6 +109,8 @@ interface Turn {
 }
 const prepareExerciseTurn = mock(async (_params: unknown): Promise<Turn> => ({ exercise: null, diagnosis: null, hintLevel: null, contract: null, change: null }));
 mock.module('../modules/tutor/exercise-turn', () => ({ prepareExerciseTurn }));
+let currentState: { id: string; sheet: ExerciseSheet | null } | null = null;
+mock.module('../modules/tutor/exercise-sheet.service', () => ({ currentExercise: mock(async () => currentState) }));
 const recordTurn = mock(async (_id: string, _turn: unknown) => {});
 mock.module('../modules/tutor/exercise-sheets.repository', () => ({ exerciseSheetsRepository: { recordTurn } }));
 
@@ -223,6 +225,7 @@ describe('ChatOrchestrationService.screenDistress — a request the route refuse
 
 describe('ChatOrchestrationService.prepareTurn — exercise', () => {
   beforeEach(() => {
+    currentState = null;
     prepareExerciseTurn.mockClear();
   });
 
@@ -256,6 +259,14 @@ describe('ChatOrchestrationService.prepareTurn — exercise', () => {
     });
     expect(context.attachedFiles.map((file) => file.fileId)).toEqual(['f1', 'f2']);
     expect(context.fileIds).toEqual(['f2']);
+  });
+
+  it('reads the exercise in progress once: its statement for the analysis, the state for the exercise turn', async () => {
+    currentState = { id: 'ex-1', sheet: sheet('Résous 3x + 5 = 20.') };
+    analyseTurn.mockClear();
+    await chatOrchestrationService.prepareTurn(request);
+    expect(analyseTurn.mock.calls[0]?.[2]).toBe('Résous 3x + 5 = 20.');
+    expect(prepareExerciseTurn.mock.calls[0]?.[0]).toMatchObject({ current: currentState });
   });
 
   it("follows the exercise's contract instead of the turn instruction, and keeps the progress for finishTurn", async () => {

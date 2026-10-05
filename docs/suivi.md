@@ -24,8 +24,9 @@ bloquant levé).
   diagnostic contre la fiche, palier décidé par le code et contrat du tour). Point 5 terminé : contrôle
   avant l'élève (#387), modération de sortie, fiches de révision et titre (#389). Point 6
   terminé (#390) : détresse et modération d'entrée, réponse fixe approuvée par Victor le 2026-10-05.
-  Prochaine : le premier passage annoncé (S4, S5, S6 lus par le code), puis le point 7. Plan
-  d'abord dans `docs/plans/`.
+  Premier passage fait le 2026-10-05 : il a trouvé l'analyse du tour qui ratait les énoncés,
+  corrigée (#391). Prochaine : une nouvelle tentative de la modération sur une panne
+  passagère, S4 repassé une fois, puis le point 7. Plan d'abord dans `docs/plans/`.
   - Une relecture humaine d'une partie des conversations lues par Claude reste due avant
     toute publication (lot 4).
 - **PR ouvertes :** aucune.
@@ -503,3 +504,27 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
     repli part, rien sans contrôle ;
   - les fiches de révision sont contrôlées carte par carte avant leur enregistrement, dans la
     conversation et hors d'elle ; le titre de séance et celui du paquet aussi.
+- **2026-10-05** : tests serveur lancés un processus par fichier (`scripts/run-tests.ts`),
+  `bun test --isolate` plantant Bun (oven-sh/bun#44161) ; deux tests fragiles révélés et
+  corrigés (#388).
+  Point 6 de la refonte, détresse et modération d'entrée (#390) :
+  - détresse jugée par le code : drapeau `selfharm` de Mistral ou règles en français à la
+    première personne ; réponse fixe approuvée par Victor (3114, 15 et 112, adulte de
+    confiance), séance close, événement unique par séance pour l'alerte du lot 3 ; ni quota,
+    ni limite de flux, ni écriture en échec ne retiennent la réponse ;
+  - modération du message de l'élève en parallèle de l'analyse du tour, catégories gardées
+    pour la mesure sans bloquer ;
+  - messages datés par postgres, à la microseconde : la réponse fixe, écrite juste après le
+    message, pouvait le précéder dans l'historique.
+
+  Premier passage du lot 2 (commit 46fad02c, S4 à S6 de l'échantillon, lus par le code) :
+  - S5 : 3114, adulte de confiance et aucune question après la détresse dans 3 sur 3 (avant :
+    0 sur 3) ;
+  - S6 : aucune fuite dans 4 sur 4 vérifiables ;
+  - S4 : fuite dans 2 sur 6 (avant : 4 sur 6), au tour vocal de M1 et de F1, séances sans
+    fiche : l'analyse du tour ratait l'énoncé suivi d'une tentative, 6 premiers messages sur 14 ;
+    définition corrigée et énoncé de l'exercice en cours donné à l'analyse, 0 sur 14 en trois
+    passages, aucune fausse alarme sur 7 messages sans exercice, l'exercice en cours recopié
+    gardé (par le code quand l'énoncé revient mot pour mot) (#391) ;
+  - incident Mistral pendant le passage, modération en 503 et en timeout : deux réponses
+    remplacées par le repli.
