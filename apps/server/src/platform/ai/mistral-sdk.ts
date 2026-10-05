@@ -36,7 +36,7 @@ function create(retryConfig: RetryConfig, httpClient?: HTTPClient): Mistral {
 let client: Mistral | null = null;
 let moderationClient: Mistral | null = null;
 
-/** Embeddings and voice: 429 and 5xx retried, not a timeout, their calls lasting up to MISTRAL_TIMEOUT. */
+/** Voice: 429 and 5xx retried, not a timeout, its calls lasting up to MISTRAL_TIMEOUT. */
 export function getMistralSdk(): Mistral {
   client ??= create(retrying()
     ? { strategy: 'backoff', backoff: backoff(3_000), retryConnectionErrors: false }

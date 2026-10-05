@@ -181,7 +181,6 @@ mock.module('../modules/learning/index', () => ({
   learningService: {},
   generateCards: async () => ({ cards: [] }),
   getLevelConfig: () => ({}),
-  getReviewSignals: async () => ({ dueCount: 0, weakSubjects: [] }),
 }));
 
 // DB schema + repositories

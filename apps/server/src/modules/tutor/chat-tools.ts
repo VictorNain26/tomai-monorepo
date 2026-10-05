@@ -36,7 +36,6 @@ const generateFlashcardsSchema = z.object({
     .describe('Nombre de cartes à générer (5 par défaut)'),
 });
 
-
 /** Les outils exposés à l'agent chat, au format AI SDK `ToolSet`. */
 export function buildChatTools(ctx: ChatToolContext): ToolSet {
   const executionContext = {

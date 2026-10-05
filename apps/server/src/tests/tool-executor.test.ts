@@ -15,7 +15,6 @@ import { createMockLogger } from './_helpers/mock-logger';
 const mockLogger = createMockLogger();
 mock.module('../platform/observability/logger', () => ({ logger: mockLogger }));
 
-
 // Card generator stub, injected through the modules/learning/index mock below
 let cardGenResult: Record<string, unknown> = {
   cards: [

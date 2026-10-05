@@ -136,7 +136,6 @@ mock.module('drizzle-orm', () => ({
   eq: (...args: unknown[]) => ({ type: 'eq', args }),
 }));
 
-
 // Import after mocks
 const { ChatSessionService } = await import('../modules/tutor/chat-session.service');
 const { ChatMessageService } = await import('../modules/tutor/chat-message.service');

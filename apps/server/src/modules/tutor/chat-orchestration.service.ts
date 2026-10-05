@@ -1,7 +1,6 @@
 /**
  * Chat turn pipeline: resolves the session and its history, assembles the turn's context (files,
- * profile, learning context, turn analysis, exercise sheet, episodic and subject memory),
- * persists the student's message before streaming, then records the answer, its cost, the
+ * turn analysis, moderation, exercise sheet), persists the student's message before streaming, then records the answer, its cost, the
  * summary and the title once the stream ends (`finishTurn`).
  */
 

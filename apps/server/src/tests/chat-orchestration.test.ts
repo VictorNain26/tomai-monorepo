@@ -76,7 +76,6 @@ mock.module('../modules/billing/index', () => ({
   incrementTokenUsage,
 }));
 
-
 const sheet = (statement: string): ExerciseSheet => ({
   statement, kind: 'short', answer: '5', answerForms: ['5'], mathEquation: null, mathAnswer: '5', steps: [], commonErrors: [],
   rule: null, facts: [], expectedElements: [], entries: [], laterEntries: [],
