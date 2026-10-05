@@ -21,14 +21,14 @@ bloquant levé).
 - **Prochaine action :** refonte de l'agent (lot 2), demandée par Victor le 2026-10-04 ;
   étude `etudes/2026-10-04/refonte-agent.md`, ordre des PR dans `roadmap.md`. Point 3 terminé :
   analyse du tour (#383), fiche d'exercice (#384), analyse de document réduite à une extraction (#385). Point 4 terminé (#386,
-  diagnostic contre la fiche, palier décidé par le code et contrat du tour). Prochaine : point 5,
-  contrôle avant l'élève et modération de sortie, sur le message, les fiches de révision et le
-  titre. Plan d'abord dans `docs/plans/`.
+  diagnostic contre la fiche, palier décidé par le code et contrat du tour). Point 5 en cours : contrôle
+  avant l'élève sur le message (#387), puis modération de sortie, fiches de révision et titre.
+  Plan d'abord dans `docs/plans/`.
   - Étape à la charge de Victor avant le point 6 : approuver le texte de la réponse fixe de
     détresse.
   - Une relecture humaine d'une partie des conversations lues par Claude reste due avant
     toute publication (lot 4).
-- **PR ouvertes :** aucune.
+- **PR ouvertes :** #387 (point 5a de la refonte) : revue `/code-review`, corrections, CI, merge ; son plan, `docs/plans/feat-agent-output-check.md`, se retire dans son dernier commit.
 - **Landing en ligne gelée** jusqu'au lot 4 : seuls des correctifs d'honnêteté ou techniques y entrent.
   L'identité visuelle est rejetée et se refait au lot 4.
 
