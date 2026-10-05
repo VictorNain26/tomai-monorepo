@@ -6,7 +6,6 @@
 
 import { describe, it, expect, beforeEach, mock } from 'bun:test';
 import { createMockLogger } from './_helpers/mock-logger';
-import type { TomChatMessage } from '../modules/tutor/chat-ui-message';
 import { analysis } from './_helpers/turn-analysis';
 import type { ExerciseSheet } from '../modules/tutor/exercise-sheet';
 
@@ -185,12 +184,11 @@ describe('ChatOrchestrationService.finishTurn', () => {
   const noopAnalysis = analysis();
 
   it('skips persistence entirely when the stream produced no content', async () => {
-    const emptyResponse: TomChatMessage = { id: 'm2', role: 'assistant', parts: [] };
     await chatOrchestrationService.finishTurn({
       sessionId: 'session-001',
       userId: 'user-001',
       userContent: 'Bonjour',
-      responseMessage: emptyResponse,
+      text: '',
       model: 'mistral-small-2603',
       usage: undefined,
       startTime: Date.now(),
@@ -206,12 +204,11 @@ describe('ChatOrchestrationService.finishTurn', () => {
   });
 
   it('counts the tokens of a turn that reasoned without writing, and persists nothing', async () => {
-    const emptyResponse: TomChatMessage = { id: 'm2', role: 'assistant', parts: [] };
     await chatOrchestrationService.finishTurn({
       sessionId: 'session-001',
       userId: 'user-001',
       userContent: 'Bonjour',
-      responseMessage: emptyResponse,
+      text: '',
       model: 'mistral-small-2603',
       usage: {
         inputTokens: 10,
@@ -243,7 +240,7 @@ describe('ChatOrchestrationService.finishTurn', () => {
         sessionId: 'session-001',
         userId: 'user-001',
         userContent: 'Bonjour',
-        responseMessage: { id: 'm2', role: 'assistant', parts: [{ type: 'text', text: 'Bonjour à toi', state: 'done' }] },
+        text: 'Bonjour à toi',
         modelMessages: [...modelMessages],
         aborted,
         model: 'mistral-small-2603',
@@ -263,7 +260,7 @@ describe('ChatOrchestrationService.finishTurn', () => {
       sessionId: 'session-001',
       userId: 'user-001',
       userContent: 'Bonjour',
-      responseMessage: { id: 'm2', role: 'assistant', parts: [{ type: 'text', text: 'Bonjour à toi', state: 'done' }] },
+      text: 'Bonjour à toi',
       modelMessages,
       model: 'mistral-small-2603',
       usage: undefined,
@@ -277,16 +274,11 @@ describe('ChatOrchestrationService.finishTurn', () => {
   });
 
   it('persists the assistant message and accounts tokens when content was produced', async () => {
-    const filledResponse: TomChatMessage = {
-      id: 'm2',
-      role: 'assistant',
-      parts: [{ type: 'text', text: 'Bonjour à toi', state: 'done' }],
-    };
     await chatOrchestrationService.finishTurn({
       sessionId: 'session-001',
       userId: 'user-001',
       userContent: 'Bonjour',
-      responseMessage: filledResponse,
+      text: 'Bonjour à toi',
       model: 'mistral-small-2603',
       usage: {
         inputTokens: 10,
@@ -318,7 +310,7 @@ describe('ChatOrchestrationService.finishTurn', () => {
       sessionId: 'session-001',
       userId: 'user-001',
       userContent: 'Je bloque',
-      responseMessage: { id: 'm2', role: 'assistant', parts: [{ type: 'text', text: 'Regarde le +5.', state: 'done' }] },
+      text: 'Regarde le +5.',
       model: 'mistral-small-2603',
       usage: undefined,
       startTime: Date.now(),

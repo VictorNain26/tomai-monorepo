@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'bun:test';
 import { dataset, renderTurns } from '../eval';
-import { findLeakForm, normalizeForLeak } from '../eval/leak';
+import { findLeakForm, normalizeForLeak } from '../lib/leak';
 
 function formsOf(id: string): string[] {
   const exercise = dataset.exercises.find((e) => e.id === id);

@@ -1,5 +1,5 @@
 import { PROMPT_TAG } from '../lib/prompt-tags.js';
-import { findLeakForm } from './leak.js';
+import { findLeakForm } from '../lib/leak.js';
 import type { Exercise, Scenario } from './index.js';
 import type { Transcript } from './turn-parts.js';
 

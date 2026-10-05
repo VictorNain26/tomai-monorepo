@@ -21,9 +21,10 @@ bloquant levé).
 - **Prochaine action :** refonte de l'agent (lot 2), demandée par Victor le 2026-10-04 ;
   étude `etudes/2026-10-04/refonte-agent.md`, ordre des PR dans `roadmap.md`. Point 3 terminé :
   analyse du tour (#383), fiche d'exercice (#384), analyse de document réduite à une extraction (#385). Point 4 terminé (#386,
-  diagnostic contre la fiche, palier décidé par le code et contrat du tour). Prochaine : point 5,
-  contrôle avant l'élève et modération de sortie, sur le message, les fiches de révision et le
-  titre. Plan d'abord dans `docs/plans/`.
+  diagnostic contre la fiche, palier décidé par le code et contrat du tour). Point 5 en cours : contrôle
+  avant l'élève sur le message mergé (#387) ; prochaine : modération de sortie, et les mêmes
+  contrôles sur les fiches de révision et le titre.
+  Plan d'abord dans `docs/plans/`.
   - Étape à la charge de Victor avant le point 6 : approuver le texte de la réponse fixe de
     détresse.
   - Une relecture humaine d'une partie des conversations lues par Claude reste due avant
@@ -478,3 +479,14 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
     que le palier autorise, jamais la réponse ; sous contrat, la rédaction se fait sans
     raisonnement ;
   - ce que le tour change s'écrit une fois le tour vu, en une requête atomique.
+  Point 5 de la refonte, première PR, contrôle avant l'élève (#387) :
+  - le texte du modèle n'est plus transmis au fil de l'eau : le flux est gardé entier, contrôlé,
+    puis envoyé ; le message envoyé est celui qui est persisté ;
+  - contrôles déterministes : réponse et formes (sauf celles de l'énoncé, et une réponse juste
+    de l'élève confirmée), balises du prompt, égalités recalculées par mathjs ;
+  - sur un échec, une régénération sous contrainte sans outils, puis une réponse de repli ;
+    l'événement est gardé avec le message ;
+  - la détection de fuite, la typographie et la lecture des égalités passent dans `lib/`, un seul
+    exemplaire pour le harnais et le tuteur.
+  - Bun 1.4.2 plante (segfault) en fin de `bun test src/tests --isolate`, en local environ trois
+    fois sur quatre avec ou sans les changements, zéro test en échec : à instruire à part.
