@@ -16,6 +16,7 @@ import { summarizationService } from './summarization.service.js';
 import { autoTitleService } from './auto-title.service.js';
 import { analyseTurn, turnInstruction as instructionFor } from './turn-analysis.service.js';
 import { prepareExerciseTurn } from './exercise-turn.js';
+import { currentExercise } from './exercise-sheet.service.js';
 import { hintOf } from './hint-ladder.js';
 import type { ChatTurnContext, DistressTurn, FinishTurnParams, PersistUserTurnParams, PrepareTurnRequest } from './chat-turn.types.js';
 import { detectDistress } from './distress.js';
@@ -98,9 +99,10 @@ class ChatOrchestrationService {
    */
   async prepareTurn(request: PrepareTurnRequest): Promise<ChatTurnContext | DistressTurn> {
     const sessionId = await resolveSession(request);
-    const [closed, sessionSummary] = await Promise.all([
+    const [closed, sessionSummary, current] = await Promise.all([
       closedForDistress(sessionId),
       chatSessionService.getSessionWithSummary(sessionId),
+      currentExercise(sessionId),
     ]);
     // The conversation stopped at a distress: any later message gets the fixed reply again.
     if (closed) return closedTurn(sessionId);
@@ -142,7 +144,7 @@ class ChatOrchestrationService {
       fileContextService.prepareFileContext({ fileIds: request.fileIds, userId: request.userId, sessionId }),
       cognitiveProfileService.getProfileSummary(request.userId),
       getLearningContext(request.userId),
-      analyseTurn(request.content, lastTutorText),
+      analyseTurn(request.content, lastTutorText, current?.sheet?.statement ?? null),
       episodicMemoryService.retrieveRelevant(request.userId, request.content, 3),
       moderateInput(lastTutorText, request.content),
     ]);
@@ -189,6 +191,7 @@ class ChatOrchestrationService {
         level: request.schoolLevel,
         subject: effectiveSubject,
         analysis: turnAnalysis,
+        current,
         studentText: request.content,
         lastTutorText,
         attachedFilesBlock: files.length > 0 ? wrapAttachedFiles(files) : null,

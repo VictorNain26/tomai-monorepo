@@ -90,16 +90,19 @@ describe('Mistral Small 4 on the EU endpoint (real API)', () => {
     }
   }, 60_000);
 
-  it('analyses a turn under the strict schema: a statement with its attempt, a step under way, an agreement to cards', async () => {
-    const attempt = await analyseTurn("Résous 3x + 5 = 20. J'ai trouvé x = 20/3 mais c'est faux.", null);
+  it('analyses a turn under the strict schema: a statement with its attempt, the current one restated, a new one, an agreement to cards', async () => {
+    const attempt = await analyseTurn("Résous 3x + 5 = 20. J'ai trouvé x = 20/3 mais c'est faux.", null, null);
     expect(attempt.error).toBeUndefined();
     expect(attempt.subject).toBe('mathematiques');
     expect(attempt).toMatchObject({ bringsExercise: true, proposesAnswer: true });
 
-    const step = await analyseTurn("J'ai enlevé 5 des deux côtés, ça fait 3x = 15.", 'Que fais-tu du + 5 pour isoler 3x ?');
-    expect(step).toMatchObject({ bringsExercise: false, proposesAnswer: true });
+    const restated = await analyseTurn('3x + 5 = 20 donc 3x = 15 donc x = 5', 'Que fais-tu du + 5 pour isoler 3x ?', 'Résous 3x + 5 = 20.');
+    expect(restated).toMatchObject({ bringsExercise: false, proposesAnswer: true });
 
-    const agreement = await analyseTurn('Oui, je veux bien !', 'Veux-tu que je te crée des cartes de révision sur les équations ?');
+    const next = await analyseTurn('Autre exercice : résous 2x - 3 = 7.', 'Bravo, x = 5 est juste !', 'Résous 3x + 5 = 20.');
+    expect(next.bringsExercise).toBe(true);
+
+    const agreement = await analyseTurn('Oui, je veux bien !', 'Veux-tu que je te crée des cartes de révision sur les équations ?', 'Résous 3x + 5 = 20.');
     expect(agreement.wantsFlashcards).toBe(true);
   }, 60_000);
 

@@ -8,8 +8,9 @@
 
 import type { EducationLevelType } from '../../types/index.js';
 import { diagnose, type Diagnosis } from './exercise-diagnosis.service.js';
-import { currentExercise, prepareExerciseSheet, type ExerciseState } from './exercise-sheet.service.js';
+import { prepareExerciseSheet, type ExerciseState } from './exercise-sheet.service.js';
 import { applyChange, levelChange, topLevel, turnContract } from './hint-ladder.js';
+import { findLeakForm } from '../../lib/leak.js';
 import type { TurnAnalysis } from './turn-analysis.service.js';
 
 /** What the turn changes on the exercise, recorded by `finishTurn`. */
@@ -35,6 +36,8 @@ interface ExerciseTurnParams {
   level: EducationLevelType;
   subject: string | undefined;
   analysis: TurnAnalysis;
+  /** The session's exercise before this turn, read once with the turn's context. */
+  current: ExerciseState | null;
   studentText: string;
   lastTutorText: string | null;
   attachedFilesBlock: string | null;
@@ -42,7 +45,10 @@ interface ExerciseTurnParams {
 
 export async function prepareExerciseTurn(params: ExerciseTurnParams): Promise<ExerciseTurn> {
   const { userId, sessionId, analysis } = params;
-  const exercise = analysis.bringsExercise
+  // The statement in progress pasted again with a new try is the same exercise: the code knows
+  // it, the analysis took it for a new one (measured 2026-10-05). A new sheet would reset the level.
+  const restated = params.current?.sheet ? findLeakForm(params.studentText, [params.current.sheet.statement]) !== null : false;
+  const exercise = analysis.bringsExercise && !restated
     ? await prepareExerciseSheet({
       userId,
       sessionId,
@@ -51,7 +57,7 @@ export async function prepareExerciseTurn(params: ExerciseTurnParams): Promise<E
       studentText: params.studentText,
       attachedFilesBlock: params.attachedFilesBlock,
     })
-    : await currentExercise(sessionId);
+    : params.current;
   const attempt = analysis.proposesAnswer;
   if (!exercise?.sheet || (exercise.solved && !attempt)) return { exercise, diagnosis: null, hintLevel: null, contract: null, change: null };
 
