@@ -5,9 +5,10 @@
  * @mistralai/mistralai (multipart/form-data géré par le SDK), avec la clé
  * MISTRAL_API_KEY portée par le client partagé — aucune clé tierce.
  *
- * Réponse Mistral : { model, text, language, usage }. La langue n'est pas forcée : un oral
- * d'anglais ou d'espagnol reste dans sa langue, et le français se transcrit pareil sans elle
- * (mesuré le 2026-10-05). `language` revient vide de Voxtral à cette date.
+ * Le français est imposé. Mesuré le 2026-10-05 sur des réponses courtes, propres et bruitées :
+ * sans langue, « Non. » devient « No. » ; avec la bonne langue, tout passe ; avec le français,
+ * un « Yes. » bruité devient « Oui. ». Un oral de langue attend que le client déclare sa
+ * langue (lot 3) : le serveur ne la connaît pas, la matière dit seulement « langues ».
  *
  * @see https://docs.mistral.ai/capabilities/audio/
  */
@@ -22,16 +23,12 @@ const STT_MODEL = env.MISTRAL_STT_MODEL;
 export interface VoxtralTranscribeResult {
   success: boolean;
   transcription?: string;
-  /** La langue que renvoie l'API, quand elle la donne. */
-  detectedLanguage?: string;
   error?: string;
 }
 
 class VoxtralTranscribeService {
-  async transcribe(
-    audioBuffer: ArrayBuffer,
-    mimeType: string,
-  ): Promise<VoxtralTranscribeResult> {
+  /** `audio` as stored. Its bytes are copied: a Buffer can be a view into a larger pool. */
+  async transcribe(audio: Uint8Array, mimeType: string): Promise<VoxtralTranscribeResult> {
     const startTime = Date.now();
 
     try {
@@ -41,7 +38,8 @@ class VoxtralTranscribeService {
         // to `getContentTypeFromFileName('audio')` (no extension -> null -> octet-stream),
         // dropping the real mimeType. A File is blob-like, so the SDK forwards it as-is
         // (esm/funcs/audioTranscriptionsComplete.js:33-48, esm/types/blobs.js isBlobLike).
-        file: new File([audioBuffer], 'audio', { type: mimeType }),
+        file: new File([Uint8Array.from(audio)], 'audio', { type: mimeType }),
+        language: 'fr',
       });
 
       if (!response.text) {
@@ -55,7 +53,6 @@ class VoxtralTranscribeService {
 
       logger.info('Voxtral STT transcription completed', {
         operation: 'voxtral:stt',
-        language: response.language,
         model: response.model,
         durationMs: Date.now() - startTime,
       });
@@ -63,7 +60,6 @@ class VoxtralTranscribeService {
       return {
         success: true,
         transcription: response.text,
-        ...(response.language && { detectedLanguage: response.language }),
       };
     } catch (error) {
       logger.error('Voxtral STT transcription error', {
