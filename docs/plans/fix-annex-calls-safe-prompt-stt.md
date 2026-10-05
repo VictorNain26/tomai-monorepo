@@ -10,35 +10,42 @@ mémoire (résumé incrémental, épisodes une fois par séance).
 « 'safe_prompt' is deprecated. We recommend using Custom Guardrails instead »
 (https://docs.mistral.ai/resources/deprecated/guardrailing/safe_prompt, lu le 2026-10-05).
 Il est encore activé par défaut dans `platform/ai/mistral-client.ts` (`generateText`,
-`generateStructured`) : titre, résumé, épisode, cartes, analyse du tour. La modération
-d'entrée et de sortie (#389, #390) fait ce travail par le code ; `safePrompt` ajoute un
-prompt système de Mistral à des tâches qui n'en ont pas besoin.
+`generateStructured`) : titre, résumé, épisode, cartes, analyse du tour. Ce qui atteint
+l'élève passe par la modération (#389, #390) : message, cartes, titre. Le résumé et
+l'épisode ne sont jamais montrés ; ils nourrissent le prompt, et leur entrée, les messages de
+la séance, a déjà été modérée. Les versions de ces cinq prompts changent : sans `safe_prompt`,
+le modèle ne reçoit plus le même texte.
+
+Analyse du tour remesurée sans `safe_prompt`, trois passages : 1 premier message raté sur 42
+(H1, une fois), contre 0 sur 42 ; aucune fausse alarme ; l'énoncé recollé, tranché par le code.
 
 ## STT
 
-Mesuré le 2026-10-05 par appels réels sur `MISTRAL_STT_MODEL` :
-- un extrait anglais (l'échantillon de la doc Mistral) est transcrit en anglais avec ou sans
-  `language: 'fr'` : la traduction en français que l'étude annonçait ne se reproduit pas ;
-- trois phrases françaises d'élève, produites par notre TTS : transcriptions identiques avec
-  ou sans `language` ;
-- la réponse ne donne pas la langue (`language: null`), alors que `detectedLanguage` renvoie
+Mesuré le 2026-10-05 par appels réels, sur des réponses d'élève produites par notre TTS,
+propres et mêlées d'un bruit rose (ffmpeg) :
+- sans langue : « Non. » devient « No. », propre comme bruité ; « Cinq » bruité, « Thank you. » ;
+- `language: 'fr'` : les réponses françaises justes ; mais un « Yes. » bruité devient « Oui. »,
+  et « She has got a dog. » bruité, « si a su perro. » ;
+- la bonne langue imposée : toutes justes ;
+- la réponse ne donne pas la langue (`language: null`), alors que `detectedLanguage` renvoyait
   la langue forcée comme si elle était détectée.
 
-`language` est optionnel (« Providing the language can boost accuracy », doc de
-`POST /v1/audio/transcriptions`) : sans gain mesuré en français, et faux pour un oral
-d'anglais, d'espagnol ou d'allemand, il n'est plus forcé.
+Le français reste donc imposé : c'est la langue de presque toutes les réponses, et l'enlever
+casse les plus courtes. Un oral de langue attend que le client déclare sa langue, comme
+`inputMode` (lot 3) : le serveur ne la connaît pas, la matière dit seulement « langues ».
+L'item « STT sans langue forcée » de l'étude est infirmé par la mesure.
 
 ## Tâches
 
 1. `platform/ai/mistral-client.ts` : `safePrompt` retiré, option comprise ; ses appels
    (`exercise-sheet.service.ts`, `exercise-diagnosis.service.ts`, `mistral-vision.ts`,
-   `eval/`) aussi.
-2. `modules/voice/voxtral-transcribe.service.ts`, `audio-transcription.service.ts`,
-   `documents/upload.routes.ts` : plus de langue forcée ; `detectedLanguage` vient de la
-   réponse de l'API, absent quand elle ne le donne pas.
-3. Tests : aucune option `safePrompt` envoyée ; transcription sans `language`, langue
-   détectée prise de la réponse.
-4. `docs/suivi.md` : S4 repassé après #391 et #392 ; le point 7 commencé.
+   `eval/`) aussi ; versions des prompts touchés changées.
+2. Transcription : français imposé, mesure en commentaire ; `detectedLanguage`, que rien ne
+   lit, retiré ; `audio-transcription.service.ts`, devenu un simple relais, retiré ; l'audio
+   passé avec ses seuls octets (`.buffer` d'un `Buffer` emportait le pool autour).
+3. Tests : aucune option `safe_prompt` envoyée ; français demandé ; octets exacts.
+4. `docs/suivi.md` : S4 repassé après #391 et #392 ; le point 7 commencé ; la langue d'un
+   oral au lot 3.
 
 ## Validation
 

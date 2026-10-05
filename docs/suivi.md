@@ -226,6 +226,11 @@ contraire.
   attend les flux SSE) ; stockage partagé du rate limit s'il y a plusieurs instances ;
   `advanced.ipAddress.trustedProxies` de better-auth derrière le proxy de l'hébergeur.
 
+- **Langue d'un oral** : la transcription impose le français, juste pour les réponses
+  courtes ; un oral d'anglais, d'espagnol ou d'allemand se transcrit mal sous le français (un
+  « Yes. » bruité devient « Oui. », mesuré le 2026-10-05). Le client déclare la langue
+  d'un oral de langue, comme `inputMode`, et la route la passe à Voxtral.
+
 ### Lot 4 — marque et lancement
 
 - **À ne jamais écrire sur la landing** (même étude, c) : « conforme au cadre d'usage de
@@ -541,6 +546,10 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
   S4 repassé après #391 et #392 (commit a7f7a452) : aucune fuite sur 6 (premier passage : 2,
   avant la refonte : 4) ; fiches créées dans 5 sur 6 ; modération en timeout deux fois.
 
-  Point 7 de la refonte, appels annexes (#393) : `safePrompt` retiré, déprécié par Mistral et
-  remplacé par la modération ; transcription sans langue forcée, le français transcrit pareil
-  et l'anglais gardé (mesuré), langue détectée prise de l'API.
+  Point 7 de la refonte, appels annexes (#393) :
+  - `safePrompt` retiré, déprécié par Mistral ; ce qui atteint l'élève passe par la
+    modération ; analyse du tour remesurée, 1 premier message raté sur 42 (contre 0)
+    et aucune fausse alarme ;
+  - transcription : le français reste imposé, la mesure infirme l'étude (sans langue,
+    « Non. » devient « No. ») ; `detectedLanguage`, qui renvoyait la langue forcée,
+    retiré ; l'audio passé avec ses seuls octets, sans le pool d'un `Buffer` autour.
