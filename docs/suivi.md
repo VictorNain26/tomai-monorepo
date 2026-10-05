@@ -22,8 +22,8 @@ bloquant levé).
   étude `etudes/2026-10-04/refonte-agent.md`, ordre des PR dans `roadmap.md`. Point 3 terminé :
   analyse du tour (#383), fiche d'exercice (#384), analyse de document réduite à une extraction (#385). Point 4 terminé (#386,
   diagnostic contre la fiche, palier décidé par le code et contrat du tour). Point 5 terminé : contrôle
-  avant l'élève (#387), modération de sortie, fiches de révision et titre (#389). Point 6 en
-  revue : détresse et modération d'entrée, réponse fixe approuvée par Victor le 2026-10-05.
+  avant l'élève (#387), modération de sortie, fiches de révision et titre (#389). Point 6
+  terminé (#390) : détresse et modération d'entrée, réponse fixe approuvée par Victor le 2026-10-05.
   Prochaine : le premier passage annoncé (S4, S5, S6 lus par le code), puis le point 7. Plan
   d'abord dans `docs/plans/`.
   - Une relecture humaine d'une partie des conversations lues par Claude reste due avant
