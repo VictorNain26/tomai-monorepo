@@ -116,9 +116,14 @@ export function isWrong({ left, right }: Pick<Equality, 'left' | 'right'>): bool
 
 const key = ({ left, right }: Equality) => `${left}=${right}`.replace(/\s/g, '');
 
-/** The wrong equalities a text writes, once each; one the student wrote is their work shown back, not an error. */
+/**
+ * The wrong equalities a text writes, once each; one the student wrote is their work shown back,
+ * not an error, « 3 fois 4 » of theirs standing for « 3 × 4 ».
+ */
 export function wrongEqualities(text: string, studentTexts: readonly string[]): Equality[] {
-  const studentLines = studentTexts.flatMap(plainLines).map((line) => line.replace(/\s/g, ''));
+  const studentLines = studentTexts
+    .flatMap(plainLines)
+    .map((line) => line.replace(/(\d)\s*fois\s*(?=\d)/g, '$1*').replace(/\s/g, ''));
   return [...new Map(writtenEqualities(text).map((e) => [key(e), e]))]
     .filter(([k, e]) => !studentLines.some((line) => line.includes(k)) && isWrong(e))
     .map(([, e]) => e);

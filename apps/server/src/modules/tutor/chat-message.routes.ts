@@ -139,7 +139,8 @@ export const chatMessageRoutes = new Hono<AppEnv>()
     }
 
     const startTime = Date.now();
-    let controlled: ControlledTurn | undefined;
+    // Set as the turn starts: when the client leaves, onEnd runs at once and must wait for the turn.
+    let controlledTurn: Promise<ControlledTurn> | undefined;
     const turnUsage = new TurnUsage();
 
     const stream = createUIMessageStream<TomChatMessage>({
@@ -151,7 +152,7 @@ export const chatMessageRoutes = new Hono<AppEnv>()
           emitDeckCreated: d => { writer.write({ type: 'data-deck-created', data: d }); },
         });
 
-        controlled = await runControlledTurn(writer, {
+        controlledTurn = runControlledTurn(writer, {
           userId: user.id,
           content: safeContent,
           subject: turnCtx.subject,
@@ -177,11 +178,13 @@ export const chatMessageRoutes = new Hono<AppEnv>()
           studentText: safeContent,
           pastStudentTexts: turnCtx.conversationHistory.filter((turn) => turn.role === 'user').map((turn) => turn.content),
         });
+        await controlledTurn;
       },
       onEnd: async ({ responseMessage }) => {
         try {
           // Wait for the model's side to end, whatever ends it (finish, timeout, error), even
           // when the client left first: only then is the usage complete.
+          const controlled = await controlledTurn?.catch(() => undefined);
           await Promise.all((controlled?.results ?? []).map(result => Promise.resolve(result.steps).then(() => undefined, () => undefined)));
           const { usage, cut } = turnUsage.read();
           if (cut) {
@@ -192,13 +195,13 @@ export const chatMessageRoutes = new Hono<AppEnv>()
               operation: 'chat-stream:cut',
             });
           }
-          // The text the student read replays as the model produced it; the fixed reply as text.
-          const modelMessages = cut || !controlled?.kept ? undefined : await controlled.kept.responseMessages;
+          const modelMessages = cut || !controlled ? undefined : await controlled.replay();
           await chatOrchestrationService.finishTurn({
             sessionId: turnCtx.sessionId,
             userId: user.id,
             userContent: safeContent,
-            responseMessage,
+            // The checked text, even when the client left before it was written.
+            text: controlled?.text ?? extractTextFromParts(responseMessage.parts),
             modelMessages,
             aborted: cut,
             model: env.MISTRAL_MODEL,

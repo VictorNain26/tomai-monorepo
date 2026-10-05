@@ -20,9 +20,10 @@ describe('checkOutput', () => {
     expect(checkOutput("Regarde le « + 5 » de 3x + 5 = 20 : que fais-tu pour l'enlever ?", ctx())).toEqual([]);
   });
 
-  it('lets the tutor confirm a right answer the student wrote, and only then', () => {
+  it('lets the tutor confirm a right answer the student wrote, in any notation, and only then', () => {
     expect(checkOutput("Oui, x = 5 : c'est juste !", ctx({ studentText: "J'ai trouvé x = 5", diagnosis: right }))).toEqual([]);
     expect(checkOutput("Oui, x = 5 : c'est juste !", ctx({ studentText: "J'ai trouvé x = 5" }))).toEqual([{ kind: 'answer' }]);
+    expect(checkOutput("Oui, x = 5 : c'est juste !", ctx({ studentText: "J'ai trouvé 5", diagnosis: right }))).toEqual([]);
   });
 
   it("does not hold the tutor to an uncertain sheet's answer, nor to a written production's", () => {
@@ -39,6 +40,7 @@ describe('checkOutput', () => {
     expect(checkOutput('Donc 3 × 4 = 11, et ensuite…', ctx({ sheet: null }))).toEqual([{ kind: 'equality', quote: '3 * 4 = 11' }]);
     expect(checkOutput('Tu as écrit : 3 × 4 = 11. Vérifie.', ctx({ sheet: null, pastStudentTexts: ['3 × 4 = 11'] }))).toEqual([]);
     expect(checkOutput('3 × 4 = 12, bien.', ctx({ sheet: null }))).toEqual([]);
+    expect(checkOutput('Tu as écrit : 3 × 4 = 11. Vérifie.', ctx({ sheet: null, studentText: '3 fois 4 = 11' }))).toEqual([]);
   });
 });
 

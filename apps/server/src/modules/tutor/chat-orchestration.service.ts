@@ -24,7 +24,6 @@ import { costTrackingService, incrementTokenUsage } from '../billing/index.js';
 import { episodicMemoryService } from './episodic-memory.service.js';
 import { subjectProfileService } from './subject-profile.service.js';
 import { logger } from '../../platform/observability/logger.js';
-import { extractTextFromParts } from './chat-ui-message.js';
 import { replayable, type HistoryTurn, type ResponseMessage } from './chat-message-assembler.js';
 import { messagesRepository } from './messages.repository.js';
 
@@ -230,8 +229,7 @@ class ChatOrchestrationService {
    * persiste, mais les tokens factures sont comptes.
    */
   async finishTurn(params: FinishTurnParams): Promise<void> {
-    const { sessionId, userId, userContent, responseMessage, modelMessages, aborted, model, usage, startTime, attachedFileInfo, attachedFileInfos, turnAnalysis, exerciseProgress, outputCheck } = params;
-    const fullContent = extractTextFromParts(responseMessage.parts);
+    const { sessionId, userId, userContent, text: fullContent, modelMessages, aborted, model, usage, startTime, attachedFileInfo, attachedFileInfos, turnAnalysis, exerciseProgress, outputCheck } = params;
     const tokensUsed = usage?.totalTokens ?? 0;
 
     // A turn that reasoned without writing anything was billed all the same.

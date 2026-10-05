@@ -77,13 +77,14 @@ mock.module('../modules/auth/index', () => ({
   },
 }));
 
+const createMessage = mock(async (input: Record<string, unknown>) => ({
+  id: createMessageResult.id,
+  ...input,
+}));
 mock.module('../modules/tutor/messages.repository', () => ({
   messagesRepository: {
     findBySessionId: mock(async () => findBySessionIdResult),
-    create: mock(async (input: Record<string, unknown>) => ({
-      id: createMessageResult.id,
-      ...input,
-    })),
+    create: createMessage,
     findById: mock(async () => findMessageByIdResult),
   },
 }));
@@ -434,6 +435,21 @@ describe('ChatMessageService', () => {
         aiModel: 'mistral-large-3',
       });
       expect(result.messageId).toBe('msg-002');
+    });
+
+    it('keeps the exercise turn and what the check before the student held back in the metadata, for evals', async () => {
+      findByIdResult = makeStudySession({ id: VALID_UUID });
+      createMessageResult = { id: 'msg-004' };
+
+      await messageService.saveMessage(VALID_UUID, 'assistant', 'Que fais-tu du + 5 ?', {
+        exerciseTurn: { diagnosis: null, hintLevel: 2 },
+        outputCheck: { findings: ['answer'], outcome: 'regenerated' },
+      });
+
+      expect(createMessage.mock.calls.at(-1)?.[0]['messageMetadata']).toEqual({
+        exerciseTurn: { diagnosis: null, hintLevel: 2 },
+        outputCheck: { findings: ['answer'], outcome: 'regenerated' },
+      });
     });
 
     it('should throw for invalid session ID', async () => {

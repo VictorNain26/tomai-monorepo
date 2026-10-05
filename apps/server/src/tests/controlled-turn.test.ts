@@ -15,6 +15,8 @@ const usage = {
   outputTokens: { total: 1, text: 1, reasoning: undefined },
 };
 
+const finish = (unified: 'stop' | 'tool-calls') => ({ type: 'finish' as const, usage, finishReason: { unified, raw: undefined } });
+
 function textStream(...texts: string[]) {
   return {
     stream: simulateReadableStream({
@@ -25,16 +27,57 @@ function textStream(...texts: string[]) {
         { type: 'text-start' as const, id: 't' },
         ...texts.map((delta) => ({ type: 'text-delta' as const, id: 't', delta })),
         { type: 'text-end' as const, id: 't' },
-        { type: 'finish' as const, usage, finishReason: { unified: 'stop' as const, raw: undefined } },
+        finish('stop'),
       ],
     }),
   };
 }
 
+/** A step that writes a text, then calls the noop tool. */
+function textThenTool(text: string) {
+  return {
+    stream: simulateReadableStream({
+      chunkDelayInMs: 0,
+      initialDelayInMs: 0,
+      chunks: [
+        { type: 'stream-start' as const, warnings: [] },
+        { type: 'text-start' as const, id: 'a' },
+        { type: 'text-delta' as const, id: 'a', delta: text },
+        { type: 'text-end' as const, id: 'a' },
+        { type: 'tool-call' as const, toolCallId: 'c1', toolName: 'noop_tool', input: '{}' },
+        finish('tool-calls'),
+      ],
+    }),
+  };
+}
+
+/** A step cut after writing a text. */
+function textThenError(text: string) {
+  return {
+    stream: simulateReadableStream({
+      chunkDelayInMs: 0,
+      initialDelayInMs: 0,
+      chunks: [
+        { type: 'stream-start' as const, warnings: [] },
+        { type: 'text-start' as const, id: 'a' },
+        { type: 'text-delta' as const, id: 'a', delta: text },
+        { type: 'error' as const, error: new Error('timeout') },
+      ],
+    }),
+  };
+}
+
+type Reply = string[] | (() => ReturnType<typeof textStream> | ReturnType<typeof textThenTool> | ReturnType<typeof textThenError>);
+
 /** A model answering each call with the next of `replies`. */
-function model(...replies: string[][]) {
+function model(...replies: Reply[]) {
   let call = 0;
-  return new MockLanguageModelV4({ doStream: async () => textStream(...(replies[call++] ?? [''])) });
+  return new MockLanguageModelV4({
+    doStream: async () => {
+      const reply = replies[call++] ?? [''];
+      return typeof reply === 'function' ? reply() : textStream(...reply);
+    },
+  });
 }
 
 function writer() {
@@ -58,13 +101,19 @@ describe('runControlledTurn', () => {
     const out = writer();
     const turn = await runControlledTurn(out.write, { ...base, tools: noop, model: model(['Que fais-tu ', 'du + 5 ?']) }, check);
 
-    expect(turn.outcome).toBe('passed');
-    expect(turn.kept).toBe(turn.results[0] ?? null);
-    expect(texts(out.chunks)).toEqual(['Que fais-tu du + 5 ?']);
+    expect(turn).toMatchObject({ outcome: 'passed', text: 'Que fais-tu du + 5 ?' });
+    expect(texts(out.chunks).join('')).toBe('Que fais-tu du + 5 ?');
+    expect(out.chunks.map((chunk) => chunk.type).at(-1)).toBe('finish');
+    expect(await turn.replay()).toMatchObject([{ role: 'assistant', content: [{ type: 'text', text: 'Que fais-tu du + 5 ?' }] }]);
+  });
+
+  it('sends a text that passes as it came, its parts in their order: the text announcing a tool before the tool', async () => {
+    const out = writer();
+    await runControlledTurn(out.write, { ...base, tools: noop, model: model(() => textThenTool('Je regarde.'), ['Voilà.']) }, check);
+
     const types = out.chunks.map((chunk) => chunk.type);
-    expect(types.indexOf('text-start')).toBeGreaterThan(types.indexOf('start'));
-    expect(types.at(-1)).toBe('finish');
-    expect(types.filter((type) => type === 'text-start')).toHaveLength(1);
+    expect(types.indexOf('text-delta')).toBeLessThan(types.indexOf('tool-input-available'));
+    expect(texts(out.chunks)).toEqual(['Je regarde.', 'Voilà.']);
   });
 
   it('never streams the held text, regenerates under constraint without tools, and writes the regenerated text', async () => {
@@ -72,14 +121,15 @@ describe('runControlledTurn', () => {
     const llm = model(['Bravo, x = 5.'], ['Que fais-tu du + 5 ?']);
     const turn = await runControlledTurn(out.write, { ...base, tools: noop, model: llm }, check);
 
-    expect(turn).toMatchObject({ outcome: 'regenerated', findings: [{ kind: 'answer' }] });
-    expect(turn.kept).toBe(turn.results[1] ?? null);
+    expect(turn).toMatchObject({ outcome: 'regenerated', findings: [{ kind: 'answer' }], text: 'Que fais-tu du + 5 ?' });
+    expect(turn.results).toHaveLength(2);
     expect(texts(out.chunks)).toEqual(['Que fais-tu du + 5 ?']);
+    expect(await turn.replay()).toEqual([{ role: 'assistant', content: [{ type: 'text', text: 'Que fais-tu du + 5 ?' }] }]);
     const second = llm.doStreamCalls[1];
     expect(second?.tools ?? []).toEqual([]);
     const sent = JSON.stringify(second?.prompt.at(-1));
     expect(sent).toContain('<contrat>');
-    expect(sent).toContain("Ta réponse précédente a été retenue par le serveur, l'élève ne l'a pas vue.");
+    expect(sent).toContain("Une première réponse à ce tour a été retenue par le serveur, l'élève ne l'a pas vue.");
     expect(sent).not.toContain('x = 5');
   });
 
@@ -87,15 +137,42 @@ describe('runControlledTurn', () => {
     const out = writer();
     const turn = await runControlledTurn(out.write, { ...base, tools: noop, model: model(['x = 5'], ['Donc x = 5']) }, check);
 
-    expect(turn).toMatchObject({ outcome: 'fallback', kept: null });
+    expect(turn).toMatchObject({ outcome: 'fallback', text: FALLBACK_REPLY });
     expect(texts(out.chunks)).toEqual([FALLBACK_REPLY]);
+  });
+
+  it('does not regenerate after a tool call, whose effect stays: the fixed reply, the tool call kept in the replay', async () => {
+    const out = writer();
+    const llm = model(() => textThenTool('x = 5, et voici tes cartes.'), ['Voilà tes cartes.']);
+    const turn = await runControlledTurn(out.write, { ...base, tools: noop, model: llm }, check);
+
+    expect(turn).toMatchObject({ outcome: 'fallback', text: FALLBACK_REPLY });
+    expect(llm.doStreamCalls).toHaveLength(2);
+    expect(out.chunks.some((chunk) => chunk.type === 'tool-input-available')).toBe(true);
+    expect(texts(out.chunks)).toEqual([FALLBACK_REPLY]);
+    const replay = await turn.replay();
+    expect(replay?.map((message) => message.role)).toEqual(['assistant', 'tool', 'assistant']);
+    expect(JSON.stringify(replay)).not.toContain('x = 5');
+    expect(replay?.at(-1)).toEqual({ role: 'assistant', content: [{ type: 'text', text: FALLBACK_REPLY }] });
+  });
+
+  it('does not regenerate a cut turn: the fixed reply, then the error', async () => {
+    const out = writer();
+    const llm = model(() => textThenError('Donc x = 5'), ['Voilà.']);
+    const turn = await runControlledTurn(out.write, { ...base, tools: noop, model: llm }, check);
+
+    expect(turn).toMatchObject({ outcome: 'fallback', text: FALLBACK_REPLY });
+    expect(turn.results).toHaveLength(1);
+    expect(texts(out.chunks)).toEqual([FALLBACK_REPLY]);
+    const types = out.chunks.map((chunk) => chunk.type);
+    expect(types.indexOf('error')).toBeGreaterThan(types.indexOf('text-delta'));
   });
 
   it('writes nothing for a turn without text', async () => {
     const out = writer();
     const turn = await runControlledTurn(out.write, { ...base, tools: noop, model: model(['']) }, check);
 
-    expect(turn.outcome).toBe('passed');
-    expect(out.chunks.some((chunk) => chunk.type === 'text-start')).toBe(false);
+    expect(turn).toMatchObject({ outcome: 'passed', text: '' });
+    expect(texts(out.chunks).join('')).toBe('');
   });
 });

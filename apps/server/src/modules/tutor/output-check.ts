@@ -25,15 +25,15 @@ export type Finding = { kind: 'answer' } | { kind: 'tag' } | { kind: 'equality';
 
 /**
  * The forms of the answer the message must not hold. A form the statement holds is no leak
- * (« 5 » in « 3x + 5 = 20 »); one the student wrote, when the diagnosis finds it right, may be
- * taken up to confirm it. An uncertain sheet's answer is not one to hold the tutor to.
+ * (« 5 » in « 3x + 5 = 20 »). When the diagnosis finds the student's answer right, the student
+ * wrote the answer: the tutor may confirm it, in any of its forms. An uncertain sheet's answer is
+ * not one to hold the tutor to.
  */
 function watchedForms(ctx: OutputCheckContext): string[] {
   const { sheet } = ctx;
-  if (!sheet || ctx.uncertain || sheet.kind !== 'short') return [];
+  if (!sheet || ctx.uncertain || sheet.kind !== 'short' || ctx.diagnosis?.verdict === 'correct') return [];
   const forms = [...new Set([sheet.answer, ...sheet.answerForms].filter((form): form is string => Boolean(form?.trim())))];
-  const confirmed = ctx.diagnosis?.verdict === 'correct';
-  return forms.filter((form) => !findLeakForm(sheet.statement, [form]) && !(confirmed && findLeakForm(ctx.studentText, [form])));
+  return forms.filter((form) => !findLeakForm(sheet.statement, [form]));
 }
 
 export function checkOutput(text: string, ctx: OutputCheckContext): Finding[] {
@@ -47,8 +47,8 @@ export function checkOutput(text: string, ctx: OutputCheckContext): Finding[] {
 }
 
 /**
- * What the regeneration is told: what was held back, never the answer itself, which the writer
- * must not see.
+ * What the regeneration is told: what was held back, never the first text nor the answer, which
+ * the writer must not see.
  */
 export function regenerationInstruction(findings: readonly Finding[]): string {
   const lines = findings.map((finding) => {
@@ -56,7 +56,7 @@ export function regenerationInstruction(findings: readonly Finding[]): string {
     if (finding.kind === 'tag') return "Elle contenait une balise interne : n'écris que ce qui s'adresse à l'élève.";
     return `Elle contenait une égalité fausse, « ${finding.quote} » : ne l'écris pas, et refais chaque calcul que tu écris.`;
   });
-  return `<critical_instruction>\nTa réponse précédente a été retenue par le serveur, l'élève ne l'a pas vue. Réécris-la.\n${[...new Set(lines)].join('\n')}\n</critical_instruction>`;
+  return `<critical_instruction>\nUne première réponse à ce tour a été retenue par le serveur, l'élève ne l'a pas vue. Écris-en une nouvelle.\n${[...new Set(lines)].join('\n')}\n</critical_instruction>`;
 }
 
 /** What the student reads when the regeneration fails the check too. */

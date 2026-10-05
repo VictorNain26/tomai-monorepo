@@ -5,7 +5,6 @@ import type { AttachedFileInfo, AttachedFileForPrompt } from '../documents/index
 import type { EducationLevelType } from '../../types/index.js';
 import type { HistoryTurn, ResponseMessage } from './chat-message-assembler.js';
 import type { OutputCheckRecord } from './chat-message.service.js';
-import type { TomChatMessage } from './chat-ui-message.js';
 import type { Diagnosis } from './exercise-diagnosis.service.js';
 import type { ExerciseSheet } from './exercise-sheet.js';
 import type { ExerciseChange } from './exercise-turn.js';
@@ -58,7 +57,8 @@ export interface FinishTurnParams {
   sessionId: string;
   userId: string;
   userContent: string;
-  responseMessage: TomChatMessage;
+  /** The text the student read. */
+  text: string;
   /** The turn's response messages as the model produced them, reasoning and tool calls included. */
   modelMessages?: ResponseMessage[] | undefined;
   /** The turn was cut (timeout, error): its response messages miss what the student saw of the last call. */

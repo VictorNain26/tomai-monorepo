@@ -249,16 +249,59 @@ describe('POST /api/chat/stream', () => {
     });
 
     expect(finishTurn).toHaveBeenCalledTimes(1);
-    const finishArgs = finishTurn.mock.calls[0]?.[0] as { sessionId: string; userId: string; responseMessage: { parts: unknown[] }; modelMessages: { role: string }[]; aborted: boolean };
+    const finishArgs = finishTurn.mock.calls[0]?.[0] as { sessionId: string; userId: string; text: string; modelMessages: { role: string }[]; aborted: boolean; outputCheck?: unknown };
     // The model's response messages, tool call and result included, travel to the persistence,
     // with whether the stream was cut.
     expect(finishArgs.modelMessages.map((m) => m.role)).toEqual(['assistant', 'tool', 'assistant']);
     expect(finishArgs.aborted).toBe(false);
     expect(finishArgs.sessionId).toBe('session-001');
     expect(finishArgs.userId).toBe('user-001');
-    expect(finishArgs.responseMessage.parts).toEqual(
-      expect.arrayContaining([expect.objectContaining({ type: 'text', text: 'Bonjour' })]),
-    );
+    expect(finishArgs.text).toBe('Bonjour');
+    expect(finishArgs.outputCheck).toBeUndefined();
+  });
+
+  it('stores the text the student read after a held one, what was held, and replays the turn as read', async () => {
+    currentUser = { id: 'user-001', role: 'student', schoolLevel: 'sixieme', firstName: 'Léo' };
+    const sheet = {
+      statement: 'Résous 3x + 5 = 20.', kind: 'short', answer: 'x = 5', answerForms: ['x = 5'], mathEquation: null, mathAnswer: null,
+      steps: [], commonErrors: [], rule: null, facts: [], expectedElements: [], entries: [], laterEntries: [],
+    };
+    prepareTurn.mockImplementationOnce(async () => ({ ...(await prepareTurn.getMockImplementation()?.({})), exerciseSheet: sheet, exerciseUncertain: false }) as never);
+    const replies = ['Donc x = 5.', 'Que fais-tu du + 5 ?'];
+    streamChatImpl = (params) => {
+      const { usage } = params as { usage: TurnUsage };
+      const text = replies.shift() ?? '';
+      return streamText({
+        model: new MockLanguageModelV4({
+          doStream: async () => ({
+            stream: simulateReadableStream({
+              chunkDelayInMs: 0,
+              initialDelayInMs: 0,
+              chunks: [
+                { type: 'stream-start', warnings: [] },
+                { type: 'text-start', id: 't' },
+                { type: 'text-delta', id: 't', delta: text },
+                { type: 'text-end', id: 't' },
+                { type: 'finish', usage: stepUsage(10, 0, 2), finishReason: { unified: 'stop', raw: undefined } },
+              ],
+            }),
+          }),
+        }),
+        prompt: 'Je bloque',
+        onLanguageModelCallStart: () => { usage.callStarted(); },
+        onLanguageModelCallEnd: ({ usage: called }) => { usage.callEnded(called); },
+      });
+    };
+
+    const body = await (await app.fetch(makeRequest())).text();
+
+    expect(body).not.toContain('x = 5');
+    expect(body).toContain('Que fais-tu du + 5 ?');
+    const finishArgs = finishTurn.mock.calls[0]?.[0] as { text: string; outputCheck: unknown; modelMessages: unknown; usage: { totalTokens: number } };
+    expect(finishArgs.text).toBe('Que fais-tu du + 5 ?');
+    expect(finishArgs.outputCheck).toEqual({ findings: ['answer'], outcome: 'regenerated' });
+    expect(finishArgs.modelMessages).toEqual([{ role: 'assistant', content: [{ type: 'text', text: 'Que fais-tu du + 5 ?' }] }]);
+    expect(finishArgs.usage.totalTokens).toBe(24);
   });
 
   it('releases the concurrency slot even when the stream throws', async () => {
