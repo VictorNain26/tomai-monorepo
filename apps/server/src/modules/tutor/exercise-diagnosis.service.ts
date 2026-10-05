@@ -114,7 +114,6 @@ export async function diagnose(
       maxTokens: 512,
       schema: DiagnosisSchema,
       schemaName: 'exercise_diagnosis',
-      safePrompt: false,
       promptCacheKey: `exercise-diagnosis-${DIAGNOSIS_PROMPT_VERSION}`,
       timeoutMs: 8_000,
     });

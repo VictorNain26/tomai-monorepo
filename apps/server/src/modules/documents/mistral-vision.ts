@@ -42,7 +42,6 @@ export async function readImageWithMistralVision(
       maxTokens: VISION_MAX_TOKENS,
       schema: VisionExtractionSchema,
       schemaName: 'vision_extraction',
-      safePrompt: false,
       promptCacheKey: `vision-extraction-${VISION_EXTRACTION_PROMPT_VERSION}`,
       timeoutMs: VISION_TIMEOUT_MS,
     });

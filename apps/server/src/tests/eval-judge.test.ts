@@ -50,8 +50,8 @@ describe('judge', () => {
     for (const call of calls) {
       expect(JSON.stringify(call.messages.slice(0, 2))).toBe(prefix);
       expect(call.schema).toBe(schema);
-      expect({ model: call.model, temperature: call.temperature, safePrompt: call.safePrompt, schemaName: call.schemaName, repairInvalid: call.repairInvalid })
-        .toEqual({ model: 'mistral-small-2603', temperature: 0.7, safePrompt: false, schemaName: 'judge_answer', repairInvalid: false });
+      expect({ model: call.model, temperature: call.temperature, schemaName: call.schemaName, repairInvalid: call.repairInvalid })
+        .toEqual({ model: 'mistral-small-2603', temperature: 0.7, schemaName: 'judge_answer', repairInvalid: false });
       expect(call.promptCacheKey).toBe(calls[0]?.promptCacheKey ?? '');
     }
     const seeds = calls.filter((c) => c.question === question('level')).map((c) => c.seed);

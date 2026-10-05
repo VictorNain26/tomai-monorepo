@@ -122,7 +122,6 @@ describe('Mistral Small 4 on the EU endpoint (real API)', () => {
       schemaName: 'exercise_sheet',
       reasoningEffort: 'high',
       temperature: 0.7,
-      safePrompt: false,
       timeoutMs: 60_000,
     });
     expect(object.kind).toBe('short');

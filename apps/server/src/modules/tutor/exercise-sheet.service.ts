@@ -56,7 +56,6 @@ export async function prepareExerciseSheet(params: PrepareSheetParams): Promise<
     schemaName: 'exercise_sheet',
     reasoningEffort: 'high',
     temperature: REASONING_TEMPERATURE,
-    safePrompt: false,
     promptCacheKey: `exercise-sheet-${EXERCISE_SHEET_PROMPT_VERSION}`,
     timeoutMs: SHEET_TIMEOUT_MS,
   })));

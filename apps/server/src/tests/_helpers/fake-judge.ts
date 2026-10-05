@@ -9,7 +9,6 @@ interface JudgeCall {
   messages: MistralMessage[];
   model: string;
   temperature: number;
-  safePrompt: boolean;
   seed: number;
   promptCacheKey: string;
   repairInvalid: boolean;

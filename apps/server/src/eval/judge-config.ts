@@ -32,7 +32,6 @@ export type Generate = <T>(opts: {
   temperature: number;
   maxTokens: number;
   maxRetries: number;
-  safePrompt: boolean;
   seed: number;
   promptCacheKey: string;
   /** Whether an answer outside the schema is asked again once; a judge sample never is. */
