@@ -7,7 +7,6 @@
  */
 
 import { logger } from '../../platform/observability/logger.js';
-import type { EducationLevelType } from '../../types/education.types.js';
 import {
   getVoxtralTranscribeService,
   isVoxtralTranscribeConfigured,
@@ -22,13 +21,6 @@ interface TranscriptionResult {
   transcription?: string;
   detectedLanguage?: string;
   _error?: string;
-}
-
-interface TranscriptionOptions {
-  /** Langue cible pour la transcription */
-  targetLanguage?: 'fr' | 'en' | 'es' | 'de';
-  /** Niveau scolaire (réservé pour usage futur) */
-  schoolLevel?: EducationLevelType;
 }
 
 // ============================================
@@ -50,11 +42,8 @@ class AudioTranscriptionService {
   async transcribeAudio(
     audioBuffer: ArrayBuffer,
     mimeType: string,
-    options: TranscriptionOptions = {}
   ): Promise<TranscriptionResult> {
     const startTime = Date.now();
-
-    const { targetLanguage = 'fr' } = options;
 
     if (!isVoxtralTranscribeConfigured()) {
       return {
@@ -65,9 +54,7 @@ class AudioTranscriptionService {
 
     try {
       const sttService = getVoxtralTranscribeService();
-      const sttResult = await sttService.transcribe(audioBuffer, mimeType, {
-        language: targetLanguage,
-      });
+      const sttResult = await sttService.transcribe(audioBuffer, mimeType);
 
       if (!sttResult.success || !sttResult.transcription) {
         logger.error('Voxtral STT transcription failed', {
@@ -85,13 +72,12 @@ class AudioTranscriptionService {
       const result: TranscriptionResult = {
         success: true,
         transcription: sttResult.transcription,
-        detectedLanguage: sttResult.detectedLanguage ?? targetLanguage,
+        ...(sttResult.detectedLanguage && { detectedLanguage: sttResult.detectedLanguage }),
       };
 
       logger.info('Audio transcription completed (Voxtral STT)', {
         operation: 'audio:transcription',
         provider: 'voxtral',
-        targetLanguage,
         durationMs: Date.now() - startTime,
       });
 

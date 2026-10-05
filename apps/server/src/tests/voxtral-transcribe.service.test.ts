@@ -1,6 +1,6 @@
 /**
  * Tests unitaires — Voxtral STT Service
- * Vérifie l'URL, le multipart model/language, le parsing {text} et les erreurs.
+ * Vérifie l'URL, le multipart (modèle, sans langue forcée), le parsing {text} et les erreurs.
  */
 
 import { describe, it, expect, afterEach, mock, spyOn, type Mock } from 'bun:test';
@@ -38,9 +38,9 @@ function makeAudioBuffer(size = 8): ArrayBuffer {
   return new Uint8Array(size).fill(1).buffer;
 }
 
-function mockFetchSuccess(text: string, model = 'voxtral-mini-2602') {
+function mockFetchSuccess(text: string, model = 'voxtral-mini-2602', language: string | null = null) {
   return spyOn(globalThis, 'fetch').mockResolvedValueOnce(
-    new Response(JSON.stringify({ model, text, language: null, usage: {} }), {
+    new Response(JSON.stringify({ model, text, language, usage: {} }), {
       status: 200,
       headers: { 'content-type': 'application/json' },
     }),
@@ -123,7 +123,7 @@ describe('VoxtralTranscribeService', () => {
       expect(fileSection).toContain('Content-Type: audio/webm');
     });
 
-    it('defaults to language=fr', async () => {
+    it('sends no language: an oral in English stays in English, French transcribes the same', async () => {
       fetchSpy = mockFetchSuccess('test');
       const service = getVoxtralTranscribeService();
 
@@ -131,18 +131,7 @@ describe('VoxtralTranscribeService', () => {
 
       const [request] = fetchSpy.mock.calls[0] as [Request];
       const body = await request.formData();
-      expect(body.get('language')).toBe('fr');
-    });
-
-    it('uses the provided language option', async () => {
-      fetchSpy = mockFetchSuccess('hello');
-      const service = getVoxtralTranscribeService();
-
-      await service.transcribe(makeAudioBuffer(), 'audio/mp4', { language: 'en' });
-
-      const [request] = fetchSpy.mock.calls[0] as [Request];
-      const body = await request.formData();
-      expect(body.get('language')).toBe('en');
+      expect(body.has('language')).toBe(false);
     });
 
     it('returns success with the transcribed text', async () => {
@@ -155,15 +144,15 @@ describe('VoxtralTranscribeService', () => {
       expect(result.transcription).toBe('Bonjour le monde');
     });
 
-    it('returns detectedLanguage equal to the requested language', async () => {
-      fetchSpy = mockFetchSuccess('Hello');
+    it('takes the language from the API, and claims none when it gives none', async () => {
       const service = getVoxtralTranscribeService();
 
-      const result = await service.transcribe(makeAudioBuffer(), 'audio/webm', {
-        language: 'en',
-      });
+      fetchSpy = mockFetchSuccess('Hello', 'voxtral-mini-2602', 'en');
+      expect((await service.transcribe(makeAudioBuffer(), 'audio/webm')).detectedLanguage).toBe('en');
 
-      expect(result.detectedLanguage).toBe('en');
+      fetchSpy.mockRestore();
+      fetchSpy = mockFetchSuccess('Bonjour');
+      expect(await service.transcribe(makeAudioBuffer(), 'audio/webm')).not.toHaveProperty('detectedLanguage');
     });
   });
 

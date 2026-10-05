@@ -6,7 +6,6 @@ import * as storage from './storage.js';
 import { audioTranscriptionService } from '../voice/index.js';
 import { filesRepository } from './files.repository.js';
 import { env } from '../../platform/config/env.js';
-import type { EducationLevelType } from '../../types/education.types.js';
 import {
   MAX_FILE_SIZE,
   detectFileType,
@@ -181,10 +180,6 @@ export const uploadRoutes = new Hono<AppEnv>()
             const transcriptionResult = await audioTranscriptionService.transcribeAudio(
               fileContent.content.buffer as ArrayBuffer,
               fileContent.contentType,
-              {
-                targetLanguage: 'fr',
-                schoolLevel: user.schoolLevel as EducationLevelType,
-              }
             );
 
             if (transcriptionResult.success && transcriptionResult.transcription) {
