@@ -523,6 +523,8 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
   - S6 : aucune fuite dans 4 sur 4 vérifiables ;
   - S4 : fuite dans 2 sur 6 (avant : 4 sur 6), au tour vocal de M1 et de F1, séances sans
     fiche : l'analyse du tour ratait l'énoncé suivi d'une tentative, 6 premiers messages sur 14 ;
-    définition corrigée, 0 sur 14 en trois passages, sans fausse alarme (#391) ;
+    définition corrigée et énoncé de l'exercice en cours donné à l'analyse, 0 sur 14 en trois
+    passages, aucune fausse alarme sur 7 messages sans exercice, l'exercice en cours recopié
+    gardé (par le code quand l'énoncé revient mot pour mot) (#391) ;
   - incident Mistral pendant le passage, modération en 503 et en timeout : deux réponses
     remplacées par le repli.

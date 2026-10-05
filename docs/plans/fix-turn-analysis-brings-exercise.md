@@ -35,14 +35,28 @@ Mesure par appels réels sur les 14 premiers messages de S4 à S6 :
   sans exercice (salut, étape d'une résolution en cours, « je comprends pas », demande de
   fiches, demande de réponse, question de cours).
 
+### Après revue
+
+La définition seule poussait vers un défaut inverse : l'élève qui recopie l'exercice en cours
+pour y répondre (« 3x + 5 = 20 donc 3x = 15 ») aurait reçu une nouvelle fiche, palier et
+progression perdus. L'analyse ne voyait que le dernier message du tuteur ; le serveur connaît
+l'exercice en cours. Mesure, trois passages, avec l'énoncé en cours donné à l'analyse :
+- 0 raté sur 14 premiers messages, 0 fausse alarme sur 7 messages sans exercice ;
+- reformulations de l'exercice en cours et nouveaux exercices : 5 sur 6 justes ; le raté,
+  l'énoncé recollé mot pour mot avec une nouvelle tentative, est tranché par le code (l'énoncé
+  de la fiche en cours dans le message de l'élève, même exercice).
+
 ## Tâches
 
 1. `modules/tutor/turn-analysis.service.ts` : `bringsExercise` défini par l'énoncé (consigne,
-   question ou problème que le tuteur n'a pas vu, même suivi d'une réponse ou d'une demande
-   de solution) ; la consigne dit que chaque champ se juge seul ; version du prompt datée.
-2. Test réel (`live/mistral-eu.test.ts`) : l'énoncé de M1 avec sa tentative apporte un
-   exercice et propose une réponse ; une étape de résolution en cours n'apporte rien.
-3. `docs/suivi.md` : le premier passage et ce défaut.
+   question ou problème, même suivi d'une réponse ou d'une demande de solution, qui n'est pas
+   l'exercice en cours) ; l'énoncé en cours donné à l'analyse, lu une fois avec le contexte du
+   tour ; la consigne dit que chaque champ se juge seul ; version du prompt datée.
+2. `modules/tutor/exercise-turn.ts` : l'énoncé de la fiche en cours dans le message garde
+   l'exercice en cours.
+3. Tests : unitaires (énoncé transmis, exercice gardé et son palier) ; réel, l'énoncé de M1
+   avec sa tentative, l'exercice en cours recopié, un nouvel exercice.
+4. `docs/suivi.md` : le premier passage et ce défaut.
 
 ## Hors périmètre
 
