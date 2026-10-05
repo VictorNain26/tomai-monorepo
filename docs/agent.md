@@ -80,7 +80,8 @@ modèle sans prévenir et invalide l'évaluation. Chaque prompt porte une versio
   tourné. La 4.0.15 rejoue le raisonnement d'un tour à l'autre, la 4.0.34 expose
   `promptCacheKey`. Montée en `^4.0.48` faite au lot 0.
 - `safePrompt` est déprécié par Mistral au profit des Custom Guardrails
-  ([source](https://docs.mistral.ai/resources/deprecated/guardrailing/safe_prompt)).
+  ([source](https://docs.mistral.ai/resources/deprecated/guardrailing/safe_prompt)) : retiré
+  au lot 2 : ce qui atteint l'élève passe par la modération d'entrée et de sortie.
 - En streaming, l'usage n'arrive que si `stream_options.include_usage` est envoyé
   (known limitations) : vérifier sur le fil que `usage` et `cacheRead` remontent. `@ai-sdk/mistral`
   4.0.48 ne l'envoie pas, et l'usage arrive pourtant : vérifié par un appel réel

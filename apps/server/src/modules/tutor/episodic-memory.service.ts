@@ -32,7 +32,7 @@ import { subjectProfileService } from './subject-profile.service.js';
 import { logger } from '../../platform/observability/logger.js';
 import { env } from '../../platform/config/env.js';
 
-const EPISODIC_EXTRACTION_PROMPT_VERSION = '2026-05-18';
+const EPISODIC_EXTRACTION_PROMPT_VERSION = '2026-10-05';
 
 // Prompt cache stable — bump version pour invalider
 const EPISODIC_CACHE_KEY = `episodic-extract-${EPISODIC_EXTRACTION_PROMPT_VERSION}`;

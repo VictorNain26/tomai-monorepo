@@ -3,10 +3,9 @@ import { z } from 'zod';
 import { requireUser, validate, type AppEnv } from '../../platform/http/context.js';
 import { logger } from '../../platform/observability/logger.js';
 import * as storage from './storage.js';
-import { audioTranscriptionService } from '../voice/index.js';
+import { getVoxtralTranscribeService } from '../voice/index.js';
 import { filesRepository } from './files.repository.js';
 import { env } from '../../platform/config/env.js';
-import type { EducationLevelType } from '../../types/education.types.js';
 import {
   MAX_FILE_SIZE,
   detectFileType,
@@ -178,20 +177,12 @@ export const uploadRoutes = new Hono<AppEnv>()
         try {
           const fileContent = await storage.getFileContent(fileRecord.storageKey);
           if (fileContent) {
-            const transcriptionResult = await audioTranscriptionService.transcribeAudio(
-              fileContent.content.buffer as ArrayBuffer,
-              fileContent.contentType,
-              {
-                targetLanguage: 'fr',
-                schoolLevel: user.schoolLevel as EducationLevelType,
-              }
-            );
+            const transcriptionResult = await getVoxtralTranscribeService().transcribe(fileContent.content, fileContent.contentType);
 
             if (transcriptionResult.success && transcriptionResult.transcription) {
               transcription = transcriptionResult.transcription;
               await filesRepository.mergeEducationalContext(fileId, {
                 transcription: transcriptionResult.transcription,
-                detectedLanguage: transcriptionResult.detectedLanguage,
                 transcribedAt: new Date().toISOString(),
               });
             }

@@ -7,7 +7,7 @@ import { NO_USAGE, type Generate } from '../eval/judge-config';
 const opts = (characters: number): Parameters<Generate>[0] => ({
   messages: [{ role: 'user', content: 'x'.repeat(characters) }],
   schema: z.unknown(),
-  schemaName: 's', functionId: 'f', model: 'm', temperature: 0, maxTokens: 10, maxRetries: 0, safePrompt: false, seed: 1, promptCacheKey: 'k', repairInvalid: false,
+  schemaName: 's', functionId: 'f', model: 'm', temperature: 0, maxTokens: 10, maxRetries: 0, seed: 1, promptCacheKey: 'k', repairInvalid: false,
 });
 
 // What a call resolves to once through: the schema read on an empty answer.

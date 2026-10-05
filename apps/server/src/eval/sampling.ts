@@ -27,7 +27,6 @@ export async function sampleObject<T>(generate: Generate, request: SampleRequest
       temperature: JUDGE.temperature,
       // Rate limits are waited out by the caller's throttle, not retried at once by the SDK.
       maxRetries: 0,
-      safePrompt: false,
       repairInvalid: false,
     });
     spend(result.usage);

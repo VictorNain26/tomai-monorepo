@@ -62,8 +62,6 @@ interface GenerateStructuredOptions<T> extends GenerateTextOptions {
   schema: z.ZodType<T>;
   schemaName: string;
   strict?: boolean;
-  /** Mistral's own safety prompt, prepended to the conversation; on unless a caller owns its whole prompt. */
-  safePrompt?: boolean;
   /** Sent as `random_seed`: the same seed gives the same output (https://docs.mistral.ai/api/endpoint/chat). */
   seed?: number;
   /** Retries of the AI SDK on a failed call; a caller that throttles its own calls passes 0. */
@@ -132,7 +130,6 @@ export async function generateText(opts: GenerateTextOptions): Promise<string> {
     telemetry: { functionId: opts.functionId, recordInputs: false, recordOutputs: false },
     providerOptions: {
       mistral: {
-        safePrompt: true,
         reasoningEffort: 'none',
         promptCacheKey: opts.promptCacheKey,
       } satisfies MistralLanguageModelChatOptions,
@@ -170,7 +167,6 @@ export async function generateStructured<T>(opts: GenerateStructuredOptions<T>):
       telemetry: { functionId: opts.functionId, recordInputs: false, recordOutputs: false },
       providerOptions: {
         mistral: {
-          safePrompt: opts.safePrompt ?? true,
           strictJsonSchema: opts.strict ?? true,
           reasoningEffort: opts.reasoningEffort ?? 'none',
           promptCacheKey: opts.promptCacheKey,

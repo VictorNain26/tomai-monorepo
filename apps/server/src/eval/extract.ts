@@ -53,7 +53,6 @@ export async function extract(input: JudgeInput, generate: Generate): Promise<{ 
     temperature: 0,
     maxTokens: JUDGE.extractionMaxTokens,
     maxRetries: 0,
-    safePrompt: false,
     // One extraction serves every question count: an answer outside the schema is asked
     // again once, a rare call the 20 % margin of the rate budget absorbs (`judge-rate.ts`).
     repairInvalid: true,

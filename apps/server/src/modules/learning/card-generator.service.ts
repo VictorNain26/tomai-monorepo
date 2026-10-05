@@ -41,7 +41,7 @@ import { logger } from '../../platform/observability/logger.js';
 import type { CardGenerationParams, ParsedCard } from './card-generation.types.js';
 
 // Prompt cache sur l'instruction de base + adaptations cycle/sujet.
-const CARD_GENERATOR_PROMPT_VERSION = '2026-09-22';
+const CARD_GENERATOR_PROMPT_VERSION = '2026-10-05';
 const CARD_GENERATOR_CACHE_KEY = `card-generator-${CARD_GENERATOR_PROMPT_VERSION}`;
 
 // ============================================================================

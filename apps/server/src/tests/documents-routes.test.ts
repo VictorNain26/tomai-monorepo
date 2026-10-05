@@ -15,7 +15,7 @@ mock.module('../platform/config/env', () => ({
   getCorsOrigins: () => [],
 }));
 mock.module('../db/connection', () => ({ db: {} }));
-mock.module('../modules/voice/index', () => ({ audioTranscriptionService: {} }));
+mock.module('../modules/voice/index', () => ({ getVoxtralTranscribeService: () => ({}) }));
 
 const FILE_ID = '0199a3c4-7b1e-7d2a-9f00-0000000000f1';
 let fileOwner = 'student-1';

@@ -205,14 +205,15 @@ describe('generateStructured', () => {
     expect(capture.body?.['prompt_cache_key']).toBe('intent-v1');
   });
 
-  it('keeps the Mistral safety prompt unless the caller turns it off', async () => {
+  it('sends no safe_prompt, deprecated by Mistral: moderation checks what the student reads', async () => {
     const capture: { body?: Record<string, unknown> } = {};
     mockFetchJson(capture, chatCompletion(JSON.stringify({ intent: 'explain-concept' })));
     await generateStructured({ functionId: 'test', messages: [{ role: 'user', content: 'classe' }], schema, schemaName: 'intent' });
-    expect(capture.body?.['safe_prompt']).toBe(true);
+    expect(capture.body).not.toHaveProperty('safe_prompt');
 
-    await generateStructured({ functionId: 'test', messages: [{ role: 'user', content: 'classe' }], schema, schemaName: 'intent', safePrompt: false });
-    expect(capture.body?.['safe_prompt']).toBe(false);
+    mockFetchJson(capture, chatCompletion('Un titre'));
+    await generateText({ functionId: 'test', messages: [{ role: 'user', content: 'titre' }] });
+    expect(capture.body).not.toHaveProperty('safe_prompt');
   });
 
   it('sends a seed as random_seed only when given', async () => {

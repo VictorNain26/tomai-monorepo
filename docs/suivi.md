@@ -26,7 +26,8 @@ bloquant levé).
   terminé (#390) : détresse et modération d'entrée, réponse fixe approuvée par Victor le 2026-10-05.
   Premier passage fait le 2026-10-05 : il a trouvé l'analyse du tour qui ratait les énoncés,
   corrigée (#391). Appels du SDK Mistral retentés, modération comprise sur un appel bloqué (#392).
-  Prochaine : S4 repassé une fois, puis le point 7. Plan d'abord dans `docs/plans/`.
+  S4 repassé : aucune fuite sur 6. Point 7 en cours : appels annexes faits (#393) ; prochaine,
+  logs sans contenu d'élève, puis mémoire. Plan d'abord dans `docs/plans/`.
   - Une relecture humaine d'une partie des conversations lues par Claude reste due avant
     toute publication (lot 4).
 - **PR ouvertes :** aucune.
@@ -184,6 +185,12 @@ contraire.
   moments. Une assertion sur une sortie de modèle doit tenir à chaque tirage, ou le test
   mesurer un taux.
 
+- **Fiches refusées par le modèle** (S4 repassé, 2026-10-05) : en 3-P1, l'élève demande puis
+  confirme les fiches, l'analyse le voit (`wantsFlashcards`), et Small 4 répond « Je ne peux
+  pas te donner les fiches avant que tu aies terminé l'exercice », règle qu'aucune consigne ne
+  donne. Piste : l'appel de l'outil imposé par le code quand l'analyse relève la demande
+  (`toolChoice` au premier pas), à trancher avec le coût d'une fausse demande.
+
 ### Lot 3 — client web
 
 - **Après une détresse** : la conversation s'arrête, mais une nouvelle séance rend le tuteur
@@ -218,6 +225,11 @@ contraire.
 - **Hébergement** : délai de grâce SIGTERM au moins égal à un tour de chat (`app.stop()`
   attend les flux SSE) ; stockage partagé du rate limit s'il y a plusieurs instances ;
   `advanced.ipAddress.trustedProxies` de better-auth derrière le proxy de l'hébergeur.
+
+- **Langue d'un oral** : la transcription impose le français, juste pour les réponses
+  courtes ; un oral d'anglais, d'espagnol ou d'allemand se transcrit mal sous le français (un
+  « Yes. » bruité devient « Oui. », mesuré le 2026-10-05). Le client déclare la langue
+  d'un oral de langue, comme `inputMode`, et la route la passe à Voxtral.
 
 ### Lot 4 — marque et lancement
 
@@ -530,3 +542,14 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
     remplacées par le repli ; le client du SDK Mistral (modération, embeddings, voix) ne
     retentait rien ; la modération coupe désormais une tentative bloquée à 1,5 s et retente
     pendant 2,5 s, sous son budget de 5 s ; embeddings et voix retentent 429 et 5xx (#392).
+
+  S4 repassé après #391 et #392 (commit a7f7a452) : aucune fuite sur 6 (premier passage : 2,
+  avant la refonte : 4) ; fiches créées dans 5 sur 6 ; modération en timeout deux fois.
+
+  Point 7 de la refonte, appels annexes (#393) :
+  - `safePrompt` retiré, déprécié par Mistral ; ce qui atteint l'élève passe par la
+    modération ; analyse du tour remesurée, 1 premier message raté sur 42 (contre 0)
+    et aucune fausse alarme ;
+  - transcription : le français reste imposé, la mesure infirme l'étude (sans langue,
+    « Non. » devient « No. ») ; `detectedLanguage`, qui renvoyait la langue forcée,
+    retiré ; l'audio passé avec ses seuls octets, sans le pool d'un `Buffer` autour.

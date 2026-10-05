@@ -1,6 +1,6 @@
 /**
  * Tests unitaires — Voxtral STT Service
- * Vérifie l'URL, le multipart model/language, le parsing {text} et les erreurs.
+ * Vérifie l'URL, le multipart (modèle, français, octets exacts), le parsing {text} et les erreurs.
  */
 
 import { describe, it, expect, afterEach, mock, spyOn, type Mock } from 'bun:test';
@@ -34,8 +34,8 @@ const { getVoxtralTranscribeService, isVoxtralTranscribeConfigured } = await imp
 // Helpers
 // ============================================
 
-function makeAudioBuffer(size = 8): ArrayBuffer {
-  return new Uint8Array(size).fill(1).buffer;
+function makeAudioBuffer(size = 8): Uint8Array {
+  return new Uint8Array(size).fill(1);
 }
 
 function mockFetchSuccess(text: string, model = 'voxtral-mini-2602') {
@@ -123,7 +123,7 @@ describe('VoxtralTranscribeService', () => {
       expect(fileSection).toContain('Content-Type: audio/webm');
     });
 
-    it('defaults to language=fr', async () => {
+    it('asks for French, which keeps the short answers right', async () => {
       fetchSpy = mockFetchSuccess('test');
       const service = getVoxtralTranscribeService();
 
@@ -134,15 +134,16 @@ describe('VoxtralTranscribeService', () => {
       expect(body.get('language')).toBe('fr');
     });
 
-    it('uses the provided language option', async () => {
-      fetchSpy = mockFetchSuccess('hello');
-      const service = getVoxtralTranscribeService();
+    it('sends the audio bytes alone, not the pool a Buffer view sits in', async () => {
+      fetchSpy = mockFetchSuccess('test');
+      const pool = new Uint8Array(64).fill(9);
+      pool.set([1, 2, 3, 4], 10);
 
-      await service.transcribe(makeAudioBuffer(), 'audio/mp4', { language: 'en' });
+      await getVoxtralTranscribeService().transcribe(pool.subarray(10, 14), 'audio/webm');
 
       const [request] = fetchSpy.mock.calls[0] as [Request];
-      const body = await request.formData();
-      expect(body.get('language')).toBe('en');
+      const file = (await request.formData()).get('file') as File;
+      expect([...new Uint8Array(await file.arrayBuffer())]).toEqual([1, 2, 3, 4]);
     });
 
     it('returns success with the transcribed text', async () => {
@@ -155,16 +156,6 @@ describe('VoxtralTranscribeService', () => {
       expect(result.transcription).toBe('Bonjour le monde');
     });
 
-    it('returns detectedLanguage equal to the requested language', async () => {
-      fetchSpy = mockFetchSuccess('Hello');
-      const service = getVoxtralTranscribeService();
-
-      const result = await service.transcribe(makeAudioBuffer(), 'audio/webm', {
-        language: 'en',
-      });
-
-      expect(result.detectedLanguage).toBe('en');
-    });
   });
 
   describe('transcribe — API errors', () => {

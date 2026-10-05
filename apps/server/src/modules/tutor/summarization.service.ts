@@ -87,7 +87,7 @@ Un résumé précédent existe déjà. Tu dois le FUSIONNER avec les nouveaux é
 // SERVICE
 // ═══════════════════════════════════════════════════════════════════════════
 
-const SUMMARIZATION_PROMPT_VERSION = '2026-10-01';
+const SUMMARIZATION_PROMPT_VERSION = '2026-10-05';
 
 // Prompt cache : bumper la version pour invalider après modif prompts.
 const SUMMARIZATION_CACHE_KEY = `summarization-${SUMMARIZATION_PROMPT_VERSION}`;

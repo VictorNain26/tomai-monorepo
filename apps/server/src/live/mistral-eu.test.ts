@@ -122,7 +122,6 @@ describe('Mistral Small 4 on the EU endpoint (real API)', () => {
       schemaName: 'exercise_sheet',
       reasoningEffort: 'high',
       temperature: 0.7,
-      safePrompt: false,
       timeoutMs: 60_000,
     });
     expect(object.kind).toBe('short');
@@ -174,8 +173,7 @@ describe('Mistral Small 4 on the EU endpoint (real API)', () => {
     const tts = await getVoxtralTTSService().synthesize('Bonjour, je suis Tom.');
     expect(tts.success).toBe(true);
 
-    const audio = new Uint8Array(Buffer.from(tts.audioData ?? '', 'base64'));
-    const stt = await getVoxtralTranscribeService().transcribe(audio.buffer, 'audio/mpeg');
+    const stt = await getVoxtralTranscribeService().transcribe(Buffer.from(tts.audioData ?? '', 'base64'), 'audio/mpeg');
 
     expect(stt.transcription?.toLowerCase()).toContain('bonjour');
   }, 60_000);

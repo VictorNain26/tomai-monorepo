@@ -6,7 +6,7 @@ import type { ExerciseSheet } from '../modules/tutor/exercise-sheet';
 const mockLogger = createMockLogger();
 mock.module('../platform/observability/logger', () => ({ logger: mockLogger }));
 
-interface Call { reasoningEffort?: string; temperature?: number; maxTokens?: number; safePrompt?: boolean; messages: { role: string; content: string }[] }
+interface Call { reasoningEffort?: string; temperature?: number; maxTokens?: number; messages: { role: string; content: string }[] }
 const calls: Call[] = [];
 let replies: (ExerciseSheet | Error)[] = [];
 mock.module('../platform/ai/mistral-client', () => ({
@@ -59,7 +59,7 @@ describe('prepareExerciseSheet', () => {
     expect(exercise.sheet?.entries).toEqual([]);
     expect(calls).toHaveLength(3);
     for (const call of calls) {
-      expect(call).toMatchObject({ reasoningEffort: 'high', temperature: 0.7, safePrompt: false });
+      expect(call).toMatchObject({ reasoningEffort: 'high', temperature: 0.7 });
       expect(call.maxTokens).toBeUndefined();
     }
     expect(calls[0]?.messages[0]?.content).toContain('<programme>');
