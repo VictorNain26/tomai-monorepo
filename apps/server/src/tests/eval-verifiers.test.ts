@@ -23,6 +23,7 @@ describe('writtenEqualities', () => {
   it('reads signs, powers, chains, fractions, money, units and list numbers', () => {
     expect(found('−3 + 5 = 2')).toEqual([['-3 + 5', '2', false]]);
     expect(found('soit -3 + 5 = 2')).toEqual([['-3 + 5', '2', false]]);
+    expect(found('Donc 3 × 4 = 11.')).toEqual([['3 * 4', '11', true]]);
     expect(found('2² + 3 + 4 = 11')).toEqual([['2^2 + 3 + 4', '11', false]]);
     expect(found('10 – 2 × 3 = 10 – 6 = 4')).toEqual([['10 - 2 * 3', '10 - 6', false], ['10 - 6', '4', false]]);
     expect(found('\\(\\frac{20}{3} = 6{,}67\\)')).toEqual([['(20)/(3)', '6.67', false]]);

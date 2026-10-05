@@ -57,7 +57,7 @@ function arithmetic(expression: string): MathNode | null {
 // What may stand before a calculation: the start of the line, punctuation or a connective. A
 // word may be an operator (« 3 fois 4 »), a quantity (« 10 % de 200 »), a unit (« 2 h 15 ») or
 // an unknown (« x - 3 »), which the code cannot read: such a calculation is left alone.
-const STANDALONE = /(?:^|[:;,(.!?]|(?<!\p{L})(?:soit|donc|alors|et|puis|ainsi|car))\s*$/u;
+const STANDALONE = /(?:^|[:;,(.!?]|(?<!\p{L})(?:soit|donc|alors|et|puis|ainsi|car))\s*$/iu;
 
 /** The calculation that ends a piece of text, or null when it belongs to something else. */
 function trailingCalculation(text: string): string | null {
