@@ -11,8 +11,6 @@ exact = false
 [test]
 # Configuration tests
 preload = ["./src/platform/config/env.ts"]
-coverage = true
-timeout = 30000  # 30 secondes timeout
 
 [run]
 # PRODUCTION: Configuration runtime pour éviter memory leaks

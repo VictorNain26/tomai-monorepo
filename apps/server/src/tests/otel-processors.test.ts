@@ -33,6 +33,7 @@ describe('setupOtel with caller processors', () => {
       }),
     });
 
+    // The whole stream, not its text: the root span ends as the stream closes.
     await streamChat({
       userId: 'u',
       sessionId: 's',
@@ -41,7 +42,7 @@ describe('setupOtel with caller processors', () => {
       conversationHistory: [],
       tools: {},
       model,
-    }).text;
+    }).consumeStream();
 
     expect(exporter.getFinishedSpans().length).toBeGreaterThan(0);
     await shutdownOtel();
