@@ -147,8 +147,8 @@ export async function generatePresignedUploadUrl(params: {
   // Générer ID unique et clé de stockage
   const fileId = crypto.randomUUID();
   const timestamp = Date.now();
-  const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9.-]/g, '_');
-  const storageKey = `uploads/${userId}/${timestamp}-${fileId}-${sanitizedFileName}`;
+  // No file name in the key: it would reach the logs and the bucket's own; the name stays in the database.
+  const storageKey = `uploads/${userId}/${timestamp}-${fileId}`;
 
   const client = getS3Client();
 

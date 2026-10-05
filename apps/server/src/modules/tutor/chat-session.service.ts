@@ -56,7 +56,6 @@ export class ChatSessionService {
 
       const pgError = _error as {
         code?: string;
-        detail?: string;
         hint?: string;
         constraint?: string;
         table?: string;
@@ -68,9 +67,8 @@ export class ChatSessionService {
         err: error,
         userId,
         subject,
-        topic,
+        hasTopic: Boolean(topic),
         pgCode: pgError.code,
-        pgDetail: pgError.detail,
         pgHint: pgError.hint,
         pgConstraint: pgError.constraint,
         pgTable: pgError.table,

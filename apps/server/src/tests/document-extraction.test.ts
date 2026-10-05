@@ -14,7 +14,7 @@ const image = new TextEncoder().encode('PNG').buffer;
 describe('documentExtractionService.extractText — image', () => {
   it('gives the text read by vision, its word count and the usage', async () => {
     reply = { text: 'Résous 3x + 5 = 20.', usage };
-    expect(await documentExtractionService.extractText(image, 'image/png', 'exo.png')).toMatchObject({
+    expect(await documentExtractionService.extractText(image, 'image/png')).toMatchObject({
       success: true,
       text: 'Résous 3x + 5 = 20.',
       metadata: { extractionMethod: 'mistral-vision', wordCount: 6, usage },
@@ -23,16 +23,16 @@ describe('documentExtractionService.extractText — image', () => {
 
   it('fails an image with nothing read, keeping the usage, and passes on the reason of a failed call', async () => {
     reply = { text: '', usage };
-    expect(await documentExtractionService.extractText(image, 'image/png', 'exo.png')).toMatchObject({ success: false, metadata: { usage }, error: "Aucun contenu lu dans l'image" });
+    expect(await documentExtractionService.extractText(image, 'image/png')).toMatchObject({ success: false, metadata: { usage }, error: "Aucun contenu lu dans l'image" });
 
     reply = { text: '', error: 'timeout' };
-    const failed = await documentExtractionService.extractText(image, 'image/png', 'exo.png');
+    const failed = await documentExtractionService.extractText(image, 'image/png');
     expect(failed).toMatchObject({ success: false, error: 'timeout' });
     expect(failed.metadata.usage).toBeUndefined();
   });
 
   it('reads plain text without any model call', async () => {
-    expect(await documentExtractionService.extractText(new TextEncoder().encode('Exercice 1 : calcule 2 + 3.').buffer, 'text/plain', 'exo.txt'))
+    expect(await documentExtractionService.extractText(new TextEncoder().encode('Exercice 1 : calcule 2 + 3.').buffer, 'text/plain'))
       .toMatchObject({ success: true, text: 'Exercice 1 : calcule 2 + 3.', metadata: { extractionMethod: 'text' } });
   });
 });

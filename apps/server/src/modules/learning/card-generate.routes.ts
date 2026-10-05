@@ -72,7 +72,7 @@ export const cardGenerateRoutes = new Hono<AuthEnv>()
         logger.info('Starting AI deck generation', {
           operation: 'learning:generate:start',
           userId: user.id,
-          subject, domaine, topic: topic ?? null,
+          subject, domaine, hasTopic: Boolean(topic),
           mode: isFullDomaineMode ? 'full_domaine' : 'specific_topic',
           schoolLevel: level,
         });
@@ -99,7 +99,6 @@ export const cardGenerateRoutes = new Hono<AuthEnv>()
             operation: 'learning:generate:failed',
             userId: user.id,
             reason: generationResult.error,
-            _actualError: generationResult._debug?.actualError,
             code: generationResult.code,
             severity: 'medium' as const,
           });
@@ -164,7 +163,7 @@ export const cardGenerateRoutes = new Hono<AuthEnv>()
         logger.error('Failed to generate deck', {
           operation: 'learning:generate:error',
           userId: user.id, subject, domaine,
-          topic: topic ?? null,
+          hasTopic: Boolean(topic),
           err: error,
           severity: 'high' as const,
         });

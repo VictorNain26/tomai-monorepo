@@ -3,7 +3,8 @@ import { describe, it, expect, beforeEach, mock } from 'bun:test';
 import { createMockLogger } from './_helpers/mock-logger';
 import { noExercise } from './_helpers/output-check';
 
-mock.module('../platform/observability/logger', () => ({ logger: createMockLogger() }));
+const mockLogger = createMockLogger();
+mock.module('../platform/observability/logger', () => ({ logger: mockLogger }));
 
 let generated = 'Équations du premier degré';
 mock.module('../platform/ai/mistral-client', () => ({ generateText: mock(async () => generated) }));
@@ -38,9 +39,10 @@ beforeEach(() => {
 });
 
 describe('autoTitleService.generateTitleIfNeeded', () => {
-  it('stores a title that passes the check', async () => {
+  it('stores a title that passes the check, and never logs it: it comes from the conversation', async () => {
     await autoTitleService.generateTitleIfNeeded('s1', 'Résous 3x + 5 = 20.', 'Que fais-tu du + 5 ?', noExercise);
     expect(update).toHaveBeenCalledWith('s1', { topic: 'Équations du premier degré' });
+    expect(JSON.stringify(Object.values(mockLogger).map((level) => level.mock.calls))).not.toContain('Équations');
   });
 
   it("keeps the default title when the title gives the exercise's answer, when moderation holds it back or cannot check it", async () => {

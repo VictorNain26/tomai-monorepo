@@ -1,6 +1,11 @@
 import './_helpers/mistral-env';
-import { describe, it, expect, afterEach } from 'bun:test';
-import { generateCards, isGenerationError } from '../modules/learning/card-generator.service';
+import { describe, it, expect, afterEach, mock } from 'bun:test';
+import { createMockLogger } from './_helpers/mock-logger';
+
+const mockLogger = createMockLogger();
+mock.module('../platform/observability/logger', () => ({ logger: mockLogger }));
+
+const { generateCards, isGenerationError } = await import('../modules/learning/card-generator.service');
 
 const originalFetch = globalThis.fetch;
 afterEach(() => { globalThis.fetch = originalFetch; });
@@ -26,6 +31,8 @@ describe('generateCards', () => {
 
     if (isGenerationError(result)) throw new Error(result.error);
     expect(result.tokensUsed).toBe(140);
+    // The topic is what the student typed: the logs only say there was one.
+    expect(JSON.stringify(mockLogger.info.mock.calls)).not.toContain('Pythagore');
   });
 
   it('leaves the output format to the schema instead of asking for a bare JSON array', async () => {
