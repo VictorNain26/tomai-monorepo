@@ -54,25 +54,13 @@ export class ChatSessionService {
     } catch (_error) {
       const error = _error instanceof Error ? _error : new Error(String(_error));
 
-      const pgError = _error as {
-        code?: string;
-        hint?: string;
-        constraint?: string;
-        table?: string;
-        column?: string;
-      };
-
+      // The postgres error is the cause of drizzle's: its code, table and constraint come with `err`.
       logger.error('Failed to create session', {
         operation: 'createSession',
         err: error,
         userId,
         subject,
         hasTopic: Boolean(topic),
-        pgCode: pgError.code,
-        pgHint: pgError.hint,
-        pgConstraint: pgError.constraint,
-        pgTable: pgError.table,
-        pgColumn: pgError.column,
         severity: 'high' as const
       });
 

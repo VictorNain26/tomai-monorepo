@@ -147,8 +147,10 @@ export async function generatePresignedUploadUrl(params: {
   // Générer ID unique et clé de stockage
   const fileId = crypto.randomUUID();
   const timestamp = Date.now();
-  // No file name in the key: it would reach the logs and the bucket's own; the name stays in the database.
-  const storageKey = `uploads/${userId}/${timestamp}-${fileId}`;
+  // Neither the key nor the signed URL carries the file name: both reach the logs and the
+  // bucket's own; the name stays in the database. The extension names the downloaded file's type.
+  const extension = /\.[a-z0-9]{1,8}$/i.exec(fileName)?.[0].toLowerCase() ?? '';
+  const storageKey = `uploads/${userId}/${timestamp}-${fileId}${extension}`;
 
   const client = getS3Client();
 
@@ -162,7 +164,6 @@ export async function generatePresignedUploadUrl(params: {
     // Métadonnées custom
     Metadata: {
       'user-id': userId,
-      'original-filename': fileName,
       'upload-timestamp': timestamp.toString(),
     },
   });

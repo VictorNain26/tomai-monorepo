@@ -60,7 +60,7 @@ mock.module('../platform/observability/logger', () => ({ logger: mockLogger }));
 // Repository mock state
 let findActiveByUserResult: StudySessionData | null = null;
 let findByIdResult: StudySessionData | null = null;
-let createSessionResult: { id: string } = { id: 'new-session-001' };
+let createSessionResult: { id: string } | Error = { id: 'new-session-001' };
 let updateSessionResult: Record<string, unknown> = {};
 let findBySessionIdResult: MessageData[] = [];
 let createMessageResult: { id: string } = { id: 'new-msg-001' };
@@ -93,7 +93,10 @@ mock.module('../modules/tutor/study-sessions.repository', () => ({
   studySessionsRepository: {
     findActiveByUser: mock(async () => findActiveByUserResult),
     findById: mock(async () => findByIdResult),
-    create: mock(async () => createSessionResult),
+    create: mock(async () => {
+      if (createSessionResult instanceof Error) throw createSessionResult;
+      return createSessionResult;
+    }),
     update: mock(async () => updateSessionResult),
     findByUserIdWithStats: mock(async () => findByUserIdWithStatsResult),
     deleteById: mock(async () => {
@@ -220,6 +223,15 @@ describe('ChatSessionService', () => {
       createSessionResult = { id: VALID_UUID };
       const result = await sessionService.createSession('user-001', 'mathematiques', 'fractions');
       expect(result).toBe(VALID_UUID);
+    });
+
+    it('logs a failed creation without the topic the student typed', async () => {
+      createSessionResult = new Error('insert failed');
+      mockLogger.error.mockClear();
+      expect(sessionService.createSession('user-001', 'mathematiques', 'devoir de Léa')).rejects.toThrow('insert failed');
+      await Bun.sleep(0);
+      expect(mockLogger.error).toHaveBeenCalledWith('Failed to create session', expect.objectContaining({ hasTopic: true }));
+      expect(JSON.stringify(mockLogger.error.mock.calls)).not.toContain('Léa');
     });
   });
 

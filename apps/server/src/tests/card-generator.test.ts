@@ -7,6 +7,10 @@ mock.module('../platform/observability/logger', () => ({ logger: mockLogger }));
 
 const { generateCards, isGenerationError } = await import('../modules/learning/card-generator.service');
 
+// The error itself goes through the real logger's serializer (observability.test.ts): the fields beside it are checked here.
+const contextsBesideErr = () => mockLogger.error.mock.calls.map((call: unknown[]) =>
+  [call[0], Object.entries((call[1] ?? {}) as Record<string, unknown>).filter(([key]) => key !== 'err')]);
+
 const originalFetch = globalThis.fetch;
 afterEach(() => { globalThis.fetch = originalFetch; });
 
@@ -63,6 +67,7 @@ describe('generateCards', () => {
 
     expect(isGenerationError(result)).toBe(true);
     expect(calls).toBe(1);
+    expect(JSON.stringify(contextsBesideErr())).not.toContain('Pythagore');
   });
 
   it('returns INVALID_OUTPUT after the schema retry also fails', async () => {
@@ -78,5 +83,6 @@ describe('generateCards', () => {
 
     expect(isGenerationError(result) && result.code).toBe('INVALID_OUTPUT');
     expect(calls).toBe(2);
+    expect(JSON.stringify(contextsBesideErr())).not.toContain('Pythagore');
   });
 });

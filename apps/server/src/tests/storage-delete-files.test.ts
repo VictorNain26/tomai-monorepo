@@ -28,8 +28,12 @@ const sentInputs: DeleteInput[] = [];
 class DeleteObjectsCommand {
   constructor(public input: DeleteInput) {}
 }
+const putInputs: unknown[] = [];
 class Noop {
   constructor(public input?: unknown) {}
+}
+class PutObjectCommand {
+  constructor(public input: unknown) { putInputs.push(input); }
 }
 
 mock.module('@aws-sdk/client-s3', () => ({
@@ -39,7 +43,7 @@ mock.module('@aws-sdk/client-s3', () => ({
       return sendImpl(cmd.input);
     }
   },
-  PutObjectCommand: Noop,
+  PutObjectCommand,
   GetObjectCommand: Noop,
   DeleteObjectCommand: Noop,
   DeleteObjectsCommand,
@@ -100,8 +104,9 @@ describe('deleteFiles (batch S3 DeleteObjects)', () => {
 });
 
 describe('generatePresignedUploadUrl', () => {
-  it('keys the upload by user, time and id, never by the file name the student gave', async () => {
-    const { storageKey } = await generatePresignedUploadUrl({ userId: 'u1', fileName: 'devoir de Léa Martin.pdf', mimeType: 'application/pdf', sizeBytes: 1_000 });
-    expect(storageKey).toMatch(/^uploads\/u1\/\d+-[0-9a-f-]{36}$/);
+  it('keys the upload by user, time, id and type, never by the name the student gave, nor signs that name', async () => {
+    const { storageKey } = await generatePresignedUploadUrl({ userId: 'u1', fileName: 'devoir de Léa Martin.PDF', mimeType: 'application/pdf', sizeBytes: 1_000 });
+    expect(storageKey).toMatch(/^uploads\/u1\/\d+-[0-9a-f-]{36}\.pdf$/);
+    expect(JSON.stringify(putInputs.at(-1))).not.toContain('Léa');
   });
 });
