@@ -1,8 +1,9 @@
 /**
- * A chat turn whose text reaches the student only once checked (`output-check.ts`). The model's
- * stream is held whole; a text that passes is sent as it came, parts in their order. On a failed
- * check, one regeneration under constraint, without tools, then a fixed reply; the parts that
- * are not text are sent as they came, the text kept in one block before the end.
+ * A chat turn whose text reaches the student only once checked (`output-check.ts`), moderation
+ * included. The model's stream is held whole; a text that passes is sent as it came, parts in
+ * their order. On a failed check, one regeneration under constraint, without tools, then a fixed
+ * reply; the parts that are not text are sent as they came, the text kept in one block before
+ * the end.
  */
 
 import { toUIMessageStream, type InferUIMessageChunk, type UIMessageStreamWriter } from 'ai';
@@ -10,7 +11,7 @@ import { logger } from '../../platform/observability/logger.js';
 import { streamChat, type ChatStreamParams } from './ai-chat.service.js';
 import type { ResponseMessage } from './chat-message-assembler.js';
 import type { TomChatMessage } from './chat-ui-message.js';
-import { checkOutput, FALLBACK_REPLY, regenerationInstruction, type Finding, type OutputCheckContext } from './output-check.js';
+import { checkReply, FALLBACK_REPLY, regenerationInstruction, type Finding, type OutputCheckContext } from './output-check.js';
 
 type Chunk = InferUIMessageChunk<TomChatMessage>;
 type StreamChatResult = ReturnType<typeof streamChat>;
@@ -63,21 +64,23 @@ export async function runControlledTurn(
   const first = streamChat(params);
   const chunks = await readAll(toUIMessageStream<typeof params.tools, TomChatMessage>({ stream: first.stream, tools: params.tools, sendReasoning: false }));
   const firstText = textOf(chunks);
-  const findings = firstText ? checkOutput(firstText, check) : [];
+  const findings = firstText ? await checkReply(firstText, check) : [];
 
   if (findings.length === 0) {
     for (const chunk of chunks) writer.write(chunk);
     return { results: [first], text: firstText, findings, outcome: 'passed', replay: async () => first.responseMessages };
   }
 
-  // A cut call cannot be redone within the turn, nor a tool call undone: no regeneration then.
+  // A cut call cannot be redone within the turn, nor a tool call undone, nor a text checked
+  // without moderation: no regeneration then.
   const cut = chunks.some((chunk) => chunk.type === 'error' || chunk.type === 'abort');
   const usedTools = chunks.some((chunk) => chunk.type === 'tool-input-available');
-  const second = cut || usedTools
+  const unmoderated = findings.some((finding) => finding.kind === 'unmoderated');
+  const second = cut || usedTools || unmoderated
     ? null
     : streamChat({ ...params, tools: {}, turnInstruction: [params.turnInstruction, regenerationInstruction(findings)].filter(Boolean).join('\n\n') });
   const secondText = second ? await Promise.resolve(second.text).catch(() => '') : '';
-  const passed = secondText !== '' && checkOutput(secondText, check).length === 0;
+  const passed = secondText !== '' && (await checkReply(secondText, check)).length === 0;
   const text = passed ? secondText : FALLBACK_REPLY;
   const outcome = passed ? 'regenerated' : 'fallback';
   logger.warn('Tutor message held back by the check', {
@@ -87,6 +90,7 @@ export async function runControlledTurn(
     outcome,
     cut,
     usedTools,
+    unmoderated,
   });
 
   for (const chunk of chunks) if (!TEXT.has(chunk.type) && !ENDS.has(chunk.type)) writer.write(chunk);

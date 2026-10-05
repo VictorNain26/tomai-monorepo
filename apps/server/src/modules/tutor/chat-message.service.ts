@@ -7,9 +7,10 @@ import type { MessageDetails } from './chat-types';
 import type { ResponseMessage } from './chat-message-assembler.js';
 import type { TurnAnalysis } from './turn-analysis.service.js';
 import type { Diagnosis } from './exercise-diagnosis.service.js';
+import type { Finding } from './output-check.js';
 
 export interface OutputCheckRecord {
-  findings: ('answer' | 'tag' | 'equality')[];
+  findings: Finding['kind'][];
   outcome: 'regenerated' | 'fallback';
 }
 

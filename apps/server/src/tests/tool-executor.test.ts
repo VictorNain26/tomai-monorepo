@@ -68,24 +68,42 @@ mock.module('../modules/learning/decks.schema', () => ({
   learningCards: {},
 }));
 
-// The deck is created by the real learningService; generation and level config are stubbed.
+let moderation: string[][] | Error = [];
+mock.module('../platform/ai/moderation', () => ({
+  moderateTexts: mock(async (texts: string[]) => {
+    if (moderation instanceof Error) throw moderation;
+    return texts.map((_, index) => (moderation as string[][])[index] ?? []);
+  }),
+  moderateReply: mock(async () => []),
+}));
+
+// The deck is created by the real learningService and the cards checked by the real checkCards;
+// generation and level config are stubbed.
 const { learningService } = await import('../modules/learning/learning.service');
+const { checkCards } = await import('../modules/learning/card-check');
 mock.module('../modules/learning/index', () => ({
   generateCards,
   learningService,
+  checkCards,
   getLevelConfig: mock(() => ({ cardsPerSession: 10 })),
 }));
 
 // Import after all mocks
 const { executeTool } = await import('../modules/tutor/tool-executor');
 
+const sheet = {
+  statement: 'Résous 3x + 5 = 20.', kind: 'short' as const, answer: 'x = 5', answerForms: ['x = 5'], mathEquation: null, mathAnswer: null,
+  steps: [], commonErrors: [], rule: null, facts: [], expectedElements: [], entries: [], laterEntries: [],
+};
 const baseContext = {
   userId: 'user-001',
   schoolLevel: 'troisieme' as const,
   sessionId: 'session-001',
+  check: { sheet, uncertain: false, diagnosis: null, studentText: 'Fais-moi des cartes', pastStudentTexts: [] },
 };
 
 beforeEach(() => {
+  moderation = [];
   cardGenThrows = false;
   cardGenResult = {
     cards: [
@@ -122,6 +140,32 @@ describe('Tool Executor', () => {
       const result = await executeTool('generate_flashcards', { topic: 'Fractions', subject: 'mathematiques' }, baseContext, cut.signal) as Record<string, unknown>;
       expect(result).toMatchObject({ isError: true, errorCategory: 'transient' });
       expect(mockTxInsert).not.toHaveBeenCalled();
+    });
+
+    it("sets aside a card holding the exercise's answer or flagged by moderation, before storing the others", async () => {
+      cardGenResult = {
+        cards: [
+          { cardType: 'front_back', content: { front: 'Résous 3x + 5 = 20', back: 'x = 5' } },
+          { cardType: 'front_back', content: { front: 'Q2', back: 'A2' } },
+          { cardType: 'front_back', content: { front: 'Q3', back: 'A3' } },
+        ],
+        count: 3,
+      };
+      moderation = [[], [], ['violence_and_threats']];
+
+      const result = await executeTool('generate_flashcards', { topic: 'Équations', subject: 'mathematiques' }, baseContext) as Record<string, unknown>;
+
+      expect(result).toMatchObject({ generated: true, cardCount: 1 });
+    });
+
+    it('stores no deck when no card passes, or when moderation cannot answer', async () => {
+      for (const failing of [[['sexual'], ['sexual']], new Error('moderation down')]) {
+        moderation = failing;
+        mockTxInsert.mockClear();
+        const result = await executeTool('generate_flashcards', { topic: 'Fractions', subject: 'mathematiques' }, baseContext) as Record<string, unknown>;
+        expect(result).toMatchObject({ isError: true, errorCategory: 'business' });
+        expect(mockTxInsert).not.toHaveBeenCalled();
+      }
     });
 
     it('should generate without a topic context', async () => {

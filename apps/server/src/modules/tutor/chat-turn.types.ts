@@ -5,6 +5,7 @@ import type { AttachedFileInfo, AttachedFileForPrompt } from '../documents/index
 import type { EducationLevelType } from '../../types/index.js';
 import type { HistoryTurn, ResponseMessage } from './chat-message-assembler.js';
 import type { OutputCheckRecord } from './chat-message.service.js';
+import type { OutputCheckContext } from './output-check.js';
 import type { Diagnosis } from './exercise-diagnosis.service.js';
 import type { ExerciseSheet } from './exercise-sheet.js';
 import type { ExerciseChange } from './exercise-turn.js';
@@ -72,6 +73,8 @@ export interface FinishTurnParams {
   exerciseProgress?: ExerciseProgress | null | undefined;
   /** What the check before the student held back, when it did. */
   outputCheck?: OutputCheckRecord | undefined;
+  /** What the session title is checked against. */
+  check: OutputCheckContext;
 }
 
 interface ExerciseProgress {

@@ -229,7 +229,7 @@ class ChatOrchestrationService {
    * persiste, mais les tokens factures sont comptes.
    */
   async finishTurn(params: FinishTurnParams): Promise<void> {
-    const { sessionId, userId, userContent, text: fullContent, modelMessages, aborted, model, usage, startTime, attachedFileInfo, attachedFileInfos, turnAnalysis, exerciseProgress, outputCheck } = params;
+    const { sessionId, userId, userContent, text: fullContent, modelMessages, aborted, model, usage, startTime, attachedFileInfo, attachedFileInfos, turnAnalysis, exerciseProgress, outputCheck, check } = params;
     const tokensUsed = usage?.totalTokens ?? 0;
 
     // A turn that reasoned without writing anything was billed all the same.
@@ -300,7 +300,7 @@ class ChatOrchestrationService {
 
     // A cut answer is no ground for a title.
     if (aborted) return;
-    autoTitleService.generateTitleIfNeeded(sessionId, userContent, fullContent).catch((err: unknown) => {
+    autoTitleService.generateTitleIfNeeded(sessionId, userContent, fullContent, check).catch((err: unknown) => {
       logger.warn('Background auto-title failed', {
         err: err,
         sessionId,

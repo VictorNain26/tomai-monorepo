@@ -10,6 +10,9 @@ import {
 } from './card-generator.service.js';
 import { learningService } from './learning.service.js';
 import { getUserLevel } from './routes.helpers.js';
+import { checkCards } from './card-check.js';
+import { PROMPT_TAG } from '../../lib/prompt-tags.js';
+import { wrongEqualities } from '../../lib/written-equalities.js';
 
 
 const generateBody = z.object({
@@ -105,7 +108,17 @@ export const cardGenerateRoutes = new Hono<AuthEnv>()
           return c.json({ error: generationResult.error, code: generationResult.code }, 500);
         }
 
-        const generatedCards = generationResult.cards;
+        // No exercise outside the chat: the tags and the written equalities, with the moderation.
+        const { kept: generatedCards, setAside } = await checkCards(
+          generationResult.cards,
+          (text) => !PROMPT_TAG.test(text) && wrongEqualities(text, []).length === 0,
+        );
+        if (setAside > 0) {
+          logger.warn('Cards set aside by the check', { operation: 'learning:generate:set-aside', userId: user.id, setAside, kept: generatedCards.length });
+        }
+        if (generatedCards.length === 0) {
+          return c.json({ error: "Aucune carte n'a passé le contrôle. Réessaie avec un autre sujet.", code: 'CARDS_HELD_BACK' }, 422);
+        }
 
         const deckTitle = isFullDomaineMode ? domaine : topic;
         const deckDescription = isFullDomaineMode

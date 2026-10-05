@@ -1,5 +1,22 @@
-import { describe, it, expect } from 'bun:test';
-import { checkOutput, regenerationInstruction, FALLBACK_REPLY, type OutputCheckContext } from '../modules/tutor/output-check';
+import { describe, it, expect, beforeEach, mock } from 'bun:test';
+import type { OutputCheckContext } from '../modules/tutor/output-check';
+
+/** What moderation answers, one per call; an Error when it is unavailable. */
+let moderation: string[][] | Error = [];
+mock.module('../platform/ai/moderation', () => ({
+  moderateReply: mock(async () => {
+    if (moderation instanceof Error) throw moderation;
+    return moderation[0] ?? [];
+  }),
+  moderateTexts: mock(async (texts: string[]) => {
+    if (moderation instanceof Error) throw moderation;
+    return texts.map((_, index) => (moderation as string[][])[index] ?? []);
+  }),
+}));
+
+const { checkOutput, checkReply, titlePasses, regenerationInstruction, FALLBACK_REPLY } = await import('../modules/tutor/output-check');
+
+beforeEach(() => { moderation = []; });
 import type { ExerciseSheet } from '../modules/tutor/exercise-sheet';
 import type { Diagnosis } from '../modules/tutor/exercise-diagnosis.service';
 
@@ -44,12 +61,37 @@ describe('checkOutput', () => {
   });
 });
 
+describe('checkReply', () => {
+  it('adds what moderation holds back to the deterministic findings', async () => {
+    moderation = [['violence_and_threats']];
+    expect(await checkReply('Donc x = 5.', ctx())).toEqual([{ kind: 'answer' }, { kind: 'moderation', categories: ['violence_and_threats'] }]);
+  });
+
+  it('lets nothing through unchecked when moderation cannot answer', async () => {
+    moderation = new Error('down');
+    expect(await checkReply('Que fais-tu du + 5 ?', ctx())).toEqual([{ kind: 'unmoderated' }]);
+  });
+});
+
+describe('titlePasses', () => {
+  it("refuses a title that gives the exercise's answer, that moderation holds back, or that moderation cannot check", async () => {
+    expect(await titlePasses('Équations du premier degré', ctx())).toBe(true);
+    expect(await titlePasses('Équation : x = 5', ctx())).toBe(false);
+    moderation = [['sexual']];
+    expect(await titlePasses('Équations du premier degré', ctx())).toBe(false);
+    moderation = new Error('down');
+    expect(await titlePasses('Équations du premier degré', ctx())).toBe(false);
+  });
+});
+
 describe('regenerationInstruction', () => {
   it('says what was held back without giving the answer back to the writer', () => {
-    const block = regenerationInstruction([{ kind: 'answer' }, { kind: 'equality', quote: '3 * 4 = 11' }, { kind: 'answer' }]);
+    const block = regenerationInstruction([{ kind: 'answer' }, { kind: 'equality', quote: '3 * 4 = 11' }, { kind: 'answer' }, { kind: 'moderation', categories: ['sexual'] }]);
     expect(block).toStartWith('<critical_instruction>\n');
     expect(block).toContain("Elle donnait la réponse de l'exercice");
     expect(block).toContain('« 3 * 4 = 11 »');
+    expect(block).toContain('retenue par la modération');
+    expect(block).not.toContain('sexual');
     expect(block).not.toContain('x = 5');
     expect(block.match(/réponse de l'exercice/g)).toHaveLength(1);
   });

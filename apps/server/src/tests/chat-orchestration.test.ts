@@ -7,6 +7,7 @@
 import { describe, it, expect, beforeEach, mock } from 'bun:test';
 import { createMockLogger } from './_helpers/mock-logger';
 import { analysis } from './_helpers/turn-analysis';
+import { noExercise } from './_helpers/output-check';
 import type { ExerciseSheet } from '../modules/tutor/exercise-sheet';
 
 // ============================================
@@ -194,6 +195,7 @@ describe('ChatOrchestrationService.finishTurn', () => {
       startTime: Date.now(),
       attachedFileInfo: null,
       turnAnalysis: noopAnalysis,
+      check: noExercise,
     });
 
     expect(saveMessage).not.toHaveBeenCalled();
@@ -220,6 +222,7 @@ describe('ChatOrchestrationService.finishTurn', () => {
       startTime: Date.now(),
       attachedFileInfo: null,
       turnAnalysis: noopAnalysis,
+      check: noExercise,
     });
 
     expect(incrementTokenUsage).toHaveBeenCalledWith('user-001', 910);
@@ -248,6 +251,7 @@ describe('ChatOrchestrationService.finishTurn', () => {
         startTime: Date.now(),
         attachedFileInfo: null,
         turnAnalysis: noopAnalysis,
+      check: noExercise,
       });
       expect(saveMessage.mock.calls[0]?.[2]).toBe('Bonjour à toi');
       expect((saveMessage.mock.calls[0]?.[3] as Record<string, unknown> | undefined)?.['modelMessages']).toBeUndefined();
@@ -267,6 +271,7 @@ describe('ChatOrchestrationService.finishTurn', () => {
       startTime: Date.now(),
       attachedFileInfo: null,
       turnAnalysis: noopAnalysis,
+      check: noExercise,
     });
 
     expect(saveMessage.mock.calls[0]?.[2]).toBe('Bonjour à toi');
@@ -290,6 +295,7 @@ describe('ChatOrchestrationService.finishTurn', () => {
       startTime: Date.now(),
       attachedFileInfo: null,
       turnAnalysis: noopAnalysis,
+      check: noExercise,
     });
 
     expect(saveMessage).toHaveBeenCalledTimes(1);
@@ -299,7 +305,7 @@ describe('ChatOrchestrationService.finishTurn', () => {
     expect(incrementTokenUsage).toHaveBeenCalledWith('user-001', 15);
     expect(record).toHaveBeenCalledTimes(1);
     expect(summarizeIfNeeded).toHaveBeenCalledWith('session-001');
-    expect(generateTitleIfNeeded).toHaveBeenCalledWith('session-001', 'Bonjour', 'Bonjour à toi');
+    expect(generateTitleIfNeeded).toHaveBeenCalledWith('session-001', 'Bonjour', 'Bonjour à toi', noExercise);
     expect(recordTurn).not.toHaveBeenCalled();
   });
 
@@ -316,6 +322,7 @@ describe('ChatOrchestrationService.finishTurn', () => {
       startTime: Date.now(),
       attachedFileInfo: null,
       turnAnalysis: noopAnalysis,
+      check: noExercise,
       exerciseProgress: progress,
       aborted,
     });

@@ -7,6 +7,7 @@
  * - discriminator isDeckCreatedResult (kind === 'deck_created')
  */
 
+import { noExercise } from './_helpers/output-check';
 import { describe, it, expect, beforeEach, mock } from 'bun:test';
 import { createMockLogger } from './_helpers/mock-logger';
 
@@ -43,6 +44,7 @@ mock.module('../modules/learning/index', () => ({
   learningService: {
     createDeckWithCards: mock(async () => ({ deck: { id: 'd', title: 't' }, cards: [] })),
   },
+  checkCards: mock(async (cards: unknown[]) => ({ kept: cards, setAside: 0 })),
   getLevelConfig: mock(() => ({ cardsPerSession: 10 })),
 }));
 
@@ -58,6 +60,7 @@ const baseContext = {
   userId: 'user-001',
   schoolLevel: 'troisieme' as const,
   sessionId: 'session-001',
+  check: noExercise,
 };
 
 const makeProfile = (overrides: Partial<Profile> = {}): Profile => ({

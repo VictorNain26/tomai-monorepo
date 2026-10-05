@@ -7,6 +7,8 @@
  */
 
 import { generateCards, learningService, getLevelConfig } from '../learning/index.js';
+import { checkCards } from '../learning/index.js';
+import { checkOutput, type OutputCheckContext } from './output-check.js';
 import { cognitiveProfileService } from './cognitive-profile.service.js';
 import { makeToolError, type ToolResult } from './tool-errors.js';
 import { logger } from '../../platform/observability/logger.js';
@@ -16,6 +18,7 @@ interface ToolExecutionContext {
   userId: string;
   schoolLevel: EducationLevelType;
   sessionId: string;
+  check: OutputCheckContext;
 }
 
 /**
@@ -129,7 +132,14 @@ async function executeGenerateFlashcards(
     );
   }
 
-  const successResult = result;
+  // The cards reach the student: checked as the tutor's message is, before they are stored.
+  const { kept: checkedCards, setAside } = await checkCards(result.cards, (text) => checkOutput(text, context.check).length === 0);
+  if (setAside > 0) {
+    logger.warn('Cards set aside by the check', { operation: 'tool-executor:cards-set-aside', sessionId: context.sessionId, setAside, kept: checkedCards.length });
+  }
+  if (checkedCards.length === 0) {
+    return makeToolError('business', "Aucune carte n'a passé le contrôle : n'en propose pas d'autres sur ce sujet à ce tour.");
+  }
 
   // A turn cut while the cards were written leaves no deck the student would never hear of.
   if (signal?.aborted) {
@@ -148,7 +158,7 @@ async function executeGenerateFlashcards(
       sourceId: context.sessionId,
       schoolLevel: context.schoolLevel,
     },
-    cards: successResult.cards,
+    cards: checkedCards,
   });
 
   logger.info('Flashcards persisted from chat', {
