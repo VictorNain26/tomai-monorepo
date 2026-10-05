@@ -25,11 +25,11 @@ bloquant levé).
   avant l'élève (#387), modération de sortie, fiches de révision et titre (#389). Point 6
   terminé (#390) : détresse et modération d'entrée, réponse fixe approuvée par Victor le 2026-10-05.
   Premier passage fait le 2026-10-05 : il a trouvé l'analyse du tour qui ratait les énoncés,
-  corrigée (#391). Appels du SDK Mistral retentés, modération comprise sur un appel bloqué, en revue (#392).
+  corrigée (#391). Appels du SDK Mistral retentés, modération comprise sur un appel bloqué (#392).
   Prochaine : S4 repassé une fois, puis le point 7. Plan d'abord dans `docs/plans/`.
   - Une relecture humaine d'une partie des conversations lues par Claude reste due avant
     toute publication (lot 4).
-- **PR ouvertes :** #392, nouvelles tentatives des appels du SDK Mistral.
+- **PR ouvertes :** aucune.
 - **Landing en ligne gelée** jusqu'au lot 4 : seuls des correctifs d'honnêteté ou techniques y entrent.
   L'identité visuelle est rejetée et se refait au lot 4.
 
