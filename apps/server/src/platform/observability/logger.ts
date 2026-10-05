@@ -2,6 +2,7 @@
 // logger.info(message, context) instead of pino's (context, message).
 
 import pino from 'pino';
+import { InvalidToolInputError, JSONParseError, TypeValidationError } from 'ai';
 import pretty from 'pino-pretty';
 import { LOG_LEVELS } from './log-levels.js';
 
@@ -29,6 +30,17 @@ const requestedLevel = Bun.env.LOG_LEVEL;
 const level: Level = LOG_LEVELS.find((l) => l === requestedLevel) ?? 'info';
 
 /**
+ * AI SDK errors whose message copies the model's output or a tool's input, a minor's words
+ * (`@ai-sdk/provider` 4.0.17, `ai` 7.0.107): only what they are is kept.
+ */
+function contentFreeMessage(error: Error): string | null {
+  if (TypeValidationError.isInstance(error)) return 'Type validation failed';
+  if (JSONParseError.isInstance(error)) return 'JSON parsing failed';
+  if (InvalidToolInputError.isInstance(error)) return `Invalid input for tool ${error.toolName}`;
+  return null;
+}
+
+/**
  * Allow-list serializer for `err`. pino's default copies every enumerable
  * property, and AI SDK errors carry the whole request body (a minor's
  * conversation, profile, base64 images): only identity and stack are kept.
@@ -36,10 +48,13 @@ const level: Level = LOG_LEVELS.find((l) => l === requestedLevel) ?? 'info';
 function serializeError(value: unknown): unknown {
   if (!(value instanceof Error)) return value;
   const { code, statusCode } = value as { code?: unknown; statusCode?: unknown };
+  const contentFree = contentFreeMessage(value);
+  // The stack opens on the message: rebuilt from its frames alone, the content cannot slip through.
+  const frames = value.stack?.split('\n').filter((line) => /^\s+at /.test(line)) ?? [];
   return {
     type: value.name,
-    message: value.message,
-    stack: value.stack,
+    message: contentFree ?? value.message,
+    stack: contentFree === null ? value.stack : [`${value.name}: ${contentFree}`, ...frames].join('\n'),
     ...(typeof code === 'string' || typeof code === 'number' ? { code } : {}),
     ...(typeof statusCode === 'number' ? { statusCode } : {}),
     ...(value.cause === undefined ? {} : { cause: serializeError(value.cause) }),

@@ -50,6 +50,30 @@ describe('logger', () => {
     expect(err['cause']).toMatchObject({ message: 'upstream', code: 'ECONNRESET' });
   });
 
+  it("logs the AI SDK errors that copy the model's output or a tool's input without that content, cause and stack included", () => {
+    const AI = JSON.stringify(Bun.resolveSync('ai', import.meta.dir));
+    const lines = logLines(`
+      const { TypeValidationError, JSONParseError, InvalidToolInputError, NoObjectGeneratedError } = await import(${AI});
+      const invalid = new TypeValidationError({ value: { reply: 'le secret de Léa' }, cause: new Error('Expected string') });
+      logger.error('schema', { err: invalid, severity: 'high' });
+      logger.error('json', { err: new JSONParseError({ text: '{"reply": "le secret de Léa"', cause: new Error('Unexpected end') }), severity: 'high' });
+      logger.error('tool', { err: new InvalidToolInputError({ toolName: 'generate_flashcards', toolInput: 'le secret de Léa', cause: invalid }), severity: 'high' });
+      logger.error('object', { err: new NoObjectGeneratedError({ message: 'No object generated: response did not match schema.', text: 'le secret de Léa', cause: invalid, response: {}, usage: {}, finishReason: 'stop' }), severity: 'high' });
+    `);
+    expect(JSON.stringify(lines)).not.toContain('secret');
+    const errs = lines.map((line) => line['err'] as { type: string; message: string; stack: string; cause?: { message: string; cause?: { message: string } } });
+    expect(errs.map((err) => err.message)).toEqual([
+      'Type validation failed',
+      'JSON parsing failed',
+      'Invalid input for tool generate_flashcards',
+      'No object generated: response did not match schema.',
+    ]);
+    expect(errs[0]?.stack).toStartWith('AI_TypeValidationError: Type validation failed\n');
+    expect(errs[0]?.stack).toContain('    at ');
+    expect(errs[0]?.cause?.message).toBe('Expected string');
+    expect(errs[3]?.cause?.message).toBe('Type validation failed');
+  });
+
   it('does not throw on a BigInt or a circular reference', () => {
     const lines = logLines(
       `const a = {}; a.self = a; logger.info('big', { n: 10n }); logger.info('circular', { a });`,
