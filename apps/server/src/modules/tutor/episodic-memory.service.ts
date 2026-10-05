@@ -13,8 +13,8 @@
  *   deletion, respecting GDPR right-to-erasure — callers pass persist=false).
  *
  * Retrieval:
- * - retrieveRelevant(userId, queryText, limit=3) — returns the top-k cosine
- *   neighbours. Called by chat-orchestration when opening a NEW session.
+ * - recallForSession — the top-k cosine neighbours of the session's first messages, searched
+ *   until one matches, then kept on the session for every turn.
  *
  * Schema failure mode: if the session_episodes table doesn't exist (pre-
  * migration deployment), insertion logs at severity=critical so monitoring
@@ -32,7 +32,7 @@ import { subjectProfileService } from './subject-profile.service.js';
 import { logger } from '../../platform/observability/logger.js';
 import { env } from '../../platform/config/env.js';
 
-const EPISODIC_EXTRACTION_PROMPT_VERSION = '2026-10-05';
+const EPISODIC_EXTRACTION_PROMPT_VERSION = '2026-10-05.2';
 
 // Prompt cache stable — bump version pour invalider
 const EPISODIC_CACHE_KEY = `episodic-extract-${EPISODIC_EXTRACTION_PROMPT_VERSION}`;
@@ -45,8 +45,14 @@ const EpisodeSchema = z.object({
 
 const EPISODE_TTL_DAYS = 90;
 
-function buildExtractionPrompt(subject: string, messagesText: string): string {
-  return `Tu extrais un résumé pédagogique structuré à partir d'une conversation élève-tuteur.
+/** A shorter message (« Bonjour ») says nothing to search the past sessions with. */
+const MIN_RECALL_QUERY_CHARS = 10;
+
+/** The first messages of a session searched for its past sessions, until one matches. */
+const RECALL_TURNS = 3;
+
+function buildExtractionPrompt(subject: string, sessionText: string): string {
+  return `Tu extrais un résumé pédagogique structuré d'une séance élève-tuteur, à partir de son résumé, s'il existe, et des échanges qu'il ne couvre pas encore.
 
 Produis un JSON avec les champs :
 - "summary" : résumé narratif (200-400 mots) qui capte le sujet précis, les points travaillés, la démarche pédagogique utilisée, le niveau atteint par l'élève à la fin.
@@ -55,8 +61,7 @@ Produis un JSON avec les champs :
 
 Matière : ${subject}
 
-CONVERSATION :
-${messagesText}
+${sessionText}
 
 Réponds UNIQUEMENT en JSON strict.`;
 }
@@ -80,21 +85,28 @@ class EpisodicMemoryService {
         return;
       }
 
-      const sessionMessages = await messagesRepository.findBySessionId(sessionId);
-
-      if (sessionMessages.length < 4) {
+      // The session's summary covers its start: only the messages after it are read again.
+      const summary = session.conversationSummary;
+      const [tail, messageCount] = await Promise.all([
+        messagesRepository.findAfter(sessionId, summary ? session.summaryUpToMessageId : null),
+        messagesRepository.countBySessionId(sessionId),
+      ]);
+      if (!summary && tail.length < 4) {
         logger.debug('Episodic extraction skipped — too few messages', {
           operation: 'episodic:extract:skip-small',
           sessionId,
-          messageCount: sessionMessages.length,
+          messageCount: tail.length,
         });
         return;
       }
 
-      const messagesText = sessionMessages
+      const tailText = tail
         .map(m => `[${m.role}]: ${m.content.slice(0, 800)}`)
         .join('\n\n')
         .slice(0, 20_000);
+      const sessionText = [summary ? `RÉSUMÉ DE LA SÉANCE :\n${summary}` : null, `ÉCHANGES :\n${tailText}`]
+        .filter(Boolean)
+        .join('\n\n');
 
       const { object: parsed } = await generateStructured({
         functionId: 'episodic-extraction',
@@ -102,7 +114,7 @@ class EpisodicMemoryService {
         messages: [
           {
             role: 'user',
-            content: buildExtractionPrompt(session.subject, messagesText),
+            content: buildExtractionPrompt(session.subject, sessionText),
           },
         ],
         temperature: 0.2,
@@ -129,7 +141,7 @@ class EpisodicMemoryService {
         summaryText: parsed.summary,
         summaryEmbedding: embedding,
         conceptsCovered: parsed.conceptsCovered,
-        messageCount: sessionMessages.length,
+        messageCount,
         durationSeconds,
         outcome: parsed.outcome,
         ttlUntil,
@@ -176,7 +188,8 @@ class EpisodicMemoryService {
   /**
    * Retrieve the top-k past episodes for a user that are semantically
    * closest to the current query (new session opener, or first student
-   * message). Returns an empty array on error or when none exist.
+   * message). Null when it did not search, the message too short or the search failed (logged);
+   * an empty array when nothing matched.
    */
   async retrieveRelevant(userId: string, queryText: string, limit = 3): Promise<{
     sessionId: string;
@@ -185,9 +198,9 @@ class EpisodicMemoryService {
     conceptsCovered: string[];
     createdAt: Date;
     similarity: number;
-  }[]> {
+  }[] | null> {
     const trimmed = queryText.trim();
-    if (trimmed.length < 10) return [];
+    if (trimmed.length < MIN_RECALL_QUERY_CHARS) return null;
 
     try {
       const queryEmbedding = await mistralEmbeddingsService.embed(trimmed);
@@ -219,12 +232,31 @@ class EpisodicMemoryService {
         userId,
         severity,
       });
-      return [];
+      return null;
     }
   }
 
+  /**
+   * The past sessions, recalled once per session (`docs/etudes/2026-10-04/refonte-agent.md`) and
+   * kept on it, the same block every turn. `stored` is the session's: null before the recall,
+   * '' when none matched. A greeting matches nothing: the search goes on over the first
+   * messages, and only a match or the last of them settles it. A search that failed, or a
+   * failed write, settles nothing: the next turn tries again.
+   */
+  async recallForSession(params: { sessionId: string; userId: string; content: string; stored: string | null; studentTurnsBefore: number }): Promise<string | null> {
+    if (params.stored !== null) return params.stored || null;
+    const found = await this.retrieveRelevant(params.userId, params.content, 3);
+    if (found === null) return null;
+    const block = this.formatEpisodesForPrompt(found);
+    if (block === null && params.studentTurnsBefore < RECALL_TURNS - 1) return null;
+    await studySessionsRepository.update(params.sessionId, { recalledEpisodes: block ?? '' }).catch((err: unknown) => {
+      logger.warn('Recalled episodes not kept on the session', { operation: 'episodic:recall:store-error', err, sessionId: params.sessionId });
+    });
+    return block;
+  }
+
   /** Build a compact context block for the system prompt. */
-  formatEpisodesForPrompt(episodes: Awaited<ReturnType<EpisodicMemoryService['retrieveRelevant']>>): string | null {
+  formatEpisodesForPrompt(episodes: NonNullable<Awaited<ReturnType<EpisodicMemoryService['retrieveRelevant']>>>): string | null {
     if (episodes.length === 0) return null;
 
     const dateFormatter = new Intl.DateTimeFormat('fr-FR', {

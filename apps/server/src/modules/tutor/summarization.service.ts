@@ -1,9 +1,9 @@
 /**
  * Summarization Service — Résumé conversationnel incrémental
  *
- * Pattern SummaryBuffer (Best Practice 2026) :
  * - Résume les anciens messages pour garder le contexte pédagogique
- * - Incrémental : fusionne l'ancien résumé avec les nouveaux échanges
+ * - Incrémental : l'ancien résumé et les seuls messages qu'il ne couvre pas, jamais toute la
+ *   conversation ; ce résumé nourrit aussi l'épisode de la séance (episodic-memory.service.ts)
  * - Asynchrone (fire-and-forget) pour ne pas bloquer le streaming
  *
  * Tâche templatée, modèle de chat par défaut.
@@ -19,26 +19,28 @@ import { logger } from '../../platform/observability/logger.js';
 // CONSTANTS
 // ═══════════════════════════════════════════════════════════════════════════
 
-/** Premier résumé après 20 messages (10 échanges user+assistant) */
-const SUMMARIZE_THRESHOLD = 20;
-
-/** Nombre de messages récents gardés verbatim (5 échanges) */
+/** Nombre de messages récents gardés verbatim (5 échanges), jamais résumés. */
 const RECENT_WINDOW_SIZE = 10;
 
-/** Re-résumer après 10 nouveaux messages depuis le dernier résumé */
-const INCREMENTAL_THRESHOLD = 10;
+/** Messages résumés d'un coup : le premier résumé à 20 messages, puis tous les 10 au-delà de la fenêtre. */
+const BATCH_SIZE = 10;
+
+/** At most this many messages wait outside the summary when a batch is due; the chat's history window holds them. */
+export const SUMMARY_BACKLOG = RECENT_WINDOW_SIZE + BATCH_SIZE;
 
 /** Longueur max du résumé généré (en caractères) */
 const MAX_SUMMARY_LENGTH = 6000;
 
 // ═══════════════════════════════════════════════════════════════════════════
-// PROMPTS
+// PROMPT
 // ═══════════════════════════════════════════════════════════════════════════
 
 const SUMMARIZATION_PROMPT = `Tu es un assistant spécialisé dans le résumé de conversations pédagogiques de tutorat.
 
-Résume la conversation ci-dessous en extrayant OBLIGATOIREMENT les 7 sections suivantes.
-Le résumé doit être concis (max 1500 mots) et structuré en sections.
+Tu reçois, s'il existe, le résumé précédent de la séance, puis les nouveaux échanges. Produis un
+résumé unique, à jour et autonome, compréhensible sans autre contexte : intègre les nouveaux
+échanges au résumé précédent, déplace vers les acquis une difficulté que l'élève a surmontée,
+garde ce qui reste pertinent.
 
 ## SECTIONS OBLIGATOIRES
 
@@ -51,43 +53,17 @@ Le résumé doit être concis (max 1500 mots) et structuré en sections.
 7. **Prochaine étape** : Ce qu'il faudrait aborder ensuite
 
 ## RÈGLES
+- Concis : 1500 mots au plus
 - Sois factuel, pas de commentaire sur la qualité du tutorat
 - Conserve les termes techniques exacts utilisés par l'élève
 - Note les numéros d'exercices ou pages de manuels mentionnés
 - Si une section est vide, écris "Aucun" (ne pas omettre la section)`;
 
-const INCREMENTAL_PROMPT = `Tu es un assistant spécialisé dans le résumé de conversations pédagogiques de tutorat.
-
-Un résumé précédent existe déjà. Tu dois le FUSIONNER avec les nouveaux échanges pour produire un résumé UNIFIÉ et à jour.
-
-## RÉSUMÉ PRÉCÉDENT
-{previousSummary}
-
-## NOUVEAUX ÉCHANGES
-{newMessages}
-
-## INSTRUCTIONS
-- Fusionne le résumé précédent avec les nouveaux échanges
-- Mets à jour chaque section en intégrant les nouvelles informations
-- Si l'élève a progressé sur une difficulté, déplace-la vers les acquis
-- Conserve les informations encore pertinentes du résumé précédent
-- Le résumé final doit être autonome (compréhensible sans contexte)
-- Max 1500 mots
-
-## SECTIONS OBLIGATOIRES
-1. **Matière/Chapitre**
-2. **Acquis**
-3. **Difficultés**
-4. **Erreurs de raisonnement**
-5. **Outils utilisés**
-6. **Méthode socratique**
-7. **Prochaine étape**`;
-
 // ═══════════════════════════════════════════════════════════════════════════
 // SERVICE
 // ═══════════════════════════════════════════════════════════════════════════
 
-const SUMMARIZATION_PROMPT_VERSION = '2026-10-05';
+const SUMMARIZATION_PROMPT_VERSION = '2026-10-05.2';
 
 // Prompt cache : bumper la version pour invalider après modif prompts.
 const SUMMARIZATION_CACHE_KEY = `summarization-${SUMMARIZATION_PROMPT_VERSION}`;
@@ -95,52 +71,35 @@ const SUMMARIZATION_CACHE_KEY = `summarization-${SUMMARIZATION_PROMPT_VERSION}`;
 class SummarizationService {
 
   /**
-   * Vérifie si un résumé est nécessaire et le génère si oui.
-   * Appelé en fire-and-forget après chaque réponse assistant.
-   * Ne throw jamais — tout est catché et loggé.
+   * Résume ce que le résumé précédent ne couvre pas encore, hors de la fenêtre récente, dès
+   * qu'un lot entier s'y trouve. Appelé en fire-and-forget après chaque réponse ; ne throw
+   * jamais — tout est catché et loggé.
    */
   async summarizeIfNeeded(sessionId: string): Promise<void> {
     try {
-      // Cheap count first: avoid loading all message bodies when nothing to summarize.
-      const totalMessages = await messagesRepository.countBySessionId(sessionId);
-      if (totalMessages < SUMMARIZE_THRESHOLD) return;
-
       const session = await studySessionsRepository.findById(sessionId);
       if (!session) return;
+      const cutoff = session.conversationSummary ? session.summaryUpToMessageId : null;
 
-      const allMessages = await messagesRepository.findBySessionId(sessionId);
+      // Counted in the database: the session's messages load only once a batch is due.
+      const pending = await messagesRepository.countAfter(sessionId, cutoff);
+      if (pending < SUMMARY_BACKLOG) return;
 
-      // Vérifier si un résumé incrémental est nécessaire
-      if (session.conversationSummary && session.summaryUpToMessageId) {
-        const cutoffIndex = allMessages.findIndex(m => m.id === session.summaryUpToMessageId);
-        if (cutoffIndex === -1) return;
-
-        const newMessagesSinceSummary = totalMessages - cutoffIndex - 1;
-        if (newMessagesSinceSummary < INCREMENTAL_THRESHOLD) return;
-      }
-
-      // Déterminer les messages à résumer (tous sauf la fenêtre récente)
-      const messagesToSummarize = allMessages.slice(0, -RECENT_WINDOW_SIZE);
-      if (messagesToSummarize.length === 0) return;
-
-      const lastSummarizedMessage = messagesToSummarize[messagesToSummarize.length - 1];
+      const messagesToSummarize = (await messagesRepository.findAfter(sessionId, cutoff)).slice(0, -RECENT_WINDOW_SIZE);
+      const lastSummarizedMessage = messagesToSummarize.at(-1);
       if (!lastSummarizedMessage) return;
 
       const messagesText = messagesToSummarize.map(m => `[${m.role}]: ${m.content}`).join('\n\n');
-
       const summary = await this.generateSummary(messagesText, session.conversationSummary);
-
       if (!summary) return;
 
-      // Stocker le résumé
-      await studySessionsRepository.update(sessionId, {
-        conversationSummary: summary,
-        summaryUpToMessageId: lastSummarizedMessage.id,
-      });
+      // Two runs started by turns close together: the one that read an older cutoff writes nothing.
+      const stored = await studySessionsRepository.replaceSummary(sessionId, session.summaryUpToMessageId, { conversationSummary: summary, summaryUpToMessageId: lastSummarizedMessage.id });
+      if (!stored) return;
 
       logger.info('Conversation summarized', {
         sessionId,
-        totalMessages,
+        summarizedMessages: messagesToSummarize.length,
         summarizedUpTo: lastSummarizedMessage.id,
         summaryLength: summary.length,
         isIncremental: Boolean(session.conversationSummary),
@@ -157,25 +116,21 @@ class SummarizationService {
   }
 
   /**
-   * Génère un résumé via Mistral Small (non-streaming, temp 0.3).
-   * Si un résumé précédent existe, fait un résumé incrémental.
-   *
-   * Ordre messages = system prompt (stable, caché) → contenu variable.
-   * Maximise cache hit prompt_cache_key.
+   * Le résumé précédent et les seuls nouveaux échanges. Ordre messages = system prompt
+   * (stable, caché) → contenu variable.
    */
   private async generateSummary(
     messagesText: string,
     previousSummary?: string | null
   ): Promise<string | null> {
-    const systemPrompt = previousSummary ? INCREMENTAL_PROMPT : SUMMARIZATION_PROMPT;
     const userContent = previousSummary
       ? `## RÉSUMÉ PRÉCÉDENT\n${previousSummary}\n\n## NOUVEAUX ÉCHANGES\n${messagesText}`
-      : `## CONVERSATION\n${messagesText}`;
+      : `## NOUVEAUX ÉCHANGES\n${messagesText}`;
 
     const text = await generateText({
       functionId: 'summarization',
       messages: [
-        { role: 'system', content: systemPrompt },
+        { role: 'system', content: SUMMARIZATION_PROMPT },
         { role: 'user', content: userContent },
       ],
       temperature: 0.3,

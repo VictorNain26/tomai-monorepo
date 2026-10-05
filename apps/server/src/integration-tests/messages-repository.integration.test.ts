@@ -32,4 +32,38 @@ describe.skipIf(!dbReachable)('messagesRepository — stored model messages read
     expect(await messagesRepository.findModelMessages([reply.id])).toEqual([{ id: reply.id, modelMessages }]);
     expect(await messagesRepository.findModelMessages([])).toEqual([]);
   });
+
+  it("reads and counts the session's messages after a given one, all of them without one", async () => {
+    const { db } = await import('../db/connection');
+    const { studySessions } = await import('../modules/tutor/session.schema');
+    const { messagesRepository } = await import('../modules/tutor/messages.repository');
+    const [session] = await db.insert(studySessions).values({ userId: studentId }).returning({ id: studySessions.id });
+    const [other] = await db.insert(studySessions).values({ userId: studentId }).returning({ id: studySessions.id });
+    if (!session || !other) throw new Error('session not created');
+    const created = [];
+    for (const content of ['un', 'deux', 'trois', 'quatre']) created.push(await messagesRepository.create({ sessionId: session.id, role: 'user', content }));
+    await messagesRepository.create({ sessionId: other.id, role: 'user', content: 'ailleurs' });
+
+    expect((await messagesRepository.findAfter(session.id, created[1]?.id ?? null)).map((m) => m.content)).toEqual(['trois', 'quatre']);
+    expect(await messagesRepository.countAfter(session.id, created[1]?.id ?? null)).toBe(2);
+    expect((await messagesRepository.findAfter(session.id, null)).map((m) => m.content)).toEqual(['un', 'deux', 'trois', 'quatre']);
+    expect(await messagesRepository.countAfter(session.id, null)).toBe(4);
+    // A cutoff message gone: the whole session, not none of it.
+    expect(await messagesRepository.countAfter(session.id, crypto.randomUUID())).toBe(4);
+  });
+
+  it('replaces a summary only where it still ends as read: a later run is not overwritten', async () => {
+    const { db } = await import('../db/connection');
+    const { studySessions } = await import('../modules/tutor/session.schema');
+    const { studySessionsRepository } = await import('../modules/tutor/study-sessions.repository');
+    const [session] = await db.insert(studySessions).values({ userId: studentId }).returning({ id: studySessions.id });
+    if (!session) throw new Error('session not created');
+    const [first, second] = [crypto.randomUUID(), crypto.randomUUID()];
+
+    expect(await studySessionsRepository.replaceSummary(session.id, null, { conversationSummary: 'S1', summaryUpToMessageId: first })).toBe(true);
+    expect(await studySessionsRepository.replaceSummary(session.id, first, { conversationSummary: 'S2', summaryUpToMessageId: second })).toBe(true);
+    expect(await studySessionsRepository.replaceSummary(session.id, null, { conversationSummary: 'stale', summaryUpToMessageId: first })).toBe(false);
+    const [row] = await db.select().from(studySessions).where(eq(studySessions.id, session.id));
+    expect(row).toMatchObject({ conversationSummary: 'S2', summaryUpToMessageId: second });
+  });
 });

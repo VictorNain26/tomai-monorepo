@@ -3,7 +3,7 @@
  * Pattern Drizzle ORM officiel : omettre les champs avec defaults du schema
  */
 
-import { eq, desc, count, sql } from 'drizzle-orm';
+import { and, eq, desc, count, sql } from 'drizzle-orm';
 import { getTableColumns } from 'drizzle-orm';
 import { db } from '../../db/connection';
 import { studySessions, messages, type StudySession } from './session.schema.js';
@@ -23,6 +23,7 @@ export interface CreateStudySessionInput {
  */
 interface UpdateStudySessionInput {
   topic?: string;
+  recalledEpisodes?: string;
   status?: 'draft' | 'active' | 'paused' | 'completed' | 'abandoned' | 'timeout' | 'error';
   endedAt?: Date;
   durationMinutes?: number;
@@ -165,6 +166,16 @@ class StudySessionsRepository {
       ), ${studySessions.startedAt}) DESC`)
       .limit(limit)
       .offset(offset);
+  }
+
+  /** The summary replaced only if it still ends where the caller read it: whether it was. */
+  async replaceSummary(id: string, readCutoff: string | null, summary: { conversationSummary: string; summaryUpToMessageId: string }): Promise<boolean> {
+    const rows = await db
+      .update(studySessions)
+      .set({ ...summary, updatedAt: sql`NOW()` })
+      .where(and(eq(studySessions.id, id), sql`${studySessions.summaryUpToMessageId} is not distinct from ${readCutoff}`))
+      .returning({ id: studySessions.id });
+    return rows.length > 0;
   }
 
   async update(id: string, input: UpdateStudySessionInput): Promise<StudySession | undefined> {

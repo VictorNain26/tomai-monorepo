@@ -8,21 +8,26 @@ mock.module('../platform/observability/logger', () => ({
   logger: { ...createMockLogger(), error: mock((message: string) => { loggedErrors.push(message); }) },
 }));
 
+let session = makeStudySession({ userId: 'user-001' });
+const updateSession = mock(async (_id: string, _values: Record<string, unknown>) => {});
 mock.module('../modules/tutor/study-sessions.repository', () => ({
-  studySessionsRepository: { findById: mock(async () => makeStudySession({ userId: 'user-001' })) },
+  studySessionsRepository: { findById: mock(async () => session), update: updateSession },
 }));
 
+const sessionMessages = Array.from({ length: 6 }, (_, i) => makeMessage({ id: `msg-${String(i)}`, content: `Échange ${String(i)}` }));
+const findAfter = mock(async (_sessionId: string, afterId: string | null) =>
+  (afterId ? sessionMessages.slice(sessionMessages.findIndex((m) => m.id === afterId) + 1) : sessionMessages));
 mock.module('../modules/tutor/messages.repository', () => ({
-  messagesRepository: {
-    findBySessionId: mock(async () => Array.from({ length: 6 }, (_, i) => makeMessage({ id: `msg-${i}` }))),
-  },
+  messagesRepository: { findAfter, countBySessionId: mock(async () => sessionMessages.length) },
 }));
 
 const inserted: Record<string, unknown>[] = [];
+let relevant: { sessionId: string; subject: string; summaryText: string; conceptsCovered: string[]; createdAt: Date; similarity: number }[] = [];
+const findRelevantEpisodes = mock(async () => relevant);
 mock.module('../modules/tutor/episodic-memory.repository', () => ({
   episodicMemoryRepository: {
     insertEpisode: mock(async (data: Record<string, unknown>) => { inserted.push(data); }),
-    findRelevantEpisodes: mock(async () => []),
+    findRelevantEpisodes,
   },
 }));
 
@@ -34,9 +39,10 @@ const { episodicMemoryService } = await import('../modules/tutor/episodic-memory
 
 const originalFetch = globalThis.fetch;
 let chatCalls = 0;
+let chatPrompt = '';
 
 function stubMistral(episode: Record<string, unknown>) {
-  globalThis.fetch = (async (input: string | URL | Request) => {
+  globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) => {
     const url = input instanceof Request ? input.url : String(input);
     if (url.endsWith('/embeddings')) {
       return new Response(JSON.stringify({
@@ -46,6 +52,7 @@ function stubMistral(episode: Record<string, unknown>) {
       }), { status: 200, headers: { 'content-type': 'application/json' } });
     }
     chatCalls += 1;
+    chatPrompt = input instanceof Request ? await input.clone().text() : typeof init?.body === 'string' ? init.body : '';
     return new Response(JSON.stringify({
       id: 'c', object: 'chat.completion', created: 0, model: 'mistral-small-2603',
       choices: [{ index: 0, message: { role: 'assistant', content: JSON.stringify(episode) }, finish_reason: 'stop' }],
@@ -57,7 +64,12 @@ function stubMistral(episode: Record<string, unknown>) {
 beforeEach(() => {
   inserted.length = 0;
   chatCalls = 0;
+  chatPrompt = '';
   loggedErrors.length = 0;
+  session = makeStudySession({ userId: 'user-001' });
+  relevant = [];
+  updateSession.mockClear();
+  findRelevantEpisodes.mockClear();
 });
 afterEach(() => { globalThis.fetch = originalFetch; });
 
@@ -79,6 +91,19 @@ describe('episodicMemoryService.extractAndStore', () => {
     expect((inserted[0]?.['summaryEmbedding'] as number[]).length).toBe(1024);
   });
 
+  it("reads the session's summary and only the messages it does not cover", async () => {
+    session = makeStudySession({ userId: 'user-001', conversationSummary: 'Résumé : les fractions', summaryUpToMessageId: 'msg-3' });
+    stubMistral({ summary: 'Travail sur les fractions.', conceptsCovered: ['fractions'], outcome: 'completed' });
+
+    await episodicMemoryService.extractAndStore('session-001', 'user-001');
+
+    expect(findAfter).toHaveBeenLastCalledWith('session-001', 'msg-3');
+    expect(chatPrompt).toContain('Résumé : les fractions');
+    expect(chatPrompt).toContain('Échange 4');
+    expect(chatPrompt).not.toContain('Échange 3');
+    expect(inserted[0]).toMatchObject({ messageCount: 6 });
+  });
+
   it('logs and stores nothing when the extraction violates the schema twice', async () => {
     stubMistral({ summary: 'Travail sur les fractions.', conceptsCovered: ['fractions'], outcome: 'x' });
 
@@ -87,5 +112,45 @@ describe('episodicMemoryService.extractAndStore', () => {
     expect(chatCalls).toBe(2);
     expect(inserted).toHaveLength(0);
     expect(loggedErrors).toEqual(['Episodic extraction failed']);
+  });
+});
+
+describe('episodicMemoryService.recallForSession', () => {
+  const recall = (stored: string | null, studentTurnsBefore = 0, content = "Résous 3x + 5 = 20, j'ai trouvé 20/3.") =>
+    episodicMemoryService.recallForSession({ sessionId: 'session-001', userId: 'user-001', content, stored, studentTurnsBefore });
+  const match = { sessionId: 's0', subject: 'mathematiques', summaryText: 'Les équations', conceptsCovered: ['équations'], createdAt: new Date('2026-09-30'), similarity: 0.8 };
+
+  it('reads the block the session keeps, searching nothing', async () => {
+    expect(await recall('<past_sessions>gardé</past_sessions>')).toBe('<past_sessions>gardé</past_sessions>');
+    expect(await recall('')).toBeNull();
+    expect(findRelevantEpisodes).not.toHaveBeenCalled();
+  });
+
+  it('keeps the first match; a greeting matching nothing settles nothing until the third message', async () => {
+    expect(await recall(null, 0, 'Bonjour')).toBeNull();
+    expect(findRelevantEpisodes).not.toHaveBeenCalled();
+
+    stubMistral({});
+    expect(await recall(null, 0, 'Bonjour Tom, ça va ?')).toBeNull();
+    expect(await recall(null, 1)).toBeNull();
+    expect(updateSession).not.toHaveBeenCalled();
+    expect(await recall(null, 2)).toBeNull();
+    expect(updateSession).toHaveBeenLastCalledWith('session-001', { recalledEpisodes: '' });
+
+    relevant = [match];
+    const block = await recall(null, 0);
+    expect(block).toContain('Les équations');
+    expect(updateSession).toHaveBeenLastCalledWith('session-001', { recalledEpisodes: block });
+  });
+
+  it('settles nothing on a failed search, and still gives the block when keeping it fails', async () => {
+    stubMistral({});
+    findRelevantEpisodes.mockImplementationOnce(async () => { throw new Error('pgvector down'); });
+    expect(await recall(null, 2)).toBeNull();
+    expect(updateSession).not.toHaveBeenCalled();
+
+    relevant = [match];
+    updateSession.mockImplementationOnce(async () => { throw new Error('write failed'); });
+    expect(await recall(null, 0)).toContain('Les équations');
   });
 });

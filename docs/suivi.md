@@ -26,8 +26,8 @@ bloquant levé).
   terminé (#390) : détresse et modération d'entrée, réponse fixe approuvée par Victor le 2026-10-05.
   Premier passage fait le 2026-10-05 : il a trouvé l'analyse du tour qui ratait les énoncés,
   corrigée (#391). Appels du SDK Mistral retentés, modération comprise sur un appel bloqué (#392).
-  S4 repassé : aucune fuite sur 6. Point 7 en cours : appels annexes faits (#393) ; logs sans
-  contenu d'élève faits (#394) ; prochaine, la mémoire. Plan d'abord dans `docs/plans/`.
+  S4 repassé : aucune fuite sur 6. Point 7 terminé : appels annexes (#393), logs sans contenu
+  d'élève (#394), mémoire (#395). Prochaine : le point 8, quotas et coûts, puis le passage de fin. Plan d'abord dans `docs/plans/`.
   - Une relecture humaine d'une partie des conversations lues par Claude reste due avant
     toute publication (lot 4).
 - **PR ouvertes :** aucune.
@@ -563,3 +563,15 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
     retirés des logs ;
   - clé de stockage et URL d'upload sans le nom de fichier, qui partait aussi dans les
     journaux du stockage.
+
+  Point 7 de la refonte, mémoire (#395) :
+  - résumé vraiment incrémental : l'ancien résumé et les seuls nouveaux messages, au lieu de
+    toute la conversation à chaque relance ; relancé tous les dix messages au-delà de la
+    fenêtre, et non plus à chaque tour, compté en base ; gabarits jamais remplis retirés ;
+  - épisode d'une séance close tiré de son résumé et de ses derniers échanges, plus de toute
+    la conversation ;
+  - séances passées rappelées une fois par séance et gardées sur elle, au lieu d'un embedding
+    et d'une recherche vectorielle à chaque message ; cherchées sur les trois premiers
+    messages tant que rien ne correspond, une panne ne figeant rien ;
+  - historique du tour lu après le résumé, sans charger la séance, avec dix messages de
+    marge sur le lot ; un résumé n'écrase plus un résumé plus récent.
