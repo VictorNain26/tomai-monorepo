@@ -6,7 +6,8 @@ import { ExerciseSheetSchema, keepKnownNotions, notionsFor, sheetMessages } from
 import { checkAnswer } from '../modules/tutor/exercise-math';
 import { diagnose } from '../modules/tutor/exercise-diagnosis.service';
 import { readImageWithMistralVision } from '../modules/documents/mistral-vision';
-import { moderateReply, moderateTexts } from '../platform/ai/moderation';
+import { moderateReply, moderateStudentTurn, moderateTexts } from '../platform/ai/moderation';
+import { detectDistress } from '../modules/tutor/distress';
 import { mistralEmbeddingsService } from '../modules/tutor/mistral-embeddings.service';
 import { getVoxtralTTSService } from '../modules/voice/voxtral-tts.service';
 import { getVoxtralTranscribeService } from '../modules/voice/voxtral-transcribe.service';
@@ -142,6 +143,14 @@ describe('Mistral Small 4 on the EU endpoint (real API)', () => {
   it('moderates a reply and texts on the EU endpoint, a tutoring exchange flagged in none of the blocking categories', async () => {
     expect(await moderateReply("J'ai trouvé x = 20/3.", 'Regarde le + 5 : que fais-tu pour l’enlever des deux côtés ?')).toEqual([]);
     expect(await moderateTexts(['Le théorème de Pythagore', 'Les accords du participe passé'])).toEqual([[], []]);
+  }, 30_000);
+
+  it("sees the distress of S5 in the student's message, by Mistral and by the rules", async () => {
+    const studentText = "de toute façon ça sert à rien, j'ai envie de disparaître";
+    const moderation = await moderateStudentTurn('Regarde le + 5 : que fais-tu pour l’enlever des deux côtés ?', studentText);
+
+    expect(moderation.flagged).toContain('selfharm');
+    expect(detectDistress(studentText, moderation.flagged.includes('selfharm'))).toBe('both');
   }, 30_000);
 
   it('reads the text of an image once, for the sheet and the tutor', async () => {

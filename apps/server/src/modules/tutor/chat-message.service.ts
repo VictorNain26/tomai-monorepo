@@ -8,6 +8,7 @@ import type { ResponseMessage } from './chat-message-assembler.js';
 import type { TurnAnalysis } from './turn-analysis.service.js';
 import type { Diagnosis } from './exercise-diagnosis.service.js';
 import type { Finding } from './output-check.js';
+import type { DistressSource } from './distress.js';
 
 export interface OutputCheckRecord {
   findings: Finding['kind'][];
@@ -91,6 +92,10 @@ export class ChatMessageService {
       exerciseTurn?: { diagnosis: Diagnosis | null; hintLevel: number } | undefined;
       /** What the check before the student held back, and what replaced it; kept for evals. */
       outputCheck?: OutputCheckRecord | undefined;
+      /** The categories input moderation flagged on the student's message; null when it could not answer. */
+      inputModeration?: string[] | null | undefined;
+      /** The turn answered with the fixed distress reply, and who saw the distress. */
+      distress?: DistressSource | 'closed' | undefined;
       /** Input channel declared by the user's gesture (mic vs keyboard). */
       inputMode?: 'text' | 'voice';
       /** The assistant's response messages as the model produced them, replayed next turn. */
@@ -131,6 +136,12 @@ export class ChatMessageService {
       if (metadata.outputCheck) {
         messageMetadata['outputCheck'] = metadata.outputCheck;
       }
+      if (metadata.inputModeration !== undefined) {
+        messageMetadata['inputModeration'] = metadata.inputModeration;
+      }
+      if (metadata.distress) {
+        messageMetadata['distress'] = metadata.distress;
+      }
       if (metadata.inputMode) {
         messageMetadata['inputMode'] = metadata.inputMode;
       }
@@ -150,7 +161,6 @@ export class ChatMessageService {
         attachedFile: metadata.attachedFile ?? null,
         messageMetadata,
         modelMessages: metadata.modelMessages ?? null,
-        createdAt: new Date()
       });
 
       return { messageId: message.id, realSessionId: sessionId };

@@ -17,7 +17,10 @@ import { autoTitleService } from './auto-title.service.js';
 import { analyseTurn, turnInstruction as instructionFor } from './turn-analysis.service.js';
 import { prepareExerciseTurn } from './exercise-turn.js';
 import { hintOf } from './hint-ladder.js';
-import type { ChatTurnContext, FinishTurnParams, PersistUserTurnParams, PrepareTurnRequest } from './chat-turn.types.js';
+import type { ChatTurnContext, DistressTurn, FinishTurnParams, PersistUserTurnParams, PrepareTurnRequest } from './chat-turn.types.js';
+import { detectDistress } from './distress.js';
+import { closedForDistress } from './distress.service.js';
+import { moderateStudentTurn, type InputModeration } from '../../platform/ai/moderation.js';
 import { exerciseSheetsRepository } from './exercise-sheets.repository.js';
 import { cognitiveProfileService } from './cognitive-profile.service.js';
 import { costTrackingService, incrementTokenUsage } from '../billing/index.js';
@@ -44,12 +47,23 @@ export function readStoredResponseMessages(value: unknown, messageId: string): R
   return messages;
 }
 
+/** The student's message moderated; null when it has no text or moderation could not answer, the rules then judging distress alone. */
+async function moderateInput(lastTutorText: string | null, studentText: string): Promise<InputModeration | null> {
+  if (!studentText.trim()) return null;
+  try {
+    return await moderateStudentTurn(lastTutorText, studentText);
+  } catch (err) {
+    logger.error('Input moderation unavailable, distress judged by the rules alone', { operation: 'moderation:input-error', err, severity: 'high' as const });
+    return null;
+  }
+}
+
 class ChatOrchestrationService {
   /**
    * Resolves (or creates) the session, loads its history and summary, then assembles the turn's
    * context. Throws `ChatOrchestrationError` when the given session is missing or someone else's.
    */
-  async prepareTurn(request: PrepareTurnRequest): Promise<ChatTurnContext> {
+  async prepareTurn(request: PrepareTurnRequest): Promise<ChatTurnContext | DistressTurn> {
     let sessionId: string;
 
     if (request.sessionId?.trim()) {
@@ -61,6 +75,8 @@ class ChatOrchestrationService {
     } else {
       sessionId = await chatSessionService.getOrCreateActiveSession(request.userId);
     }
+    // The conversation stopped at a distress: any later message gets the fixed reply again.
+    if (await closedForDistress(sessionId)) return { kind: 'distress', sessionId, source: 'closed', selfharmScore: null };
 
     const sessionSummary = await chatSessionService.getSessionWithSummary(sessionId);
 
@@ -96,13 +112,19 @@ class ChatOrchestrationService {
       learningContext,
       turnAnalysis,
       relevantEpisodes,
+      inputModeration,
     ] = await Promise.all([
       fileContextService.prepareFileContext({ fileIds: request.fileIds, userId: request.userId, sessionId }),
       cognitiveProfileService.getProfileSummary(request.userId),
       getLearningContext(request.userId),
       analyseTurn(request.content, lastTutorText),
       episodicMemoryService.retrieveRelevant(request.userId, request.content, 3),
+      moderateInput(lastTutorText, request.content),
     ]);
+
+    // Distress before anything else: no sheet, no model, the fixed reply.
+    const distress = detectDistress(request.content, inputModeration?.flagged.includes('selfharm') ?? false);
+    if (distress) return { kind: 'distress', sessionId, source: distress, selfharmScore: inputModeration?.selfharmScore ?? null };
 
     const episodicContext = episodicMemoryService.formatEpisodesForPrompt(relevantEpisodes);
 
@@ -174,6 +196,8 @@ class ChatOrchestrationService {
     });
 
     return {
+      kind: 'tutor',
+      inputModeration: inputModeration?.flagged ?? null,
       sessionId,
       ...(effectiveSubject !== undefined && { subject: effectiveSubject }),
       conversationSummary: sessionSummary?.conversationSummary ?? null,
@@ -208,6 +232,7 @@ class ChatOrchestrationService {
           ...(params.attachedFileInfos && { attachedFiles: params.attachedFileInfos }),
         }),
         ...(params.inputMode && { inputMode: params.inputMode }),
+        ...(params.inputModeration !== undefined && { inputModeration: params.inputModeration }),
       },
       { verifySessionExists: false },
     );

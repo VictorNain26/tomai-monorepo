@@ -75,7 +75,9 @@ class ChatOrchestrationError extends Error {
 }
 
 const prepareTurn = mock(async (_req: unknown) => ({
+  kind: 'tutor',
   sessionId: 'session-001',
+  inputModeration: [],
   subject: undefined,
   conversationSummary: null,
   conversationHistory: [],

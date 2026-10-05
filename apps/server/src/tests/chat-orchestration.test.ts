@@ -4,7 +4,7 @@
  * stream produced no content.
  */
 
-import { describe, it, expect, beforeEach, mock } from 'bun:test';
+import { describe, it, expect, beforeEach, afterEach, mock } from 'bun:test';
 import { createMockLogger } from './_helpers/mock-logger';
 import { analysis } from './_helpers/turn-analysis';
 import { noExercise } from './_helpers/output-check';
@@ -111,8 +111,74 @@ mock.module('../modules/tutor/exercise-turn', () => ({ prepareExerciseTurn }));
 const recordTurn = mock(async (_id: string, _turn: unknown) => {});
 mock.module('../modules/tutor/exercise-sheets.repository', () => ({ exerciseSheetsRepository: { recordTurn } }));
 
+let moderation: { flagged: string[]; selfharmScore: number } | Error = { flagged: [], selfharmScore: 0 };
+const moderateStudentTurn = mock(async (_lastTutorText: string | null, _studentText: string) => {
+  if (moderation instanceof Error) throw moderation;
+  return moderation;
+});
+mock.module('../platform/ai/moderation', () => ({ moderateStudentTurn }));
+let closed = false;
+mock.module('../modules/tutor/distress.service', () => ({ closedForDistress: mock(async () => closed) }));
+
 // Import the real module under test AFTER all mocks are registered.
 const { chatOrchestrationService, readStoredResponseMessages } = await import('../modules/tutor/chat-orchestration.service');
+type Prepared = Awaited<ReturnType<typeof chatOrchestrationService.prepareTurn>>;
+
+function tutorTurn(context: Prepared) {
+  if (context.kind !== 'tutor') throw new Error(`expected a tutor turn, got ${context.kind}`);
+  return context;
+}
+
+const studentTurn = { userId: 'user-001', fileIds: [], schoolLevel: 'quatrieme' as const };
+
+describe('ChatOrchestrationService.prepareTurn — distress and input moderation', () => {
+  beforeEach(() => {
+    moderation = { flagged: [], selfharmScore: 0 };
+    closed = false;
+    prepareExerciseTurn.mockClear();
+    mockLogger.error.mockClear();
+  });
+  afterEach(() => {
+    closed = false;
+    moderation = { flagged: [], selfharmScore: 0 };
+  });
+
+  it('answers a distress seen by Mistral or by the rules, before any exercise sheet', async () => {
+    moderation = { flagged: ['selfharm'], selfharmScore: 0.35 };
+    expect(await chatOrchestrationService.prepareTurn({ ...studentTurn, content: "j'ai envie de disparaître" }))
+      .toEqual({ kind: 'distress', sessionId: 'session-001', source: 'both', selfharmScore: 0.35 });
+
+    moderation = { flagged: [], selfharmScore: 0.01 };
+    expect(await chatOrchestrationService.prepareTurn({ ...studentTurn, content: 'je me fais du mal quand je rate' }))
+      .toEqual({ kind: 'distress', sessionId: 'session-001', source: 'rules', selfharmScore: 0.01 });
+    expect(prepareExerciseTurn).not.toHaveBeenCalled();
+  });
+
+  it('lets the rules judge alone when moderation cannot answer, and logs it', async () => {
+    moderation = new Error('down');
+    expect(await chatOrchestrationService.prepareTurn({ ...studentTurn, content: "j'ai plus envie de vivre" }))
+      .toEqual({ kind: 'distress', sessionId: 'session-001', source: 'rules', selfharmScore: null });
+
+    const context = tutorTurn(await chatOrchestrationService.prepareTurn({ ...studentTurn, content: 'Résous 3x + 5 = 20.' }));
+    expect(context.inputModeration).toBeNull();
+    expect(mockLogger.error).toHaveBeenCalledTimes(2);
+    expect(mockLogger.error).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({ operation: 'moderation:input-error' }));
+  });
+
+  it('keeps the other flagged categories with the turn without blocking it', async () => {
+    moderation = { flagged: ['violence_and_threats'], selfharmScore: 0 };
+    const context = tutorTurn(await chatOrchestrationService.prepareTurn({ ...studentTurn, content: 'Raconte la bataille de Verdun.' }));
+    expect(context.inputModeration).toEqual(['violence_and_threats']);
+  });
+
+  it('answers any message of a session closed for distress with the fixed reply, without moderating it', async () => {
+    closed = true;
+    moderateStudentTurn.mockClear();
+    expect(await chatOrchestrationService.prepareTurn({ ...studentTurn, content: 'Résous 3x + 5 = 20.' }))
+      .toEqual({ kind: 'distress', sessionId: 'session-001', source: 'closed', selfharmScore: null });
+    expect(moderateStudentTurn).not.toHaveBeenCalled();
+  });
+});
 
 describe('ChatOrchestrationService.prepareTurn — exercise', () => {
   beforeEach(() => {
@@ -136,7 +202,7 @@ describe('ChatOrchestrationService.prepareTurn — exercise', () => {
       files: [{ fileId: 'f1', fileName: 'cours.pdf', text: 'Le cours' }, { fileId: 'f2', fileName: 'photo.jpg', text: 'Résous 3x + 5 = 20.' }],
     }));
 
-    const context = await chatOrchestrationService.prepareTurn({ ...request, fileIds: ['f2', 'someone-elses'] });
+    const context = tutorTurn(await chatOrchestrationService.prepareTurn({ ...request, fileIds: ['f2', 'someone-elses'] }));
 
     expect(prepareExerciseTurn.mock.calls[0]?.[0]).toMatchObject({
       userId: 'user-001',
@@ -155,7 +221,7 @@ describe('ChatOrchestrationService.prepareTurn — exercise', () => {
     prepareExerciseTurn.mockImplementationOnce(async () => underContract);
     turnInstruction.mockImplementationOnce(() => '<critical_instruction>X</critical_instruction>');
 
-    const context = await chatOrchestrationService.prepareTurn(request);
+    const context = tutorTurn(await chatOrchestrationService.prepareTurn(request));
 
     expect(context.turnInstruction).toBe('<contrat>\nPalier 3\n</contrat>');
     expect(context.exerciseSheet?.statement).toBe('Résous 3x + 5 = 20.');
@@ -165,7 +231,7 @@ describe('ChatOrchestrationService.prepareTurn — exercise', () => {
   it('keeps the turn instruction and no progress without a contract', async () => {
     turnInstruction.mockImplementationOnce(() => '<critical_instruction>X</critical_instruction>');
 
-    const context = await chatOrchestrationService.prepareTurn(request);
+    const context = tutorTurn(await chatOrchestrationService.prepareTurn(request));
 
     expect(context.turnInstruction).toBe('<critical_instruction>X</critical_instruction>');
     expect(context.exerciseSheet).toBeNull();

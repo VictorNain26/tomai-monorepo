@@ -18,6 +18,8 @@ import { createRateLimitMiddleware, RateLimitPresets } from '../../platform/http
 import { chatOrchestrationService, ChatOrchestrationError } from './chat-orchestration.service.js';
 import { runControlledTurn, type ControlledTurn } from './controlled-turn.js';
 import type { OutputCheckContext } from './output-check.js';
+import { DISTRESS_REPLY } from './distress.js';
+import { answerDistress } from './distress.service.js';
 import { buildChatTools } from './chat-tools.js';
 import { extractTextFromParts, sanitizePrompt, type TomChatMessage } from './chat-ui-message.js';
 import { checkQuota } from '../billing/index.js';
@@ -114,14 +116,19 @@ export const chatMessageRoutes = new Hono<AppEnv>()
         fileIds,
         schoolLevel: resolvedSchoolLevel,
       });
-      await chatOrchestrationService.persistUserTurn({
-        sessionId: turnCtx.sessionId,
-        content: safeContent,
-        inputMode,
-        fileIds: turnCtx.fileIds,
-        attachedFileInfo: turnCtx.attachedFileInfo,
-        attachedFileInfos: turnCtx.attachedFileInfos,
-      });
+      if (turnCtx.kind === 'distress') {
+        await answerDistress({ turn: turnCtx, userId: user.id, content: safeContent, inputMode });
+      } else {
+        await chatOrchestrationService.persistUserTurn({
+          sessionId: turnCtx.sessionId,
+          content: safeContent,
+          inputMode,
+          fileIds: turnCtx.fileIds,
+          attachedFileInfo: turnCtx.attachedFileInfo,
+          attachedFileInfos: turnCtx.attachedFileInfos,
+          inputModeration: turnCtx.inputModeration,
+        });
+      }
     } catch (error) {
       releaseStream();
       if (error instanceof ChatOrchestrationError) {
@@ -137,6 +144,20 @@ export const chatMessageRoutes = new Hono<AppEnv>()
         severity: 'high' as const,
       });
       return c.json(toErrorResponse(new AppError('INTERNAL_ERROR'), requestId), 500);
+    }
+
+    // A distress gets the fixed reply, never the model.
+    if (turnCtx.kind === 'distress') {
+      releaseStream();
+      return createUIMessageStreamResponse({
+        stream: createUIMessageStream<TomChatMessage>({
+          execute: ({ writer }) => {
+            writer.write({ type: 'text-start', id: 'distress' });
+            writer.write({ type: 'text-delta', id: 'distress', delta: DISTRESS_REPLY });
+            writer.write({ type: 'text-end', id: 'distress' });
+          },
+        }),
+      });
     }
 
     const startTime = Date.now();
