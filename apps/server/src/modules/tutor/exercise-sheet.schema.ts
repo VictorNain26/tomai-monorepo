@@ -20,9 +20,11 @@ export const exerciseSheets = pgTable('exercise_sheets', {
   promptVersion: varchar('prompt_version', { length: 32 }).notNull(),
   /** Index in the hint ladder (`hint-ladder.ts`), decided by the code. */
   hintLevel: integer('hint_level').notNull().default(0),
-  /** The tutor's last messages on the exercise, cut: the contract lists them so it does not repeat itself. */
+  /** The steps the student got right: the intermediate step shown is the next one. */
+  stepsDone: integer('steps_done').notNull().default(0),
+  /** The tutor's messages on the exercise, cut: the contract lists the last ones so it does not repeat itself. */
   hints: jsonb('hints').$type<Hint[]>().notNull().default(sql`'[]'::jsonb`),
-  /** A right final answer ends the exercise: no contract after it. */
+  /** A right final answer ends the exercise: no contract after it, until a new attempt reopens it. */
   solvedAt: timestamp('solved_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [

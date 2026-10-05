@@ -1,5 +1,5 @@
 {
-  "id": "f660cfba-e308-47a2-98a4-3031b9523e08",
+  "id": "36390f46-4137-4073-99d6-fc29fa84ce87",
   "prevId": "3a4ccf54-d974-47ad-9d22-c36c1ae50c43",
   "version": "7",
   "dialect": "postgresql",
@@ -335,6 +335,13 @@
         },
         "hint_level": {
           "name": "hint_level",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "steps_done": {
+          "name": "steps_done",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,

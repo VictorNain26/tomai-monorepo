@@ -11,7 +11,7 @@ const sheet: ExerciseSheet = {
   statement: 'Résous 3x + 5 = 20.', kind: 'short', answer: 'x = 5', answerForms: ['5'], mathEquation: null, mathAnswer: 'x = 5',
   steps: ['Retrancher 5', 'Diviser par 3'], commonErrors: [], rule: null, facts: [], expectedElements: [], entries: [], laterEntries: [],
 };
-const state = (overrides: Partial<ExerciseState> = {}): ExerciseState => ({ id: 'ex-1', sheet, uncertain: false, hintLevel: 1, hints: [], ...overrides });
+const state = (overrides: Partial<ExerciseState> = {}): ExerciseState => ({ id: 'ex-1', sheet, uncertain: false, hintLevel: 1, stepsDone: 0, hints: [], solved: false, ...overrides });
 
 let current: ExerciseState | null = state();
 const prepareExerciseSheet = mock(async (_params: unknown): Promise<ExerciseState> => state({ id: 'ex-new', hintLevel: 0 }));
@@ -21,8 +21,6 @@ let verdict: Diagnosis['verdict'] = 'incorrect';
 const diagnose = mock(async (_sheet: ExerciseSheet, _turn: unknown): Promise<Diagnosis> => ({ verdict, firstWrongStep: null, errorType: 'careless', proposalMath: null, decidedBy: 'model' }));
 mock.module('../modules/tutor/exercise-diagnosis.service', () => ({ diagnose }));
 
-const updateProgress = mock(async (_id: string, _progress: { hintLevel: number; solved: boolean }) => {});
-mock.module('../modules/tutor/exercise-sheets.repository', () => ({ exerciseSheetsRepository: { updateProgress } }));
 
 const { prepareExerciseTurn } = await import('../modules/tutor/exercise-turn');
 
@@ -36,16 +34,15 @@ beforeEach(() => {
   verdict = 'incorrect';
   prepareExerciseSheet.mockClear();
   diagnose.mockClear();
-  updateProgress.mockClear();
 });
 
 describe('prepareExerciseTurn', () => {
-  it('diagnoses an attempt, climbs on a wrong one, keeps the level and writes the contract', async () => {
+  it('diagnoses an attempt, climbs on a wrong one and writes the contract, the change left for finishTurn', async () => {
     const turn = await prepareExerciseTurn(params({ analysis: analysis({ proposesAnswer: true }), studentText: 'x = 20/3' }));
 
     expect(diagnose.mock.calls[0]?.[1]).toEqual({ studentText: 'x = 20/3', lastTutorText: 'Que cherches-tu ?', userId: 'u1', sessionId: 's1' });
     expect(turn.hintLevel).toBe(2);
-    expect(updateProgress).toHaveBeenCalledWith('ex-1', { hintLevel: 2, solved: false });
+    expect(turn.change).toEqual({ levelChange: 1, top: 4, stepDone: false, solved: false });
     expect(turn.contract).toContain("Palier d'aide autorisé : 3, indice ciblé");
     expect(turn.contract).toContain('sa proposition est fausse');
   });
@@ -54,17 +51,30 @@ describe('prepareExerciseTurn', () => {
     const turn = await prepareExerciseTurn(params({ analysis: analysis({ asksSolution: true }) }));
 
     expect(diagnose).not.toHaveBeenCalled();
-    expect(updateProgress).not.toHaveBeenCalled();
+    expect(turn.change).toEqual({ levelChange: 0, top: 4, stepDone: false, solved: undefined });
     expect(turn.hintLevel).toBe(1);
     expect(turn.contract).toContain("L'élève demande la solution");
   });
 
-  it('ends the exercise on a right final answer', async () => {
+  it('ends the exercise on a right final answer, counts a right step', async () => {
     verdict = 'correct';
     const turn = await prepareExerciseTurn(params({ analysis: analysis({ proposesAnswer: true }) }));
-
-    expect(updateProgress).toHaveBeenCalledWith('ex-1', { hintLevel: 1, solved: true });
+    expect(turn.change).toMatchObject({ solved: true, levelChange: 0 });
     expect(turn.contract).toContain("l'exercice est terminé");
+
+    verdict = 'right-step';
+    expect((await prepareExerciseTurn(params({ analysis: analysis({ proposesAnswer: true }) }))).change).toMatchObject({ stepDone: true, levelChange: -1, solved: false });
+  });
+
+  it('keeps a solved exercise before the tutor without a contract, and reopens it on a new attempt', async () => {
+    current = state({ solved: true });
+    const quiet = await prepareExerciseTurn(params({ analysis: analysis({ asksExplanation: true }) }));
+    expect(quiet).toMatchObject({ contract: null, change: null, hintLevel: null });
+    expect(quiet.exercise?.sheet?.statement).toBe('Résous 3x + 5 = 20.');
+
+    const reopened = await prepareExerciseTurn(params({ analysis: analysis({ proposesAnswer: true }) }));
+    expect(reopened.contract).toContain('sa proposition est fausse');
+    expect(reopened.change?.solved).toBe(false);
   });
 
   it('asks no diagnosis of an uncertain sheet', async () => {
@@ -81,22 +91,16 @@ describe('prepareExerciseTurn', () => {
 
     expect(prepareExerciseSheet.mock.calls[0]?.[0]).toMatchObject({ sessionId: 's1', level: 'quatrieme', subject: 'mathematiques', attachedFilesBlock: '<attached_file name="p">x</attached_file>' });
     expect(diagnose).toHaveBeenCalledTimes(1);
-    expect(updateProgress).toHaveBeenCalledWith('ex-new', { hintLevel: 1, solved: false });
+    expect(turn.hintLevel).toBe(1);
     expect(turn.exercise?.id).toBe('ex-new');
   });
 
   it('gives no contract without an exercise in progress, nor for one whose sheet failed', async () => {
     current = null;
-    expect(await prepareExerciseTurn(params())).toEqual({ exercise: null, diagnosis: null, hintLevel: null, contract: null });
+    expect(await prepareExerciseTurn(params())).toEqual({ exercise: null, diagnosis: null, hintLevel: null, contract: null, change: null });
 
     current = state({ sheet: null });
     expect((await prepareExerciseTurn(params({ analysis: analysis({ proposesAnswer: true }) }))).contract).toBeNull();
     expect(diagnose).not.toHaveBeenCalled();
-  });
-
-  it('keeps no progress for an exercise that could not be stored', async () => {
-    current = state({ id: null });
-    await prepareExerciseTurn(params({ analysis: analysis({ proposesAnswer: true }) }));
-    expect(updateProgress).not.toHaveBeenCalled();
   });
 });

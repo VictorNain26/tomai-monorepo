@@ -82,7 +82,7 @@ describe('tutor prompt, consistent from method to subject blocks', () => {
       sheetMessages('cinquieme', notionsFor('cinquieme', 'mathematiques', 2026), 'x', null).map(({ content }) => content).join('\n'),
       turnContract({
         sheet: { statement: 'x', kind: 'short', answer: null, answerForms: [], mathEquation: null, mathAnswer: null, steps: [], commonErrors: [], rule: null, facts: [], expectedElements: [], entries: [], laterEntries: [] },
-        uncertain: false, level: 0, attempt: false, asksSolution: false, diagnosis: null, hints: [],
+        uncertain: false, level: 0, attempt: false, asksSolution: false, diagnosis: null, stepsDone: 0, hints: [],
       }),
       '<fiche>\nx\n</fiche>',
       wrapStudentContext('Points forts: calcul', '<past_sessions>\nx\n</past_sessions>\n<subject_memory>\ny\n</subject_memory>') ?? '',

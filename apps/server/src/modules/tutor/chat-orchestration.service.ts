@@ -15,8 +15,8 @@ import { getLearningContext, wrapAttachedFiles } from './mistral-helpers.js';
 import { summarizationService } from './summarization.service.js';
 import { autoTitleService } from './auto-title.service.js';
 import { analyseTurn, turnInstruction as instructionFor, type TurnAnalysis } from './turn-analysis.service.js';
-import { prepareExerciseTurn } from './exercise-turn.js';
-import { keepHint, type Hint } from './hint-ladder.js';
+import { prepareExerciseTurn, type ExerciseChange } from './exercise-turn.js';
+import { hintOf } from './hint-ladder.js';
 import type { Diagnosis } from './exercise-diagnosis.service.js';
 import type { ExerciseSheet } from './exercise-sheet.js';
 import { exerciseSheetsRepository } from './exercise-sheets.repository.js';
@@ -110,8 +110,8 @@ interface FinishTurnParams {
 interface ExerciseProgress {
   id: string | null;
   hintLevel: number;
-  hints: Hint[];
   diagnosis: Diagnosis | null;
+  change: ExerciseChange;
 }
 
 class ChatOrchestrationService {
@@ -216,7 +216,7 @@ class ChatOrchestrationService {
         attachedFilesBlock: files.length > 0 ? wrapAttachedFiles(files) : null,
       }),
     ]);
-    const { exercise, diagnosis, hintLevel, contract } = exerciseTurn;
+    const { exercise, diagnosis, hintLevel, contract, change } = exerciseTurn;
     const turnInstruction = contract ?? instructionFor(turnAnalysis);
 
     const mergedLearningContext = [learningContext, episodicContext, subjectMemoryBlock]
@@ -253,7 +253,7 @@ class ChatOrchestrationService {
       turnInstruction,
       turnAnalysis,
       exerciseSheet: exercise?.sheet ?? null,
-      exerciseProgress: exercise && hintLevel !== null ? { id: exercise.id, hintLevel, hints: exercise.hints, diagnosis } : null,
+      exerciseProgress: exercise && hintLevel !== null && change ? { id: exercise.id, hintLevel, diagnosis, change } : null,
       fileIds: fileContext.fileIds,
       attachedFiles: files,
       attachedFileInfo,
@@ -341,11 +341,12 @@ class ChatOrchestrationService {
       cut: aborted,
     }, { verifySessionExists: false });
 
-    // What the tutor said on the exercise, for the next contracts; a cut answer is left out.
+    // The turn's change on the exercise counts once the student has seen the answer: a cut or
+    // empty turn moves nothing.
     if (exerciseProgress?.id && !aborted) {
       void exerciseSheetsRepository
-        .setHints(exerciseProgress.id, keepHint(exerciseProgress.hints, { level: exerciseProgress.hintLevel, text: fullContent }))
-        .catch((err: unknown) => { logger.warn('Exercise hints not stored', { sessionId, err, operation: 'chat-orchestration:hints' }); });
+        .recordTurn(exerciseProgress.id, { ...exerciseProgress.change, hint: hintOf(exerciseProgress.hintLevel, fullContent) })
+        .catch((err: unknown) => { logger.error('Exercise turn not stored', { sessionId, err, operation: 'chat-orchestration:exercise', severity: 'medium' as const }); });
     }
 
     logger.info('Streaming message saved', {

@@ -23,7 +23,7 @@ const actualBilling = await import('../modules/billing/index');
 mock.module('../modules/billing/index', () => ({ ...actualBilling, costTrackingService: { record } }));
 
 const create = mock(async (_values: unknown): Promise<string | null> => 'ex-1');
-interface Row { id: string; sheet: ExerciseSheet | null; uncertain: boolean; hintLevel: number; hints: { level: number; text: string }[]; solvedAt: Date | null }
+interface Row { id: string; sheet: ExerciseSheet | null; uncertain: boolean; hintLevel: number; stepsDone: number; hints: { level: number; text: string }[]; solvedAt: Date | null }
 let latest: Row | null = null;
 mock.module('../modules/tutor/exercise-sheets.repository', () => ({
   exerciseSheetsRepository: { create, findLatest: mock(async () => latest) },
@@ -54,7 +54,7 @@ describe('prepareExerciseSheet', () => {
 
     const exercise = await prepareExerciseSheet(params);
 
-    expect(exercise).toMatchObject({ id: 'ex-1', uncertain: false, hintLevel: 0, hints: [] });
+    expect(exercise).toMatchObject({ id: 'ex-1', uncertain: false, hintLevel: 0, stepsDone: 0, hints: [], solved: false });
     expect(exercise.sheet?.answer).toBe('x = 5');
     expect(exercise.sheet?.entries).toEqual([]);
     expect(calls).toHaveLength(3);
@@ -102,11 +102,12 @@ describe('prepareExerciseSheet', () => {
 });
 
 describe('currentExercise', () => {
-  it("gives the session's last exercise with its progress, and none once it is solved", async () => {
-    latest = { id: 'ex-1', sheet: draft('x = 5'), uncertain: false, hintLevel: 2, hints: [{ level: 1, text: 'Indice' }], solvedAt: null };
-    expect(await currentExercise('session-1')).toEqual({ id: 'ex-1', sheet: draft('x = 5'), uncertain: false, hintLevel: 2, hints: [{ level: 1, text: 'Indice' }] });
+  it("gives the session's last exercise with its progress and its last four hints, solved or not", async () => {
+    const hints = [1, 2, 3, 4, 5].map((n) => ({ level: 1, text: `Indice ${n}` }));
+    latest = { id: 'ex-1', sheet: draft('x = 5'), uncertain: false, hintLevel: 2, stepsDone: 1, hints, solvedAt: null };
+    expect(await currentExercise('session-1')).toEqual({ id: 'ex-1', sheet: draft('x = 5'), uncertain: false, hintLevel: 2, stepsDone: 1, hints: hints.slice(1), solved: false });
 
     latest = { ...latest, solvedAt: new Date() };
-    expect(await currentExercise('session-1')).toBeNull();
+    expect((await currentExercise('session-1'))?.solved).toBe(true);
   });
 });

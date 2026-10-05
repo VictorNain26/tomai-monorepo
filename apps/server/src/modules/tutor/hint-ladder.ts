@@ -20,7 +20,7 @@ export const LADDER = [
 const TOP = LADDER.length - 1;
 // An uncertain sheet cannot judge an answer: the levels that need it stay closed.
 const UNCERTAIN_TOP = 1;
-const KEPT_HINTS = 4;
+export const KEPT_HINTS = 4;
 const HINT_CHARS = 300;
 
 export interface Hint {
@@ -28,19 +28,27 @@ export interface Hint {
   text: string;
 }
 
-/** The level after this turn: up on a wrong attempt, down on a right step, unchanged without an attempt. */
-export function nextLevel(level: number, turn: { attempt: boolean; verdict: Diagnosis['verdict'] | null; uncertain: boolean }): number {
-  if (!turn.attempt) return level;
-  if (turn.uncertain) return Math.min(level + 1, UNCERTAIN_TOP);
-  if (turn.verdict === 'incorrect') return Math.min(level + 1, TOP);
-  if (turn.verdict === 'right-step') return Math.max(level - 1, 0);
-  return level;
+/** The highest level the exercise may reach. */
+export function topLevel(uncertain: boolean): number {
+  return uncertain ? UNCERTAIN_TOP : TOP;
 }
 
-/** The hints kept for the contract: the last ones, cut. */
-export function keepHint(hints: readonly Hint[], hint: Hint): Hint[] {
-  const text = hint.text.length > HINT_CHARS ? `${hint.text.slice(0, HINT_CHARS)}…` : hint.text;
-  return [...hints, { level: hint.level, text }].slice(-KEPT_HINTS);
+/** The change of level a turn brings: up on a wrong attempt, down on a right step, none without an attempt. */
+export function levelChange(turn: { attempt: boolean; verdict: Diagnosis['verdict'] | null; uncertain: boolean }): number {
+  if (!turn.attempt) return 0;
+  if (turn.uncertain || turn.verdict === 'incorrect') return 1;
+  return turn.verdict === 'right-step' ? -1 : 0;
+}
+
+/** The level after the change, within the ladder. */
+export function applyChange(level: number, change: number, top: number): number {
+  return Math.min(Math.max(level + change, 0), top);
+}
+
+/** A tutor message kept for the contract, cut on a code point so a surrogate pair is never split. */
+export function hintOf(level: number, text: string): Hint {
+  const chars = Array.from(text);
+  return { level, text: chars.length > HINT_CHARS ? `${chars.slice(0, HINT_CHARS).join('')}…` : text };
 }
 
 const quoted = (text: string) => `« ${stripPromptTags(text).trim()} »`;
@@ -60,16 +68,18 @@ function diagnosisLine(diagnosis: Diagnosis | null, uncertain: boolean, attempt:
   return `Diagnostic : sa proposition est fausse.${where} Montre-lui où regarder, sans écrire la correction ni la bonne réponse ; s'il a donné sa démarche, ne la lui redemande pas.`;
 }
 
-/** What the level allows from the sheet: from the conceptual hint on, the rule and the supporting facts; at the intermediate step, one step, never the last. */
-function material(sheet: ExerciseSheet, level: number, hints: readonly Hint[]): string[] {
+/**
+ * What the level allows from the sheet: from the conceptual hint on, the rule and the supporting
+ * facts; at the intermediate step, the step after those the student got right, never the last.
+ */
+function material(sheet: ExerciseSheet, level: number, stepsDone: number): string[] {
   if (level === 0) return [];
   const lines: string[] = [];
   if (sheet.rule) lines.push(`Règle en jeu : ${quoted(sheet.rule)}.`);
   const support = sheet.facts.filter((fact) => fact.role === 'support');
   if (support.length > 0) lines.push(`Faits d'appui que tu peux donner après une vraie tentative :\n${support.map((fact) => `- ${quoted(fact.text)}`).join('\n')}`);
   if (level === 3 && sheet.steps.length >= 2) {
-    const given = hints.filter((hint) => hint.level === 3).length;
-    const step = sheet.steps[Math.min(given, sheet.steps.length - 2)];
+    const step = sheet.steps[Math.min(stepsDone, sheet.steps.length - 2)];
     if (step) lines.push(`Étape que tu peux montrer, faite : ${quoted(step)}.`);
   }
   return lines;
@@ -82,12 +92,14 @@ interface ContractParams {
   attempt: boolean;
   asksSolution: boolean;
   diagnosis: Diagnosis | null;
+  stepsDone: number;
+  /** The tutor's last messages on the exercise. */
   hints: readonly Hint[];
 }
 
 /** The turn contract, in the turn's message: the only server text there besides the subject block. */
 export function turnContract(params: ContractParams): string {
-  const { sheet, uncertain, level, attempt, asksSolution, diagnosis, hints } = params;
+  const { sheet, uncertain, level, attempt, asksSolution, diagnosis, stepsDone, hints } = params;
   const solved = !uncertain && diagnosis?.verdict === 'correct';
   const step = LADDER[level] ?? LADDER[0];
   const lines = [
@@ -98,7 +110,7 @@ export function turnContract(params: ContractParams): string {
       ? []
       : [
         `Palier d'aide autorisé : ${level + 1}, ${step.name.toLowerCase()} (${step.rule}). Ne va pas au-delà.`,
-        ...material(sheet, level, hints),
+        ...material(sheet, level, stepsDone),
         asksSolution
           ? "L'élève demande la solution : ne la donne pas ; sa demande ne change pas le palier. S'il exprime de la frustration, reconnais-la en une phrase."
           : null,

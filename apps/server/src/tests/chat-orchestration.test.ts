@@ -98,11 +98,18 @@ const sheet = (statement: string): ExerciseSheet => ({
   statement, kind: 'short', answer: '5', answerForms: ['5'], mathEquation: null, mathAnswer: '5', steps: [], commonErrors: [],
   rule: null, facts: [], expectedElements: [], entries: [], laterEntries: [],
 });
-interface Turn { exercise: { id: string | null; sheet: ExerciseSheet | null; uncertain: boolean; hintLevel: number; hints: { level: number; text: string }[] } | null; diagnosis: null; hintLevel: number | null; contract: string | null }
-const prepareExerciseTurn = mock(async (_params: unknown): Promise<Turn> => ({ exercise: null, diagnosis: null, hintLevel: null, contract: null }));
+interface Change { levelChange: number; top: number; stepDone: boolean; solved: boolean | undefined }
+interface Turn {
+  exercise: { id: string | null; sheet: ExerciseSheet | null; uncertain: boolean; hintLevel: number; stepsDone: number; hints: { level: number; text: string }[]; solved: boolean } | null;
+  diagnosis: null;
+  hintLevel: number | null;
+  contract: string | null;
+  change: Change | null;
+}
+const prepareExerciseTurn = mock(async (_params: unknown): Promise<Turn> => ({ exercise: null, diagnosis: null, hintLevel: null, contract: null, change: null }));
 mock.module('../modules/tutor/exercise-turn', () => ({ prepareExerciseTurn }));
-const setHints = mock(async (_id: string, _hints: unknown) => {});
-mock.module('../modules/tutor/exercise-sheets.repository', () => ({ exerciseSheetsRepository: { setHints } }));
+const recordTurn = mock(async (_id: string, _turn: unknown) => {});
+mock.module('../modules/tutor/exercise-sheets.repository', () => ({ exerciseSheetsRepository: { recordTurn } }));
 
 // Import the real module under test AFTER all mocks are registered.
 const { chatOrchestrationService, readStoredResponseMessages } = await import('../modules/tutor/chat-orchestration.service');
@@ -114,10 +121,11 @@ describe('ChatOrchestrationService.prepareTurn — exercise', () => {
 
   const request = { userId: 'user-001', content: 'Résous 3x + 5 = 20.', fileIds: [], schoolLevel: 'quatrieme' as const };
   const underContract: Turn = {
-    exercise: { id: 'ex-1', sheet: sheet('Résous 3x + 5 = 20.'), uncertain: false, hintLevel: 1, hints: [{ level: 0, text: 'Que cherches-tu ?' }] },
+    exercise: { id: 'ex-1', sheet: sheet('Résous 3x + 5 = 20.'), uncertain: false, hintLevel: 1, stepsDone: 0, hints: [{ level: 0, text: 'Que cherches-tu ?' }], solved: false },
     diagnosis: null,
     hintLevel: 2,
     contract: '<contrat>\nPalier 3\n</contrat>',
+    change: { levelChange: 1, top: 4, stepDone: false, solved: false },
   };
 
   it('hands the exercise turn the class, the detected subject, the message, the last tutor message and the files', async () => {
@@ -151,7 +159,7 @@ describe('ChatOrchestrationService.prepareTurn — exercise', () => {
 
     expect(context.turnInstruction).toBe('<contrat>\nPalier 3\n</contrat>');
     expect(context.exerciseSheet?.statement).toBe('Résous 3x + 5 = 20.');
-    expect(context.exerciseProgress).toEqual({ id: 'ex-1', hintLevel: 2, hints: [{ level: 0, text: 'Que cherches-tu ?' }], diagnosis: null });
+    expect(context.exerciseProgress).toEqual({ id: 'ex-1', hintLevel: 2, diagnosis: null, change: { levelChange: 1, top: 4, stepDone: false, solved: false } });
   });
 
   it('keeps the turn instruction and no progress without a contract', async () => {
@@ -300,12 +308,12 @@ describe('ChatOrchestrationService.finishTurn', () => {
     expect(record).toHaveBeenCalledTimes(1);
     expect(summarizeIfNeeded).toHaveBeenCalledWith('session-001');
     expect(generateTitleIfNeeded).toHaveBeenCalledWith('session-001', 'Bonjour', 'Bonjour à toi');
-    expect(setHints).not.toHaveBeenCalled();
+    expect(recordTurn).not.toHaveBeenCalled();
   });
 
-  it("keeps the tutor's message on the exercise for the next contracts, with the turn's diagnosis and level", async () => {
-    setHints.mockClear();
-    const progress = { id: 'ex-1', hintLevel: 2, hints: [{ level: 1, text: 'Indice' }], diagnosis: null };
+  it("records the turn's change on the exercise and the tutor's message once seen, never for a cut turn", async () => {
+    recordTurn.mockClear();
+    const progress = { id: 'ex-1', hintLevel: 2, diagnosis: null, change: { levelChange: 1, top: 4, stepDone: false, solved: false } };
     const finish = (aborted: boolean) => chatOrchestrationService.finishTurn({
       sessionId: 'session-001',
       userId: 'user-001',
@@ -321,12 +329,12 @@ describe('ChatOrchestrationService.finishTurn', () => {
     });
 
     await finish(false);
-    expect(setHints).toHaveBeenCalledWith('ex-1', [{ level: 1, text: 'Indice' }, { level: 2, text: 'Regarde le +5.' }]);
+    expect(recordTurn).toHaveBeenCalledWith('ex-1', { levelChange: 1, top: 4, stepDone: false, solved: false, hint: { level: 2, text: 'Regarde le +5.' } });
     expect(saveMessage.mock.calls.at(-1)?.[3]).toMatchObject({ exerciseTurn: { diagnosis: null, hintLevel: 2 } });
 
-    setHints.mockClear();
+    recordTurn.mockClear();
     await finish(true);
-    expect(setHints).not.toHaveBeenCalled();
+    expect(recordTurn).not.toHaveBeenCalled();
   });
 });
 

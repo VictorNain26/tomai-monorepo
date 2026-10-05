@@ -1,4 +1,4 @@
-import { desc, eq } from 'drizzle-orm';
+import { desc, eq, sql } from 'drizzle-orm';
 import type { Hint } from './hint-ladder.js';
 import { db } from '../../db/connection';
 import { exerciseSheets } from './exercise-sheet.schema.js';
@@ -12,16 +12,21 @@ class ExerciseSheetsRepository {
     return row?.id ?? null;
   }
 
-  /** The level after a turn, and the end of the exercise on a right final answer. */
-  async updateProgress(id: string, progress: { hintLevel: number; solved: boolean }): Promise<void> {
+  /**
+   * What a turn the student saw changes, in one statement computed by postgres: two turns of the
+   * same session at once each count. `solved` ends the exercise, `false` reopens it, `undefined`
+   * leaves it as it is.
+   */
+  async recordTurn(id: string, turn: { levelChange: number; top: number; stepDone: boolean; solved: boolean | undefined; hint: Hint }): Promise<void> {
     await db
       .update(exerciseSheets)
-      .set({ hintLevel: progress.hintLevel, ...(progress.solved && { solvedAt: new Date() }) })
+      .set({
+        hintLevel: sql`least(greatest(${exerciseSheets.hintLevel} + ${turn.levelChange}, 0), ${turn.top})`,
+        ...(turn.stepDone && { stepsDone: sql`${exerciseSheets.stepsDone} + 1` }),
+        ...(turn.solved !== undefined && { solvedAt: turn.solved ? new Date() : null }),
+        hints: sql`${exerciseSheets.hints} || ${JSON.stringify([turn.hint])}::jsonb`,
+      })
       .where(eq(exerciseSheets.id, id));
-  }
-
-  async setHints(id: string, hints: Hint[]): Promise<void> {
-    await db.update(exerciseSheets).set({ hints }).where(eq(exerciseSheets.id, id));
   }
 
   /** The session's last exercise, solved or not. */

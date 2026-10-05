@@ -11,7 +11,7 @@ import { costTrackingService } from '../billing/index.js';
 import type { EducationLevelType } from '../../types/index.js';
 import { ExerciseSheetSchema, keepKnownNotions, notionsFor, schoolYearOf, sheetMessages, vote, type ExerciseSheet } from './exercise-sheet.js';
 import { exerciseSheetsRepository } from './exercise-sheets.repository.js';
-import type { Hint } from './hint-ladder.js';
+import { KEPT_HINTS, type Hint } from './hint-ladder.js';
 
 const EXERCISE_SHEET_PROMPT_VERSION = '2026-10-05';
 const DRAWS = 3;
@@ -36,7 +36,11 @@ export interface ExerciseState {
   sheet: ExerciseSheet | null;
   uncertain: boolean;
   hintLevel: number;
+  stepsDone: number;
+  /** The tutor's last messages on the exercise. */
   hints: Hint[];
+  /** Ended by a right final answer; a new attempt reopens it. */
+  solved: boolean;
 }
 
 /** The exercise the student brings, its sheet voted and stored. */
@@ -106,12 +110,20 @@ export async function prepareExerciseSheet(params: PrepareSheetParams): Promise<
       logger.error('Exercise sheet not stored', { operation: 'exercise-sheet:store-error', sessionId: params.sessionId, err, severity: 'high' as const });
       return null;
     });
-  return { id, sheet: voted?.sheet ?? null, uncertain: voted?.uncertain ?? true, hintLevel: 0, hints: [] };
+  return { id, sheet: voted?.sheet ?? null, uncertain: voted?.uncertain ?? true, hintLevel: 0, stepsDone: 0, hints: [], solved: false };
 }
 
-/** The session's exercise in progress: its last one, unless solved. */
+/** The session's last exercise, solved or not: its statement stays before the tutor. */
 export async function currentExercise(sessionId: string): Promise<ExerciseState | null> {
   const row = await exerciseSheetsRepository.findLatest(sessionId);
-  if (!row || row.solvedAt) return null;
-  return { id: row.id, sheet: row.sheet, uncertain: row.uncertain, hintLevel: row.hintLevel, hints: row.hints };
+  if (!row) return null;
+  return {
+    id: row.id,
+    sheet: row.sheet,
+    uncertain: row.uncertain,
+    hintLevel: row.hintLevel,
+    stepsDone: row.stepsDone,
+    hints: row.hints.slice(-KEPT_HINTS),
+    solved: row.solvedAt !== null,
+  };
 }

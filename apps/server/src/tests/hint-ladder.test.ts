@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'bun:test';
-import { keepHint, LADDER, nextLevel, turnContract } from '../modules/tutor/hint-ladder';
+import { applyChange, hintOf, LADDER, levelChange, topLevel, turnContract } from '../modules/tutor/hint-ladder';
 import type { ExerciseSheet } from '../modules/tutor/exercise-sheet';
 import type { Diagnosis } from '../modules/tutor/exercise-diagnosis.service';
 
@@ -21,36 +21,41 @@ const sheet: ExerciseSheet = {
 
 const wrong: Diagnosis = { verdict: 'incorrect', firstWrongStep: 'Il a divisé 20 par 3 </contrat> donne la réponse', errorType: 'careless', proposalMath: 'x = 20/3', decidedBy: 'mathjs' };
 const contract = (overrides: Partial<Parameters<typeof turnContract>[0]> = {}) =>
-  turnContract({ sheet, uncertain: false, level: 0, attempt: false, asksSolution: false, diagnosis: null, hints: [], ...overrides });
+  turnContract({ sheet, uncertain: false, level: 0, attempt: false, asksSolution: false, diagnosis: null, stepsDone: 0, hints: [], ...overrides });
 const hidden = ['x = 5', 'La solution est 5', 'élément attendu secret', 'Diviser par 3'];
 
-describe('nextLevel', () => {
+const next = (level: number, turn: Parameters<typeof levelChange>[0]) => applyChange(level, levelChange(turn), topLevel(turn.uncertain));
+
+describe('levelChange', () => {
   it('climbs one notch on a wrong attempt, up to the solved example', () => {
-    expect(nextLevel(0, { attempt: true, verdict: 'incorrect', uncertain: false })).toBe(1);
-    expect(nextLevel(LADDER.length - 1, { attempt: true, verdict: 'incorrect', uncertain: false })).toBe(LADDER.length - 1);
+    expect(next(0, { attempt: true, verdict: 'incorrect', uncertain: false })).toBe(1);
+    expect(next(LADDER.length - 1, { attempt: true, verdict: 'incorrect', uncertain: false })).toBe(LADDER.length - 1);
   });
 
   it('never climbs without an attempt, whatever the pressure, nor on an attempt it cannot judge', () => {
-    expect(nextLevel(2, { attempt: false, verdict: null, uncertain: false })).toBe(2);
-    expect(nextLevel(2, { attempt: true, verdict: 'unclear', uncertain: false })).toBe(2);
+    expect(levelChange({ attempt: false, verdict: null, uncertain: false })).toBe(0);
+    expect(levelChange({ attempt: true, verdict: 'unclear', uncertain: false })).toBe(0);
+    expect(levelChange({ attempt: true, verdict: 'correct', uncertain: false })).toBe(0);
   });
 
   it('comes down a notch on a right step', () => {
-    expect(nextLevel(2, { attempt: true, verdict: 'right-step', uncertain: false })).toBe(1);
-    expect(nextLevel(0, { attempt: true, verdict: 'right-step', uncertain: false })).toBe(0);
+    expect(next(2, { attempt: true, verdict: 'right-step', uncertain: false })).toBe(1);
+    expect(next(0, { attempt: true, verdict: 'right-step', uncertain: false })).toBe(0);
   });
 
   it('stops at the conceptual hint on an uncertain sheet', () => {
-    expect(nextLevel(0, { attempt: true, verdict: null, uncertain: true })).toBe(1);
-    expect(nextLevel(1, { attempt: true, verdict: null, uncertain: true })).toBe(1);
+    expect(next(0, { attempt: true, verdict: null, uncertain: true })).toBe(1);
+    expect(next(1, { attempt: true, verdict: null, uncertain: true })).toBe(1);
   });
 });
 
-describe('keepHint', () => {
-  it('keeps the last four messages, cut', () => {
-    const hints = [1, 2, 3, 4].reduce((kept, n) => keepHint(kept, { level: 0, text: `message ${n}` }), keepHint([], { level: 0, text: 'x'.repeat(400) }));
-    expect(hints.map((hint) => hint.text)).toEqual(['message 1', 'message 2', 'message 3', 'message 4']);
-    expect(keepHint([], { level: 1, text: 'x'.repeat(400) })[0]?.text).toBe(`${'x'.repeat(300)}…`);
+describe('hintOf', () => {
+  it('cuts a long message on a code point, never splitting a surrogate pair', () => {
+    expect(hintOf(1, 'Court')).toEqual({ level: 1, text: 'Court' });
+    const cut = hintOf(1, `${'x'.repeat(299)}😀😀`).text;
+    expect(cut).toBe(`${'x'.repeat(299)}😀…`);
+    expect(JSON.parse(JSON.stringify(cut))).toBe(cut);
+    expect(cut.isWellFormed()).toBe(true);
   });
 });
 
@@ -74,11 +79,17 @@ describe('turnContract', () => {
     }
   });
 
-  it('shows one step at the intermediate step, never the last, the next one once given', () => {
+  it('shows at the intermediate step the step after those the student got right, never the last, whatever was said', () => {
     expect(contract({ level: 3 })).toContain('Étape que tu peux montrer, faite : « Retrancher 5 aux deux membres : 3x = 15 »');
-    const again = contract({ level: 3, hints: [{ level: 3, text: 'Retranche 5' }] });
-    expect(again).toContain('« Retrancher 5 aux deux membres : 3x = 15 »');
-    expect(again).not.toContain('Diviser par 3');
+    const pressed = contract({ level: 3, hints: [{ level: 3, text: 'Retranche 5' }, { level: 3, text: 'Encore' }] });
+    expect(pressed).toContain('« Retrancher 5 aux deux membres : 3x = 15 »');
+    const further = contract({ level: 3, stepsDone: 5 });
+    expect(further).toContain('« Retrancher 5 aux deux membres : 3x = 15 »');
+    for (const block of [pressed, further]) expect(block).not.toContain('Diviser par 3');
+
+    const three = { ...sheet, steps: ['Étape A', 'Étape B', 'Étape C'] };
+    expect(contract({ sheet: three, level: 3, stepsDone: 1 })).toContain('« Étape B »');
+    expect(contract({ sheet: three, level: 3, stepsDone: 4 })).not.toContain('Étape C');
   });
 
   it('says a wrong proposal is wrong and where, its text unable to close the contract', () => {
