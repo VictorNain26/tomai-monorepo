@@ -36,30 +36,6 @@ const generateFlashcardsSchema = z.object({
     .describe('Nombre de cartes à générer (5 par défaut)'),
 });
 
-const updateStudentProfileSchema = z.object({
-  observation: z
-    .string()
-    .max(250)
-    .describe(
-      "Une phrase factuelle sur ce que l'élève sait faire ou sur sa difficulté. Ex: \"Confond les verbes du 1er et 2nd groupe au passé composé.\"",
-    ),
-  subject: z.string().describe('La matière concernée (mathematiques, francais, histoire, etc.)'),
-  strength: z
-    .string()
-    .max(100)
-    .optional()
-    .describe(
-      "Ajoute une force au profil si l'élève démontre une maîtrise claire sur un point (ex: \"Bonne compréhension du théorème de Pythagore\").",
-    ),
-  weakness: z
-    .string()
-    .max(100)
-    .optional()
-    .describe(
-      "Ajoute une faiblesse au profil si l'élève bute de façon récurrente sur un point (ex: \"Oublie la retenue en addition posée\").",
-    ),
-});
-
 /** Les outils exposés à l'agent chat, au format AI SDK `ToolSet`. */
 export function buildChatTools(ctx: ChatToolContext): ToolSet {
   const executionContext = {
@@ -87,14 +63,6 @@ export function buildChatTools(ctx: ChatToolContext): ToolSet {
         }
         return result;
       },
-    }),
-
-    update_student_profile: tool({
-      strict: true,
-      description:
-        "Enregistre une observation pédagogique dans le profil de l'élève (force ou difficulté). À n'appeler que lorsqu'une observation est NOUVELLE, FACTUELLE et PERTINENTE sur plusieurs tours — pas à chaque message. Une observation au plus par réponse.",
-      inputSchema: updateStudentProfileSchema,
-      execute: async (input) => executeTool('update_student_profile', input, executionContext),
     }),
   };
 }

@@ -1,7 +1,6 @@
 /**
  * Chat turn pipeline: resolves the session and its history, assembles the turn's context (files,
- * profile, learning context, turn analysis, exercise sheet, episodic and subject memory),
- * persists the student's message before streaming, then records the answer, its cost, the
+ * turn analysis, moderation, exercise sheet), persists the student's message before streaming, then records the answer, its cost, the
  * summary and the title once the stream ends (`finishTurn`).
  */
 
@@ -11,7 +10,7 @@ import { studySessionsRepository } from './study-sessions.repository.js';
 import { resolveEffectiveSubject, shouldPersistDetectedSubject } from './subject-resolution.js';
 import { STUDENT_SUBJECTS } from './prompts/adaptation/subjects.js';
 import { fileContextService, sessionFilesRepository } from '../documents/index.js';
-import { getLearningContext, wrapAttachedFiles } from './mistral-helpers.js';
+import { wrapAttachedFiles } from './mistral-helpers.js';
 import { SUMMARY_BACKLOG, summarizationService } from './summarization.service.js';
 import { autoTitleService } from './auto-title.service.js';
 import { analyseTurn, turnInstruction as instructionFor } from './turn-analysis.service.js';
@@ -23,10 +22,7 @@ import { detectDistress } from './distress.js';
 import { closedForDistress } from './distress.service.js';
 import { moderateStudentTurn, type InputModeration } from '../../platform/ai/moderation.js';
 import { exerciseSheetsRepository } from './exercise-sheets.repository.js';
-import { cognitiveProfileService } from './cognitive-profile.service.js';
 import { costTrackingService, incrementTokenUsage } from '../billing/index.js';
-import { episodicMemoryService } from './episodic-memory.service.js';
-import { subjectProfileService } from './subject-profile.service.js';
 import { logger } from '../../platform/observability/logger.js';
 import { replayable, type HistoryTurn, type ResponseMessage } from './chat-message-assembler.js';
 import { messagesRepository } from './messages.repository.js';
@@ -128,31 +124,11 @@ class ChatOrchestrationService {
 
     const lastTutorText = conversationHistory.findLast(turn => turn.role === 'assistant')?.content ?? null;
 
-    // Context assembly (parallel) — the turn analysis and episodic
-    // memory run alongside file/profile/learning context assembly so none
-    // of them add end-to-end latency on the critical path. An analysis that
-    // fails gives an empty analysis (logged at high severity in the service,
-    // not a silent fallback); episodic memory returns [] on miss/error with
-    // its own logging.
-    const [
-      fileContext,
-      cognitiveProfileSummary,
-      learningContext,
-      turnAnalysis,
-      episodicContext,
-      inputModeration,
-    ] = await Promise.all([
+    // Files, the turn analysis and the moderation run alongside, none adding to the wait. An
+    // analysis that fails gives an empty analysis, logged at high severity in the service.
+    const [fileContext, turnAnalysis, inputModeration] = await Promise.all([
       fileContextService.prepareFileContext({ fileIds: request.fileIds, userId: request.userId, sessionId }),
-      cognitiveProfileService.getProfileSummary(request.userId),
-      getLearningContext(request.userId),
       analyseTurn(request.content, lastTutorText, current?.sheet?.statement ?? null),
-      episodicMemoryService.recallForSession({
-        sessionId,
-        userId: request.userId,
-        content: request.content,
-        stored: sessionSummary?.recalledEpisodes ?? null,
-        studentTurnsBefore: conversationHistory.filter(turn => turn.role === 'user').length,
-      }),
       moderateInput(lastTutorText, request.content),
     ]);
 
@@ -160,7 +136,6 @@ class ChatOrchestrationService {
     // run alongside so moderation adds no wait to every turn, is dropped.
     const distress = distressIn(sessionId, request.content, inputModeration);
     if (distress) return distress;
-
 
     // Subject: use the detected one (reliable) for the prompt, fall back to the
     // session's stored subject then the client hint. Persist on the first
@@ -189,26 +164,18 @@ class ChatOrchestrationService {
     const attachedFileInfo = attachedFileInfos[0] ?? null;
     const hasMultipleFiles = attachedFileInfos.length > 1;
 
-    const [subjectMemoryBlock, exerciseTurn] = await Promise.all([
-      effectiveSubject ? subjectProfileService.formatSubjectMemoryForPrompt(request.userId, effectiveSubject) : null,
-      prepareExerciseTurn({
-        userId: request.userId,
-        sessionId,
-        level: request.schoolLevel,
-        subject: effectiveSubject,
-        analysis: turnAnalysis,
-        current,
-        studentText: request.content,
-        lastTutorText,
-        attachedFilesBlock: files.length > 0 ? wrapAttachedFiles(files) : null,
-      }),
-    ]);
-    const { exercise, diagnosis, hintLevel, contract, change } = exerciseTurn;
+    const { exercise, diagnosis, hintLevel, contract, change } = await prepareExerciseTurn({
+      userId: request.userId,
+      sessionId,
+      level: request.schoolLevel,
+      subject: effectiveSubject,
+      analysis: turnAnalysis,
+      current,
+      studentText: request.content,
+      lastTutorText,
+      attachedFilesBlock: files.length > 0 ? wrapAttachedFiles(files) : null,
+    });
     const turnInstruction = contract ?? instructionFor(turnAnalysis);
-
-    const mergedLearningContext = [learningContext, episodicContext, subjectMemoryBlock]
-      .filter((x): x is string => Boolean(x))
-      .join('\n\n') || null;
 
     logger.info('Chat context assembled', {
       userId: request.userId,
@@ -226,7 +193,6 @@ class ChatOrchestrationService {
       exerciseSheet: Boolean(exercise?.sheet),
       hintLevel,
       verdict: diagnosis?.verdict,
-      pastSessionsRecalled: episodicContext !== null,
       operation: 'chat-orchestration:context-ready',
     });
 
@@ -237,8 +203,6 @@ class ChatOrchestrationService {
       ...(effectiveSubject !== undefined && { subject: effectiveSubject }),
       conversationSummary: sessionSummary?.conversationSummary ?? null,
       conversationHistory,
-      cognitiveProfileSummary,
-      mergedLearningContext,
       turnInstruction,
       turnAnalysis,
       exerciseSheet: exercise?.sheet ?? null,

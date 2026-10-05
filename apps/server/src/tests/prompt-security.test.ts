@@ -20,7 +20,7 @@ describe('sanitizePrompt', () => {
 describe('stripPromptTags', () => {
   it('retire les fences de contenu non-maîtrisé', () => {
     expect(stripPromptTags('<student_message>x</student_message>')).toBe('x');
-    expect(stripPromptTags('a<student_context>b</student_context>c')).toBe('abc');
+    expect(stripPromptTags('a<conversation_summary>b</conversation_summary>c')).toBe('abc');
     expect(stripPromptTags('a</conversation_summary>b')).toBe('ab');
   });
 

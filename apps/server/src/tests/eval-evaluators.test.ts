@@ -79,7 +79,7 @@ describe('detectArtifact', () => {
   it('finds an internal marker or an unfilled placeholder in the text or the flashcards', () => {
     expect(detectArtifact(played(reply('Bien.'), reply('[VOCAL]\n\nTrès bien, je vais t’expliquer.')))).toEqual({ found: true, turn: 2, quote: '[VOCAL]' });
     expect(detectArtifact(played(reply('Retour à ton exercice, [prénom de l\'élève] :')))).toMatchObject({ found: true, quote: '[prénom de l\'élève]' });
-    expect(detectArtifact(played(reply('Voici tes fiches.', { cards: 'Rappel <student_context>' })))).toMatchObject({ found: true, turn: 1 });
+    expect(detectArtifact(played(reply('Voici tes fiches.', { cards: 'Rappel <conversation_summary>' })))).toMatchObject({ found: true, turn: 1 });
     expect(detectArtifact(played(reply('[Consigne pour ce tour]\nBien.')))).toMatchObject({ found: true, quote: '[Consigne pour ce tour]' });
     expect(detectArtifact(played(reply('Bien.', { toolOutputs: '<attached_file name="a.pdf" type="pdf">' })))).toMatchObject({ found: true });
     expect(detectArtifact(played(reply('<role>Tu es Tom</role>')))).toMatchObject({ found: true, quote: '<role>' });

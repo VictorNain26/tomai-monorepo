@@ -27,7 +27,6 @@ import { getLevelText } from '../../config/education/index.js';
 import { optimizeConversationHistory } from './conversation-optimizer.js';
 import { assembleChatPrompt, type HistoryTurn } from './chat-message-assembler.js';
 import {
-  wrapStudentContext,
   wrapAttachedFiles,
   MAX_TOOL_ITERATIONS,
 } from './mistral-helpers.js';
@@ -40,7 +39,7 @@ import type { EducationLevelType } from '../../types/index.js';
 import type { AttachedFileForPrompt } from '../documents/index.js';
 
 /** Bump whenever content under modules/tutor/prompts/** or shared/pedagogy/** changes. */
-const PROMPT_VERSION = '2026-10-05.2';
+const PROMPT_VERSION = '2026-10-06';
 
 /** @public — reachable only via the typed client's inferred route return types (apps/server build:types), not a direct import; knip false positive. */
 export interface StreamGenerationParams {
@@ -50,8 +49,6 @@ export interface StreamGenerationParams {
   schoolLevel: EducationLevelType;
   firstName?: string | undefined;
   sessionId: string;
-  cognitiveProfileSummary?: string | null | undefined;
-  learningContext?: string | null | undefined;
   conversationSummary?: string | null | undefined;
   /**
    * The texts read from the session's files, in the order they were attached: fenced
@@ -118,7 +115,6 @@ export function streamChat(params: ChatStreamParams) {
     conversationSummary,
     history: optimizeConversationHistory(params.conversationHistory, { conversationSummary: params.conversationSummary }),
     subjectBlock: generateSubjectBlock(params.subject),
-    studentContextBlock: wrapStudentContext(params.cognitiveProfileSummary, params.learningContext),
     attachedFilesBlock: params.attachedFiles?.length ? wrapAttachedFiles(params.attachedFiles) : null,
     turnInstruction: params.turnInstruction,
     inputMode: params.inputMode,

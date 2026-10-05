@@ -13,7 +13,7 @@ import type { AppEnv } from './platform/http/context.js';
 import { sentryMiddleware } from './platform/observability/sentry.js';
 
 import { apiRoutes } from './routes/api/index.js';
-import { chatMessageRoutes, chatSessionRoutes, sessionFilesRoutes, studentRoutes, progressRoutes } from './modules/tutor/index.js';
+import { chatMessageRoutes, chatSessionRoutes, sessionFilesRoutes, progressRoutes } from './modules/tutor/index.js';
 import { parentRoutes, subscriptionRoutes } from './modules/family/index.js';
 import { uploadRoutes, filesRoutes } from './modules/documents/index.js';
 import { voiceRoutes } from './modules/voice/index.js';
@@ -155,7 +155,6 @@ const app = base
   .route('/api', filesRoutes)
   .route('/api', chatSessionRoutes)
   .route('/api', sessionFilesRoutes)
-  .route('/api', studentRoutes)
   .route('/api', progressRoutes)
   .route('/api', parentRoutes)
   .route('/api/subscriptions', subscriptionRoutes)

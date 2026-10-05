@@ -30,9 +30,6 @@ export interface ChatTurnContext {
   subject?: string;
   conversationSummary: string | null;
   conversationHistory: HistoryTurn[];
-  cognitiveProfileSummary: string | null;
-  /** Learning context (FSRS due cards) + episodic memory + subject memory, merged into one block. */
-  mergedLearningContext: string | null;
   turnInstruction: string | null;
   turnAnalysis: TurnAnalysis;
   /** The exercise in progress: prepared when the student brings one, else the session's, unless solved. */

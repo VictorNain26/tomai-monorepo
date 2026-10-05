@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, text, timestamp, boolean, integer, decimal, jsonb, pgEnum, index, foreignKey, unique, vector } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, text, timestamp, boolean, integer, decimal, jsonb, pgEnum, index, foreignKey } from 'drizzle-orm/pg-core';
 import { relations, sql } from 'drizzle-orm';
 import { user } from '../auth/auth.schema';
 
@@ -59,8 +59,6 @@ export const studySessions = pgTable('study_sessions', {
   // Résumé conversationnel (SummaryBuffer pattern)
   conversationSummary: text('conversation_summary'),
   summaryUpToMessageId: uuid('summary_up_to_message_id'),
-  /** The past sessions recalled at the first turn, kept for the whole session; '' when none matched, null before. */
-  recalledEpisodes: text('recalled_episodes'),
 
   // Métadonnées
   // CRITICAL FIX: JSONB default must use sql`'{}'::jsonb` NOT .default({})
@@ -138,86 +136,6 @@ export const messages = pgTable('messages', {
   index('idx_messages_quality').on(table.messageQualityScore),
 ]);
 
-/**
- * Table session_episodes - Mémoire épisodique long-terme
- *
- * Une ligne par session close, avec un résumé compressé + l'embedding 1024D
- * de ce résumé (Mistral Embed). Permet de
- * retrouver les sessions passées pertinentes pour le tour courant via
- * similarité cosinus côté Postgres (pgvector).
- *
- * Extraction : fire-and-forget à chaque session archivée (resetSession +
- * deleteSession). Retrieval : top-3 épisodes les plus similaires injectés
- * dans le system prompt au début d'une nouvelle conversation.
- *
- * GDPR-K : ttlUntil permet la purge automatique des épisodes >90 jours sauf
- * opt-in parent. Suppression cascade via userId FK.
- */
-export const sessionEpisodes = pgTable('session_episodes', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  userId: varchar('user_id', { length: 255 }).notNull(),
-  sessionId: uuid('session_id').notNull(),
-
-  // Contenu pédagogique
-  subject: varchar('subject', { length: 100 }).notNull(),
-  summaryText: text('summary_text').notNull(),
-  summaryEmbedding: vector('summary_embedding', { dimensions: 1024 }).notNull(),
-  conceptsCovered: jsonb('concepts_covered').notNull().default(sql`'[]'::jsonb`),
-
-  // Métriques
-  messageCount: integer('message_count').notNull().default(0),
-  durationSeconds: integer('duration_seconds'),
-  outcome: varchar('outcome', { length: 32 }).notNull().default('completed'),
-
-  // Audit + purge
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-  ttlUntil: timestamp('ttl_until', { withTimezone: true }),
-}, (table) => [
-  foreignKey({
-    columns: [table.userId],
-    foreignColumns: [user.id],
-    name: 'session_episodes_user_id_fkey'
-  }).onDelete('cascade'),
-  foreignKey({
-    columns: [table.sessionId],
-    foreignColumns: [studySessions.id],
-    name: 'session_episodes_session_id_fkey'
-  }).onDelete('cascade'),
-
-  index('idx_session_episodes_user_id').on(table.userId),
-  index('idx_session_episodes_created_at').on(table.createdAt),
-  index('idx_session_episodes_ttl').on(table.ttlUntil),
-]);
-
-// Profil mémoire élève PAR MATIÈRE — agrégat pédagogique durable, distinct de
-// sessionEpisodes (par session, pgvector) et studentCognitiveProfiles (global).
-export const studentSubjectProfiles = pgTable('student_subject_profile', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  userId: varchar('user_id', { length: 255 }).notNull(),
-  subject: varchar('subject', { length: 100 }).notNull(),
-  conceptsSeen: jsonb('concepts_seen').$type<string[]>().notNull().default(sql`'[]'::jsonb`),
-  difficulties: jsonb('difficulties').$type<string[]>().notNull().default(sql`'[]'::jsonb`),
-  masteryNotes: text('mastery_notes'),
-  sessionsCount: integer('sessions_count').notNull().default(0),
-  lastOutcome: varchar('last_outcome', { length: 32 }),
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
-  ttlUntil: timestamp('ttl_until', { withTimezone: true }).notNull(),
-}, (table) => [
-  foreignKey({
-    columns: [table.userId],
-    foreignColumns: [user.id],
-    name: 'student_subject_profiles_user_id_fkey'
-  }).onDelete('cascade'),
-
-  unique('uq_subject_profile_user_subject').on(table.userId, table.subject),
-  index('idx_subject_profile_user').on(table.userId),
-  index('idx_subject_profile_ttl').on(table.ttlUntil),
-]);
-
-export type StudentSubjectProfile = typeof studentSubjectProfiles.$inferSelect;
-export type NewStudentSubjectProfile = typeof studentSubjectProfiles.$inferInsert;
-
 // =============================================
 // RELATIONS
 // =============================================
@@ -229,17 +147,6 @@ export const messagesRelations = relations(messages, ({ one }) => ({
   }),
 }));
 
-export const sessionEpisodesRelations = relations(sessionEpisodes, ({ one }) => ({
-  user: one(user, {
-    fields: [sessionEpisodes.userId],
-    references: [user.id]
-  }),
-  session: one(studySessions, {
-    fields: [sessionEpisodes.sessionId],
-    references: [studySessions.id]
-  }),
-}));
-
 // =============================================
 // TYPES
 // =============================================
@@ -247,8 +154,6 @@ export type StudySession = typeof studySessions.$inferSelect;
 export type NewStudySession = typeof studySessions.$inferInsert;
 export type Message = typeof messages.$inferSelect;
 export type NewMessage = typeof messages.$inferInsert;
-export type SessionEpisode = typeof sessionEpisodes.$inferSelect;
-export type NewSessionEpisode = typeof sessionEpisodes.$inferInsert;
 export type SessionStatus = typeof sessionStatusEnum.enumValues[number];
 export type MessageRole = typeof messageRoleEnum.enumValues[number];
 

@@ -23,7 +23,7 @@ afterAll(async () => {
   await server.stop(true);
 });
 
-describe('getMistralSdk — embeddings and voice', () => {
+describe('getMistralSdk — voice', () => {
   it('retries a passing 503 and returns the answer', async () => {
     state.replies = ['unavailable', 'answer'];
     expect(await outcome(viaShared(5_000))).toMatchObject({ ended: 'answered' });

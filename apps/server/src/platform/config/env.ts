@@ -86,7 +86,6 @@ const EnvSchema = z.object({
   MISTRAL_API_KEY: z.string().optional(),
   MISTRAL_SERVER_URL: mistralServerUrl.default('https://api.eu.mistral.ai'),
   MISTRAL_MODEL: pinnedModelId.default('mistral-small-2603'),
-  MISTRAL_EMBED_MODEL: pinnedModelId.default('mistral-embed-2312'),
   MISTRAL_STT_MODEL: pinnedModelId.default('voxtral-mini-2602'),
   MISTRAL_TTS_MODEL: pinnedModelId.default('voxtral-mini-tts-2603'),
   MISTRAL_MAX_TOKENS: z.coerce.number().int().default(16384),

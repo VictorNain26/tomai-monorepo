@@ -105,29 +105,3 @@ export function makeMessage(overrides?: Partial<MessageData>): MessageData {
   };
 }
 
-interface CognitiveProfileData {
-  id: string;
-  userId: string;
-  strengths: string[];
-  weaknesses: string[];
-  observations: { date: string; observation: string; subject?: string }[];
-  lastUpdatedByAgent: Date | null;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-export function makeCognitiveProfile(overrides?: Partial<CognitiveProfileData>): CognitiveProfileData {
-  return {
-    id: 'profile-001',
-    userId: 'user-001',
-    strengths: ['calcul mental', 'logique'],
-    weaknesses: ['fractions', 'geometrie'],
-    observations: [
-      { date: '2025-06-15T10:00:00.000Z', observation: 'Bonne progression en calcul', subject: 'mathematiques' },
-    ],
-    lastUpdatedByAgent: BASE_DATE,
-    createdAt: BASE_DATE,
-    updatedAt: BASE_DATE,
-    ...overrides,
-  };
-}

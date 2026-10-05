@@ -312,14 +312,6 @@ class LearningService {
     return learningCardsRepository.countDueByUser(userId);
   }
 
-  async getReviewSignals(userId: string) {
-    const [dueCount, weakSubjects] = await Promise.all([
-      learningCardsRepository.countDueByUser(userId),
-      learningCardsRepository.listWeakSubjects(userId, 3),
-    ]);
-    return { dueCount, weakSubjects };
-  }
-
   /**
    * Verify card ownership, then record a FSRS review.
    * Throws CardNotFoundError when the card is absent or not owned by `userId`.

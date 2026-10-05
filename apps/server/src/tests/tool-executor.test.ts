@@ -15,15 +15,6 @@ import { createMockLogger } from './_helpers/mock-logger';
 const mockLogger = createMockLogger();
 mock.module('../platform/observability/logger', () => ({ logger: mockLogger }));
 
-// Cognitive profile — src/modules/tutor/cognitive-profile.service.ts, exercised by
-// tool-executor-profile.test.ts; stubbed here so that no database is reached.
-mock.module('../modules/tutor/cognitive-profile.service', () => ({
-  cognitiveProfileService: {
-    getProfile: mock(async () => null),
-    updateProfile: mock(async () => undefined),
-  },
-}));
-
 // Card generator stub, injected through the modules/learning/index mock below
 let cardGenResult: Record<string, unknown> = {
   cards: [

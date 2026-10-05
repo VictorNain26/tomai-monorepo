@@ -6,7 +6,7 @@ import { turnInstruction } from '../modules/tutor/turn-analysis.service.js';
 import { analysis } from './_helpers/turn-analysis';
 import { exerciseBlock, notionsFor, sheetMessages } from '../modules/tutor/exercise-sheet.js';
 import { turnContract } from '../modules/tutor/hint-ladder.js';
-import { stripPromptTags, wrapStudentContext, wrapUserMessage } from '../modules/tutor/mistral-helpers.js';
+import { stripPromptTags, wrapUserMessage } from '../modules/tutor/mistral-helpers.js';
 
 const prompt = buildSystemPrompt({ level: 'quatrieme', levelText: '4e', firstName: 'Léa' });
 
@@ -85,7 +85,6 @@ describe('tutor prompt, consistent from method to subject blocks', () => {
         uncertain: false, level: 0, attempt: false, asksSolution: false, diagnosis: null, stepsDone: 0, hints: [],
       }),
       '<fiche>\nx\n</fiche>',
-      wrapStudentContext('Points forts: calcul', '<past_sessions>\nx\n</past_sessions>\n<subject_memory>\ny\n</subject_memory>') ?? '',
       wrapUserMessage('Bonjour'),
     ].join('\n');
     const tags = new Set([...rendered.matchAll(/<\/?([a-z_]+)[\s>]/g)].map(([, name = '']) => name));

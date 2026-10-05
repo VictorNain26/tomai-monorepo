@@ -17,8 +17,7 @@ import type { ExerciseSheet } from '../modules/tutor/exercise-sheet';
 const mockLogger = createMockLogger();
 mock.module('../platform/observability/logger', () => ({ logger: mockLogger }));
 
-let storedEpisodes: string | null = null;
-const getSessionWithSummary = mock(async () => ({ conversationSummary: null, summaryUpToMessageId: null, recalledEpisodes: storedEpisodes, subject: null }));
+const getSessionWithSummary = mock(async () => ({ conversationSummary: null, summaryUpToMessageId: null, subject: null }));
 mock.module('../modules/tutor/chat-session.service', () => ({
   chatSessionService: {
     getSession: mock(async () => null),
@@ -52,12 +51,6 @@ mock.module('../modules/documents/index', () => ({
   fileContextService: { prepareFileContext },
 }));
 
-const actualMistralHelpers = await import('../modules/tutor/mistral-helpers');
-mock.module('../modules/tutor/mistral-helpers', () => ({
-  ...actualMistralHelpers,
-  getLearningContext: mock(async () => null),
-}));
-
 const summarizeIfNeeded = mock(async () => {});
 mock.module('../modules/tutor/summarization.service', () => ({
   summarizationService: { summarizeIfNeeded },
@@ -76,24 +69,11 @@ mock.module('../modules/tutor/turn-analysis.service', () => ({
   turnInstruction,
 }));
 
-mock.module('../modules/tutor/cognitive-profile.service', () => ({
-  cognitiveProfileService: { getProfileSummary: mock(async () => null) },
-}));
-
 const record = mock(async () => {});
 const incrementTokenUsage = mock(async () => {});
 mock.module('../modules/billing/index', () => ({
   costTrackingService: { record },
   incrementTokenUsage,
-}));
-
-const recallForSession = mock(async (params: { stored: string | null }) => (params.stored === '' ? null : params.stored));
-mock.module('../modules/tutor/episodic-memory.service', () => ({
-  episodicMemoryService: { recallForSession },
-}));
-
-mock.module('../modules/tutor/subject-profile.service', () => ({
-  subjectProfileService: { formatSubjectMemoryForPrompt: mock(async () => null) },
 }));
 
 const sheet = (statement: string): ExerciseSheet => ({
@@ -227,7 +207,6 @@ describe('ChatOrchestrationService.screenDistress — a request the route refuse
 describe('ChatOrchestrationService.prepareTurn — exercise', () => {
   beforeEach(() => {
     currentState = null;
-    storedEpisodes = null;
     prepareExerciseTurn.mockClear();
   });
 
@@ -280,14 +259,6 @@ describe('ChatOrchestrationService.prepareTurn — exercise', () => {
     expect(context.turnInstruction).toBe('<contrat>\nPalier 3\n</contrat>');
     expect(context.exerciseSheet?.statement).toBe('Résous 3x + 5 = 20.');
     expect(context.exerciseProgress).toEqual({ id: 'ex-1', hintLevel: 2, diagnosis: null, change: { levelChange: 1, top: 4, stepDone: false, solved: false } });
-  });
-
-  it("recalls the past sessions from the session's own block, the same every turn", async () => {
-    storedEpisodes = '<past_sessions>\nLes équations\n</past_sessions>';
-    recallForSession.mockClear();
-    const context = tutorTurn(await chatOrchestrationService.prepareTurn(request));
-    expect(recallForSession.mock.calls[0]?.[0]).toMatchObject({ sessionId: 'session-001', userId: 'user-001', stored: storedEpisodes });
-    expect(context.mergedLearningContext).toContain('Les équations');
   });
 
   it('keeps the turn instruction and no progress without a contract', async () => {

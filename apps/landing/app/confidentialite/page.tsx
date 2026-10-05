@@ -53,9 +53,8 @@ export default function ConfidentialitePage() {
         <p><strong>Contenus d&apos;apprentissage :</strong> les messages échangés avec le
           tuteur, les photos et documents d&apos;exercices envoyés, les messages vocaux et
           leur transcription, ainsi que les cartes de révision générées.</p>
-        <p><strong>Personnalisation pédagogique :</strong> un profil d&apos;apprentissage
-          (points forts, difficultés, style d&apos;apprentissage préféré), des résumés de
-          sessions de travail conservés 90 jours, et la progression de révision.</p>
+        <p><strong>Suivi de la séance :</strong> un résumé de la conversation en cours, pour
+          que le tuteur garde le fil, et la progression de révision.</p>
         <p><strong>Données techniques :</strong> adresse IP et type de navigateur lors des
           connexions (sécurité du compte), données d&apos;abonnement.</p>
         <p><strong>Site vitrine :</strong> votre adresse e-mail si vous nous contactez.</p>
@@ -64,8 +63,6 @@ export default function ConfidentialitePage() {
         <ul>
           <li><strong>Fournir le service de tutorat</strong> (compte, conversations,
             révisions) — exécution du contrat.</li>
-          <li><strong>Personnaliser la pédagogie</strong> (profil d&apos;apprentissage,
-            mémoire des sessions) — exécution du contrat ; voir la section 4 ci-dessous.</li>
           <li><strong>Créer et gérer le compte d&apos;un enfant</strong> — consentement du
             titulaire de l&apos;autorité parentale et, conjointement, de l&apos;enfant
             (article 45 de la loi Informatique et Libertés pour les moins de 15 ans).</li>
@@ -76,20 +73,16 @@ export default function ConfidentialitePage() {
           <li><strong>Contact</strong> — consentement.</li>
         </ul>
 
-        <h2>4. Le profil d&apos;apprentissage, expliqué simplement</h2>
+        <h2>4. Aucun profil d&apos;apprentissage</h2>
         <p>
-          Pour adapter ses explications, {BRAND_NAME} note au fil des conversations ce que
-          l&apos;élève maîtrise et ce qui lui pose des difficultés (par exemple « à
-          l&apos;aise en géométrie, fractions à consolider »). Ce profil sert uniquement à
-          ajuster le tutorat. Il n&apos;est jamais utilisé à des fins publicitaires, jamais
-          partagé avec l&apos;établissement scolaire, et ne produit aucune décision
-          automatisée ayant un effet juridique (article 22 du RGPD). Vous pouvez le
-          consulter ou demander son effacement à tout moment.
+          {BRAND_NAME} ne tient aucun profil de l&apos;élève : une séance ne sert pas à la
+          suivante. Pendant une séance, un résumé de la conversation lui sert à garder le
+          fil ; il ne produit aucune décision automatisée ayant un effet juridique (article 22
+          du RGPD).
         </p>
         <p>
-          <strong>Pour toi, élève :</strong> Tom retiendra ce que tu sais déjà bien faire et
-          ce qui est encore difficile, pour mieux t&apos;expliquer. Personne d&apos;autre ne
-          verra ces notes, et tu pourras demander à les effacer, toi-même ou avec tes parents.
+          <strong>Pour toi, élève :</strong> Tom ne prend pas de notes sur toi. Il se souvient de
+          ce que vous vous êtes dit pendant la séance ; une nouvelle séance repart de zéro.
         </p>
 
         <h2>5. Qui accède à vos données ?</h2>
@@ -123,12 +116,10 @@ export default function ConfidentialitePage() {
         <h2>7. Combien de temps conservons-nous vos données ?</h2>
         <ul>
           <li><strong>Compte et contenus d&apos;apprentissage</strong> (messages, fichiers,
-            profil, cartes de révision) : pendant l&apos;utilisation du service, puis
+            cartes de révision) : pendant l&apos;utilisation du service, puis
             effacés dans un délai de 30 jours après la suppression du compte.</li>
           <li><strong>Compte inactif</strong> : supprimé après 3 ans sans connexion, après
             relance par e-mail.</li>
-          <li><strong>Résumés de sessions de travail</strong> (mémoire pédagogique) :
-            90 jours.</li>
           <li><strong>Sessions de connexion</strong> : 7 jours.</li>
           <li><strong>Journaux techniques et de sécurité</strong> : 12 mois.</li>
           <li><strong>Données de facturation</strong> : 10 ans (obligation comptable).</li>

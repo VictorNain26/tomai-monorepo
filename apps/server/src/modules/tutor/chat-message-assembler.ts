@@ -46,7 +46,6 @@ export interface ChatTurnParts {
   conversationSummary?: string | null | undefined;
   history: readonly HistoryTurn[];
   subjectBlock?: string | null | undefined;
-  studentContextBlock?: string | null | undefined;
   turnInstruction?: string | null | undefined;
   inputMode?: string | undefined;
   studentText: string;
@@ -114,7 +113,6 @@ export function assembleChatPrompt(parts: ChatTurnParts): { system: string; mess
 
   const text = [
     parts.subjectBlock,
-    parts.studentContextBlock,
     parts.turnInstruction,
     parts.inputMode === 'voice' ? VOICE_MARKER : null,
     wrapUserMessage(parts.studentText),

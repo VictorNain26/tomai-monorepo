@@ -8,7 +8,6 @@ import { diagnose } from '../modules/tutor/exercise-diagnosis.service';
 import { readImageWithMistralVision } from '../modules/documents/mistral-vision';
 import { moderateReply, moderateStudentTurn, moderateTexts } from '../platform/ai/moderation';
 import { detectDistress } from '../modules/tutor/distress';
-import { mistralEmbeddingsService } from '../modules/tutor/mistral-embeddings.service';
 import { getVoxtralTTSService } from '../modules/voice/voxtral-tts.service';
 import { getVoxtralTranscribeService } from '../modules/voice/voxtral-transcribe.service';
 import { HAS_MISTRAL } from './_creds';
@@ -69,7 +68,6 @@ describe('Mistral Small 4 on the EU endpoint (real API)', () => {
     const tools = buildChatTools({ userId: 'live-user', sessionId: randomUUID(), schoolLevel: 'troisieme', check: { sheet: null, uncertain: false, diagnosis: null, studentText: '', pastStudentTexts: [] }, emitDeckCreated: () => undefined });
     const asks: [string, string][] = [
       ['generate_flashcards', 'Crée-moi 5 cartes de révision sur le théorème de Pythagore, en mathématiques.'],
-      ['update_student_profile', "Note dans mon profil que je confonds l'aire et le périmètre, en mathématiques."],
     ];
     for (const [name, prompt] of asks) {
       const result = await generateWithTools({
@@ -78,7 +76,7 @@ describe('Mistral Small 4 on the EU endpoint (real API)', () => {
         activeTools: [name],
         toolChoice: 'required',
         // The call is returned, never run: no database is touched.
-        toolApproval: { generate_flashcards: 'denied', update_student_profile: 'denied' },
+        toolApproval: { generate_flashcards: 'denied' },
         // The chat's own settings (ai-chat.service.ts).
         providerOptions: { mistral: { parallelToolCalls: false, reasoningEffort: 'none' } },
         prompt,
@@ -164,10 +162,6 @@ describe('Mistral Small 4 on the EU endpoint (real API)', () => {
     expect(result.text.replace(/\s/g, '').toLowerCase()).toContain('3x+5=20');
     expect(result.usage?.inputTokens).toBeGreaterThan(0);
   }, 60_000);
-
-  it('embeds text in 1024 dimensions', async () => {
-    expect((await mistralEmbeddingsService.embed('bonjour')).length).toBe(1024);
-  }, 30_000);
 
   it('synthesises then transcribes French speech', async () => {
     const tts = await getVoxtralTTSService().synthesize('Bonjour, je suis Tom.');

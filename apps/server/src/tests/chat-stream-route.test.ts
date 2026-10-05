@@ -81,8 +81,6 @@ const prepareTurn = mock(async (_req: unknown) => ({
   subject: undefined,
   conversationSummary: null,
   conversationHistory: [],
-  cognitiveProfileSummary: null,
-  mergedLearningContext: null,
   turnInstruction: null,
   turnAnalysis: { subject: 'general', bringsExercise: false, proposesAnswer: false, asksSolution: false, asksExplanation: false, wantsFlashcards: false },
   files: [],
