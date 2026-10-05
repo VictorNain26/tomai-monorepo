@@ -1,5 +1,5 @@
 {
-  "id": "65f91988-e9f6-4159-aed0-fb1024a0862d",
+  "id": "249a6827-e3b2-4d23-bbd0-cf598a9d561d",
   "prevId": "36390f46-4137-4073-99d6-fc29fa84ce87",
   "version": "7",
   "dialect": "postgresql",
@@ -336,8 +336,8 @@
         }
       },
       "indexes": {
-        "idx_distress_events_session": {
-          "name": "idx_distress_events_session",
+        "uq_distress_events_session": {
+          "name": "uq_distress_events_session",
           "columns": [
             {
               "expression": "session_id",
@@ -346,7 +346,7 @@
               "nulls": "last"
             }
           ],
-          "isUnique": false,
+          "isUnique": true,
           "concurrently": false,
           "method": "btree",
           "with": {}

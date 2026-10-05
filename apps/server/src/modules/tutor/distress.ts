@@ -25,20 +25,25 @@ const normalized = (text: string) => text
 
 // « mourir de rire », « de honte »… are figures of speech, not wishes.
 const DYING = "mourir(?! de (?:rire|honte|faim|froid|chaud|peur|ennui))";
-const SELF = "(?:me |m')";
+// The student speaking of themself, as they type it: a character's wish is a school text.
+const I_HAVE = "\\b(?:j'ai|j ai|jai|je n'ai|je nai|j'avais|javais)";
+const I_WANT = "\\b(?:je veux|j'veux|jveux|je voudrais|j'voudrais|j'aimerais|jaimerais)";
+const WISH = `(?:${DYING}|disparaitre|crever|en finir|me tuer|me suicider|me faire du mal|ne plus exister|plus exister|ne plus etre la|plus etre la|ne plus vivre|plus vivre)`;
+const BODY = "(?:expres|les veines|les poignets|le poignet|le bras|les bras)";
 
-/** First-person wishes to die or disappear, and self-harm, as a student types them. */
+/** First-person wishes to die or disappear, and self-harm. */
 const RULES: readonly RegExp[] = [
-  new RegExp(`envie de (?:${DYING}|disparaitre|crever|en finir)`),
-  /(?:plus|pas|aucune) envie de vivre/,
-  new RegExp(`(?:je veux|j'veux|je voudrais|j'aimerais) (?:${DYING}|disparaitre|en finir|ne plus exister|plus exister|ne plus etre la|plus etre la)`),
-  new RegExp(`(?:je |j')(?:vais|veux|voudrais|pense a|pense|vais aller) ${SELF}(?:tuer|suicider|faire du mal|blesser|scarifier|pendre)`),
-  new RegExp(`${SELF}(?:suicider|scarifier|ouvrir les veines)`),
-  /je me (?:fais du mal|blesse expres|scarifie|coupe les|frappe)/,
-  /en finir avec (?:la vie|tout|moi)/,
-  /(?:si|quand) je (?:disparaissais|mourais|serais mort|n'etais plus la|ne serais plus la)/,
-  /personne (?:ne )?(?:m'aimerait|me regretterait|le remarquerait|s'en rendrait compte)/,
-  /la vie (?:n'a|na) (?:plus|pas) de sens/,
+  new RegExp(`${I_HAVE} (?:\\w+ )?envie (?:de |d')${WISH}`),
+  new RegExp(`${I_HAVE} (?:vraiment )?(?:plus|pas|aucune|plus aucune) envie de vivre`),
+  new RegExp(`${I_WANT} ${WISH}`),
+  /\b(?:je |j')(?:vais|veux|voudrais|pense a|pense|vais finir par) me (?:tuer|suicider|faire du mal|scarifier|pendre)/,
+  /\bme (?:suicider|scarifier|ouvrir les veines)/,
+  new RegExp(`\\bje me (?:fais du mal|scarifie|blesse expres|coupe ${BODY})`),
+  new RegExp(`\\bje me suis (?:fait du mal|scarifiee?|blessee? expres|coupee? ${BODY})`),
+  /en finir avec (?:la vie|moi)/,
+  /\bsi je (?:disparaissais|mourais|serais mort|etais mort|n'etais plus la|ne serais plus la|n'existais plus)/,
+  /\bpersonne (?:ne )?(?:m'aimerait|me regretterait)/,
+  /\bma vie (?:n'a|na) (?:plus|pas|aucun) (?:de )?sens|\b(?:la vie|vivre) (?:n'a|na) plus de sens/,
 ];
 
 /** Whether the French rules see distress in the student's text. */

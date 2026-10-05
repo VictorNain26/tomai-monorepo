@@ -87,6 +87,11 @@ describe('moderateStudentTurn', () => {
     ]);
   });
 
+  it('keeps a missing selfharm score missing: it is not a low one', async () => {
+    results = [{ categories: { selfharm: true }, categoryScores: {} }];
+    expect(await moderateStudentTurn(null, 'adieu')).toEqual({ flagged: ['selfharm'], selfharmScore: null });
+  });
+
   it('classifies the message alone at the start of a session, and throws without a result', async () => {
     results = [result([])];
     expect(await moderateStudentTurn(null, 'Bonjour')).toEqual({ flagged: [], selfharmScore: 0.001 });

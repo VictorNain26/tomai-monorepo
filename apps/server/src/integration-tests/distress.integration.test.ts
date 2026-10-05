@@ -42,4 +42,20 @@ describe.skipIf(!dbReachable)('answerDistress — from postgres', () => {
       ['assistant', DISTRESS_REPLY, { distress: 'closed' }],
     ]);
   });
+
+  it('records one event for two distress messages sent at once', async () => {
+    const { db } = await import('../db/connection');
+    const { messages } = await import('../db/schema');
+    const { studySessions } = await import('../modules/tutor/session.schema');
+    const { distressEvents } = await import('../modules/tutor/distress.schema');
+    const { answerDistress } = await import('../modules/tutor/distress.service');
+    const [session] = await db.insert(studySessions).values({ userId: studentId }).returning({ id: studySessions.id });
+    if (!session) throw new Error('session not created');
+    const turn = (content: string) => answerDistress({ turn: { kind: 'distress', sessionId: session.id, source: 'rules', selfharmScore: 0.1 }, userId: studentId, content });
+
+    await Promise.all([turn('je veux mourir'), turn('je veux en finir')]);
+
+    expect(await db.select().from(distressEvents).where(eq(distressEvents.sessionId, session.id))).toHaveLength(1);
+    expect(await db.select().from(messages).where(eq(messages.sessionId, session.id))).toHaveLength(4);
+  });
 });

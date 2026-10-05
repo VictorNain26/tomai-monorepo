@@ -25,6 +25,7 @@ mock.module('../modules/tutor/chat-session.service', () => ({
   },
 }));
 
+const getSessionHistory = mock(async (_sessionId: string, _options?: unknown): Promise<{ id: string; role: string; content: string; createdAt: Date }[]> => []);
 const saveMessage = mock(
   async (
     _sessionId: string,
@@ -35,7 +36,7 @@ const saveMessage = mock(
   ) => ({ messageId: 'msg-1', realSessionId: 'session-001' }),
 );
 mock.module('../modules/tutor/chat-message.service', () => ({
-  chatMessageService: { saveMessage, getSessionHistory: mock(async () => []) },
+  chatMessageService: { saveMessage, getSessionHistory },
 }));
 
 mock.module('../modules/tutor/study-sessions.repository', () => ({
@@ -111,7 +112,7 @@ mock.module('../modules/tutor/exercise-turn', () => ({ prepareExerciseTurn }));
 const recordTurn = mock(async (_id: string, _turn: unknown) => {});
 mock.module('../modules/tutor/exercise-sheets.repository', () => ({ exerciseSheetsRepository: { recordTurn } }));
 
-let moderation: { flagged: string[]; selfharmScore: number } | Error = { flagged: [], selfharmScore: 0 };
+let moderation: { flagged: string[]; selfharmScore: number | null } | Error = { flagged: [], selfharmScore: 0 };
 const moderateStudentTurn = mock(async (_lastTutorText: string | null, _studentText: string) => {
   if (moderation instanceof Error) throw moderation;
   return moderation;
@@ -171,12 +172,52 @@ describe('ChatOrchestrationService.prepareTurn — distress and input moderation
     expect(context.inputModeration).toEqual(['violence_and_threats']);
   });
 
+  it('moderates nothing without text and keeps no moderation with the turn, and keeps a missing score missing', async () => {
+    moderateStudentTurn.mockClear();
+    const context = tutorTurn(await chatOrchestrationService.prepareTurn({ ...studentTurn, content: '  ' }));
+    expect(moderateStudentTurn).not.toHaveBeenCalled();
+    expect('inputModeration' in context).toBe(false);
+
+    moderation = { flagged: ['selfharm'], selfharmScore: null };
+    expect(await chatOrchestrationService.prepareTurn({ ...studentTurn, content: 'Je pars loin, adieu' }))
+      .toEqual({ kind: 'distress', sessionId: 'session-001', source: 'moderation', selfharmScore: null });
+  });
+
   it('answers any message of a session closed for distress with the fixed reply, without moderating it', async () => {
     closed = true;
     moderateStudentTurn.mockClear();
     expect(await chatOrchestrationService.prepareTurn({ ...studentTurn, content: 'Résous 3x + 5 = 20.' }))
       .toEqual({ kind: 'distress', sessionId: 'session-001', source: 'closed', selfharmScore: null });
     expect(moderateStudentTurn).not.toHaveBeenCalled();
+  });
+});
+
+describe('ChatOrchestrationService.screenDistress — a request the route refuses', () => {
+  afterEach(() => {
+    closed = false;
+    moderation = { flagged: [], selfharmScore: 0 };
+    getSessionHistory.mockImplementation(async () => []);
+  });
+
+  it("judges the message after the tutor's last one, and finds nothing in a plain one", async () => {
+    getSessionHistory.mockImplementation(async () => [
+      { id: 'm1', role: 'user', content: 'Résous 3x + 5 = 20.', createdAt: new Date() },
+      { id: 'm2', role: 'assistant', content: 'Que fais-tu du + 5 ?', createdAt: new Date() },
+    ]);
+    moderateStudentTurn.mockClear();
+    moderation = { flagged: ['selfharm'], selfharmScore: 0.6 };
+    expect(await chatOrchestrationService.screenDistress({ userId: 'user-001', content: "j'ai envie de mourir" }))
+      .toEqual({ kind: 'distress', sessionId: 'session-001', source: 'both', selfharmScore: 0.6 });
+    expect(moderateStudentTurn).toHaveBeenCalledWith('Que fais-tu du + 5 ?', "j'ai envie de mourir");
+
+    moderation = { flagged: [], selfharmScore: 0 };
+    expect(await chatOrchestrationService.screenDistress({ userId: 'user-001', content: 'Résous 3x + 5 = 20.' })).toBeNull();
+  });
+
+  it('answers a closed session with the fixed reply', async () => {
+    closed = true;
+    expect(await chatOrchestrationService.screenDistress({ userId: 'user-001', content: 'Tu es là ?' }))
+      .toEqual({ kind: 'distress', sessionId: 'session-001', source: 'closed', selfharmScore: null });
   });
 });
 

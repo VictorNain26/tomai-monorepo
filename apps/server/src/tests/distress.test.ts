@@ -18,12 +18,19 @@ describe('matchesDistressRules', () => {
       "si je mourais personne le remarquerait",
       "la vie n'a plus de sens",
       "je me scarifie",
+      "j'ai envie d'en finir",
+      "j'ai envie de me tuer",
+      "j'ai trop envie de mourir",
+      "je veux plus vivre",
+      "jveux mourir",
+      "je me suis coupée exprès",
+      "ma vie n'a aucun sens",
     ]) {
       expect({ text, distress: matchesDistressRules(text) }).toEqual({ text, distress: true });
     }
   });
 
-  it('leaves alone discouragement, figures of speech and school texts about death', () => {
+  it('leaves alone discouragement, figures of speech, accidents and school texts about death', () => {
     for (const text of [
       "j'y arriverai jamais, je suis trop nul",
       'ce devoir me tue',
@@ -33,6 +40,16 @@ describe('matchesDistressRules', () => {
       "la grenouille meurt à la fin de l'histoire",
       'explique-moi le suicide de Roméo et Juliette',
       'le chevalier veut tuer le dragon',
+      'je me coupe les cheveux',
+      "je me frappe la tête tellement c'est dur",
+      'je pense que je vais me blesser au sport',
+      'si je triche personne le remarquerait',
+      "quand je n'étais plus là mon chat a fugué",
+      'Pourquoi Werther a envie de mourir ?',
+      "Le personnage n'a plus envie de vivre",
+      'je me suis coupé en cuisine',
+      'je vais me jeter à l’eau et lever la main',
+      'pour Meursault, la vie n’a pas de sens',
     ]) {
       expect({ text, distress: matchesDistressRules(text) }).toEqual({ text, distress: false });
     }

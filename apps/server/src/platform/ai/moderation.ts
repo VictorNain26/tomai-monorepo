@@ -71,7 +71,8 @@ const INPUT_RECORDED = ['selfharm', 'sexual', 'jailbreaking', 'pii', 'violence_a
 export interface InputModeration {
   /** The recorded categories Mistral flags. */
   flagged: string[];
-  selfharmScore: number;
+  /** Null when Mistral returns no score: a missing score is not a low one. */
+  selfharmScore: number | null;
 }
 
 /** The student's message moderated, the tutor's last message for context. Throws when moderation is unavailable. */
@@ -84,6 +85,6 @@ export async function moderateStudentTurn(lastTutorText: string | null, studentT
   const [result] = resultsFor(response.results, 1);
   return {
     flagged: INPUT_RECORDED.filter((category) => result?.categories?.[category] === true),
-    selfharmScore: result?.categoryScores?.['selfharm'] ?? 0,
+    selfharmScore: result?.categoryScores?.['selfharm'] ?? null,
   };
 }

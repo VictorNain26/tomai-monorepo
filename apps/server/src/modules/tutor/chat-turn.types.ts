@@ -24,8 +24,8 @@ export interface PrepareTurnRequest {
 /** @public — reachable only via the typed client's inferred route return types (apps/server build:types), not a direct import; knip false positive. */
 export interface ChatTurnContext {
   kind: 'tutor';
-  /** The categories input moderation flagged, kept with the message; null when it could not answer. */
-  inputModeration: string[] | null;
+  /** The categories input moderation flagged, kept with the message; null when it could not answer, absent without text. */
+  inputModeration?: string[] | null;
   sessionId: string;
   subject?: string;
   conversationSummary: string | null;
