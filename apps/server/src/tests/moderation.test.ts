@@ -48,6 +48,22 @@ describe('moderateReply', () => {
   });
 });
 
+describe('moderateReply — edge cases', () => {
+  it('moderates the reply alone when the student sent no text, a photo alone', async () => {
+    results = [result([])];
+    expect(await moderateReply('  ', 'Que vois-tu sur la photo ?')).toEqual([]);
+    expect(chatCalls).toHaveLength(0);
+    expect(textCalls[0]?.[0]).toEqual({ model: 'mistral-moderation-2603', inputs: ['Que vois-tu sur la photo ?'] });
+  });
+
+  it('throws when moderation answers for fewer texts than asked: a text without its result was not checked', async () => {
+    results = [];
+    expect(moderateReply('x', 'y')).rejects.toThrow('Moderation returned 0 results for 1 inputs');
+    results = [result([])];
+    expect(moderateTexts(['a', 'b'])).rejects.toThrow('Moderation returned 1 results for 2 inputs');
+  });
+});
+
 describe('moderateTexts', () => {
   it('gives the blocking categories of each text in order, and calls nothing for none', async () => {
     results = [result([]), result(['sexual'])];

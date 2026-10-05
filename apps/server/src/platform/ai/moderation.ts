@@ -19,25 +19,36 @@ const MODERATION_TIMEOUT_MS = 5_000;
  */
 export const OUTPUT_BLOCKING = ['sexual', 'hate_and_discrimination', 'violence_and_threats', 'dangerous', 'criminal', 'selfharm'] as const;
 
-function blocking(result: ModerationObject | undefined): string[] {
-  const flagged = OUTPUT_BLOCKING.filter((category) => result?.categories?.[category] === true);
+function blocking(result: ModerationObject): string[] {
+  const flagged = OUTPUT_BLOCKING.filter((category) => result.categories?.[category] === true);
   if (flagged.length > 0) {
     logger.warn('Output flagged by moderation', {
       operation: 'moderation:flagged',
       categories: flagged,
-      scores: Object.fromEntries(flagged.map((category) => [category, result?.categoryScores?.[category]])),
+      scores: Object.fromEntries(flagged.map((category) => [category, result.categoryScores?.[category]])),
     });
   }
   return flagged;
 }
 
-/** The blocking categories of the tutor's reply, read with the student's message for context. Throws when moderation is unavailable. */
+/** One result per input, or the answer cannot be read: a text without its result was not checked. */
+function resultsFor(results: readonly ModerationObject[], count: number): ModerationObject[] {
+  if (results.length !== count) throw new Error(`Moderation returned ${results.length} results for ${count} inputs`);
+  return [...results];
+}
+
+/**
+ * The blocking categories of the tutor's reply, read with the student's message for context; a
+ * turn without text (a photo alone) moderates the reply by itself. Throws when moderation is
+ * unavailable.
+ */
 export async function moderateReply(studentText: string, reply: string): Promise<string[]> {
+  if (!studentText.trim()) return (await moderateTexts([reply]))[0] ?? [];
   const response = await getMistralSdk().classifiers.moderateChat(
     { model: MODERATION_MODEL, inputs: [{ role: 'user', content: studentText }, { role: 'assistant', content: reply }] },
     { timeoutMs: MODERATION_TIMEOUT_MS },
   );
-  return blocking(response.results[0]);
+  return resultsFor(response.results, 1).map(blocking)[0] ?? [];
 }
 
 /** The blocking categories of each text, in order. Throws when moderation is unavailable. */
@@ -47,5 +58,5 @@ export async function moderateTexts(texts: readonly string[]): Promise<string[][
     { model: MODERATION_MODEL, inputs: [...texts] },
     { timeoutMs: MODERATION_TIMEOUT_MS },
   );
-  return texts.map((_, index) => blocking(response.results[index]));
+  return resultsFor(response.results, texts.length).map(blocking);
 }

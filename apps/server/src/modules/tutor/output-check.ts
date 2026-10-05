@@ -44,6 +44,16 @@ function watchedForms(ctx: OutputCheckContext): string[] {
   return forms.filter((form) => !findLeakForm(sheet.statement, [form]));
 }
 
+/**
+ * Whether a revision card may be stored: the exercise's answer and the tags, not the equalities —
+ * a true-or-false statement, a common mistake or a wrong option is false on purpose. A form under
+ * three characters (« 5 ») is no sign of the exercise in a card on its topic, where it appears for
+ * itself.
+ */
+export function cardTextPasses(text: string, ctx: OutputCheckContext): boolean {
+  return !findLeakForm(text, watchedForms(ctx).filter((form) => form.trim().length >= 3)) && !PROMPT_TAG.test(text);
+}
+
 export function checkOutput(text: string, ctx: OutputCheckContext): Finding[] {
   const findings: Finding[] = [];
   if (findLeakForm(text, watchedForms(ctx))) findings.push({ kind: 'answer' });
@@ -79,11 +89,13 @@ export async function titlePasses(title: string, ctx: OutputCheckContext): Promi
  * the writer must not see.
  */
 export function regenerationInstruction(findings: readonly Finding[]): string {
-  const lines = findings.map((finding) => {
-    if (finding.kind === 'answer') return "Elle donnait la réponse de l'exercice, ou l'une de ses formes : ne l'écris pas, même pour vérifier.";
-    if (finding.kind === 'tag') return "Elle contenait une balise interne : n'écris que ce qui s'adresse à l'élève.";
-    if (finding.kind === 'moderation' || finding.kind === 'unmoderated') return "Elle a été retenue par la modération : écris une réponse qui convient à un élève de collège.";
-    return `Elle contenait une égalité fausse, « ${finding.quote} » : ne l'écris pas, et refais chaque calcul que tu écris.`;
+  // An unmoderated text is never regenerated (`controlled-turn.ts`): it has no line.
+  const lines = findings.flatMap((finding) => {
+    if (finding.kind === 'answer') return ["Elle donnait la réponse de l'exercice, ou l'une de ses formes : ne l'écris pas, même pour vérifier."];
+    if (finding.kind === 'tag') return ["Elle contenait une balise interne : n'écris que ce qui s'adresse à l'élève."];
+    if (finding.kind === 'moderation') return ['Elle a été retenue par la modération : écris une réponse qui convient à un élève de collège.'];
+    if (finding.kind === 'equality') return [`Elle contenait une égalité fausse, « ${finding.quote} » : ne l'écris pas, et refais chaque calcul que tu écris.`];
+    return [];
   });
   return `<critical_instruction>\nUne première réponse à ce tour a été retenue par le serveur, l'élève ne l'a pas vue. Écris-en une nouvelle.\n${[...new Set(lines)].join('\n')}\n</critical_instruction>`;
 }

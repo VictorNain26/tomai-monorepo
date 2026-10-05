@@ -47,10 +47,13 @@ mock.module('../modules/learning/fsrs.service', () => ({
 }));
 
 // DB mock — src/db/connection.ts
+/** What each insert of the transaction received, in order: the deck, then its cards. */
+const insertedValues: unknown[] = [];
 const mockTxInsert = mock(() => ({
-  values: mock(() => ({
-    returning: mock(() => [{ id: 'deck-001', title: 'Test deck' }]),
-  })),
+  values: mock((values: unknown) => {
+    insertedValues.push(values);
+    return { returning: mock(() => [{ id: 'deck-001', title: 'Test deck' }]) };
+  }),
 }));
 
 mock.module('../db/connection', () => ({
@@ -103,6 +106,7 @@ const baseContext = {
 };
 
 beforeEach(() => {
+  insertedValues.length = 0;
   moderation = [];
   cardGenThrows = false;
   cardGenResult = {
@@ -155,17 +159,35 @@ describe('Tool Executor', () => {
 
       const result = await executeTool('generate_flashcards', { topic: 'Équations', subject: 'mathematiques' }, baseContext) as Record<string, unknown>;
 
-      expect(result).toMatchObject({ generated: true, cardCount: 1 });
+      expect(result).toMatchObject({ generated: true });
+      expect(insertedValues[1]).toHaveLength(1);
+      expect(JSON.stringify(insertedValues[1])).toContain('Q2');
     });
 
-    it('stores no deck when no card passes, or when moderation cannot answer', async () => {
-      for (const failing of [[['sexual'], ['sexual']], new Error('moderation down')]) {
-        moderation = failing;
+    it('stores no deck when no card passes, nor when moderation cannot answer, which it reports as transient', async () => {
+      for (const [failing, category] of [[[['sexual'], ['sexual']], 'business'], [new Error('moderation down'), 'transient']] as const) {
+        moderation = failing instanceof Error ? failing : failing.map((flags) => [...flags]);
         mockTxInsert.mockClear();
         const result = await executeTool('generate_flashcards', { topic: 'Fractions', subject: 'mathematiques' }, baseContext) as Record<string, unknown>;
-        expect(result).toMatchObject({ isError: true, errorCategory: 'business' });
+        expect(result).toMatchObject({ isError: true, errorCategory: category });
         expect(mockTxInsert).not.toHaveBeenCalled();
       }
+    });
+
+    it('keeps a card false on purpose or holding a short number, and names a deck whose topic gives the answer neutrally', async () => {
+      cardGenResult = {
+        cards: [
+          { cardType: 'vrai_faux', content: { statement: '3 × 4 = 11', isTrue: false } },
+          { cardType: 'flashcard', content: { front: 'Combien font 2 + 3 ?', back: '5' } },
+        ],
+        count: 2,
+      };
+
+      const result = await executeTool('generate_flashcards', { topic: 'Équation : x = 5', subject: 'mathematiques' }, baseContext) as Record<string, unknown>;
+
+      expect(result).toMatchObject({ generated: true });
+      expect(insertedValues[0]).toMatchObject({ title: 'Cartes de révision' });
+      expect(insertedValues[1]).toHaveLength(2);
     });
 
     it('should generate without a topic context', async () => {

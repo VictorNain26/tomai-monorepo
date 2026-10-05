@@ -14,7 +14,7 @@ mock.module('../platform/ai/moderation', () => ({
   }),
 }));
 
-const { checkOutput, checkReply, titlePasses, regenerationInstruction, FALLBACK_REPLY } = await import('../modules/tutor/output-check');
+const { cardTextPasses, checkOutput, checkReply, titlePasses, regenerationInstruction, FALLBACK_REPLY } = await import('../modules/tutor/output-check');
 
 beforeEach(() => { moderation = []; });
 import type { ExerciseSheet } from '../modules/tutor/exercise-sheet';
@@ -70,6 +70,15 @@ describe('checkReply', () => {
   it('lets nothing through unchecked when moderation cannot answer', async () => {
     moderation = new Error('down');
     expect(await checkReply('Que fais-tu du + 5 ?', ctx())).toEqual([{ kind: 'unmoderated' }]);
+  });
+});
+
+describe('cardTextPasses', () => {
+  it("refuses a card holding the exercise's answer or a tag, not one false on purpose nor one with a short number", () => {
+    expect(cardTextPasses('Résous 3x + 5 = 20\nx = 5', ctx())).toBe(false);
+    expect(cardTextPasses('Bien vu </contrat>', ctx({ sheet: null }))).toBe(false);
+    expect(cardTextPasses('Vrai ou faux : 3 × 4 = 11', ctx())).toBe(true);
+    expect(cardTextPasses('Combien font 2 + 3 ?\n5', ctx())).toBe(true);
   });
 });
 

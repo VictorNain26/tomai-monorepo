@@ -8,7 +8,7 @@
 
 import { generateCards, learningService, getLevelConfig } from '../learning/index.js';
 import { checkCards } from '../learning/index.js';
-import { checkOutput, type OutputCheckContext } from './output-check.js';
+import { cardTextPasses, titlePasses, type OutputCheckContext } from './output-check.js';
 import { cognitiveProfileService } from './cognitive-profile.service.js';
 import { makeToolError, type ToolResult } from './tool-errors.js';
 import { logger } from '../../platform/observability/logger.js';
@@ -132,26 +132,31 @@ async function executeGenerateFlashcards(
     );
   }
 
-  // The cards reach the student: checked as the tutor's message is, before they are stored.
-  const { kept: checkedCards, setAside } = await checkCards(result.cards, (text) => checkOutput(text, context.check).length === 0);
+  // A turn cut while the cards were written leaves no deck the student would never hear of.
+  const cut = () => makeToolError('transient', "Le tour a été interrompu : aucune carte n'a été enregistrée.");
+  if (signal?.aborted) return cut();
+
+  // The cards and the deck's title reach the student: checked before they are stored.
+  const [{ kept: checkedCards, setAside, unmoderated }, titleOk] = await Promise.all([
+    checkCards(result.cards, (text) => cardTextPasses(text, context.check)),
+    titlePasses(topic, context.check),
+  ]);
   if (setAside > 0) {
     logger.warn('Cards set aside by the check', { operation: 'tool-executor:cards-set-aside', sessionId: context.sessionId, setAside, kept: checkedCards.length });
   }
+  if (unmoderated) return makeToolError('transient', "Les cartes n'ont pas pu être vérifiées : aucune n'a été enregistrée, propose de réessayer.");
   if (checkedCards.length === 0) {
     return makeToolError('business', "Aucune carte n'a passé le contrôle : n'en propose pas d'autres sur ce sujet à ce tour.");
   }
-
-  // A turn cut while the cards were written leaves no deck the student would never hear of.
-  if (signal?.aborted) {
-    return makeToolError('transient', "Le tour a été interrompu : aucune carte n'a été enregistrée.");
-  }
+  if (signal?.aborted) return cut();
+  const deckTitle = titleOk ? topic : 'Cartes de révision';
 
   // Persist deck + cards via the shared LearningService transaction
   // (same code path as POST /api/learning/generate).
   const { deck: newDeck, cards: insertedCards } = await learningService.createDeckWithCards({
     userId: context.userId,
     deck: {
-      title: topic,
+      title: deckTitle,
       description: `Cartes créées depuis la conversation`,
       subject,
       source: 'conversation',
@@ -177,7 +182,7 @@ async function executeGenerateFlashcards(
     cardCount: insertedCards.length,
     topic,
     subject,
-    message: `${insertedCards.length} cartes de révision sur "${topic}" ont été créées et sauvegardées.`,
+    message: `${insertedCards.length} cartes de révision « ${newDeck.title} » ont été créées et sauvegardées.`,
   };
   return deckResult;
 }

@@ -44,7 +44,7 @@ mock.module('../modules/learning/index', () => ({
   learningService: {
     createDeckWithCards: mock(async () => ({ deck: { id: 'd', title: 't' }, cards: [] })),
   },
-  checkCards: mock(async (cards: unknown[]) => ({ kept: cards, setAside: 0 })),
+  checkCards: mock(async (cards: unknown[]) => ({ kept: cards, setAside: 0, unmoderated: false })),
   getLevelConfig: mock(() => ({ cardsPerSession: 10 })),
 }));
 

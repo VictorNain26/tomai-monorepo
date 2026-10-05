@@ -31,7 +31,7 @@ beforeEach(() => {
 
 describe('checkCards', () => {
   it('reads each card as the student does, without its indexes, and keeps those that pass', async () => {
-    expect(await checkCards(cards, () => true)).toEqual({ kept: cards, setAside: 0 });
+    expect(await checkCards(cards, () => true)).toEqual({ kept: cards, setAside: 0, unmoderated: false });
     expect(seen[0]?.[0]).toBe('Combien font 3 × 4 ?\n12\n11');
   });
 
@@ -42,9 +42,9 @@ describe('checkCards', () => {
     expect(setAside).toBe(2);
   });
 
-  it('keeps none when moderation cannot answer, and logs it', async () => {
+  it('keeps none when moderation cannot answer, says so apart from a refusal, and logs it', async () => {
     moderation = new Error('down');
-    expect(await checkCards(cards, () => true)).toEqual({ kept: [], setAside: 3 });
+    expect(await checkCards(cards, () => true)).toEqual({ kept: [], setAside: 3, unmoderated: true });
     expect(mockLogger.error).toHaveBeenCalledTimes(1);
   });
 });

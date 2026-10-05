@@ -12,8 +12,6 @@ import { learningService } from './learning.service.js';
 import { getUserLevel } from './routes.helpers.js';
 import { checkCards } from './card-check.js';
 import { PROMPT_TAG } from '../../lib/prompt-tags.js';
-import { wrongEqualities } from '../../lib/written-equalities.js';
-
 
 const generateBody = z.object({
   subject: z.string().min(1).max(100),
@@ -108,13 +106,14 @@ export const cardGenerateRoutes = new Hono<AuthEnv>()
           return c.json({ error: generationResult.error, code: generationResult.code }, 500);
         }
 
-        // No exercise outside the chat: the tags and the written equalities, with the moderation.
-        const { kept: generatedCards, setAside } = await checkCards(
-          generationResult.cards,
-          (text) => !PROMPT_TAG.test(text) && wrongEqualities(text, []).length === 0,
-        );
+        // No exercise outside the chat: the tags, with the moderation. Not the equalities: a
+        // true-or-false statement or a wrong option is false on purpose.
+        const { kept: generatedCards, setAside, unmoderated } = await checkCards(generationResult.cards, (text) => !PROMPT_TAG.test(text));
         if (setAside > 0) {
           logger.warn('Cards set aside by the check', { operation: 'learning:generate:set-aside', userId: user.id, setAside, kept: generatedCards.length });
+        }
+        if (unmoderated) {
+          return c.json({ error: "Les cartes n'ont pas pu être vérifiées. Réessaie dans un moment.", code: 'CARDS_UNCHECKED' }, 503);
         }
         if (generatedCards.length === 0) {
           return c.json({ error: "Aucune carte n'a passé le contrôle. Réessaie avec un autre sujet.", code: 'CARDS_HELD_BACK' }, 422);
