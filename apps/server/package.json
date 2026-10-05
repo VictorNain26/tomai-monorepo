@@ -26,7 +26,7 @@
     "start": "bun dist/index.js",
     "typecheck": "bun --bun tsc --noEmit",
     "typecheck:strict": "bun --bun tsc --noEmit",
-    "lint": "bun --bun eslint src --max-warnings 0",
+    "lint": "bun --bun eslint src scripts --max-warnings 0",
     "lint:fix": "bun --bun eslint src --fix",
     "test": "bun run scripts/run-tests.ts src/tests",
     "test:integration": "bun run scripts/run-tests.ts src/integration-tests --jobs=1",

@@ -17,7 +17,8 @@
         "src/live/**/*.test.ts"
       ],
       "project": [
-        "src/**/*.ts"
+        "src/**/*.ts",
+        "scripts/**/*.ts"
       ]
     },
     "packages/api": {

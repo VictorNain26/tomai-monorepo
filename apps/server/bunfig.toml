@@ -11,7 +11,6 @@ exact = false
 [test]
 # Configuration tests
 preload = ["./src/platform/config/env.ts"]
-# coverage: on demand, bun run test:coverage
 
 [run]
 # PRODUCTION: Configuration runtime pour éviter memory leaks
