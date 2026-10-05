@@ -14,7 +14,9 @@ Les appels qui passent par l'AI SDK retentent, eux, `MISTRAL_RETRY_ATTEMPTS` foi
 ## Ce que fait le SDK (lu dans la version installée)
 
 - `retryConfig` à la création du client (README, « Retries ») : stratégie `backoff`, codes
-  retentés par défaut 429, 500, 502, 503 et 504, `Retry-After` respecté.
+  retentés 429, 500, 502, 503 et 504 ; `Retry-After` lu, plafonné à `maxInterval`.
+- Un hook `beforeRequest` du `HTTPClient` (README, « Custom HTTP Client ») s'exécute à chaque
+  tentative : il peut lui donner son propre timeout.
 - `retryConnectionErrors` retente aussi les erreurs de connexion et les timeouts.
 - Le signal de timeout est créé une fois par appel (`esm/lib/sdks.js`) : toutes les tentatives
   le partagent. Un appel arrivé à son timeout serait retenté jusqu'à `maxElapsedTime`, chaque
@@ -22,20 +24,23 @@ Les appels qui passent par l'AI SDK retentent, eux, `MISTRAL_RETRY_ATTEMPTS` foi
 
 ## Tâches
 
-1. `platform/ai/mistral-sdk.ts` : `retryConfig` en `backoff` sur 429 et 5xx, fenêtre de 3 s,
-   sans les erreurs de connexion ni les timeouts. Retenter un timeout boucle jusqu'à la fin de
-   la fenêtre : mesuré, un appel bloqué à 500 ms de timeout durait 3,8 s ; et le timeout
-   global se règle par l'environnement, donc aucune fenêtre ne reste sûrement en dessous. Un
-   appel bloqué reste un échec à son timeout, et la réponse de repli part comme aujourd'hui.
-2. Tests contre un vrai serveur local, derrière le vrai `fetch` : un 503 puis une réponse, le
-   résultat arrive en deux requêtes ; une 400 n'est pas retentée ; un appel bloqué échoue à
-   son timeout en une requête.
+1. `platform/ai/mistral-sdk.ts` :
+   - modération, sur un client à elle : chaque tentative coupée à 1,5 s, timeouts et erreurs
+     de connexion retentés pendant 2,5 s, sous le budget de l'appel (5 s) ; les trois
+     constantes au même endroit, l'ordre tient par construction ;
+   - embeddings et voix : 429 et 5xx retentés pendant 3 s, pas un timeout, leurs appels
+     durant jusqu'à `MISTRAL_TIMEOUT` ; retenter un timeout sans timeout par tentative boucle
+     jusqu'à la fin de la fenêtre (mesuré : 3,8 s pour un timeout de 500 ms) ;
+   - `MISTRAL_RETRY_ATTEMPTS=0` coupe tout, comme pour l'AI SDK.
+2. Tests contre un vrai serveur local, derrière le vrai `fetch` : 503 passager retenté ; 503
+   durable abandonné à la fin de la fenêtre, avec le 503 ; appel bloqué du client partagé en
+   échec à son timeout, sans boucle ; tentative bloquée de la modération coupée puis
+   retentée ; modération bloquée à chaque tentative en échec avant son budget ; rien de
+   retenté à `MISTRAL_RETRY_ATTEMPTS=0`.
 3. `docs/suivi.md`.
 
 ## Hors périmètre
 
-- Un timeout par tentative, qui permettrait de retenter un appel bloqué : le SDK n'en a pas,
-  et le construire serait du code maison.
 - S4 repassé une fois après cette PR, annoncé.
 
 ## Validation
