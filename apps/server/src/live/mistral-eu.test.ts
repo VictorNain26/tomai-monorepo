@@ -90,11 +90,14 @@ describe('Mistral Small 4 on the EU endpoint (real API)', () => {
     }
   }, 60_000);
 
-  it('analyses a turn under the strict schema: a proposal, an agreement to cards', async () => {
+  it('analyses a turn under the strict schema: a statement with its attempt, a step under way, an agreement to cards', async () => {
     const attempt = await analyseTurn("Résous 3x + 5 = 20. J'ai trouvé x = 20/3 mais c'est faux.", null);
     expect(attempt.error).toBeUndefined();
     expect(attempt.subject).toBe('mathematiques');
-    expect(attempt.proposesAnswer).toBe(true);
+    expect(attempt).toMatchObject({ bringsExercise: true, proposesAnswer: true });
+
+    const step = await analyseTurn("J'ai enlevé 5 des deux côtés, ça fait 3x = 15.", 'Que fais-tu du + 5 pour isoler 3x ?');
+    expect(step).toMatchObject({ bringsExercise: false, proposesAnswer: true });
 
     const agreement = await analyseTurn('Oui, je veux bien !', 'Veux-tu que je te crée des cartes de révision sur les équations ?');
     expect(agreement.wantsFlashcards).toBe(true);
