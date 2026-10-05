@@ -116,8 +116,9 @@ describe('episodicMemoryService.extractAndStore', () => {
 });
 
 describe('episodicMemoryService.recallForSession', () => {
-  const recall = (stored: string | null, content = "Résous 3x + 5 = 20, j'ai trouvé 20/3.") =>
-    episodicMemoryService.recallForSession({ sessionId: 'session-001', userId: 'user-001', content, stored });
+  const recall = (stored: string | null, studentTurnsBefore = 0, content = "Résous 3x + 5 = 20, j'ai trouvé 20/3.") =>
+    episodicMemoryService.recallForSession({ sessionId: 'session-001', userId: 'user-001', content, stored, studentTurnsBefore });
+  const match = { sessionId: 's0', subject: 'mathematiques', summaryText: 'Les équations', conceptsCovered: ['équations'], createdAt: new Date('2026-09-30'), similarity: 0.8 };
 
   it('reads the block the session keeps, searching nothing', async () => {
     expect(await recall('<past_sessions>gardé</past_sessions>')).toBe('<past_sessions>gardé</past_sessions>');
@@ -125,18 +126,31 @@ describe('episodicMemoryService.recallForSession', () => {
     expect(findRelevantEpisodes).not.toHaveBeenCalled();
   });
 
-  it('searches once, at the first message long enough, and keeps what it found or its absence', async () => {
-    expect(await recall(null, 'Bonjour')).toBeNull();
+  it('keeps the first match; a greeting matching nothing settles nothing until the third message', async () => {
+    expect(await recall(null, 0, 'Bonjour')).toBeNull();
     expect(findRelevantEpisodes).not.toHaveBeenCalled();
-    expect(updateSession).not.toHaveBeenCalled();
 
     stubMistral({});
-    expect(await recall(null)).toBeNull();
+    expect(await recall(null, 0, 'Bonjour Tom, ça va ?')).toBeNull();
+    expect(await recall(null, 1)).toBeNull();
+    expect(updateSession).not.toHaveBeenCalled();
+    expect(await recall(null, 2)).toBeNull();
     expect(updateSession).toHaveBeenLastCalledWith('session-001', { recalledEpisodes: '' });
 
-    relevant = [{ sessionId: 's0', subject: 'mathematiques', summaryText: 'Les équations', conceptsCovered: ['équations'], createdAt: new Date('2026-09-30'), similarity: 0.8 }];
-    const block = await recall(null);
+    relevant = [match];
+    const block = await recall(null, 0);
     expect(block).toContain('Les équations');
     expect(updateSession).toHaveBeenLastCalledWith('session-001', { recalledEpisodes: block });
+  });
+
+  it('settles nothing on a failed search, and still gives the block when keeping it fails', async () => {
+    stubMistral({});
+    findRelevantEpisodes.mockImplementationOnce(async () => { throw new Error('pgvector down'); });
+    expect(await recall(null, 2)).toBeNull();
+    expect(updateSession).not.toHaveBeenCalled();
+
+    relevant = [match];
+    updateSession.mockImplementationOnce(async () => { throw new Error('write failed'); });
+    expect(await recall(null, 0)).toContain('Les équations');
   });
 });

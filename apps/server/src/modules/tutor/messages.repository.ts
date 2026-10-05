@@ -1,4 +1,4 @@
-import { and, asc, count, eq, getTableColumns, gt, inArray, type SQL } from 'drizzle-orm';
+import { and, asc, count, eq, getTableColumns, inArray, sql, type SQL } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { db } from '../../db/connection';
 import { messages, type Message, type NewMessage } from './session.schema.js';
@@ -12,7 +12,8 @@ const cutoff = alias(messages, 'cutoff');
 function after(sessionId: string, afterMessageId: string | null): SQL | undefined {
   if (!afterMessageId) return eq(messages.sessionId, sessionId);
   const cutoffTime = db.select({ createdAt: cutoff.createdAt }).from(cutoff).where(eq(cutoff.id, afterMessageId));
-  return and(eq(messages.sessionId, sessionId), gt(messages.createdAt, cutoffTime));
+  // A cutoff message gone (deleted) leaves nothing to stand after: the whole session, not none of it.
+  return and(eq(messages.sessionId, sessionId), sql`${messages.createdAt} > coalesce((${cutoffTime}), '-infinity'::timestamptz)`);
 }
 
 class MessagesRepository {

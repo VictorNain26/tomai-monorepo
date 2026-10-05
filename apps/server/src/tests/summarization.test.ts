@@ -46,13 +46,18 @@ mock.module('../platform/observability/logger', () => ({ logger: mockLogger }));
 let sessionResult: StudySessionData | null = null;
 let sessionUpdateCalled = false;
 let sessionUpdateArgs: Record<string, unknown> = {};
+// The cutoff in the database when the run writes; another run may have moved it meanwhile.
+let movedCutoff: string | null | undefined;
+const storedCutoff = () => (movedCutoff === undefined ? (sessionResult?.summaryUpToMessageId ?? null) : movedCutoff);
 
 mock.module('../modules/tutor/study-sessions.repository', () => ({
   studySessionsRepository: {
     findById: mock(async () => sessionResult),
-    update: mock(async (_id: string, data: Record<string, unknown>) => {
+    replaceSummary: mock(async (_id: string, readCutoff: string | null, data: Record<string, unknown>) => {
+      if (readCutoff !== storedCutoff()) return false;
       sessionUpdateCalled = true;
       sessionUpdateArgs = data;
+      return true;
     }),
   },
 }));
@@ -118,6 +123,7 @@ beforeEach(() => {
   messagesResult = [];
   sessionUpdateCalled = false;
   sessionUpdateArgs = {};
+  movedCutoff = undefined;
   mistralResponse = 'Mocked summary text';
   generateTextCalls = 0;
   sentToModel = '';
@@ -165,6 +171,23 @@ describe('Summarization Service', () => {
       expect(sentToModel).not.toContain('{previousSummary}');
     });
 
+    it('summarizes as soon as a whole batch is past the window: 20 after the summary', async () => {
+      const messages = makeMessages(40);
+      sessionResult = makeStudySession({ conversationSummary: 'Previous summary', summaryUpToMessageId: messages[19]?.id ?? null });
+      messagesResult = messages;
+      await summarizationService.summarizeIfNeeded('session-001');
+      expect(sessionUpdateArgs['summaryUpToMessageId']).toBe(messages[29]?.id);
+    });
+
+    it('writes nothing when another run moved the summary meanwhile', async () => {
+      const messages = makeMessages(45);
+      sessionResult = makeStudySession({ conversationSummary: 'Previous summary', summaryUpToMessageId: messages[19]?.id ?? null });
+      messagesResult = messages;
+      movedCutoff = messages[29]?.id ?? null;
+      await summarizationService.summarizeIfNeeded('session-001');
+      expect(sessionUpdateCalled).toBe(false);
+    });
+
     it('waits for a whole batch beyond the window, counted without loading the session', async () => {
       const messages = makeMessages(39);
       sessionResult = makeStudySession({ conversationSummary: 'Previous summary', summaryUpToMessageId: messages[19]?.id ?? null });
@@ -174,13 +197,13 @@ describe('Summarization Service', () => {
       expect(findAfter).not.toHaveBeenCalled();
     });
 
-    it('should NOT re-summarize with < 10 new messages', async () => {
+    it('does not summarize again with 5 messages after the summary, inside the window', async () => {
       const messages = makeMessages(25);
       sessionResult = makeStudySession({
         conversationSummary: 'Previous summary',
         summaryUpToMessageId: messages[19]?.id ?? null, // Summary covers first 20
       });
-      messagesResult = messages; // Only 4 new messages (25 - 20 - 1)
+      messagesResult = messages; // 5 after the summary
       await summarizationService.summarizeIfNeeded('session-001');
       expect(sessionUpdateCalled).toBe(false);
     });

@@ -18,14 +18,8 @@ export interface OutputCheckRecord {
 export class ChatMessageService {
   async getSessionHistory(sessionId: string, options?: { limit?: number | undefined; afterMessageId?: string | undefined }): Promise<Omit<DbMessage, 'modelMessages'>[]> {
     try {
-      let sessionMessages = await messagesRepository.findBySessionId(sessionId);
-
-      if (options?.afterMessageId) {
-        const cutoffIndex = sessionMessages.findIndex(m => m.id === options.afterMessageId);
-        if (cutoffIndex !== -1) {
-          sessionMessages = sessionMessages.slice(cutoffIndex + 1);
-        }
-      }
+      // After the summary's last message, as the summary reads them: the rest of the session stays in the database.
+      const sessionMessages = await messagesRepository.findAfter(sessionId, options?.afterMessageId ?? null);
 
       if (options?.limit && sessionMessages.length > options.limit) {
         const messagesWithFiles = sessionMessages.filter(msg => msg.attachedFile !== null);

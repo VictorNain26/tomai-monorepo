@@ -84,6 +84,8 @@ const createMessage = mock(async (input: Record<string, unknown>) => ({
 mock.module('../modules/tutor/messages.repository', () => ({
   messagesRepository: {
     findBySessionId: mock(async () => findBySessionIdResult),
+    findAfter: mock(async (_sessionId: string, afterId: string | null) =>
+      (afterId ? findBySessionIdResult.slice(findBySessionIdResult.findIndex((m) => m.id === afterId) + 1) : findBySessionIdResult)),
     create: createMessage,
     findById: mock(async () => findMessageByIdResult),
   },

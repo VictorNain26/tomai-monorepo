@@ -61,6 +61,7 @@ mock.module('../modules/tutor/mistral-helpers', () => ({
 const summarizeIfNeeded = mock(async () => {});
 mock.module('../modules/tutor/summarization.service', () => ({
   summarizationService: { summarizeIfNeeded },
+  SUMMARY_BACKLOG: 20,
 }));
 
 const generateTitleIfNeeded = mock(async () => {});

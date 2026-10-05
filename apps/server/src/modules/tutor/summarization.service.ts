@@ -25,6 +25,9 @@ const RECENT_WINDOW_SIZE = 10;
 /** Messages résumés d'un coup : le premier résumé à 20 messages, puis tous les 10 au-delà de la fenêtre. */
 const BATCH_SIZE = 10;
 
+/** At most this many messages wait outside the summary when a batch is due; the chat's history window holds them. */
+export const SUMMARY_BACKLOG = RECENT_WINDOW_SIZE + BATCH_SIZE;
+
 /** Longueur max du résumé généré (en caractères) */
 const MAX_SUMMARY_LENGTH = 6000;
 
@@ -80,7 +83,7 @@ class SummarizationService {
 
       // Counted in the database: the session's messages load only once a batch is due.
       const pending = await messagesRepository.countAfter(sessionId, cutoff);
-      if (pending < RECENT_WINDOW_SIZE + BATCH_SIZE) return;
+      if (pending < SUMMARY_BACKLOG) return;
 
       const messagesToSummarize = (await messagesRepository.findAfter(sessionId, cutoff)).slice(0, -RECENT_WINDOW_SIZE);
       const lastSummarizedMessage = messagesToSummarize.at(-1);
@@ -90,10 +93,9 @@ class SummarizationService {
       const summary = await this.generateSummary(messagesText, session.conversationSummary);
       if (!summary) return;
 
-      await studySessionsRepository.update(sessionId, {
-        conversationSummary: summary,
-        summaryUpToMessageId: lastSummarizedMessage.id,
-      });
+      // Two runs started by turns close together: the one that read an older cutoff writes nothing.
+      const stored = await studySessionsRepository.replaceSummary(sessionId, session.summaryUpToMessageId, { conversationSummary: summary, summaryUpToMessageId: lastSummarizedMessage.id });
+      if (!stored) return;
 
       logger.info('Conversation summarized', {
         sessionId,

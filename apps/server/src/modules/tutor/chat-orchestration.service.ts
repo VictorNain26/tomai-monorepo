@@ -12,7 +12,7 @@ import { resolveEffectiveSubject, shouldPersistDetectedSubject } from './subject
 import { STUDENT_SUBJECTS } from './prompts/adaptation/subjects.js';
 import { fileContextService, sessionFilesRepository } from '../documents/index.js';
 import { getLearningContext, wrapAttachedFiles } from './mistral-helpers.js';
-import { summarizationService } from './summarization.service.js';
+import { SUMMARY_BACKLOG, summarizationService } from './summarization.service.js';
 import { autoTitleService } from './auto-title.service.js';
 import { analyseTurn, turnInstruction as instructionFor } from './turn-analysis.service.js';
 import { prepareExerciseTurn } from './exercise-turn.js';
@@ -108,7 +108,8 @@ class ChatOrchestrationService {
     if (closed) return closedTurn(sessionId);
 
     const sessionHistory = await chatMessageService.getSessionHistory(sessionId, {
-      limit: 20,
+      // Room past the summary's backlog: a run late or failed drops nothing from the context.
+      limit: SUMMARY_BACKLOG + 10,
       afterMessageId: sessionSummary?.summaryUpToMessageId ?? undefined,
     });
 
@@ -145,7 +146,13 @@ class ChatOrchestrationService {
       cognitiveProfileService.getProfileSummary(request.userId),
       getLearningContext(request.userId),
       analyseTurn(request.content, lastTutorText, current?.sheet?.statement ?? null),
-      episodicMemoryService.recallForSession({ sessionId, userId: request.userId, content: request.content, stored: sessionSummary?.recalledEpisodes ?? null }),
+      episodicMemoryService.recallForSession({
+        sessionId,
+        userId: request.userId,
+        content: request.content,
+        stored: sessionSummary?.recalledEpisodes ?? null,
+        studentTurnsBefore: conversationHistory.filter(turn => turn.role === 'user').length,
+      }),
       moderateInput(lastTutorText, request.content),
     ]);
 
