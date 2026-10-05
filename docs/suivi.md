@@ -571,4 +571,7 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
   - épisode d'une séance close tiré de son résumé et de ses derniers échanges, plus de toute
     la conversation ;
   - séances passées rappelées une fois par séance et gardées sur elle, au lieu d'un embedding
-    et d'une recherche vectorielle à chaque message.
+    et d'une recherche vectorielle à chaque message ; cherchées sur les trois premiers
+    messages tant que rien ne correspond, une panne ne figeant rien ;
+  - historique du tour lu après le résumé, sans charger la séance, avec dix messages de
+    marge sur le lot ; un résumé n'écrase plus un résumé plus récent.

@@ -32,6 +32,22 @@ la conversation à chaque relance »), `docs/agent.md` § 13. Chemins relatifs �
    relus ensuite, absence gardée.
 5. `docs/suivi.md`, `docs/agent.md` si la mémoire y est décrite autrement.
 
+## Après revue
+
+- Une recherche en échec, ou un premier message qui ne parle que de bonjour, figeait
+  « aucun épisode » pour la séance : la recherche ne compte que si elle a eu lieu, et se
+  poursuit sur les trois premiers messages tant qu'elle ne trouve rien.
+- L'écriture du bloc sur la séance, dans le `Promise.all` du tour, pouvait faire échouer le
+  tour : son échec est journalisé, le bloc sert quand même.
+- Un message de coupure disparu ne laissait plus rien « après » : la séance entière.
+- Le lot de résumé atteignait la fenêtre d'historique (20) : un résumé en retard ou raté
+  sortait des messages du contexte. La fenêtre laisse dix messages de marge.
+- Deux résumés lancés par des tours proches pouvaient écrire l'ancien sur le nouveau :
+  l'écriture n'a lieu que si le résumé finit encore là où il a été lu.
+- L'historique du tour lisait toute la séance : il lit après la coupure, comme le résumé.
+- Écarté : deux premiers tours simultanés cherchent tous deux et écrivent le même bloc ;
+  sans conséquence (deux flux par élève au plus).
+
 ## Hors périmètre
 
 - Quotas et coût de ces appels : point 8.
