@@ -1,7 +1,9 @@
-import { pgTable, uuid, varchar, timestamp, boolean, jsonb, index, foreignKey } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, timestamp, boolean, integer, jsonb, index, foreignKey } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 import { studySessions } from './session.schema';
 import type { ExerciseSheet } from './exercise-sheet';
 import type { MathCheck } from './exercise-math';
+import type { Hint } from './hint-ladder';
 
 /**
  * The sheet of each exercise a student brings, out of the student's sight; the session's last row
@@ -16,6 +18,12 @@ export const exerciseSheets = pgTable('exercise_sheets', {
   uncertain: boolean('uncertain').notNull(),
   mathCheck: varchar('math_check', { length: 16 }).$type<MathCheck>().notNull(),
   promptVersion: varchar('prompt_version', { length: 32 }).notNull(),
+  /** Index in the hint ladder (`hint-ladder.ts`), decided by the code. */
+  hintLevel: integer('hint_level').notNull().default(0),
+  /** The tutor's last messages on the exercise, cut: the contract lists them so it does not repeat itself. */
+  hints: jsonb('hints').$type<Hint[]>().notNull().default(sql`'[]'::jsonb`),
+  /** A right final answer ends the exercise: no contract after it. */
+  solvedAt: timestamp('solved_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [
   foreignKey({

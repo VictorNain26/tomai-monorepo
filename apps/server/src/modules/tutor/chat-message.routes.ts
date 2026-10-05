@@ -165,6 +165,7 @@ export const chatMessageRoutes = new Hono<AppEnv>()
           turnInstruction: turnCtx.turnInstruction,
           turnAnalysis: turnCtx.turnAnalysis,
           exerciseSheet: turnCtx.exerciseSheet,
+          contracted: turnCtx.exerciseProgress !== null,
           attachedFiles: turnCtx.attachedFiles,
           inputMode,
           tools,
@@ -201,6 +202,7 @@ export const chatMessageRoutes = new Hono<AppEnv>()
             attachedFileInfo: turnCtx.attachedFileInfo,
             attachedFileInfos: turnCtx.attachedFileInfos,
             turnAnalysis: turnCtx.turnAnalysis,
+            exerciseProgress: turnCtx.exerciseProgress,
           });
         } catch (error) {
           logger.error('Chat turn persistence failed', {

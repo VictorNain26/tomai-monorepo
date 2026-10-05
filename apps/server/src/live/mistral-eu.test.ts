@@ -4,6 +4,7 @@ import { streamChat } from '../modules/tutor/ai-chat.service';
 import { generateStructured } from '../platform/ai/mistral-client';
 import { ExerciseSheetSchema, keepKnownNotions, notionsFor, sheetMessages } from '../modules/tutor/exercise-sheet';
 import { checkAnswer } from '../modules/tutor/exercise-math';
+import { diagnose } from '../modules/tutor/exercise-diagnosis.service';
 import { readImageWithMistralVision } from '../modules/documents/mistral-vision';
 import { mistralEmbeddingsService } from '../modules/tutor/mistral-embeddings.service';
 import { getVoxtralTTSService } from '../modules/voice/voxtral-tts.service';
@@ -123,6 +124,19 @@ describe('Mistral Small 4 on the EU endpoint (real API)', () => {
     const { sheet } = keepKnownNotions(object, notions);
     expect(sheet.entries.length).toBeGreaterThan(0);
   }, 90_000);
+
+  it('diagnoses a proposal against the sheet under the strict schema', async () => {
+    const sheet = {
+      statement: 'Résous 3x + 5 = 20.', kind: 'short' as const, answer: 'x = 5', answerForms: ['5', 'x = 5'], mathEquation: '3*x + 5 = 20', mathAnswer: 'x = 5',
+      steps: ['Retrancher 5 aux deux membres : 3x = 15', 'Diviser par 3 : x = 5'], commonErrors: ['Diviser 20 par 3 sans retrancher 5'],
+      rule: null, facts: [], expectedElements: [], entries: [], laterEntries: [],
+    };
+    const diagnosis = await diagnose(sheet, { studentText: "J'ai divisé 20 par 3, ça fait x = 20/3.", lastTutorText: 'Que vaut x ?', userId: 'live-user', sessionId: randomUUID() });
+
+    expect(diagnosis.error).toBeUndefined();
+    expect(diagnosis.verdict).toBe('incorrect');
+    expect(diagnosis.decidedBy).toBe('mathjs');
+  }, 60_000);
 
   it('reads the text of an image once, for the sheet and the tutor', async () => {
     const result = await readImageWithMistralVision(Uint8Array.from(Buffer.from(EQUATION_PNG, 'base64')).buffer, 'image/png');

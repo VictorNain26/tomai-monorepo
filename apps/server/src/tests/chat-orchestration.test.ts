@@ -66,9 +66,10 @@ mock.module('../modules/tutor/auto-title.service', () => ({
 }));
 
 const analyseTurn = mock(async () => analysis());
+const turnInstruction = mock((): string | null => null);
 mock.module('../modules/tutor/turn-analysis.service', () => ({
   analyseTurn,
-  turnInstruction: mock(() => null),
+  turnInstruction,
 }));
 
 mock.module('../modules/tutor/cognitive-profile.service', () => ({
@@ -97,64 +98,70 @@ const sheet = (statement: string): ExerciseSheet => ({
   statement, kind: 'short', answer: '5', answerForms: ['5'], mathEquation: null, mathAnswer: '5', steps: [], commonErrors: [],
   rule: null, facts: [], expectedElements: [], entries: [], laterEntries: [],
 });
-const prepareExerciseSheet = mock(async (_params: unknown): Promise<ExerciseSheet | null> => sheet('Résous 3x + 5 = 20.'));
-const currentExerciseSheet = mock(async (_sessionId: string): Promise<ExerciseSheet | null> => sheet('Exercice précédent'));
-mock.module('../modules/tutor/exercise-sheet.service', () => ({ prepareExerciseSheet, currentExerciseSheet }));
+interface Turn { exercise: { id: string | null; sheet: ExerciseSheet | null; uncertain: boolean; hintLevel: number; hints: { level: number; text: string }[] } | null; diagnosis: null; hintLevel: number | null; contract: string | null }
+const prepareExerciseTurn = mock(async (_params: unknown): Promise<Turn> => ({ exercise: null, diagnosis: null, hintLevel: null, contract: null }));
+mock.module('../modules/tutor/exercise-turn', () => ({ prepareExerciseTurn }));
+const setHints = mock(async (_id: string, _hints: unknown) => {});
+mock.module('../modules/tutor/exercise-sheets.repository', () => ({ exerciseSheetsRepository: { setHints } }));
 
 // Import the real module under test AFTER all mocks are registered.
 const { chatOrchestrationService, readStoredResponseMessages } = await import('../modules/tutor/chat-orchestration.service');
 
-describe('ChatOrchestrationService.prepareTurn — exercise sheet', () => {
+describe('ChatOrchestrationService.prepareTurn — exercise', () => {
   beforeEach(() => {
-    prepareExerciseSheet.mockClear();
-    currentExerciseSheet.mockClear();
+    prepareExerciseTurn.mockClear();
   });
 
   const request = { userId: 'user-001', content: 'Résous 3x + 5 = 20.', fileIds: [], schoolLevel: 'quatrieme' as const };
+  const underContract: Turn = {
+    exercise: { id: 'ex-1', sheet: sheet('Résous 3x + 5 = 20.'), uncertain: false, hintLevel: 1, hints: [{ level: 0, text: 'Que cherches-tu ?' }] },
+    diagnosis: null,
+    hintLevel: 2,
+    contract: '<contrat>\nPalier 3\n</contrat>',
+  };
 
-  it('prepares the sheet of an exercise the student brings, with the class, the detected subject and the message', async () => {
+  it('hands the exercise turn the class, the detected subject, the message, the last tutor message and the files', async () => {
     analyseTurn.mockImplementationOnce(async () => analysis({ bringsExercise: true, subject: 'mathematiques' }));
-
-    const context = await chatOrchestrationService.prepareTurn(request);
-
-    expect(context.exerciseSheet?.statement).toBe('Résous 3x + 5 = 20.');
-    expect(prepareExerciseSheet).toHaveBeenCalledWith({
-      userId: 'user-001', sessionId: 'session-001', level: 'quatrieme', subject: 'mathematiques', studentText: 'Résous 3x + 5 = 20.', attachedFilesBlock: null,
-    });
-    expect(currentExerciseSheet).not.toHaveBeenCalled();
-  });
-
-  it('goes on with the exercise in progress when the message brings none', async () => {
-    const context = await chatOrchestrationService.prepareTurn({ ...request, content: "Je n'y arrive pas" });
-
-    expect(context.exerciseSheet?.statement).toBe('Exercice précédent');
-    expect(currentExerciseSheet).toHaveBeenCalledWith('session-001');
-    expect(prepareExerciseSheet).not.toHaveBeenCalled();
-  });
-
-  it("feeds the sheet and the writer the session's files then the turn's, and attaches only the files the user may attach", async () => {
-    analyseTurn.mockImplementationOnce(async () => analysis({ bringsExercise: true }));
     prepareFileContext.mockImplementationOnce(async () => ({
       fileIds: ['f2'],
       attachedFileInfos: [{ fileName: 'photo.jpg', fileId: 'f2' }],
       files: [{ fileId: 'f1', fileName: 'cours.pdf', text: 'Le cours' }, { fileId: 'f2', fileName: 'photo.jpg', text: 'Résous 3x + 5 = 20.' }],
     }));
 
-    const context = await chatOrchestrationService.prepareTurn({ ...request, content: 'Voici mon exercice', fileIds: ['f2', 'someone-elses'] });
+    const context = await chatOrchestrationService.prepareTurn({ ...request, fileIds: ['f2', 'someone-elses'] });
 
-    expect(prepareExerciseSheet.mock.calls[0]?.[0]).toMatchObject({
+    expect(prepareExerciseTurn.mock.calls[0]?.[0]).toMatchObject({
+      userId: 'user-001',
+      sessionId: 'session-001',
+      level: 'quatrieme',
+      subject: 'mathematiques',
+      studentText: 'Résous 3x + 5 = 20.',
+      lastTutorText: null,
       attachedFilesBlock: '<attached_file name="cours.pdf">\nLe cours\n</attached_file>\n\n<attached_file name="photo.jpg">\nRésous 3x + 5 = 20.\n</attached_file>',
     });
     expect(context.attachedFiles.map((file) => file.fileId)).toEqual(['f1', 'f2']);
     expect(context.fileIds).toEqual(['f2']);
   });
 
-  it('never falls back on the previous exercise when the new sheet failed', async () => {
-    analyseTurn.mockImplementationOnce(async () => analysis({ bringsExercise: true }));
-    prepareExerciseSheet.mockImplementationOnce(async () => null);
+  it("follows the exercise's contract instead of the turn instruction, and keeps the progress for finishTurn", async () => {
+    prepareExerciseTurn.mockImplementationOnce(async () => underContract);
+    turnInstruction.mockImplementationOnce(() => '<critical_instruction>X</critical_instruction>');
 
-    expect((await chatOrchestrationService.prepareTurn(request)).exerciseSheet).toBeNull();
-    expect(currentExerciseSheet).not.toHaveBeenCalled();
+    const context = await chatOrchestrationService.prepareTurn(request);
+
+    expect(context.turnInstruction).toBe('<contrat>\nPalier 3\n</contrat>');
+    expect(context.exerciseSheet?.statement).toBe('Résous 3x + 5 = 20.');
+    expect(context.exerciseProgress).toEqual({ id: 'ex-1', hintLevel: 2, hints: [{ level: 0, text: 'Que cherches-tu ?' }], diagnosis: null });
+  });
+
+  it('keeps the turn instruction and no progress without a contract', async () => {
+    turnInstruction.mockImplementationOnce(() => '<critical_instruction>X</critical_instruction>');
+
+    const context = await chatOrchestrationService.prepareTurn(request);
+
+    expect(context.turnInstruction).toBe('<critical_instruction>X</critical_instruction>');
+    expect(context.exerciseSheet).toBeNull();
+    expect(context.exerciseProgress).toBeNull();
   });
 });
 
@@ -293,6 +300,33 @@ describe('ChatOrchestrationService.finishTurn', () => {
     expect(record).toHaveBeenCalledTimes(1);
     expect(summarizeIfNeeded).toHaveBeenCalledWith('session-001');
     expect(generateTitleIfNeeded).toHaveBeenCalledWith('session-001', 'Bonjour', 'Bonjour à toi');
+    expect(setHints).not.toHaveBeenCalled();
+  });
+
+  it("keeps the tutor's message on the exercise for the next contracts, with the turn's diagnosis and level", async () => {
+    setHints.mockClear();
+    const progress = { id: 'ex-1', hintLevel: 2, hints: [{ level: 1, text: 'Indice' }], diagnosis: null };
+    const finish = (aborted: boolean) => chatOrchestrationService.finishTurn({
+      sessionId: 'session-001',
+      userId: 'user-001',
+      userContent: 'Je bloque',
+      responseMessage: { id: 'm2', role: 'assistant', parts: [{ type: 'text', text: 'Regarde le +5.', state: 'done' }] },
+      model: 'mistral-small-2603',
+      usage: undefined,
+      startTime: Date.now(),
+      attachedFileInfo: null,
+      turnAnalysis: noopAnalysis,
+      exerciseProgress: progress,
+      aborted,
+    });
+
+    await finish(false);
+    expect(setHints).toHaveBeenCalledWith('ex-1', [{ level: 1, text: 'Indice' }, { level: 2, text: 'Regarde le +5.' }]);
+    expect(saveMessage.mock.calls.at(-1)?.[3]).toMatchObject({ exerciseTurn: { diagnosis: null, hintLevel: 2 } });
+
+    setHints.mockClear();
+    await finish(true);
+    expect(setHints).not.toHaveBeenCalled();
   });
 });
 

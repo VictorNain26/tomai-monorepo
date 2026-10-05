@@ -6,6 +6,7 @@ import { logger } from '../../platform/observability/logger';
 import type { MessageDetails } from './chat-types';
 import type { ResponseMessage } from './chat-message-assembler.js';
 import type { TurnAnalysis } from './turn-analysis.service.js';
+import type { Diagnosis } from './exercise-diagnosis.service.js';
 
 export class ChatMessageService {
   async getSessionHistory(sessionId: string, options?: { limit?: number | undefined; afterMessageId?: string | undefined }): Promise<Omit<DbMessage, 'modelMessages'>[]> {
@@ -80,6 +81,8 @@ export class ChatMessageService {
        * evals and offline reviews.
        */
       turnAnalysis?: TurnAnalysis;
+      /** The diagnosis and the level of this turn's help, under a contract; kept for evals. */
+      exerciseTurn?: { diagnosis: Diagnosis | null; hintLevel: number } | undefined;
       /** Input channel declared by the user's gesture (mic vs keyboard). */
       inputMode?: 'text' | 'voice';
       /** The assistant's response messages as the model produced them, replayed next turn. */
@@ -113,6 +116,9 @@ export class ChatMessageService {
       }
       if (metadata.turnAnalysis) {
         messageMetadata['turnAnalysis'] = metadata.turnAnalysis;
+      }
+      if (metadata.exerciseTurn) {
+        messageMetadata['exerciseTurn'] = metadata.exerciseTurn;
       }
       if (metadata.inputMode) {
         messageMetadata['inputMode'] = metadata.inputMode;
