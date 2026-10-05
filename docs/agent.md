@@ -53,6 +53,7 @@ d'agent reste la nôtre ([regional inference](https://docs.mistral.ai/inference/
 | Chat élève, texte et image | **Mistral Small 4** `mistral-small-2603` | rédaction sans raisonnement, l'exactitude passant par la fiche d'exercice, produite en `high` sans plafond de tokens (décision de Victor, 2026-10-04) ; température 0,7, dans la plage de la fiche Hugging Face de Small 4 pour `none` ; `promptCacheKey` par session |
 | Résumés, génération de cartes, lecture d'une image jointe (`documents/mistral-vision.ts`, transcription seule), titres, analyse du tour (`turn-analysis.service.ts`) | Mistral Small 4 `mistral-small-2603` | `reasoningEffort: 'none'` ; sortie structurée stricte |
 | Fiche d'exercice (`exercise-sheet.service.ts`) | Mistral Small 4 `mistral-small-2603` | `reasoningEffort: 'high'` sans plafond de tokens, borné par un timeout de 20 s ; température 0,7 (« 0.7 for `reasoning_effort="high"` », fiche Hugging Face) ; trois tirages votés ; sortie structurée stricte, acceptée en raisonnement par un appel réel |
+| Diagnostic d'une proposition (`exercise-diagnosis.service.ts`) | Mistral Small 4 `mistral-small-2603` | `reasoningEffort: 'none'`, température 0, contre la fiche ; mathjs tranche quand il sait lire ; sortie structurée stricte |
 | Modération entrée/sortie | `mistral-moderation-2603` | Seuils par catégorie (§5) |
 | STT / TTS | Voxtral via `@mistralai/mistralai` (`audio.*`) | Timeout explicite |
 | Juge d'évaluation | Mistral Small 4 `mistral-small-2603` | Questions oui/non en JSON strict, cinq tirages, référence fournie |
