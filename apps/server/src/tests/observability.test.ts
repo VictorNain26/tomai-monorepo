@@ -50,6 +50,49 @@ describe('logger', () => {
     expect(err['cause']).toMatchObject({ message: 'upstream', code: 'ECONNRESET' });
   });
 
+  it("logs the AI SDK errors without the model's output, a tool's input or the errors a retry wraps", () => {
+    const AI = JSON.stringify(Bun.resolveSync('ai', import.meta.dir));
+    const lines = logLines(`
+      const { TypeValidationError, JSONParseError, InvalidToolInputError, NoObjectGeneratedError, RetryError } = await import(${AI});
+      const invalid = new TypeValidationError({ value: { reply: 'le secret de Léa' }, cause: new Error('Expected string') });
+      logger.error('schema', { err: invalid, severity: 'high' });
+      logger.error('json', { err: new JSONParseError({ text: '{"reply": "le secret\\n   at la fin, Léa a écrit"', cause: new Error('Unexpected end') }), severity: 'high' });
+      logger.error('tool', { err: new InvalidToolInputError({ toolName: 'generate_flashcards', toolInput: 'le secret de Léa', cause: invalid }), severity: 'high' });
+      logger.error('object', { err: new NoObjectGeneratedError({ message: 'No object generated: response did not match schema.', text: 'le secret de Léa', cause: invalid, response: {}, usage: {}, finishReason: 'stop' }), severity: 'high' });
+      logger.error('retry', { err: new RetryError({ message: 'Failed after 2 attempts. Last error: le secret de Léa', reason: 'maxRetriesExceeded', errors: [new Error('le secret de Léa'), invalid] }), severity: 'high' });
+    `);
+    expect(JSON.stringify(lines)).not.toContain('secret');
+    expect(JSON.stringify(lines)).not.toContain('Léa');
+    const errs = lines.map((line) => line['err'] as { type: string; message: string; stack: string; cause?: { message: string } });
+    expect(errs.map((err) => err.message)).toEqual([
+      'AI_TypeValidationError',
+      'AI_JSONParseError',
+      'Invalid input for tool generate_flashcards',
+      'No object generated: response did not match schema.',
+      'Failed after 2 attempts (maxRetriesExceeded)',
+    ]);
+    expect(errs[0]?.stack).toStartWith('AI_TypeValidationError: AI_TypeValidationError\n    at ');
+    expect(errs[0]?.cause?.message).toBe('Expected string');
+    expect(errs[4]?.cause?.message).toBe('AI_TypeValidationError');
+  });
+
+  it("logs the database's and the Mistral SDK's errors without the bound values or the response body", () => {
+    const resolve = (name: string) => JSON.stringify(Bun.resolveSync(name, import.meta.dir));
+    const lines = logLines(`
+      const { DrizzleQueryError } = await import(${resolve('drizzle-orm/errors')});
+      const { default: postgres } = await import(${resolve('postgres')});
+      const { MistralError } = await import(${resolve('@mistralai/mistralai/models/errors')});
+      const rejected = new postgres.PostgresError({ message: 'invalid input syntax for type uuid: "devoir de Léa"', code: '22P02', table_name: 'study_sessions', detail: 'devoir de Léa' });
+      logger.error('db', { err: new DrizzleQueryError('insert into "study_sessions" ("topic") values ($1)', ['devoir de Léa'], rejected), severity: 'high' });
+      const response = new Response('{"detail":[{"input":"devoir de Léa"}]}', { status: 422, headers: { 'content-type': 'application/json' } });
+      logger.error('mistral', { err: new MistralError('API error occurred: {"detail":[{"input":"devoir de Léa"}]}', { response, request: new Request('https://api.mistral.ai'), body: '{"detail":[{"input":"devoir de Léa"}]}' }), severity: 'high' });
+    `);
+    expect(JSON.stringify(lines)).not.toContain('Léa');
+    const [db, mistral] = lines.map((line) => line['err'] as { message: string; cause?: { message: string; code?: string } });
+    expect(db).toMatchObject({ message: 'Failed query: insert into "study_sessions" ("topic") values ($1)', cause: { message: 'SQLSTATE 22P02 study_sessions', code: '22P02' } });
+    expect(mistral?.message).toBe('MistralError (HTTP 422)');
+  });
+
   it('does not throw on a BigInt or a circular reference', () => {
     const lines = logLines(
       `const a = {}; a.self = a; logger.info('big', { n: 10n }); logger.info('circular', { a });`,

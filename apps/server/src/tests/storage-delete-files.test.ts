@@ -1,5 +1,5 @@
 /**
- * Unit tests for deleteFiles (batch S3 DeleteObjects).
+ * Unit tests for deleteFiles (batch S3 DeleteObjects) and the storage key of an upload.
  * Mocks the AWS SDK so we can assert chunking (1000/req), Errors mapping, and
  * the never-throws contract without hitting Scaleway.
  */
@@ -28,8 +28,12 @@ const sentInputs: DeleteInput[] = [];
 class DeleteObjectsCommand {
   constructor(public input: DeleteInput) {}
 }
+const putInputs: unknown[] = [];
 class Noop {
   constructor(public input?: unknown) {}
+}
+class PutObjectCommand {
+  constructor(public input: unknown) { putInputs.push(input); }
 }
 
 mock.module('@aws-sdk/client-s3', () => ({
@@ -39,7 +43,7 @@ mock.module('@aws-sdk/client-s3', () => ({
       return sendImpl(cmd.input);
     }
   },
-  PutObjectCommand: Noop,
+  PutObjectCommand,
   GetObjectCommand: Noop,
   DeleteObjectCommand: Noop,
   DeleteObjectsCommand,
@@ -49,7 +53,7 @@ mock.module('@aws-sdk/s3-request-presigner', () => ({
   getSignedUrl: mock(() => Promise.resolve('https://signed')),
 }));
 
-const { deleteFiles } = await import('../modules/documents/storage');
+const { deleteFiles, generatePresignedUploadUrl } = await import('../modules/documents/storage');
 
 beforeEach(() => {
   sentInputs.length = 0;
@@ -96,5 +100,13 @@ describe('deleteFiles (batch S3 DeleteObjects)', () => {
     expect(res.deleted).toBe(0);
     expect(res.failed).toEqual(['a', 'b']);
     expect(mockLogger.error).toHaveBeenCalled();
+  });
+});
+
+describe('generatePresignedUploadUrl', () => {
+  it('keys the upload by user, time, id and type, never by the name the student gave, nor signs that name', async () => {
+    const { storageKey } = await generatePresignedUploadUrl({ userId: 'u1', fileName: 'devoir de Léa Martin.PDF', mimeType: 'application/pdf', sizeBytes: 1_000 });
+    expect(storageKey).toMatch(/^uploads\/u1\/\d+-[0-9a-f-]{36}\.pdf$/);
+    expect(JSON.stringify(putInputs.at(-1))).not.toContain('Léa');
   });
 });

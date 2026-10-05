@@ -33,7 +33,6 @@ class DocumentExtractionService {
   async extractText(
     buffer: ArrayBuffer,
     mimeType: string,
-    fileName: string
   ): Promise<ExtractionResult> {
     const startTime = Date.now();
     const cleanMimeType = mimeType.split(';')[0]?.trim() ?? '';
@@ -85,7 +84,6 @@ class DocumentExtractionService {
       logger.error('Document extraction failed', {
         err: error,
         mimeType: cleanMimeType,
-        fileName,
         operation: 'document-extraction',
         severity: 'medium' as const
       });

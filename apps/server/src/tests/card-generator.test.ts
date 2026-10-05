@@ -1,6 +1,15 @@
 import './_helpers/mistral-env';
-import { describe, it, expect, afterEach } from 'bun:test';
-import { generateCards, isGenerationError } from '../modules/learning/card-generator.service';
+import { describe, it, expect, afterEach, mock } from 'bun:test';
+import { createMockLogger } from './_helpers/mock-logger';
+
+const mockLogger = createMockLogger();
+mock.module('../platform/observability/logger', () => ({ logger: mockLogger }));
+
+const { generateCards, isGenerationError } = await import('../modules/learning/card-generator.service');
+
+// The error itself goes through the real logger's serializer (observability.test.ts): the fields beside it are checked here.
+const contextsBesideErr = () => mockLogger.error.mock.calls.map((call: unknown[]) =>
+  [call[0], Object.entries((call[1] ?? {}) as Record<string, unknown>).filter(([key]) => key !== 'err')]);
 
 const originalFetch = globalThis.fetch;
 afterEach(() => { globalThis.fetch = originalFetch; });
@@ -26,6 +35,8 @@ describe('generateCards', () => {
 
     if (isGenerationError(result)) throw new Error(result.error);
     expect(result.tokensUsed).toBe(140);
+    // The topic is what the student typed: the logs only say there was one.
+    expect(JSON.stringify(mockLogger.info.mock.calls)).not.toContain('Pythagore');
   });
 
   it('leaves the output format to the schema instead of asking for a bare JSON array', async () => {
@@ -56,6 +67,7 @@ describe('generateCards', () => {
 
     expect(isGenerationError(result)).toBe(true);
     expect(calls).toBe(1);
+    expect(JSON.stringify(contextsBesideErr())).not.toContain('Pythagore');
   });
 
   it('returns INVALID_OUTPUT after the schema retry also fails', async () => {
@@ -71,5 +83,6 @@ describe('generateCards', () => {
 
     expect(isGenerationError(result) && result.code).toBe('INVALID_OUTPUT');
     expect(calls).toBe(2);
+    expect(JSON.stringify(contextsBesideErr())).not.toContain('Pythagore');
   });
 });

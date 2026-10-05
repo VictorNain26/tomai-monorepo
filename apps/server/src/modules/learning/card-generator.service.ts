@@ -59,8 +59,6 @@ interface CardGenerationError {
   success: false;
   error: string;
   code: 'GENERATION_FAILED' | 'INVALID_OUTPUT' | 'SERVICE_UNAVAILABLE';
-  /** Debug info - ONLY logged server-side, NEVER sent to client */
-  _debug?: { actualError: string };
 }
 
 // ============================================================================
@@ -129,7 +127,7 @@ export async function generateCards(
   try {
     logger.info('Starting card generation', {
       operation: 'learning:generate:start',
-      topic: params.topic,
+      hasTopic: Boolean(params.topic),
       subject: params.subject,
       schoolLevel: params.level,
       requestedCards: params.cardCount
@@ -154,7 +152,7 @@ export async function generateCards(
 
     logger.info('Card generation completed', {
       operation: 'learning:generate:complete',
-      topic: params.topic,
+      hasTopic: Boolean(params.topic),
       subject: params.subject,
       schoolLevel: params.level,
       cardsGenerated: cards.length,
@@ -174,7 +172,7 @@ export async function generateCards(
     if (NoObjectGeneratedError.isInstance(error)) {
       logger.error('Card validation failed', {
         operation: 'learning:generate:validation_error',
-        topic: params.topic,
+        hasTopic: Boolean(params.topic),
         durationMs: Date.now() - startTime,
         err: error,
         severity: 'high' as const
@@ -197,7 +195,7 @@ export async function generateCards(
 
     logger.error('Card generation failed', {
       operation: 'learning:generate:error',
-      topic: params.topic,
+      hasTopic: Boolean(params.topic),
       subject: params.subject,
       schoolLevel: params.level,
       cardCount: params.cardCount,
@@ -226,8 +224,6 @@ export async function generateCards(
       success: false,
       error: userMessage,
       code,
-      // Include actual error details for debugging
-      _debug: { actualError: errorMessage }
     };
   }
 }

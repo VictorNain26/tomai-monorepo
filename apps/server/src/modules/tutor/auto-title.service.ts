@@ -79,7 +79,7 @@ class AutoTitleService {
       // Rejeter titres trop courts (génération incomplète)
       if (title.length < 8) {
         logger.warn('Auto-title too short, skipping', {
-          sessionId, title, operation: 'auto-title:rejected',
+          sessionId, titleLength: title.length, operation: 'auto-title:rejected',
         });
         return;
       }
@@ -94,7 +94,7 @@ class AutoTitleService {
 
       logger.info('Auto-title generated', {
         sessionId,
-        title,
+        titleLength: title.length,
         operation: 'auto-title:complete',
       });
     } catch (err) {

@@ -54,7 +54,6 @@ class FileContextService {
     const extraction = await documentExtractionService.extractText(
       bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer,
       file.mimeType,
-      file.fileName,
     );
     const { usage } = extraction.metadata;
     if (usage) {
