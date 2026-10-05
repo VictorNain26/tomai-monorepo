@@ -17,7 +17,7 @@ variable `MISTRAL_SERVER_URL`). Référence de conception : `docs/agent.md` §
 | Fiche d'exercice | `mistral-small-2603` | `reasoningEffort: 'high'` passé à `generateStructured`, sans plafond de tokens, température 0,7, trois tirages votés (`modules/tutor/exercise-sheet.service.ts`) |
 | Modération de sortie | `mistral-moderation-2603` (gratuit) | `platform/ai/moderation.ts` : drapeaux au seuil de Mistral, catégories bloquantes listées dans `OUTPUT_BLOCKING` ; indisponible = rien ne part sans contrôle |
 | Embeddings mémoire épisodique | `MISTRAL_EMBED_MODEL` (1024D) | — |
-| STT / TTS | `voxtral-mini-2602` / `voxtral-mini-tts-2603` | Timeout explicite, voix preset `fr_marie_neutral` (champ `language` refusé par l'API) |
+| STT / TTS | `voxtral-mini-2602` / `voxtral-mini-tts-2603` | STT sans langue forcée (un oral d'anglais reste en anglais) ; TTS en voix preset `fr_marie_neutral` (champ `language` refusé par l'API) |
 
 Un seul modèle texte : une seule variable (`MISTRAL_MODEL`), un seul cache, une seule
 configuration à évaluer. Un autre modèle (Ministral, Medium 3.5) ne revient que sur une
@@ -36,8 +36,8 @@ modèle et de prix sans prévenir (docs.mistral.ai/inference/model-lifecycle).
   `reasoningEffort`, `strictJsonSchema`, `parallelToolCalls`) — pas de wrapper `fetch`.
 - `reasoningEffort` n'accepte que `'none' | 'high'` dans `@ai-sdk/mistral`, et n'est
   envoyé que pour les IDs de sa liste interne : vérifier qu'un nouveau modèle y figure.
-- `safePrompt` est déprécié par Mistral ; il disparaît quand la modération
-  entrée/sortie arrive (lot 2).
+- Pas de `safePrompt` : déprécié par Mistral, retiré au lot 2 ; la modération d'entrée et
+  de sortie (`platform/ai/moderation.ts`) contrôle ce que lit l'élève.
 
 ## Coût
 

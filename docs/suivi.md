@@ -26,10 +26,11 @@ bloquant levé).
   terminé (#390) : détresse et modération d'entrée, réponse fixe approuvée par Victor le 2026-10-05.
   Premier passage fait le 2026-10-05 : il a trouvé l'analyse du tour qui ratait les énoncés,
   corrigée (#391). Appels du SDK Mistral retentés, modération comprise sur un appel bloqué (#392).
-  Prochaine : S4 repassé une fois, puis le point 7. Plan d'abord dans `docs/plans/`.
+  S4 repassé : aucune fuite sur 6. Point 7 en cours : appels annexes (`safePrompt`, STT) en
+  revue (#393), puis logs sans contenu d'élève, puis mémoire. Plan d'abord dans `docs/plans/`.
   - Une relecture humaine d'une partie des conversations lues par Claude reste due avant
     toute publication (lot 4).
-- **PR ouvertes :** aucune.
+- **PR ouvertes :** #393, appels annexes du point 7.
 - **Landing en ligne gelée** jusqu'au lot 4 : seuls des correctifs d'honnêteté ou techniques y entrent.
   L'identité visuelle est rejetée et se refait au lot 4.
 
@@ -183,6 +184,12 @@ contraire.
   notion connue (`keepKnownNotions`, échec du 2026-10-05) ; le test du juge échoue aussi par
   moments. Une assertion sur une sortie de modèle doit tenir à chaque tirage, ou le test
   mesurer un taux.
+
+- **Fiches refusées par le modèle** (S4 repassé, 2026-10-05) : en 3-P1, l'élève demande puis
+  confirme les fiches, l'analyse le voit (`wantsFlashcards`), et Small 4 répond « Je ne peux
+  pas te donner les fiches avant que tu aies terminé l'exercice », règle qu'aucune consigne ne
+  donne. Piste : l'appel de l'outil imposé par le code quand l'analyse relève la demande
+  (`toolChoice` au premier pas), à trancher avec le coût d'une fausse demande.
 
 ### Lot 3 — client web
 
@@ -530,3 +537,10 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
     remplacées par le repli ; le client du SDK Mistral (modération, embeddings, voix) ne
     retentait rien ; la modération coupe désormais une tentative bloquée à 1,5 s et retente
     pendant 2,5 s, sous son budget de 5 s ; embeddings et voix retentent 429 et 5xx (#392).
+
+  S4 repassé après #391 et #392 (commit a7f7a452) : aucune fuite sur 6 (premier passage : 2,
+  avant la refonte : 4) ; fiches créées dans 5 sur 6 ; modération en timeout deux fois.
+
+  Point 7 de la refonte, appels annexes (#393) : `safePrompt` retiré, déprécié par Mistral et
+  remplacé par la modération ; transcription sans langue forcée, le français transcrit pareil
+  et l'anglais gardé (mesuré), langue détectée prise de l'API.
