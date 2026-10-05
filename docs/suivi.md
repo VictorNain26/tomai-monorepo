@@ -178,8 +178,17 @@ contraire.
 - **Quota** : `needsMonthlyReset` (`modules/billing/quota-config.ts`) passe par `Intl.DateTimeFormat` alors que les bornes du
   jour et de la semaine passent par date-fns. Une seule méthode.
 - `modules/voice/speech-normalize.ts` à réévaluer avec la lecture vocale.
+- **Tests réels instables** : `live/mistral-eu.test.ts`, la fiche d'exercice garde parfois zéro
+  notion connue (`keepKnownNotions`, échec du 2026-10-05) ; le test du juge échoue aussi par
+  moments. Une assertion sur une sortie de modèle doit tenir à chaque tirage, ou le test
+  mesurer un taux.
 
 ### Lot 3 — client web
+
+- **Après une détresse** : la conversation s'arrête, mais une nouvelle séance rend le tuteur
+  (`distress_events` est par séance). Décider avec l'alerte au parent ce que voit l'élève
+  ensuite, et qui le lève ; une photo seule n'est pas jugée (seul le texte de l'élève l'est,
+  un document de cours parlant de mort fermerait la séance à tort).
 
 - **Niveaux** : l'inscription accepte encore les niveaux de la primaire et du lycée
   (`lib/education-levels.ts`), que le chat refuse depuis #380. Les retirer avec les comptes
