@@ -20,8 +20,12 @@ describe('mistralEmbeddingsService timeout', () => {
     let captured: AbortSignal | undefined;
     spyOn(globalThis, 'fetch').mockImplementation(((input: Request) => {
       captured = input.signal;
+      // As fetch does: a signal already aborted rejects at once, as on a cold start that takes
+      // longer than the timeout before the call.
       return new Promise((_, reject) => {
-        input.signal.addEventListener('abort', () => { reject(input.signal.reason as Error); });
+        const abort = () => { reject(input.signal.reason as Error); };
+        if (input.signal.aborted) abort();
+        else input.signal.addEventListener('abort', abort);
       });
     }) as unknown as typeof fetch);
 
