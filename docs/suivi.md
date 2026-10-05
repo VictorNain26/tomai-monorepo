@@ -21,9 +21,9 @@ bloquant levé).
 - **Prochaine action :** refonte de l'agent (lot 2), demandée par Victor le 2026-10-04 ;
   étude `etudes/2026-10-04/refonte-agent.md`, ordre des PR dans `roadmap.md`. Point 3 terminé :
   analyse du tour (#383), fiche d'exercice (#384), analyse de document réduite à une extraction (#385). Point 4 terminé (#386,
-  diagnostic contre la fiche, palier décidé par le code et contrat du tour). Point 5 en cours : contrôle
-  avant l'élève sur le message mergé (#387) ; prochaine : modération de sortie, et les mêmes
-  contrôles sur les fiches de révision et le titre.
+  diagnostic contre la fiche, palier décidé par le code et contrat du tour). Point 5 terminé : contrôle
+  avant l'élève (#387), modération de sortie, fiches de révision et titre (#389). Prochaine :
+  point 6, détresse et modération d'entrée, qui attend la réponse fixe approuvée par Victor.
   Plan d'abord dans `docs/plans/`.
   - Étape à la charge de Victor avant le point 6 : approuver le texte de la réponse fixe de
     détresse.
@@ -488,3 +488,10 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
     l'événement est gardé avec le message ;
   - la détection de fuite, la typographie et la lecture des égalités passent dans `lib/`, un seul
     exemplaire pour le harnais et le tuteur.
+  Point 5 de la refonte, seconde PR, modération de sortie (#389) :
+  - `mistral-moderation-2603` (gratuit, endpoint UE) relit le message avec les contrôles
+    déterministes ; drapeaux au seuil de Mistral sur `sexual`, `hate_and_discrimination`,
+    `violence_and_threats`, `dangerous`, `criminal`, `selfharm` ; indisponible, la réponse de
+    repli part, rien sans contrôle ;
+  - les fiches de révision sont contrôlées carte par carte avant leur enregistrement, dans la
+    conversation et hors d'elle ; le titre de séance et celui du paquet aussi.
