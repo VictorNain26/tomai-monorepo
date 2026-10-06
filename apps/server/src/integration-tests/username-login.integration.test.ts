@@ -125,3 +125,34 @@ describe.skipIf(!dbReachable)('username plugin — autonomous child login', () =
     expect(oldPassword).toBeInstanceOf(Error);
   });
 });
+
+describe.skipIf(!dbReachable)('role and level, written by the server only', () => {
+  it('a public sign-up gets the parent role whatever it sends, and cannot set a level', async () => {
+    const suffix = `${Date.now()}_${Math.random().toString(36).substring(7)}`;
+    const body = { email: `test_role_${suffix}@internal.tomai`, password: 'parent-password-456!', name: 'Test' };
+    const signedUp = await auth.api.signUpEmail({ body: { ...body, role: 'student' } as typeof body });
+    const { usersRepository } = await import('../modules/auth/index');
+    expect((await usersRepository.findById(signedUp.user.id))?.role).toBe('parent');
+    await usersRepository.deleteById(signedUp.user.id);
+
+    const withLevel = await auth.api.signUpEmail({ body: { ...body, email: `level_${body.email}`, schoolLevel: 'seconde' } as typeof body })
+      .then(() => undefined, (error: unknown) => error);
+    expect(withLevel).toBeInstanceOf(Error);
+  });
+
+  it('a child cannot change its own role or level through update-user', async () => {
+    const { setPassword } = await import('../modules/auth/index');
+    await setPassword(createdChildId, 'role-test-password-1!');
+    const { headers } = await auth.api.signInUsername({ body: { username: childUsername, password: 'role-test-password-1!' }, returnHeaders: true });
+    const cookie = headers.getSetCookie().map((line) => line.split(';')[0]).join('; ');
+    for (const change of [{ role: 'parent' }, { schoolLevel: 'troisieme' }]) {
+      const refused = await auth.api.updateUser({ body: change as { name?: string }, headers: { cookie } })
+        .then(() => undefined, (error: unknown) => error);
+      expect(refused).toBeInstanceOf(Error);
+    }
+    const { usersRepository } = await import('../modules/auth/index');
+    const child = await usersRepository.findById(createdChildId);
+    expect(child?.role).toBe('student');
+    expect(child?.schoolLevel).toBe('sixieme');
+  });
+});
