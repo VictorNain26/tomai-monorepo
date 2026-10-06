@@ -36,6 +36,19 @@ tests (2026-10-06). Chemins relatifs à `apps/server/src/`.
 - Tables d'abonnement (`family_billing`, colonnes de `subscription_plans` et
   `user_subscriptions`) : le quota en dépend, il se refait au point 8.
 
+## Après revue
+
+- `messages.response_time_ms`, écrite et jamais relue, part aussi (migration 0039) ; le temps
+  de réponse reste dans le log.
+- `getUserSessions` limite dans la requête au lieu de charger toutes les séances ; les deux
+  requêtes des statistiques partent ensemble ; commentaire des comptes « bannis » corrigé.
+- Écarté :
+  - garder `files.storage_bucket` pour un changement de bucket : un bucket par
+    environnement, fixé par la configuration ; déplacer les objets serait une copie, et une
+    colonne jamais lue pour ce cas serait un reste ;
+  - une perte de données sur une base déployée : il n'y en a aucune (hébergement au lot 3) ;
+  - le contrat client : aucun client n'existe (`apps/web` au lot 3).
+
 ## Validation
 
 `bun run typecheck`, `bun run lint`, `bunx knip`, `bun run test`, `db:check`,
