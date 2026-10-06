@@ -26,17 +26,19 @@ bloquant levé). L'historique vit dans git et les PR.
     Radix : la bascule sur Base UI (#407) est fermée, car sur iOS Base UI ne verrouille pas le
     défilement derrière un panneau quand la barre de Safari est repliée.
   - Hors lot : environnement de travail nettoyé (#410).
-- **Prochaine action :**
-  - PR #414 (Hono sert `apps/web`, PWA) : corriger les dix constats de sa revue, puis merger ;
-  - lot 1 : la refonte du harnais, dans l'ordre de l'étude du 2026-10-06, en commençant par la
-    statistique et le rapport ; puis l'observabilité, dont les messages d'erreur réécrits avant
-    tout export ;
-  - PR #415 (brouillon, fuites des questions de connaissance) : remesurer avec le harnais refait,
-    au moins 150 conversations de pression et le juge, avant tout merge ;
-  - décisions de Victor : budgets du quota, juge d'une autre famille que Small 4 ou non, campagne
-    d'annotation humaine (plafond d'accord, puis 100 à 200 étiquettes par critère) ;
-  - lot 3 ensuite : préproduction UE, puis comptes et consentement ; test complet dans Chrome à la
-    fin de chaque chantier.
+- **Prochaine action **, ordre indicatif (direction revue avec Victor le 2026-10-06 au soir) :
+  1. PR #414 (Hono sert `apps/web`, PWA) : corriger les dix constats de sa revue, listés dans la
+     PR, puis merger ;
+  2. lot 1, refonte du harnais : mesures avec marge d'erreur, page simple pour que Victor
+     juge, messages d'erreur nettoyés avant tout export, juge vérifié contre Victor ;
+  3. lot 3 : étude des hébergeurs UE et préproduction, puis chat texte dans l'app avec une
+     connexion minimale, pour que Victor teste sur son téléphone ;
+  4. PR #415 (brouillon) : remesurer avec le harnais refait avant de la merger ;
+  5. test complet dans Chrome à la fin de chaque chantier.
+- **Décisions de Victor en attente :** budgets du quota ; offre Mistral payante pour paralléliser
+  l'évaluation (aujourd'hui une conversation à la fois, environ 10 h pour 300 conversations
+  rejouées deux fois) ; juge d'une autre famille, seulement s'il est très bon marché. Décidé le
+  2026-10-06 : Small 4 partout, pas de Medium ; Victor seul annotateur ; landing refaite au lot 4.
 - **PR ouvertes :** #414 et #415 (brouillon) ; `gh pr list`.
 - **Landing en ligne gelée** jusqu'au lot 4 : seuls des correctifs d'honnêteté ou techniques y entrent.
   L'identité visuelle est rejetée et se refait au lot 4.
@@ -50,7 +52,7 @@ explicitement renvoyé (`.claude/rules/plans-and-agents.md`). Chemins relatifs �
 
 ### Lot 1 — harnais d'évaluation et observabilité
 
-- **Référentiel** (point 3) : restent sciences, histoire-géographie et anglais, et le rattachement de leurs exercices (`referential/sources.ts`).
+- **Référentiel** : restent sciences, histoire-géographie et anglais, et le rattachement de leurs exercices (`referential/sources.ts`).
 - **Alignement aux programmes** : ajouter des exercices inspirés des sujets du brevet 2018-2026, écrits pour le jeu (`etudes/2026-10-01/education-nationale.md`, « Conséquences pour Tom », b).
 - **Harnais et observabilité** : juge non validé (α < 0,800 sur tous les critères), mesure
   unique sans intervalle, élève figé, débit Mistral à une conversation à la fois, messages
@@ -74,7 +76,7 @@ explicitement renvoyé (`.claude/rules/plans-and-agents.md`). Chemins relatifs �
 - **Facturation** : colonnes et enum RevenueCat de `modules/billing/billing.schema.ts`, restes du mobile, refaits avec le paiement web ; les routes qui ont besoin des enfants vont dans `family`, `billing` reste un module feuille (#354).
 - **Hébergement** : délai de grâce SIGTERM d'au moins un tour de chat, stockage partagé du rate limit s'il y a plusieurs instances, `advanced.ipAddress.trustedProxies` de better-auth derrière le proxy de l'hébergeur.
 - **Client web**, point 1 : `@repo/api` en base relative, `ai` aligné sur la version qu'épingle `@ai-sdk/react`, Hono qui sert la SPA (fallback après `/api`, cache des assets, CSP), mesures sur un vrai iPhone et un Android (`etudes/2026-10-06/client-web.md`).
-- **Alerte au parent** : le push web n'atteint qu'un parent qui a installé l'app (iOS) ; l'alerte de détresse demande un canal garanti, l'e-mail par exemple, à décider avec le parcours parent (point 3).
+- **Alerte au parent** : le push web n'atteint qu'un parent qui a installé l'app (iOS) ; l'alerte de détresse demande un canal garanti, l'e-mail par exemple, à décider avec le parcours parent.
 - **Langue d'un oral** : la transcription impose le français, et un oral de langue se transcrit mal (« Yes. » bruité devient « Oui. ») ; le client déclare la langue d'un oral de langue et la route la passe à Voxtral (`modules/voice/voxtral-transcribe.service.ts`).
 
 ### Lot 4 — marque et lancement
@@ -87,6 +89,7 @@ explicitement renvoyé (`.claude/rules/plans-and-agents.md`). Chemins relatifs �
 
 Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pas.
 
+- **TypeScript 7** : pas avant que `typescript-eslint` accepte une version au-delà de 6.0.
 - **typescript-eslint 8.71** (groupe `eslint` de Renovate) : les presets typés y activent
   `no-unsafe-enum-assignment`, qui signale trois lignes (`modules/learning/fsrs.service.ts`,
   `tests/learning.service.test.ts`, mesuré le 2026-10-06) ; la PR de Renovate échouera au lint
@@ -149,6 +152,8 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
 
 | Étape | Pour | Statut |
 |---|---|---|
+| Juger un échantillon de conversations sur la page prévue, par courtes séances | Vérifier le juge, lot 1 | quand la page existe |
+| Ouvrir le compte de l'hébergeur UE recommandé par l'étude | Préproduction, lot 3 | à faire, après l'étude |
 | Langfuse : la description de la file d'annotation `tom-judge-agreement` renvoie encore à `docs/agent.md`, devenu `docs/tuteur.md` ; la corriger dans l'interface (l'API n'a pas de mise à jour de file) | Évaluation | à faire |
 | Demander le Zero Data Retention : réservé au paiement à l'usage (« only with pay-as-you-go », [centre d'aide Mistral](https://help.mistral.ai/en/articles/347612-can-i-activate-zero-data-retention-zdr)), or le compte est sur l'offre gratuite (8,50 € d'API inclus par mois, paiement à l'usage désactivé, constaté le 2026-10-02). Activer le paiement à l'usage avec un plafond, puis envoyer la demande avec sa justification (mineurs, RGPD) ; vérifier ensuite Admin › API › Confidentialité. L'entraînement sur les appels API et les modèles Labs y sont désactivés | Porte avant ouverture | à faire |
 | Trancher le statut juridique avec un expert-comptable : rester micro-entrepreneur ou créer une SASU (le GAR n'accepte que des personnes morales ; seuils de TVA et de la micro calculés en abonnés dans `etudes/2026-10-01/statut-juridique.md`) | Avant l'ouverture, au démarrage du lot 3 | à faire |
