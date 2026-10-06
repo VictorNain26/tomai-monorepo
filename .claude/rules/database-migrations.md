@@ -11,45 +11,52 @@ paths:
 
 # Migrations Drizzle ORM
 
-Source de verite : `apps/server/src/db/schema.ts` (codebase-first).
+Source de vérité : les tables de chaque module, `apps/server/src/modules/*/*.schema.ts`,
+réexportées par `src/db/schema.ts`, que lit `drizzle-kit` (`drizzle.config.ts`).
 
-## Dev local : `db:push`
+## Base locale
+
+- **Base neuve** : `bun run setup` (racine), qui applique les migrations par `db:migrate`.
+  Jamais `db:push` sur une base vierge : il ne crée pas la table de suivi que le serveur
+  vérifie au démarrage (skill `dev-bootstrap`).
+- **Itérer** sur le schéma : `bun run db:push` (`apps/server`), une fois les migrations
+  appliquées.
+
+## Livrer un changement de schéma
 
 ```bash
-# 1. Modifier src/db/schema.ts
-# 2. docker compose up -d
-# 3. bun run db:push (sync direct, pas de fichier SQL)
+# depuis apps/server
+bun run db:generate   # SQL dans ./drizzle/
+git add src/modules/<module>/<fichier>.schema.ts drizzle/
 ```
 
-## Production : `db:generate` + `db:migrate`
-
-```bash
-# 1. Modifier src/db/schema.ts
-# 2. bun run db:generate (genere SQL dans ./drizzle/)
-# 3. git add src/db/schema.ts drizzle/
-# 4. Deploy → docker-entrypoint.sh execute migrate.ts automatiquement
-```
+Au démarrage de l'image Docker, `docker-entrypoint.sh` applique les migrations
+(`dist/migrate.js`) hors `NODE_ENV=development`.
 
 ## Interdictions
 
-- Pas de `db:push` en production ni en staging.
+- Pas de `db:push` hors d'une base locale.
 - Pas d'édition manuelle des `.sql` ni de `_journal.json`.
-- Pas de suppression d'une migration déjà appliquée en prod.
+- Une migration commitée ne se modifie ni ne se supprime : elle a pu être appliquée ailleurs.
 
-## Zero-downtime
+## Changements destructifs
 
-- Nouvelles colonnes → `nullable` d'abord, contrainte apres migration de donnees
-- Index → `CREATE INDEX CONCURRENTLY`
-- Backup AVANT toute migration destructive (DROP, ALTER TYPE)
+- Nouvelle colonne obligatoire → `nullable` d'abord, contrainte après la migration des données.
+- Backup avant toute migration destructive (DROP, ALTER TYPE) sur une base qui garde des
+  données.
+- `migrate()` de `drizzle-orm` applique les migrations dans une transaction
+  (`drizzle-orm/pg-core/dialect.js`) : `CREATE INDEX CONCURRENTLY`, que Postgres refuse dans
+  une transaction ([doc](https://www.postgresql.org/docs/current/sql-createindex.html)), ne
+  passe pas par ce chemin.
 
 ## Diagnostic
 
 ```bash
-bun run db:check    # Detecte schema drift
-bun run db:studio   # Interface visuelle
+bun run db:check    # cohérence des snapshots de drizzle/ (malformés, collisions entre branches)
+bun run db:studio   # interface visuelle
 ```
 
-## Concurrence au deploy
+## Concurrence au déploiement
 
 `src/platform/db/migrate.ts` pose un advisory lock autour de `migrate()` : `drizzle-orm` n'en pose
 aucun et plusieurs instances migrent en parallèle au boot. Ne pas le retirer ; la
