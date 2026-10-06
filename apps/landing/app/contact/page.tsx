@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { PageLayout } from "@/components/layout/page-layout";
-import { Button } from "@repo/ui";
+import { buttonVariants } from "@repo/ui";
 
 const CONTACT_EMAIL = "contact@tomia.fr";
 
@@ -20,9 +20,9 @@ export default function ContactPage() {
       <div className="mt-12 max-w-xl">
         <h2 className="mb-4 text-2xl">Par email</h2>
         <p className="mb-8 text-muted-foreground">Nous lisons chaque message.</p>
-        <Button asChild size="lg">
-          <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
-        </Button>
+        <a href={`mailto:${CONTACT_EMAIL}`} className={buttonVariants({ size: "lg" })}>
+          {CONTACT_EMAIL}
+        </a>
       </div>
     </PageLayout>
   );

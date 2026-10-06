@@ -194,7 +194,6 @@ contraire.
   `advanced.ipAddress.trustedProxies` de better-auth derrière le proxy de l'hébergeur.
 
 - **Client web** (`etudes/2026-10-06/client-web.md`), à faire au point 1 :
-  - `@repo/ui` passe de Radix à Base UI, landing gelée comprise ;
   - `@repo/api` passe d'une URL absolue en `mode: 'cors'` à une base relative ;
   - `ai` côté serveur s'aligne sur la version qu'épingle `@ai-sdk/react` ;
   - Hono sert la SPA (fallback après `/api`, cache des assets, CSP) ;

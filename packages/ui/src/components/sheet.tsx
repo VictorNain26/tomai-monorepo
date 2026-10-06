@@ -1,5 +1,4 @@
-import * as React from "react";
-import * as SheetPrimitive from "@radix-ui/react-dialog";
+import { Dialog as SheetPrimitive } from "@base-ui/react/dialog";
 import { X } from "lucide-react";
 import { cn } from "../lib/utils";
 
@@ -10,11 +9,11 @@ function SheetContent({
   className,
   children,
   ...props
-}: React.ComponentProps<typeof SheetPrimitive.Content>) {
+}: Omit<SheetPrimitive.Popup.Props, "className"> & { className?: string | undefined }) {
   return (
     <SheetPrimitive.Portal>
-      <SheetPrimitive.Overlay className="fixed inset-0 z-50 bg-overlay/80" />
-      <SheetPrimitive.Content
+      <SheetPrimitive.Backdrop className="fixed inset-0 z-50 bg-overlay/80" />
+      <SheetPrimitive.Popup
         className={cn(
           "fixed inset-y-0 right-0 z-50 flex h-full w-3/4 flex-col gap-4 border-l bg-background shadow-lg sm:max-w-sm",
           className,
@@ -26,12 +25,12 @@ function SheetContent({
           <X className="size-5" aria-hidden="true" />
           <span className="sr-only">Fermer</span>
         </SheetPrimitive.Close>
-      </SheetPrimitive.Content>
+      </SheetPrimitive.Popup>
     </SheetPrimitive.Portal>
   );
 }
 
-function SheetTitle({ className, ...props }: React.ComponentProps<typeof SheetPrimitive.Title>) {
+function SheetTitle({ className, ...props }: Omit<SheetPrimitive.Title.Props, "className"> & { className?: string | undefined }) {
   return <SheetPrimitive.Title className={cn("font-bold text-foreground", className)} {...props} />;
 }
 

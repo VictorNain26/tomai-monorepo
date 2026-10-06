@@ -72,7 +72,8 @@ Rangement physique, fixé à la refonte demandée le 2026-10-01 (une PR par modu
 - Données par TanStack Query, formulaires par react-hook-form et Zod.
 - **Pensé d'abord pour le téléphone** : chaque parcours se conçoit et se prouve à largeur
   de téléphone, le bureau s'en déduit.
-- Primitives `@repo/ui` (shadcn, sur Base UI au début du lot 3) et tokens `@repo/tokens`.
+- Primitives `@repo/ui` (shadcn sur Base UI) et tokens `@repo/tokens`. Un lien qui a l'air d'un
+  bouton prend `buttonVariants` sur le lien lui-même.
 - Le chat consomme le protocole de l'AI SDK (`useChat` de `@ai-sdk/react`), déjà
   celui du serveur.
 

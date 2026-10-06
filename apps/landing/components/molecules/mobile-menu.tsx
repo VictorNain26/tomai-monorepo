@@ -10,10 +10,8 @@ export function MobileMenu({ className }: { className?: string }) {
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger asChild>
-        <Button variant="ghost" size="icon" className={className} aria-label="Ouvrir le menu">
-          <Menu className="size-5" aria-hidden="true" />
-        </Button>
+      <SheetTrigger render={<Button variant="ghost" size="icon" className={className} aria-label="Ouvrir le menu" />}>
+        <Menu className="size-5" aria-hidden="true" />
       </SheetTrigger>
       <SheetContent className="p-6 pt-16">
         <SheetTitle className="sr-only">Menu</SheetTitle>

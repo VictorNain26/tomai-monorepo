@@ -1,5 +1,4 @@
-import * as React from "react";
-import { Slot } from "@radix-ui/react-slot";
+import { Button as ButtonPrimitive } from "@base-ui/react/button";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "../lib/utils";
 
@@ -29,16 +28,14 @@ const buttonVariants = cva(
   }
 );
 
-type ButtonProps = React.ComponentProps<"button"> &
+type ButtonProps = Omit<ButtonPrimitive.Props, "className"> &
   VariantProps<typeof buttonVariants> & {
-    asChild?: boolean;
+    className?: string | undefined;
   };
 
-function Button({ className, variant, size, asChild = false, ...props }: ButtonProps) {
-  const Comp = asChild ? Slot : "button";
-  return (
-    <Comp className={cn(buttonVariants({ variant, size, className }))} {...props} />
-  );
+/** A link styled as a button takes `buttonVariants` on the link itself: rendered through `Button`, it would get `role="button"`. */
+function Button({ className, variant, size, ...props }: ButtonProps) {
+  return <ButtonPrimitive className={cn(buttonVariants({ variant, size, className }))} {...props} />;
 }
 
-export { Button };
+export { Button, buttonVariants };

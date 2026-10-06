@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { PageLayout } from "@/components/layout/page-layout";
 import { FaqList } from "@/components/sections/faq-list";
-import { Button } from "@repo/ui";
+import { buttonVariants } from "@repo/ui";
 import Link from "next/link";
 import { BRAND_NAME } from "@/lib/brand";
 
@@ -26,9 +26,9 @@ export default function AidePage() {
       <p className="mb-8 max-w-md text-muted-foreground">
         Écrivez-nous : nous lisons chaque message.
       </p>
-      <Button size="lg" asChild>
-        <Link href="/contact">Nous écrire</Link>
-      </Button>
+      <Link href="/contact" className={buttonVariants({ size: "lg" })}>
+        Nous écrire
+      </Link>
 
       <div className="mt-12">
         <FaqList />
