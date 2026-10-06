@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'bun:test';
-import { mkdtempSync, writeFileSync } from 'node:fs';
+import { afterAll, describe, expect, it } from 'bun:test';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -8,6 +8,9 @@ const ENV_MODULE = new URL('../platform/config/env.ts', import.meta.url).pathnam
 // Production also requires the web build.
 const WEB_DIST_DIR = mkdtempSync(join(tmpdir(), 'web-dist-'));
 writeFileSync(join(WEB_DIST_DIR, 'index.html'), '<!doctype html>');
+afterAll(() => {
+  rmSync(WEB_DIST_DIR, { recursive: true, force: true });
+});
 
 function bootEnv(extra: Record<string, string>) {
   return Bun.spawnSync(['bun', '--no-env-file', '-e', `await import(${JSON.stringify(ENV_MODULE)})`], {

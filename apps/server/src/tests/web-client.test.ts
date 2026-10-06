@@ -1,10 +1,10 @@
 /**
  * The web client served on the API's origin: its files, the SPA fallback after the API routes,
- * the cache headers and the CSP.
+ * the cache headers, compression and revalidation, and the CSP.
  */
 
-import { describe, expect, it, mock } from 'bun:test';
-import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { afterAll, describe, expect, it, mock } from 'bun:test';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { Hono } from 'hono';
@@ -24,9 +24,15 @@ mkdirSync(join(dist, 'assets'), { recursive: true });
 writeFileSync(join(dist, 'index.html'), '<!doctype html><title>Tom</title>');
 writeFileSync(join(dist, 'sw.js'), 'self.addEventListener("fetch", () => {});');
 writeFileSync(join(dist, 'assets', 'index-B3q68diI.js'), 'console.log("app");');
+// Above compress()'s 1 KiB threshold.
+const BUNDLE = `console.log("${'tom'.repeat(1000)}");`;
+writeFileSync(join(dist, 'assets', 'vendor-Dk2pQ9xa.js'), BUNDLE);
+afterAll(() => {
+  rmSync(root, { recursive: true, force: true });
+});
 
 // Composed as in app.ts: security headers first, API routes, then the web client.
-const app = new Hono<AppEnv>().use(securityHeaders({ hsts: false })).get('/api/ping', (c) => c.json({ ok: true }));
+const app = new Hono<AppEnv>().use(securityHeaders({ development: false })).get('/api/ping', (c) => c.json({ ok: true }));
 app.notFound(handleNotFound);
 app.route('/', webClient(dist));
 
@@ -86,11 +92,14 @@ describe('web client — fallback', () => {
     expect(((await res.json()) as { error: { code: string } }).error.code).toBe('NOT_FOUND');
   });
 
-  it('answers a missing hashed asset with a 404, not with the page', async () => {
-    const res = await get('/assets/index-gone.js');
-    expect(res.status).toBe(404);
-    expect(res.headers.get('content-type')).toStartWith('application/json');
-  });
+  it.each(['/assets/index-gone.js', '/robots.txt', '/apple-touch-icon-precomposed.png', '/old/sw.js'])(
+    'answers the missing file %s with a 404, not with the page',
+    async (path) => {
+      const res = await get(path);
+      expect(res.status).toBe(404);
+      expect(res.headers.get('content-type')).toStartWith('application/json');
+    },
+  );
 
   it('serves nothing outside the build', async () => {
     const res = await get('/%2e%2e/secret.txt');
@@ -100,6 +109,40 @@ describe('web client — fallback', () => {
   it('only answers reads', async () => {
     const res = await get('/parent', { method: 'POST' });
     expect(res.status).toBe(404);
+  });
+});
+
+describe('web client — compression and revalidation', () => {
+  it('compresses a file the browser accepts gzipped, and weakens its ETag', async () => {
+    const res = await get('/assets/vendor-Dk2pQ9xa.js', { headers: { 'Accept-Encoding': 'gzip' } });
+    expect(res.headers.get('content-encoding')).toBe('gzip');
+    expect(res.headers.get('vary')).toContain('Accept-Encoding');
+    expect(res.headers.get('etag')).toStartWith('W/"');
+    expect(new TextDecoder().decode(Bun.gunzipSync(new Uint8Array(await res.arrayBuffer())))).toBe(BUNDLE);
+  });
+
+  it('sends the file as is to a browser that accepts no encoding', async () => {
+    const res = await get('/assets/vendor-Dk2pQ9xa.js');
+    expect(res.headers.get('content-encoding')).toBeNull();
+    expect(await res.text()).toBe(BUNDLE);
+  });
+
+  it('answers a revalidation of an unchanged page with a 304 that keeps its cache policy', async () => {
+    const tag = (await get('/')).headers.get('etag');
+    expect(tag).toStartWith('"');
+
+    const res = await get('/parent', { headers: { 'If-None-Match': tag ?? '' } });
+    expect(res.status).toBe(304);
+    expect(res.headers.get('cache-control')).toBe('no-cache');
+    expect(await res.text()).toBe('');
+  });
+
+  it('revalidates a gzipped file against its weak ETag', async () => {
+    const headers = { 'Accept-Encoding': 'gzip' };
+    const tag = (await get('/assets/vendor-Dk2pQ9xa.js', { headers })).headers.get('etag') ?? '';
+
+    const res = await get('/assets/vendor-Dk2pQ9xa.js', { headers: { ...headers, 'If-None-Match': tag } });
+    expect(res.status).toBe(304);
   });
 });
 
@@ -115,14 +158,24 @@ describe('security headers', () => {
     expect(res.headers.get('cross-origin-resource-policy')).toBe('same-origin');
     expect(res.headers.get('cross-origin-opener-policy')).toBe('same-origin');
     expect(res.headers.get('x-frame-options')).toBe('DENY');
-    expect(res.headers.get('strict-transport-security')).toBeNull();
+    expect(res.headers.get('strict-transport-security')).toBe('max-age=31536000; includeSubDomains');
   });
 
-  it('sets HSTS when asked', async () => {
-    const res = await new Hono()
-      .use(securityHeaders({ hsts: true }))
-      .get('/', (c) => c.text('ok'))
-      .request('/');
-    expect(res.headers.get('strict-transport-security')).toBe('max-age=31536000; includeSubDomains');
+  describe('in development', () => {
+    const dev = new Hono()
+      .use(securityHeaders({ development: true }))
+      .get('/api/auth/reference', (c) => c.html('<script>Scalar</script>'))
+      .get('*', (c) => c.text('ok'));
+
+    it('leaves out HSTS, so http://localhost keeps working', async () => {
+      const res = await dev.request('/');
+      expect(res.headers.get('strict-transport-security')).toBeNull();
+      expect(res.headers.get('content-security-policy')).toStartWith("default-src 'self'");
+    });
+
+    it('lets the API reference load Scalar, and that page only', async () => {
+      expect((await dev.request('/api/auth/reference')).headers.get('content-security-policy')).toBeNull();
+      expect((await dev.request('/api/auth/sign-in/email')).headers.get('content-security-policy')).not.toBeNull();
+    });
   });
 });

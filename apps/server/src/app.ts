@@ -23,6 +23,8 @@ import { handleError, handleNotFound } from './platform/http/error-handler.js';
 import { createRateLimitMiddleware, RateLimitPresets } from './platform/http/rate-limit.js';
 
 const isDev = isDevelopment();
+// The web client's files don't count: one page load fetches a dozen of them.
+const apiRateLimit = createRateLimitMiddleware(RateLimitPresets.api);
 
 const base = new Hono<AppEnv>();
 // No-op unless SENTRY_DSN is set; must wrap the app before any route.
@@ -36,9 +38,10 @@ const app = base
     await next();
   })
 
-  .use(securityHeaders({ hsts: !isDev }))
+  .use(securityHeaders({ development: isDev }))
 
-  .use(createRateLimitMiddleware(RateLimitPresets.api))
+  .use('/api/*', apiRateLimit)
+  .use('/health', apiRateLimit)
 
   .on(['GET', 'POST'], '/api/auth/*', (c) => auth.handler(c.req.raw))
 

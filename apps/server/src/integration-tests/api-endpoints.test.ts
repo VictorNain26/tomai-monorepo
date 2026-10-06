@@ -4,11 +4,11 @@
  * Tests the real Hono app composition via app.request()
  */
 
-import { describe, it, expect, beforeEach, mock } from 'bun:test';
-import { mkdtempSync, writeFileSync } from 'node:fs';
+import { afterAll, describe, it, expect, beforeEach, mock } from 'bun:test';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { Hono } from 'hono';
+import { Hono, type Context } from 'hono';
 import { createMockLogger } from '../tests/_helpers/mock-logger';
 
 const SESSION_ID = '0199a3c4-7b1e-7d2a-9f00-123456789abc';
@@ -64,6 +64,9 @@ mock.module('../platform/auth/auth', () => ({
 // A web build, served by the app after its API routes.
 const WEB_DIST_DIR = mkdtempSync(join(tmpdir(), 'web-dist-'));
 writeFileSync(join(WEB_DIST_DIR, 'index.html'), '<!doctype html><title>Tom</title>');
+afterAll(() => {
+  rmSync(WEB_DIST_DIR, { recursive: true, force: true });
+});
 
 mock.module('../platform/config/env', () => ({
   env: {
@@ -77,12 +80,14 @@ mock.module('../platform/config/env', () => ({
   isDevelopment: () => false,
   isProduction: () => true,
   getDatabaseUrl: () => 'postgresql://test:test@localhost/test',
-  getTrustedOrigins: () => [],
 }));
 
-// Infrastructure mocks
+// Infrastructure mocks. The limiter only marks what it counts.
 mock.module('../platform/http/rate-limit', () => ({
-  createRateLimitMiddleware: () => (_c: unknown, next: () => Promise<void>) => next(),
+  createRateLimitMiddleware: () => async (c: Context, next: () => Promise<void>) => {
+    c.header('X-RateLimit-Limit', '100');
+    await next();
+  },
   RateLimitPresets: { api: {} },
 }));
 
@@ -260,6 +265,15 @@ describe('API Endpoints', () => {
       const res = await app.fetch(new Request('http://localhost/api/nope'));
       expect(res.status).toBe(404);
       expect(((await readBody(res)).error as { code: string }).code).toBe('NOT_FOUND');
+    });
+
+    it('counts API requests against the rate limit, never the files of the web client', async () => {
+      const limited = async (path: string) => (await app.fetch(new Request(`http://localhost${path}`))).headers.has('X-RateLimit-Limit');
+      expect(await limited('/')).toBe(false);
+      expect(await limited('/parent/enfants')).toBe(false);
+      expect(await limited('/health')).toBe(true);
+      expect(await limited('/api')).toBe(true);
+      expect(await limited('/api/nope')).toBe(true);
     });
   });
 
