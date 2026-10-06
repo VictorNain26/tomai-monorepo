@@ -8,9 +8,10 @@ import {
   CardValidationError,
 } from './learning.service.js';
 import { handleDeckDomainError, idParam } from './routes.helpers.js';
+import { CARD_TYPES } from './card-content.schema.js';
 
 
-const cardType = z.enum(['flashcard', 'qcm', 'vrai_faux']);
+const cardType = z.enum(CARD_TYPES);
 
 const addCardsBody = z.object({
   cards: z.array(z.object({

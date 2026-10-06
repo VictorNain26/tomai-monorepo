@@ -5,7 +5,7 @@
  * module keeps the two remaining non-chat-stream shapes:
  *
  * - `generateText` — completion non-streaming simple (résumé, titre…)
- * - `generateStructured` — sortie structurée Zod en JSON Schema, strict par défaut (analyse du tour, épisodes…) ; les cartes passent `strict: false`
+ * - `generateStructured` — sortie structurée Zod en JSON Schema, toujours stricte (analyse du tour, fiche, cartes…)
  *
  * Both go through `mistralProvider` (`platform/ai/provider.ts`, EU endpoint).
  * They run with `reasoningEffort: 'none'`, except a structured call that asks
@@ -64,7 +64,6 @@ interface GenerateTextOptions {
 interface GenerateStructuredOptions<T> extends GenerateTextOptions {
   schema: z.ZodType<T>;
   schemaName: string;
-  strict?: boolean;
   /** Sent as `random_seed`: the same seed gives the same output (https://docs.mistral.ai/api/endpoint/chat). */
   seed?: number;
   /** Retries of the AI SDK on a failed call; a caller that throttles its own calls passes 0. */
@@ -148,7 +147,7 @@ export async function generateText(opts: GenerateTextOptions): Promise<string> {
 
 /**
  * Génération structurée validée par un schéma Zod (`json_schema` natif Mistral,
- * strict par défaut ; `strict: false` pour les cartes). Une sortie hors schéma
+ * toujours strict). Une sortie hors schéma
  * est relancée une seule fois avec l'erreur de validation, sauf `repairInvalid:
  * false` ; l'usage renvoyé cumule les deux appels.
  */
@@ -175,7 +174,7 @@ export async function generateStructured<T>(opts: GenerateStructuredOptions<T>):
       telemetry: { functionId: opts.functionId, recordInputs: false, recordOutputs: false },
       providerOptions: {
         mistral: {
-          strictJsonSchema: opts.strict ?? true,
+          strictJsonSchema: true,
           reasoningEffort: opts.reasoningEffort ?? 'none',
           promptCacheKey: opts.promptCacheKey,
         } satisfies MistralLanguageModelChatOptions,

@@ -155,11 +155,6 @@ contraire.
   l'équivalence restent à lire dans sa documentation avant tout usage.
 - **TTS** : une seule voix, française (`fr_marie_*`) ; `/api/tts` n'accepte et n'annonce
   plus que `fr` (#349). Décider s'il faut d'autres voix pour les cours de langue.
-- **Cartes** en `json_schema` non strict : le mode strict de Mistral refuse `format: uri`
-  (`.url()`) et `propertyNames` (`z.record`) de `modules/learning/cards-domain.schema.ts` (400, code 3051).
-  Revoir ce schéma pour repasser en strict, et unifier au passage les trois définitions des
-  types de cartes (enum `card_type`, `modules/learning/card-generation.types.ts`, schémas Zod
-  de `cards.schema.ts`).
 - `modules/voice/speech-normalize.ts` à réévaluer avec la lecture vocale.
 - **Tests réels instables** : `live/mistral-eu.test.ts`, la fiche d'exercice garde parfois zéro
   notion connue (`keepKnownNotions`, échec du 2026-10-05) ; le test du juge échoue aussi par

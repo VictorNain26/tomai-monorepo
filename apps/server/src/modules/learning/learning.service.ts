@@ -18,10 +18,10 @@ import type {
   LearningDeck,
   NewLearningDeck,
   LearningCard,
-  CardType,
   NewLearningCard,
   FSRSData,
 } from './decks.schema.js';
+import type { CardType } from './card-content.schema.js';
 import { logger } from '../../platform/observability/logger.js';
 import { fsrsService, Rating } from './fsrs.service.js';
 import type { ReviewResult } from './fsrs-types.js';

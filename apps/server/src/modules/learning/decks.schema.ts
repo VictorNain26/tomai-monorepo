@@ -2,29 +2,13 @@ import { pgTable, uuid, varchar, text, timestamp, integer, jsonb, pgEnum, index,
 import { relations, sql } from 'drizzle-orm';
 import { user, schoolLevelEnum } from '../auth/auth.schema';
 import { SUBJECT_SLUGS } from '../../lib/subjects.js';
+import { CARD_TYPES } from './card-content.schema.js';
 
 // =============================================
 // ENUMS
 // =============================================
 
-export const cardTypeEnum = pgEnum('card_type', [
-  // Pedagogical (theory before practice)
-  'concept',
-  // Universal (all subjects)
-  'flashcard', 'qcm', 'vrai_faux',
-  // Languages (LV1, LV2)
-  'matching', 'fill_blank', 'word_order',
-  // Math/Sciences
-  'calculation',
-  // History-Geography
-  'timeline', 'matching_era', 'cause_effect',
-  // SVT/Sciences
-  'classification', 'process_order',
-  // French
-  'grammar_transform',
-  // Cognitive Science - Elaboration (2025)
-  'reformulation'
-]);
+export const cardTypeEnum = pgEnum('card_type', CARD_TYPES);
 export const deckSourceEnum = pgEnum('deck_source', ['prompt', 'conversation', 'document']);
 export const subjectEnum = pgEnum('subject', SUBJECT_SLUGS);
 
@@ -128,7 +112,6 @@ export const learningCardsRelations = relations(learningCards, ({ one }) => ({
 // =============================================
 // TYPES
 // =============================================
-export type CardType = typeof cardTypeEnum.enumValues[number];
 export type DeckSource = typeof deckSourceEnum.enumValues[number];
 
 export type LearningDeck = typeof learningDecks.$inferSelect;
@@ -145,27 +128,6 @@ export type LearningDeckWithRelations = LearningDeck & {
 export type LearningCardWithRelations = LearningCard & {
   deck?: LearningDeck;
 };
-
-// Card Content Types (JSON structure)
-export interface FlashcardContent {
-  front: string;
-  back: string;
-}
-
-export interface QCMContent {
-  question: string;
-  options: string[];
-  correctIndex: number;
-  explanation?: string;
-}
-
-export interface VraiFauxContent {
-  statement: string;
-  isTrue: boolean;
-  explanation?: string;
-}
-
-export type CardContent = FlashcardContent | QCMContent | VraiFauxContent;
 
 // FSRS Data structure (hidden from user)
 export interface FSRSData {

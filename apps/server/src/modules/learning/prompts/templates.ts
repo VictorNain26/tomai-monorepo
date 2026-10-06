@@ -10,7 +10,7 @@
  * - ? = champ optionnel
  */
 
-import type { CardType } from '../card-generation.types.js';
+import type { CardType } from '../card-content.schema.js';
 
 // ============================================================================
 // TEMPLATES PAR TYPE DE CARTE
@@ -43,7 +43,7 @@ const CARD_TEMPLATES: Record<CardType, string> = {
   cause_effect: 'cause_effect: {context, cause, possibleEffects[], correctIndex, explanation, commonMistakes?}',
 
   // SVT
-  classification: 'classification: {instruction, items[], categories[], correctClassification:{cat:[idx]}, commonMistakes?}',
+  classification: 'classification: {instruction, items[], categories[2-4]:[{name,itemIndexes[]}], explanation?, commonMistakes?}',
   process_order: 'process_order: {instruction, processName, steps[], correctOrder[], hints?}',
 
   // Français

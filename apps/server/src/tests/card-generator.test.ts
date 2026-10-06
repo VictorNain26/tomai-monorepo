@@ -52,7 +52,7 @@ describe('generateCards', () => {
     await generateCards(params);
 
     expect(body?.response_format.json_schema.name).toBe('card_generation');
-    expect(body?.response_format.json_schema.strict).toBe(false);
+    expect(body?.response_format.json_schema.strict).toBe(true);
     expect(JSON.stringify(body?.messages)).not.toContain('```json');
   });
 

@@ -497,7 +497,7 @@ describe('LearningService', () => {
 
       await learningService.updateCardOrThrow('user-1', 'card-1', {
         cardType: 'qcm',
-        content: { question: 'Q', options: ['a', 'b'], correctIndex: 0 },
+        content: { question: 'Q', options: ['a', 'b'], correctIndex: 0, explanation: 'E' },
         position: 3,
       });
 

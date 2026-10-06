@@ -26,7 +26,7 @@
 
 import { NoObjectGeneratedError } from 'ai';
 import { generateStructured } from '../../platform/ai/mistral-client.js';
-import { CardGenerationSchema } from './cards.schema.js';
+import { CardGenerationSchema, type Card } from './card-content.schema.js';
 import {
   getSubjectInstructions,
   getRecommendedCardTypes,
@@ -38,10 +38,10 @@ import {
   KATEX_INSTRUCTIONS
 } from './prompts/index.js';
 import { logger } from '../../platform/observability/logger.js';
-import type { CardGenerationParams, ParsedCard } from './card-generation.types.js';
+import type { CardGenerationParams } from './card-generation.types.js';
 
 // Prompt cache sur l'instruction de base + adaptations cycle/sujet.
-const CARD_GENERATOR_PROMPT_VERSION = '2026-10-05';
+const CARD_GENERATOR_PROMPT_VERSION = '2026-10-06';
 const CARD_GENERATOR_CACHE_KEY = `card-generator-${CARD_GENERATOR_PROMPT_VERSION}`;
 
 // ============================================================================
@@ -49,7 +49,7 @@ const CARD_GENERATOR_CACHE_KEY = `card-generator-${CARD_GENERATOR_PROMPT_VERSION
 // ============================================================================
 
 export interface CardGenerationResult {
-  cards: ParsedCard[];
+  cards: Card[];
   count: number;
   tokensUsed: number;
   provider: string;
@@ -143,11 +143,9 @@ export async function generateCards(
       maxTokens: 4096,
       schema: CardGenerationSchema,
       schemaName: 'card_generation',
-      // Mistral strict mode rejects `format: uri` (.url()) and `propertyNames` (z.record) with 400/3051.
-      strict: false,
       promptCacheKey: CARD_GENERATOR_CACHE_KEY,
     });
-    const cards = object.cards as ParsedCard[];
+    const { cards } = object;
     const tokensUsed = usage.inputTokens + usage.outputTokens;
     const durationMs = Date.now() - startTime;
 

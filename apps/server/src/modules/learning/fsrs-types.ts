@@ -1,5 +1,6 @@
 import type { Rating, State } from 'ts-fsrs';
-import type { FSRSData, CardType } from './decks.schema.js';
+import type { FSRSData } from './decks.schema.js';
+import type { CardType } from './card-content.schema.js';
 
 export interface ReviewResult {
   cardId: string;
