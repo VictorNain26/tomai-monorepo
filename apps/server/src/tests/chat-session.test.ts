@@ -64,6 +64,7 @@ let updateSessionResult: Record<string, unknown> = {};
 let findBySessionIdResult: MessageData[] = [];
 let createMessageResult: { id: string } = { id: 'new-msg-001' };
 let findByUserIdWithStatsResult: Record<string, unknown>[] = [];
+const findByUserIdWithStats = mock(async (_userId: string, _limit: number) => findByUserIdWithStatsResult);
 let deleteByIdCalled = false;
 let findMessageByIdResult: MessageData | null = null;
 let findUserByIdResult: UserData | null = null;
@@ -99,7 +100,7 @@ mock.module('../modules/tutor/study-sessions.repository', () => ({
       return createSessionResult;
     }),
     update: mock(async () => updateSessionResult),
-    findByUserIdWithStats: mock(async () => findByUserIdWithStatsResult),
+    findByUserIdWithStats,
     deleteById: mock(async () => {
       deleteByIdCalled = true;
     }),
@@ -292,31 +293,16 @@ describe('ChatSessionService', () => {
         },
       ];
 
-      const result = await sessionService.getUserSessions('user-001');
+      const result = await sessionService.getUserSessions('user-001', 1);
       expect(result.length).toBe(1);
       expect(result[0]?.subject).toBe('mathematiques');
       expect(result[0]?.messagesCount).toBe(5);
     });
 
-    it('should respect limit parameter', async () => {
-      findByUserIdWithStatsResult = [
-        { id: 's1', subject: 'maths', startedAt: new Date(), endedAt: null, messageCount: 1 },
-        { id: 's2', subject: 'francais', startedAt: new Date(), endedAt: null, messageCount: 2 },
-        { id: 's3', subject: 'physique', startedAt: new Date(), endedAt: null, messageCount: 3 },
-      ];
-
-      const result = await sessionService.getUserSessions('user-001', 2);
-      expect(result.length).toBe(2);
-    });
-
-    it('should return all when no limit', async () => {
-      findByUserIdWithStatsResult = [
-        { id: 's1', subject: 'maths', startedAt: new Date(), endedAt: null, messageCount: 1 },
-        { id: 's2', subject: 'francais', startedAt: new Date(), endedAt: null, messageCount: 2 },
-      ];
-
-      const result = await sessionService.getUserSessions('user-001');
-      expect(result.length).toBe(2);
+    it('limits in the query, not after loading every session', async () => {
+      findByUserIdWithStats.mockClear();
+      await sessionService.getUserSessions('user-001', 2);
+      expect(findByUserIdWithStats).toHaveBeenCalledWith('user-001', 2);
     });
   });
 
@@ -434,7 +420,6 @@ describe('ChatMessageService', () => {
 
       const result = await messageService.saveMessage(VALID_UUID, 'assistant', 'Response', {
         tokensUsed: 150,
-        responseTimeMs: 500,
         aiModel: 'mistral-large-3',
       });
       expect(result.messageId).toBe('msg-002');

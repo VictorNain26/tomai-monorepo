@@ -284,7 +284,6 @@ class ChatOrchestrationService {
     await chatMessageService.saveMessage(sessionId, 'assistant', fullContent, {
       aiModel: model,
       tokensUsed,
-      responseTimeMs: Date.now() - startTime,
       ...(attachedFileInfo && { attachedFile: attachedFileInfo }),
       ...(attachedFileInfos && { attachedFiles: attachedFileInfos }),
       turnAnalysis,

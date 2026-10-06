@@ -58,7 +58,6 @@ export class ChatMessageService {
     content: string,
     metadata: {
       tokensUsed?: number | null;
-      responseTimeMs?: number | null;
       aiModel?: string | null;
       attachedFile?: {
         fileName: string;
@@ -147,7 +146,6 @@ export class ChatMessageService {
         content,
         aiModel: this.mapAIModelName(metadata.aiModel),
         tokensUsed: metadata.tokensUsed ?? null,
-        responseTimeMs: metadata.responseTimeMs ?? null,
         attachedFile: metadata.attachedFile ?? null,
         messageMetadata,
         modelMessages: metadata.modelMessages ?? null,

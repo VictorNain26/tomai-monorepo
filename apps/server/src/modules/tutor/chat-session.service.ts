@@ -122,13 +122,11 @@ export class ChatSessionService {
     }
   }
 
-  async getUserSessions(userId: string, limit?: number): Promise<UserSession[]> {
+  async getUserSessions(userId: string, limit: number): Promise<UserSession[]> {
     try {
-      const sessions = await studySessionsRepository.findByUserIdWithStats(userId);
+      const sessions = await studySessionsRepository.findByUserIdWithStats(userId, limit);
 
-      const limitedSessions = limit ? sessions.slice(0, limit) : sessions;
-
-      const result = limitedSessions.map(session => ({
+      const result = sessions.map(session => ({
         id: session.id,
         subject: session.subject,
         startedAt: session.startedAt,

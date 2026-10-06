@@ -113,7 +113,6 @@ export const verification = pgTable('verification', {
   index('idx_verification_identifier').on(table.identifier),
 ]);
 
-
 // =============================================
 // RELATIONS
 // =============================================

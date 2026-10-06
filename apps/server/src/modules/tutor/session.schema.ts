@@ -61,7 +61,6 @@ export const messages = pgTable('messages', {
   // Métriques techniques - TEXT pour flexibilité
   aiModel: text('ai_model'),
   tokensUsed: integer('tokens_used').default(0),
-  responseTimeMs: integer('response_time_ms'),
 
   // Fichiers attachés (nouveau)
   attachedFile: jsonb('attached_file'), // { fileName: string, fileId?: string, mimeType?: string }
