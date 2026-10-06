@@ -1,5 +1,5 @@
 /**
- * Database Connection - Clean Drizzle + Supabase Integration
+ * Database Connection - Drizzle over postgres.js
  * Production-ready with lazy initialization for testability
  */
 
@@ -27,20 +27,6 @@ function getConnectionString(): string {
 }
 
 /**
- * Detect Supabase using proper URL hostname validation (CWE-20 compliant)
- */
-function isSupabaseHost(url: string): boolean {
-  try {
-    const parsed = new URL(url);
-    return parsed.hostname.endsWith('.supabase.com') ||
-           parsed.hostname.endsWith('.supabase.co') ||
-           parsed.hostname === 'supabase.com';
-  } catch {
-    return false;
-  }
-}
-
-/**
  * Initialize database connection lazily
  * Only creates connection when first accessed
  */
@@ -49,15 +35,13 @@ function initializeConnection(): void {
 
   const environment = env.NODE_ENV;
   const connectionString = getConnectionString();
-  const isSupabase = isSupabaseHost(connectionString);
 
   // Production-optimized postgres client
   _sql = postgres(connectionString, {
     max: environment === 'production' ? 20 : 5,
     idle_timeout: 0,
-    connect_timeout: isSupabase ? 20 : 10,
-    prepare: !isSupabase,
-    ssl: environment === 'production' || isSupabase ? 'require' : false,
+    connect_timeout: 10,
+    ssl: environment === 'production' ? 'require' : false,
     transform: {
       undefined: null,
     },
@@ -92,7 +76,6 @@ function initializeConnection(): void {
     operation: 'db:init',
     metadata: {
       environment,
-      isSupabase,
       maxConnections: environment === 'production' ? 20 : 5
     }
   });

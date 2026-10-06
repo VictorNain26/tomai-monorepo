@@ -42,7 +42,7 @@ describe.skipIf(!dbReachable)('runMigrations — concurrent boot exclusivity', (
   });
 
   it('two instances booting in parallel on a fresh database both resolve without error and apply migrations exactly once', async () => {
-    // Several Koyeb instances can boot in parallel on a never-migrated database;
+    // Several instances can boot in parallel on a never-migrated database;
     // each calls runMigrations() independently. Only one should actually apply
     // the SQL, the other must wait on the advisory lock and then no-op instead
     // of racing on concurrent DDL (duplicate migration rows / conflicting CREATE).

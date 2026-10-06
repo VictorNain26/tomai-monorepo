@@ -19,20 +19,6 @@ import { sql } from 'drizzle-orm';
 import postgres from 'postgres';
 import { resolveDatabaseUrl } from '../config/database-url.js';
 
-/**
- * Detect Supabase host to enable SSL regardless of NODE_ENV
- * (matches connection.ts logic)
- */
-function isSupabaseHost(url: string): boolean {
-  try {
-    const parsed = new URL(url);
-    return parsed.hostname.endsWith('.supabase.com') ||
-           parsed.hostname.endsWith('.supabase.co');
-  } catch {
-    return false;
-  }
-}
-
 export async function runMigrations(): Promise<void> {
   let databaseUrl: string;
   try {
@@ -47,16 +33,14 @@ export async function runMigrations(): Promise<void> {
   // Use Bun.env — `bun build --target bun` replaces `process.env.NODE_ENV`
   // at build time, which would freeze this to the build-stage value.
   const environment = Bun.env.NODE_ENV ?? 'development';
-  const needsSsl = environment === 'production' || isSupabaseHost(databaseUrl);
-
   const migrationClient = postgres(databaseUrl, {
     max: 1,
-    ssl: needsSsl ? 'require' : false,
+    ssl: environment === 'production' ? 'require' : false,
   });
   const db = drizzle(migrationClient);
 
   try {
-    // Several Koyeb instances can boot in parallel, each running this script.
+    // Several instances can boot in parallel, each running this script.
     // pg_advisory_lock is session-scoped: with `max: 1` this connection holds
     // exactly one session, so only one instance proceeds at a time — the
     // others block here until the lock holder finishes and releases it, then

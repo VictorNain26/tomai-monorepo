@@ -62,7 +62,7 @@ describe('GET /health', () => {
     expect(Object.keys(body.checks)).toEqual(['database']);
   });
 
-  it('exposes the deployed commit sha so the smoke test can gate on it', async () => {
+  it('exposes the deployed commit sha', async () => {
     const { body } = await callHealth();
 
     expect(body.commit).toBe('abc1234');
