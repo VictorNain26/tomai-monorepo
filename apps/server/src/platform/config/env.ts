@@ -50,8 +50,9 @@ const EnvSchema = z.object({
   APP_VERSION: z.string().default('1.0.0'),
   DEPLOYMENT_ID: z.string().optional(),
 
-  // The one public origin: API and web client alike.
-  BETTER_AUTH_URL: isProd ? z.url() : z.url().default('http://localhost:3000'),
+  // The one public origin: API and web client alike. In development, the Vite dev server's, which
+  // proxies /api to this server: better-auth's redirects then land on the web.
+  BETTER_AUTH_URL: isProd ? z.url() : z.url().default('http://localhost:3002'),
   // Build of apps/web, served on that origin. Absent in development, where Vite serves it.
   WEB_DIST_DIR: isProd ? webDistDir : webDistDir.optional(),
 

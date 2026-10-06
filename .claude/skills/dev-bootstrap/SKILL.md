@@ -45,7 +45,7 @@ l'usage tant que sa variable manque, mais le serveur démarre.
 ```
 NODE_ENV=development
 BETTER_AUTH_SECRET=<openssl rand -base64 32>
-BETTER_AUTH_URL=http://localhost:3000
+BETTER_AUTH_URL=http://localhost:3002
 DATABASE_URL=postgresql://tomai_dev:tomai_dev_password@localhost:5432/tomai_dev
 ```
 

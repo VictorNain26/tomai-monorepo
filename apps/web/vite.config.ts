@@ -47,16 +47,7 @@ export default defineConfig({
     port: DEV_PORT,
     strictPort: true,
     proxy: {
-      '/api/': {
-        target: API,
-        // The API trusts its own origin only, as in production: a request from this page reaches it
-        // with that origin. One from any other origin keeps its own, and better-auth refuses it.
-        configure: (proxy) => {
-          proxy.on('proxyReq', (request) => {
-            if (request.getHeader('origin') === `http://localhost:${DEV_PORT}`) request.setHeader('origin', API);
-          });
-        },
-      },
+      '/api/': API,
       '/health': API,
     },
   },
