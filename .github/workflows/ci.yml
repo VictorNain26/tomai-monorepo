@@ -1,5 +1,6 @@
-# TomAI Monorepo - CI Pipeline
-# Turborepo --affected filtering, remote cache, parallelized, SHA-pinned
+# One pipeline: every check of the repository, in parallel jobs, gathered by `ci-ok`, the one
+# check the ruleset requires. On a PR, turbo `--affected` picks the tasks; on main, all run.
+# Actions pinned by SHA.
 
 name: CI
 
@@ -9,96 +10,64 @@ on:
     paths-ignore:
       - 'docs/**/*.md'
       - 'README.md'
-      - '.vscode/**'
       - 'LICENSE'
-  # No paths-ignore here: the required checks (typecheck/lint/Test/Build) must
-  # report on every PR or the branch ruleset blocks merges for config/docs-only
-  # PRs. Turbo `--affected` makes those runs fast no-ops (0 affected packages).
+  # No paths-ignore on PRs: `ci-ok` must report on every PR, or the ruleset blocks its merge.
   pull_request:
     branches: [main]
 
 permissions:
   contents: read
-  pull-requests: read
 
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
+  group: ci-${{ github.ref }}
   cancel-in-progress: true
 
 env:
   TURBO_SCM_BASE: origin/main
+  # The PR runs what it affects, main runs everything.
+  AFFECTED: ${{ github.event_name == 'pull_request' && '--affected' || '' }}
 
 jobs:
-  # =============================================
-  # Job 1: Typecheck + Lint (parallel matrix)
-  # =============================================
-  validate-tasks:
-    name: ${{ matrix.task }}
+  check:
+    name: Check
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        task: [typecheck, lint]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
       - uses: ./.github/actions/setup-monorepo
         with:
-          turbo-cache-key: ${{ matrix.task }}
-      - name: Run ${{ matrix.task }}
-        run: |
-          if [ "${{ github.event_name }}" = "push" ] && [ "${{ github.ref }}" = "refs/heads/main" ]; then
-            bunx --no-install turbo run ${{ matrix.task }}
-          else
-            bunx --no-install turbo run ${{ matrix.task }} --affected
-          fi
-      # Repo-wide and fast, so not filtered by --affected.
-      - name: Check formatting (Prettier)
-        if: matrix.task == 'lint'
-        run: bunx --no-install prettier --check .
+          turbo-cache-key: check
+      - run: bunx --no-install turbo run typecheck lint ${AFFECTED:+"$AFFECTED"}
+      - run: bunx --no-install prettier --check .
+      - run: bunx --no-install knip
+      # Version-pinned, as its README asks (https://github.com/QuiiBz/sherif).
+      - run: npx sherif@1.13.0
 
-  # =============================================
-  # Job 1b: Required status check gate
-  # =============================================
-  validate:
-    name: Validate
-    needs: validate-tasks
-    if: always()
+  actionlint:
+    name: Actionlint
     runs-on: ubuntu-latest
     steps:
-      - name: Check results
-        env:
-          RESULT: ${{ needs.validate-tasks.result }}
-        run: |
-          if [ "$RESULT" != "success" ]; then
-            echo "validate-tasks finished with result: $RESULT"
-            exit 1
-          fi
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # Docker image method of https://github.com/rhysd/actionlint/blob/main/docs/usage.md.
+      - uses: docker://rhysd/actionlint@sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667
+        with:
+          args: -color
 
-  # =============================================
-  # Job 2: Tests (after validate passes)
-  # =============================================
   test:
     name: Test
-    needs: validate-tasks
     runs-on: ubuntu-latest
-    # The server's tests run on a real Postgres: one database per test file, copied from a
-    # template the test preload migrates (apps/server/src/testing).
+    # The server's tests run on a real Postgres: a database per test file, copied from this run's
+    # template (apps/server/src/testing).
     services:
       postgres:
         image: postgres:18.6
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: test
         ports:
           - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+        options: --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -106,22 +75,12 @@ jobs:
       - uses: ./.github/actions/setup-monorepo
         with:
           turbo-cache-key: test
-      - name: Run tests
-        run: |
-          if [ "${{ github.event_name }}" = "push" ] && [ "${{ github.ref }}" = "refs/heads/main" ]; then
-            bunx --no-install turbo run test
-          else
-            bunx --no-install turbo run test --affected
-          fi
+      - run: bunx --no-install turbo run test ${AFFECTED:+"$AFFECTED"}
         env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres
 
-  # =============================================
-  # Job 3: Build (after validate passes)
-  # =============================================
   build:
     name: Build
-    needs: validate-tasks
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -130,17 +89,8 @@ jobs:
       - uses: ./.github/actions/setup-monorepo
         with:
           turbo-cache-key: build
-      - name: Run build
-        run: |
-          if [ "${{ github.event_name }}" = "push" ] && [ "${{ github.ref }}" = "refs/heads/main" ]; then
-            bunx --no-install turbo run build
-          else
-            bunx --no-install turbo run build --affected
-          fi
+      - run: bunx --no-install turbo run build ${AFFECTED:+"$AFFECTED"}
 
-  # =============================================
-  # Job 3b: End-to-end (Playwright)
-  # =============================================
   # Browsers are installed, not cached: https://playwright.dev/docs/ci#caching-browsers
   # (restoring takes as long as downloading, and the system dependencies are not cacheable).
   e2e:
@@ -156,52 +106,28 @@ jobs:
           POSTGRES_PASSWORD: postgres
         ports:
           - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+        options: --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-      # Cheap check before the install: a PR that touches neither the apps under test, the
-      # packages they use nor the tooling skips the job's setup.
-      - name: Check whether the e2e suites are concerned
-        id: scope
-        run: |
-          if [ "${{ github.event_name }}" != "pull_request" ]; then
-            echo "run=true" >> "$GITHUB_OUTPUT"
-          elif git diff --name-only "origin/${{ github.base_ref }}...HEAD" | grep -qE '^(apps/(web|landing|server)/|packages/|tooling/|bun\.lock$|package\.json$|turbo\.json$|\.github/)'; then
-            echo "run=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "run=false" >> "$GITHUB_OUTPUT"
-          fi
       - uses: ./.github/actions/setup-monorepo
-        if: steps.scope.outputs.run == 'true'
         with:
           turbo-cache-key: e2e
-      - name: List e2e tasks to run
-        if: steps.scope.outputs.run == 'true'
+      - name: List the e2e tasks to run
         id: tasks
         run: |
-          if [ "${{ github.event_name }}" = "push" ] && [ "${{ github.ref }}" = "refs/heads/main" ]; then
-            AFFECTED=""
-          else
-            AFFECTED="--affected"
-          fi
-          echo "affected=$AFFECTED" >> "$GITHUB_OUTPUT"
-          TASKS=$(bunx --no-install turbo run test:e2e $AFFECTED --dry=json | jq -r '[.tasks[] | select(.command != "<NONEXISTENT>") | .taskId] | join(" ")')
+          TASKS=$(bunx --no-install turbo run test:e2e ${AFFECTED:+"$AFFECTED"} --dry=json | jq -r '[.tasks[] | select(.command != "<NONEXISTENT>") | .taskId] | join(" ")')
           echo "tasks=$TASKS" >> "$GITHUB_OUTPUT"
           echo "e2e tasks: ${TASKS:-none}"
-      # web runs on WebKit (iphone) and Chromium (android), the landing on Chromium.
+      # The web's suite runs on WebKit (iphone) and Chromium (android), the landing's on Chromium.
       - name: Install browsers and their system dependencies
         if: steps.tasks.outputs.tasks != ''
         working-directory: tooling/playwright-web
         run: bunx --no-install playwright install --with-deps chromium webkit
       - name: Run e2e
         if: steps.tasks.outputs.tasks != ''
-        run: bunx --no-install turbo run test:e2e ${{ steps.tasks.outputs.affected }}
+        run: bunx --no-install turbo run test:e2e ${AFFECTED:+"$AFFECTED"}
         env:
           E2E_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/tom_e2e
       - name: Keep the web suite's report
@@ -212,79 +138,115 @@ jobs:
           path: tooling/playwright-web/playwright-report/
           retention-days: 7
 
-  # =============================================
-  # Job 4: Migration sync (server DB schema only)
-  # =============================================
   migrations:
     name: Migration Sync
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 0
-      # drizzle/ counts too: a snapshot or journal changed without the schema desyncs them as well.
-      - name: Check if server DB schema or migrations changed
-        id: check
-        run: |
-          if [ -n "$GITHUB_BASE_REF" ]; then
-            DIFF=$(git diff --name-only "origin/$GITHUB_BASE_REF"...HEAD -- ':(glob)apps/server/src/**/schema.ts' 'apps/server/drizzle.config.ts' 'apps/server/drizzle/')
-          else
-            DIFF=$(git diff --name-only "${{ github.event.before }}" "${{ github.sha }}" -- ':(glob)apps/server/src/**/schema.ts' 'apps/server/drizzle.config.ts' 'apps/server/drizzle/')
-          fi
-          if [ -n "$DIFF" ]; then
-            echo "changed=true" >> "$GITHUB_OUTPUT"
-            echo "Schema or migration files changed:"
-            echo "$DIFF"
-          else
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-            echo "No schema or migration changes detected"
-          fi
       - uses: ./.github/actions/setup-monorepo
-        if: steps.check.outputs.changed == 'true'
         with:
           turbo-cache-key: migrations
-      - name: Check migrations in sync with schema
-        if: steps.check.outputs.changed == 'true'
+      - name: The committed SQL matches the schema
         working-directory: apps/server
         run: |
           bun run db:generate
-          if [ -n "$(git diff --name-only drizzle/)" ]; then
-            echo "::error::Schema et migrations desynchronises ! Execute 'cd apps/server && bun run db:generate' puis commite les fichiers generes."
-            git diff drizzle/
+          if [ -n "$(git status --porcelain drizzle/)" ]; then
+            echo "::error::Schema and migrations out of sync: run 'bun run db:generate' in apps/server and commit drizzle/."
+            git status --porcelain drizzle/
             exit 1
           fi
-          echo "Migrations en sync avec schema.ts"
 
-  # =============================================
-  # Job 5: Dead code (knip)
-  # =============================================
-  # Cross-cutting (spans every workspace), so no paths filter — runs on every PR.
-  dead-code:
-    name: Dead code (knip)
+  # The image is built once, run against Postgres, and published by its commit on main.
+  image:
+    name: Server image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    services:
+      postgres:
+        image: postgres:18.6
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      IMAGE: ghcr.io/${{ github.repository_owner }}/tomai-server
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Build
+        run: |
+          IMAGE="${IMAGE,,}"
+          echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
+          docker build --target production --build-arg GIT_COMMIT_SHA="$GITHUB_SHA" -t "$IMAGE:$GITHUB_SHA" -f apps/server/Dockerfile .
+      # NODE_ENV=test: the service's Postgres has no TLS, which production requires.
+      - name: Run against Postgres
+        run: |
+          docker run -d --name server --network host \
+            -e NODE_ENV=test -e PORT=3000 -e LOG_LEVEL=warn \
+            -e DATABASE_URL=postgresql://postgres:postgres@localhost:5432/postgres \
+            -e BETTER_AUTH_SECRET="$(openssl rand -base64 32)" -e BETTER_AUTH_URL=http://localhost:3000 \
+            "$IMAGE:$GITHUB_SHA"
+          for _ in $(seq 1 30); do
+            if curl -sf http://localhost:3000/health/ready; then echo; exit 0; fi
+            sleep 1
+          done
+          docker logs server
+          exit 1
+      - name: Publish
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          docker push "$IMAGE:$GITHUB_SHA"
+
+  secrets:
+    name: Secret Detection
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-      - uses: ./.github/actions/setup-monorepo
-        with:
-          turbo-cache-key: knip
-      - name: Run knip
-        run: bunx --no-install knip
+      - uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  # =============================================
-  # Job 6: Monorepo lint (sherif)
-  # =============================================
-  # Version-pinned per https://github.com/QuiiBz/sherif README ("Run it by
-  # specifying a version instead of latest") to avoid CI drift on new releases.
-  # Reads the workspaces of the root package.json, no install needed — just Node/npx.
-  monorepo-lint:
-    name: Monorepo lint (sherif)
+  sast:
+    name: SAST
+    runs-on: ubuntu-latest
+    container:
+      image: semgrep/semgrep@sha256:acaac22ffc7b7cc5926de0751b223bce0b2491c33d18422fa72f632c78d81198 # 1.177.0
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: semgrep ci
+        env:
+          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
+
+  audit:
+    name: Dependency audit (prod, high+)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      - uses: ./.github/actions/setup-monorepo
         with:
-          node-version-file: .nvmrc
-      - name: Run sherif
-        run: npx sherif@1.13.0
+          turbo-cache-key: audit
+      - run: bun audit --audit-level=high --prod
+
+  # The one required check. A job that needs another is skipped when that one fails, unless
+  # always() runs it (https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/use-jobs):
+  # it fails on any result but success.
+  ci-ok:
+    name: ci-ok
+    if: always()
+    needs: [check, actionlint, test, build, e2e, migrations, image, secrets, sast, audit]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Every job succeeded
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "results: $RESULTS"
+          for result in $RESULTS; do
+            if [ "$result" != "success" ]; then exit 1; fi
+          done
