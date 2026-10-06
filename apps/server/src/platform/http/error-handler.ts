@@ -1,5 +1,6 @@
 /**
- * Global error handling: every error leaves as `{ error: { code, message }, requestId }`.
+ * Global error handling: every error leaves as `{ error: { code, message, fields? }, requestId }`,
+ * `fields` on a VALIDATION_ERROR.
  * AppError keeps its status; anything else is logged and answered with a generic 500.
  */
 
@@ -27,6 +28,7 @@ export const handleError: ErrorHandler<AppEnv> = (error, c) => {
         requestId,
         operation: `error-handler:${error.code}`,
         url,
+        ...(error.fields && { fields: error.fields }),
       });
     }
     return c.json(toErrorResponse(error, requestId), error.statusCode);

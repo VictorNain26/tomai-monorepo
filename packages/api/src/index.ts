@@ -42,4 +42,5 @@ export {
   type TomChatMessage,
   type TomDataParts,
   type DeckCreatedData,
+  type FieldError,
 } from './types';

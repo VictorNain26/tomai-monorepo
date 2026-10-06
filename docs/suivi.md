@@ -178,10 +178,6 @@ contraire.
   parent proportionné et connu de l'enfant ; aucun lien avec un établissement (GAR,
   tableau enseignant, notes transmises) sans réévaluer le classement « haut risque »
   (annexe III, point 3, applicable le 2 décembre 2027).
-- **Erreurs de validation** : le 400 `VALIDATION_ERROR` du gestionnaire global
-  (`platform/http/error-handler.ts`) renvoie toujours le même message générique,
-  sans dire quel champ est faux. Les formulaires d'enfant en auront besoin : exposer les
-  champs en erreur dans l'enveloppe, pour toutes les routes.
 - **Facturation** : colonnes `revenuecat_customer_id` et `revenuecat_subscription_id` de
   `family_billing`, enum `billing_status` et commentaires RevenueCat de
   `modules/billing/billing.schema.ts`, restes du mobile, refaits avec le paiement web. Ses
@@ -192,6 +188,15 @@ contraire.
   attend les flux SSE) ; stockage partagé du rate limit s'il y a plusieurs instances ;
   `advanced.ipAddress.trustedProxies` de better-auth derrière le proxy de l'hébergeur.
 
+- **Client web** (`etudes/2026-10-06/client-web.md`), à faire au point 1 :
+  - `@repo/ui` passe de Radix à Base UI, landing gelée comprise ;
+  - `@repo/api` passe d'une URL absolue en `mode: 'cors'` à une base relative ;
+  - `ai` côté serveur s'aligne sur la version qu'épingle `@ai-sdk/react` ;
+  - Hono sert la SPA (fallback après `/api`, cache des assets, CSP) ;
+  - mesures sur un vrai iPhone et un Android, listées dans l'étude.
+- **Alerte au parent** : le push web n'atteint qu'un parent qui a installé l'app (iOS). L'alerte
+  de détresse demande un canal garanti, l'e-mail par exemple, et le push en plus. À décider
+  avec le parcours parent (point 3).
 - **Langue d'un oral** : la transcription impose le français, juste pour les réponses
   courtes ; un oral d'anglais, d'espagnol ou d'allemand se transcrit mal sous le français (un
   « Yes. » bruité devient « Oui. », mesuré le 2026-10-05). Le client déclare la langue
