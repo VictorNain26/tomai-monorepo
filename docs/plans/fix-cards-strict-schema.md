@@ -45,3 +45,25 @@ Point reporté du lot 2 (`docs/suivi.md`, « Cartes en `json_schema` non strict 
    anciens) ; `card-generator.test.ts` attend `strict: true` ; `live/structured-output.test.ts`
    passe les cartes en strict, lancé une fois après le passage de fin du lot 2 (débit Mistral).
 9. `docs/suivi.md` : le point reporté est retiré.
+
+## Revue
+
+`/code-review` : 9 constats, 7 corrigés dans la PR.
+
+- Indices sans lien avec leur liste (`timeline`, `process_order`, `matching_era`,
+  `classification`) : `CardSchema` vérifie chaque ordre et chaque répartition, chaque indice une
+  fois.
+- Un indice mal placé faisait échouer tout le lot généré : la génération ne contraint que la forme,
+  les cartes fautives sont écartées une à une, `INVALID_OUTPUT` si aucune ne reste.
+- Le PATCH validait contre un `cardType` qu'il ne stockait pas : `cardType` retiré du corps, le
+  contenu se valide contre le type stocké.
+- Le contenu brut était stocké, clés inconnues comprises : `validateCardContent` rend le contenu
+  parsé, et c'est lui qui est stocké.
+- `prompts/templates.ts` recopiait les formes à la main et divergeait déjà : supprimé, le prompt
+  nomme les types et le schéma strict donne leur forme.
+- Le test du JSON Schema lisait `z.toJSONSchema`, pas ce que l'AI SDK envoie : il lit désormais le
+  `response_format` capturé.
+- Contrat client resserré (`explanation` requise, bornes, `cardType` hors du PATCH) : aucun client
+  n'existe avant le lot 3, la rupture est assumée et dite dans la PR.
+- Renvoyés : migration des cartes existantes (aucune carte en base, ni utilisateur ni seed) ; test
+  réel en strict, lancé avant le merge, après le passage de fin.

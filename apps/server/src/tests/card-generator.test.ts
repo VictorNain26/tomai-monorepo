@@ -40,7 +40,7 @@ describe('generateCards', () => {
   });
 
   it('leaves the output format to the schema instead of asking for a bare JSON array', async () => {
-    let body: { messages: unknown; response_format: { json_schema: { name: string; strict?: boolean } } } | undefined;
+    let body: { messages: unknown; response_format: { json_schema: { name: string; strict?: boolean; schema: unknown } } } | undefined;
     globalThis.fetch = (async (_url: string | URL | Request, init?: RequestInit) => {
       body = JSON.parse(init?.body as string) as typeof body;
       const cards = { cards: [{ cardType: 'flashcard', content: { front: 'a² + b² ?', back: 'c²' } }] };
@@ -53,7 +53,38 @@ describe('generateCards', () => {
 
     expect(body?.response_format.json_schema.name).toBe('card_generation');
     expect(body?.response_format.json_schema.strict).toBe(true);
+    // Strict mode rejects both with 400/3051 (live/structured-output.test.ts).
+    const wireSchema = JSON.stringify(body?.response_format.json_schema.schema);
+    expect(wireSchema).toContain('classification');
+    expect(wireSchema).not.toContain('"format"');
+    expect(wireSchema).not.toContain('"propertyNames"');
     expect(JSON.stringify(body?.messages)).not.toContain('```json');
+  });
+
+  it('sets aside a card whose index points outside its options, and keeps the others', async () => {
+    const cards = { cards: [
+      { cardType: 'qcm', content: { question: '3 × 4 ?', options: ['7', '12'], correctIndex: 2, explanation: '12' } },
+      { cardType: 'flashcard', content: { front: 'a² + b² ?', back: 'c²' } },
+    ] };
+    globalThis.fetch = (async () => new Response(JSON.stringify(completion(JSON.stringify(cards))), {
+      status: 200, headers: { 'content-type': 'application/json' },
+    })) as unknown as typeof fetch;
+
+    const result = await generateCards(params);
+
+    if (isGenerationError(result)) throw new Error(result.error);
+    expect(result.cards.map((card) => card.cardType)).toEqual(['flashcard']);
+  });
+
+  it('returns INVALID_OUTPUT when every card has a misplaced index', async () => {
+    const cards = { cards: [{ cardType: 'qcm', content: { question: 'Q', options: ['a', 'b'], correctIndex: 5, explanation: 'E' } }] };
+    globalThis.fetch = (async () => new Response(JSON.stringify(completion(JSON.stringify(cards))), {
+      status: 200, headers: { 'content-type': 'application/json' },
+    })) as unknown as typeof fetch;
+
+    const result = await generateCards(params);
+
+    expect(isGenerationError(result) && result.code).toBe('INVALID_OUTPUT');
   });
 
   it('does not retry a non-retryable 400', async () => {

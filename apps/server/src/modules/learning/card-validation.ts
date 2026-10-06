@@ -7,17 +7,17 @@
  */
 
 import { z } from 'zod';
-import { CardSchema, type CardType } from './card-content.schema.js';
+import { CardSchema, type Card, type CardType } from './card-content.schema.js';
 
 /**
  * Validate a card's content against the schema of its type.
- * Returns `{ valid: true }` or `{ valid: false, error }` with a human-readable
- * reason. Pure function — no I/O.
+ * Returns the parsed content, unknown keys dropped, or `{ valid: false, error }`
+ * with a human-readable reason. Pure function — no I/O.
  */
 export function validateCardContent(
   cardType: CardType,
   content: Record<string, unknown>,
-): { valid: true } | { valid: false; error: string } {
+): { valid: true; content: Card['content'] } | { valid: false; error: string } {
   const result = CardSchema.safeParse({ cardType, content });
-  return result.success ? { valid: true } : { valid: false, error: z.prettifyError(result.error) };
+  return result.success ? { valid: true, content: result.data.content } : { valid: false, error: z.prettifyError(result.error) };
 }

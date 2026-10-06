@@ -11,18 +11,15 @@ import { handleDeckDomainError, idParam } from './routes.helpers.js';
 import { CARD_TYPES } from './card-content.schema.js';
 
 
-const cardType = z.enum(CARD_TYPES);
-
 const addCardsBody = z.object({
   cards: z.array(z.object({
-    cardType,
+    cardType: z.enum(CARD_TYPES),
     content: z.record(z.string(), z.unknown()),
     position: z.number().optional(),
   })).min(1),
 });
 
 const updateCardBody = z.object({
-  cardType: cardType.optional(),
   content: z.record(z.string(), z.unknown()).optional(),
   position: z.number().optional(),
 });

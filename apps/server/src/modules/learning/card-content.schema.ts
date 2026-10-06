@@ -2,7 +2,8 @@
  * The one definition of the revision cards: their types, the shape of each one's content, and the
  * schema the generator sends to Mistral in strict structured output. Strict mode rejects
  * `format: uri` and `propertyNames` (400, code 3051, `live/structured-output.test.ts`): no `z.url()`
- * nor `z.record` here.
+ * nor `z.record` here. JSON Schema cannot tie an index to the length of its list: `CardSchema`
+ * checks it after the shape.
  */
 
 import { z } from 'zod';
@@ -30,7 +31,6 @@ const commonMistakesField = z.array(z.object({
   .describe('Erreurs fréquentes à éviter avec explication (max 3)');
 
 const answerIndex = z.number().int().min(0);
-const answerOutsideOptions = { message: 'correctIndex must be a valid option index', path: ['correctIndex'] };
 
 const ConceptContentSchema = z.object({
   title: z.string().min(1).describe('Titre de la notion'),
@@ -53,7 +53,7 @@ const QCMContentSchema = z.object({
   explanation: z.string().min(1).describe('Explication de la bonne réponse'),
   hints: hintsField,
   commonMistakes: commonMistakesField
-}).refine((content) => content.correctIndex < content.options.length, answerOutsideOptions);
+});
 
 const VraiFauxContentSchema = z.object({
   statement: z.string().min(1).describe('Affirmation à évaluer'),
@@ -78,7 +78,7 @@ const FillBlankContentSchema = z.object({
   explanation: z.string().min(1).describe('Explication de la réponse'),
   hints: hintsField,
   commonMistakes: commonMistakesField
-}).refine((content) => content.correctIndex < content.options.length, answerOutsideOptions);
+});
 
 const WordOrderContentSchema = z.object({
   instruction: z.string().min(1).describe('Consigne'),
@@ -122,7 +122,7 @@ const CauseEffectContentSchema = z.object({
   correctIndex: answerIndex.describe('Index du bon effet'),
   explanation: z.string().min(1).describe('Explication du lien cause-effet'),
   commonMistakes: commonMistakesField
-}).refine((content) => content.correctIndex < content.possibleEffects.length, answerOutsideOptions);
+});
 
 const ClassificationContentSchema = z.object({
   instruction: z.string().min(1).describe('Consigne'),
@@ -167,7 +167,7 @@ const ReformulationContentSchema = z.object({
   hints: hintsField
 });
 
-export const CardSchema = z.discriminatedUnion('cardType', [
+const CardShapeSchema = z.discriminatedUnion('cardType', [
   z.object({ cardType: z.literal('concept'), content: ConceptContentSchema }),
   z.object({ cardType: z.literal('flashcard'), content: FlashcardContentSchema }),
   z.object({ cardType: z.literal('qcm'), content: QCMContentSchema }),
@@ -185,8 +185,47 @@ export const CardSchema = z.discriminatedUnion('cardType', [
   z.object({ cardType: z.literal('reformulation'), content: ReformulationContentSchema })
 ]);
 
+type CardShape = z.infer<typeof CardShapeSchema>;
+
+const isIndexOf = (index: number, length: number) => index < length;
+
+/** Every index of the list once: an order, or items shared out between groups. */
+const coversOnce = (indexes: readonly number[], length: number) =>
+  indexes.length === length && new Set(indexes).size === length && indexes.every((index) => isIndexOf(index, length));
+
+function misplacedIndex(card: CardShape): string | null {
+  switch (card.cardType) {
+    case 'qcm':
+    case 'fill_blank':
+      return isIndexOf(card.content.correctIndex, card.content.options.length) ? null : 'correctIndex';
+    case 'cause_effect':
+      return isIndexOf(card.content.correctIndex, card.content.possibleEffects.length) ? null : 'correctIndex';
+    case 'timeline':
+      return coversOnce(card.content.correctOrder, card.content.events.length) ? null : 'correctOrder';
+    case 'process_order':
+      return coversOnce(card.content.correctOrder, card.content.steps.length) ? null : 'correctOrder';
+    case 'matching_era': {
+      const { items, eras, correctPairs } = card.content;
+      const itemsCovered = coversOnce(correctPairs.map(([item = -1]) => item), items.length);
+      return itemsCovered && correctPairs.every(([, era = -1]) => era >= 0 && isIndexOf(era, eras.length)) ? null : 'correctPairs';
+    }
+    case 'classification':
+      return coversOnce(card.content.categories.flatMap((category) => category.itemIndexes), card.content.items.length)
+        ? null
+        : 'categories';
+    default:
+      return null;
+  }
+}
+
+export const CardSchema = CardShapeSchema.superRefine((card, ctx) => {
+  const field = misplacedIndex(card);
+  if (field) ctx.addIssue({ code: 'custom', message: `${field} must point into its list, each index once`, path: ['content', field] });
+});
+
 export type Card = z.infer<typeof CardSchema>;
 
+/** The shape alone: one card with a misplaced index is set aside, not the whole batch. */
 export const CardGenerationSchema = z.object({
-  cards: z.array(CardSchema).min(1).describe('Tableau de cartes générées')
+  cards: z.array(CardShapeSchema).min(1).describe('Tableau de cartes générées')
 });
