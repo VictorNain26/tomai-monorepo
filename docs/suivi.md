@@ -12,7 +12,7 @@ bloquant levé).
 
 ## Où on en est
 
-- **Dernière mise à jour :** 2026-10-05.
+- **Dernière mise à jour :** 2026-10-06.
 - **Lot en cours :** 2 — Agent qui ne cède pas, refondu sur sources (`roadmap.md`).
   - Du lot 1 restent la baseline, réduite aux 38 conversations de l'échantillon
     (`etudes/2026-10-04/refonte-agent.md`, « Mesure »), les concurrents et la CI.
@@ -28,12 +28,35 @@ bloquant levé).
   corrigée (#391). Appels du SDK Mistral retentés, modération comprise sur un appel bloqué (#392).
   S4 repassé : aucune fuite sur 6. Point 7 terminé : appels annexes (#393), logs sans contenu
   d'élève (#394), mémoire (#395). Nettoyage demandé par Victor le 2026-10-06, en trois PR : la
-  mémoire entre séances, faite (#396) ; les colonnes et tables jamais lues, en revue (#397) ; les restes hors
-  vision et une migration de base unique, qui emporte pgvector. Puis le point 8, quotas et coûts,
-  et le passage de fin. Plan d'abord dans `docs/plans/`.
+  mémoire entre séances (#396) et colonnes et tables jamais lues (#397), faites. Prochaine : la
+  troisième, les restes hors vision (niveaux du lycée et du primaire, matières lycée, routes
+  sans client, `/health/ai` sans authentification, migrations en double de `drizzle/2025*`),
+  puis une migration de base unique, qui emporte pgvector et les valeurs d'enum sans usage
+  (`admin`, `rag_program`) ; elle recrée la base locale : demander l'accord de Victor avant.
+  Puis le point 8, quotas et coûts, et le passage de fin.
+  - Inventaire de la troisième PR (lecture du code serveur, 2026-10-06), chemins relatifs à
+    `apps/server/src/` : matières `ses`, `philosophie`, `nsi` (`lib/subjects.ts`) et trois listes
+    de matières au lieu d'une (`lib/subjects.ts`, `prompts/adaptation/subjects.ts`,
+    `COLLEGE_SUBJECTS` de `services/education.service.ts`) ; niveaux de seconde à terminale
+    dans `modules/tutor/mistral-reasoning.ts`, cycle 2 et lycée dans
+    `modules/learning/learning-config.ts` (`encourageBreaks`) et
+    `modules/learning/prompts/by-subject.ts`, repli `'seconde'` de
+    `modules/documents/upload.helpers.ts`, `EducationCycle 'lycee'` ; `GET /api/tts/voices`
+    (toujours vide), `GET /learning/config` (indications d'interface sans client), `GET
+    /health/ai` (sans authentification, un appel Mistral réel à chaque requête) ;
+    `currentMessageMaxTokens` jamais lu (`token-budget.service.ts`) ; `LEARNING_CONFIG` cite
+    `docs/AUDIT_LEARNING_FLASHCARDS.md`, qui n'existe pas ; dossiers `drizzle/2025*` non
+    référencés par le journal ; rôle `admin` de `packages/api/src/types.ts`. Laissés au lot 3 :
+    niveaux de l'inscription (`education-mapping.ts`), routes de séance qui se recouvrent.
+  - Point 8 en pause sur la branche `feat/cost-tracking-every-call` (plan commité, travail en
+    cours dans `git stash` de cette branche) : chaque appel IA tracé en micro-euros, tarifs
+    vérifiés le 2026-10-06 sur les pages Mistral. À reprendre sans les embeddings, supprimés.
+  - Décidé le 2026-10-06, sur délégation de Victor, à porter par les PR du point 8 : le quota
+    compte le coût réel (cache à 10 %, lecture vocale comprise) ; l'outil de fiches est imposé
+    par le code quand l'analyse du tour relève une demande ou un accord. Plan d'abord dans `docs/plans/`.
   - Une relecture humaine d'une partie des conversations lues par Claude reste due avant
     toute publication (lot 4).
-- **PR ouvertes :** #397, colonnes et tables sans usage.
+- **PR ouvertes :** aucune.
 - **Landing en ligne gelée** jusqu'au lot 4 : seuls des correctifs d'honnêteté ou techniques y entrent.
   L'identité visuelle est rejetée et se refait au lot 4.
 
