@@ -85,6 +85,8 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
   `no-unsafe-enum-assignment`, qui signalait trois lignes de l'ancien serveur le 2026-10-06 ;
   le nouveau code doit passer cette règle avant la montée. D'ici là, `@typescript-eslint/*` existe en 8.70 et en
   8.71 (la seconde tirée par `@eslint-react/eslint-plugin`, #412).
+- **Configuration des agents** : élagage mensuel de CLAUDE.md, `.claude/rules/` et
+  `.claude/skills/` (`.claude/rules/plans-and-agents.md`, « L'élagage ») ; prochain le 2026-11-02.
 - **Taux de Mistral** (`MISTRAL_USD_TO_EUR`, `platform/ai/cost.ts`) : 0,85, lu sur la page Coûts de
   l'organisation le 2026-10-06. Le revérifier à chaque facture : un écart change chaque coût et
   chaque quota.

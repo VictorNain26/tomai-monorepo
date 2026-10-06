@@ -29,6 +29,8 @@ export const config = [
     },
     rules: {
       'turbo/no-undeclared-env-vars': 'error',
+      // Past 400 lines of code, a file does too many things.
+      'max-lines': ['error', { max: 400, skipBlankLines: true, skipComments: true }],
       // A number renders the same way everywhere; the rule stays on to catch
       // objects, arrays and nullish values interpolated by mistake.
       '@typescript-eslint/restrict-template-expressions': [

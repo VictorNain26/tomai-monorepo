@@ -1,61 +1,51 @@
 # Monorepo Tom
 
-Tuteur IA des devoirs pour collégiens, avec un résumé pour le parent. Pour qui, promesse
-et périmètre : `docs/vision.md`, qui prime sur tout autre document ; règle qui gouverne le
-reste : on n'affirme que ce qu'on peut prouver. Stack, structure, commandes et
-démarrage : `README.md`. Ce fichier ne porte que les règles de travail des agents ; ce qui ne vaut
-que pour une partie du code vit dans `.claude/rules/<sujet>.md`, chargé sur ses chemins.
+Tuteur IA des devoirs pour collégiens, avec un résumé pour le parent.
 
-**Travaux en cours : `docs/suivi.md`** — avancement, bloquants, prochaine action. Le lire
-avant de reprendre, le mettre à jour dans la PR qui fait avancer.
+## Carte
+
+- Pour qui, promesse, périmètre : `docs/vision.md`, qui prime sur tout ; on n'affirme que ce
+  qu'on peut prouver.
+- **Travaux en cours : `docs/suivi.md`**, à lire avant de reprendre et à mettre à jour dans la PR
+  qui fait avancer. Ordre des lots : `docs/roadmap.md`. Refonte en cours :
+  `docs/etudes/2026-10-06/refonte-architecture.md`.
+- Stack, structure, démarrage : `README.md`. Règles d'une partie du code :
+  `.claude/rules/<sujet>.md`, chargées sur ses chemins.
 
 Lors d'une compaction, préserver : PR en cours, branche, plan en cours, dernière tâche
 terminée, décisions ouvertes.
 
-Avant un commit : `bun run typecheck && bun run lint`, et `bun run test` quand du code testé
-change. Prettier formate le code (`bun run format`) ; le pre-commit et la CI le vérifient.
+## Commandes
 
-## Frontière des apps
+Avant un commit : `bun run typecheck && bun run lint`, et `bun run test` quand du code testé
+change (Postgres de `docker compose` requis). Formatage : `bun run format`.
 
-`apps/web` est le seul client produit : toute fonctionnalité produit lui appartient. La
-landing n'appelle **jamais** le serveur, ni par `@repo/api` ni par l'auth ; son seul lien
-vers le produit sera le bouton « Commencer gratuitement », au lot 4. C'est ce qui l'empêche
-de dériver en second produit.
+## Interdits
 
-La landing en ligne est **gelée jusqu'au lot 4** : seuls des correctifs d'honnêteté ou techniques
-y entrent (`.claude/rules/landing.md`).
-
-## Git
-
-- `main` est la seule branche permanente ; jamais de push direct, une branche courte puis une PR.
-- **Merge commit uniquement** : le squash est désactivé sur le dépôt GitHub.
+- La landing n'appelle jamais le serveur, ni l'auth : `apps/web` est le seul client produit.
+- Rien n'entre dans la landing en ligne avant le lot 4, sauf un correctif d'honnêteté ou
+  technique (`.claude/rules/landing.md`).
+- Jamais de push sur `main` : une branche courte, puis une PR, mergée en merge commit (le
+  squash est désactivé).
+- Jamais deux versions d'une même chose, ni un fichier sans usage : ce qu'une PR remplace, elle
+  le supprime.
+- Jamais un type du serveur réécrit côté client : il vient du client typé de `hono/client`.
+- Jamais de test décoratif : pas de `mock.module` (refusé au lint), pas d'assertion triviale ;
+  un service, un helper ou une validation modifié a son test, cas nominal et cas limites.
 
 ## Revue avant merge
 
-`/code-review` (natif) couvre correction et qualité. S'y ajoutent quatre exigences
-propres au monorepo, à vérifier explicitement :
-
-- **Contrat client** — les types du client viennent du serveur (client typé de `hono/client`),
-  jamais redéfinis côté client.
-- **Frontières** — entre workspaces, imports via les packages déclarés, aucune dépendance
-  circulaire ; dans le serveur, les règles de `eslint-plugin-boundaries`.
-- **Taille de fichier** — au-delà de ~400 lignes, le fichier fait trop de choses.
-- **Test associé** — tout service, helper ou validation modifié a son `*.test.ts`
-  couvrant le cas nominal et les cas limites. Pas de test décoratif (mocks massifs,
-  assertions triviales).
+`/code-review` relit la branche dans un contexte neuf. Ne retenir que ce qui touche la
+correction ou les exigences du plan : un relecteur trouve presque toujours quelque chose, et
+tout suivre mène à la sur-ingénierie (code.claude.com/docs/en/best-practices, « Add an
+adversarial review step »). Un constat retenu se corrige avant le merge, puis suit la boucle de
+`.claude/rules/plans-and-agents.md`.
 
 ## Garde-fous déterministes
 
-Ils s'appliquent que Claude le veuille ou non. Chacun a une portée précise, et la
-connaître évite de croire couvert ce qui ne l'est pas :
-
-- **`permissions.ask`** (`.claude/settings.json`) : `db:push`, `drizzle-kit push`,
-  `dropdb`, un `DROP DATABASE`/`DROP SCHEMA` et `docker compose down -v` demandent
-  confirmation, y compris en mode auto. La règle porte sur le texte de la commande :
-  une autre forme d'appel (chemin absolu, `sh -c`) y échappe
-  ([doc](https://code.claude.com/docs/en/permissions)).
-- **`permissions.deny`** : `.env` et `.env.*` illisibles à toute profondeur, sauf le
-  gabarit `.env.example`, rouvert par la négation `Read(!.env.example)`. Les porteurs de
-  clés — `*.keystore`, `*.jks`, `*.p8`, `*.p12`, `*.pem` — sont bloqués par des règles
-  distinctes.
-- **lefthook** : lint, format (Prettier) + typecheck en pre-commit, tests + build en pre-push.
+- `.claude/settings.json` : `permissions.ask` sur `db:push`, `drizzle-kit push`, `dropdb`,
+  `DROP DATABASE` ou `SCHEMA` et `docker compose down -v` ; `permissions.deny` sur `.env`,
+  `.env.*` (sauf `.env.example`) et les porteurs de clés. La règle porte sur le texte de la
+  commande : une autre forme d'appel y échappe ([doc](https://code.claude.com/docs/en/permissions)).
+- lefthook : format, lint et typecheck avant un commit ; tests et build avant un push.
+- CI : typecheck, lint, tests, build, e2e, knip, sherif, migrations, sécurité.
