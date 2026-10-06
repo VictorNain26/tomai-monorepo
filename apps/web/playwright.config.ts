@@ -15,7 +15,7 @@ export default defineConfig({
   ],
   webServer: {
     // The production server's own headers and fallback, CSP included, not those of vite preview.
-    command: `bun ../server/scripts/serve-web.ts dist ${PORT}`,
+    command: `bunx --no-install serve-web dist ${PORT}`,
     url: baseURL,
     reuseExistingServer: false,
     timeout: 120_000,

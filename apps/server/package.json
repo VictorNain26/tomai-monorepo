@@ -46,6 +46,7 @@
     "@aws-sdk/s3-request-presigner": "^3.1136.0",
     "@date-fns/tz": "^1.5.0",
     "@hono/bun": "^1.0.0",
+    "@repo/web-host": "workspace:*",
     "@hono/zod-validator": "^0.9.1",
     "@langfuse/client": "^5.11.1",
     "@langfuse/otel": "^5.11.1",

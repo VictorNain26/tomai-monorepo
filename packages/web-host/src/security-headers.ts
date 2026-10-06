@@ -8,11 +8,10 @@ import { secureHeaders } from 'hono/secure-headers';
 /**
  * The CSP allows nothing but this origin: the Vite build of apps/web carries no inline script or
  * style and no data: asset (build.assetsInlineLimit: 0), and registers its service worker from a
- * file. In development, no HSTS, so http://localhost keeps working, and none of these headers on
- * better-auth's API reference, a development-only page that loads Scalar from jsdelivr with an
- * inline script.
+ * file. `hsts` off where the origin is http://localhost; `exempt` lists paths that get none of
+ * these headers.
  */
-export function securityHeaders({ development }: { development: boolean }) {
+export function securityHeaders({ hsts, exempt = [] }: { hsts: boolean; exempt?: string[] }) {
   const headers = secureHeaders({
     contentSecurityPolicy: {
       defaultSrc: ["'self'"],
@@ -24,7 +23,7 @@ export function securityHeaders({ development }: { development: boolean }) {
     xFrameOptions: 'DENY',
     referrerPolicy: 'strict-origin-when-cross-origin',
     permissionsPolicy: { geolocation: [], microphone: [], camera: [] },
-    strictTransportSecurity: development ? false : 'max-age=31536000; includeSubDomains',
+    strictTransportSecurity: hsts ? 'max-age=31536000; includeSubDomains' : false,
   });
-  return development ? except('/api/auth/reference', headers) : headers;
+  return exempt.length > 0 ? except(exempt, headers) : headers;
 }

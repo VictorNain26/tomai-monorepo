@@ -22,6 +22,15 @@ test('the app runs under the CSP of the server without a single violation', asyn
   expect(await violations()).toEqual([]);
 });
 
+test('the build ships its scripts precompressed, and the server sends them gzipped', async ({ request }) => {
+  const html = await (await request.get('/')).text();
+  const entry = /<script type="module" crossorigin src="([^"]+)"/.exec(html)?.[1] ?? '';
+
+  const response = await request.get(entry, { headers: { 'Accept-Encoding': 'gzip' } });
+  expect(response.headers()['content-encoding']).toBe('gzip');
+  expect(response.headers()['cache-control']).toBe('public, max-age=31536000, immutable');
+});
+
 test('the check catches what the CSP blocks', async ({ page }) => {
   const violations = await recordCspViolations(page);
   await page.goto('/');

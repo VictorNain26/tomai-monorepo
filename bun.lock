@@ -58,6 +58,7 @@
         "@opentelemetry/sdk-node": "^0.222.0",
         "@opentelemetry/sdk-trace-base": "^2.11.0",
         "@opentelemetry/semantic-conventions": "^1.43.0",
+        "@repo/web-host": "workspace:*",
         "@sentry/bun": "11.1.0",
         "@sentry/hono": "11.1.0",
         "ai": "^7.0.107",
@@ -97,6 +98,7 @@
       "devDependencies": {
         "@playwright/test": "^1.63.0",
         "@repo/eslint-config": "workspace:*",
+        "@repo/web-host": "workspace:*",
         "@tailwindcss/vite": "^4.3.3",
         "@tanstack/router-plugin": "^1.168.42",
         "@types/node": "^24.13.6",
@@ -167,6 +169,23 @@
       "peerDependencies": {
         "react": "^19.0.0",
         "react-dom": "^19.0.0",
+      },
+    },
+    "packages/web-host": {
+      "name": "@repo/web-host",
+      "version": "1.0.0",
+      "bin": {
+        "serve-web": "./src/serve.ts",
+      },
+      "dependencies": {
+        "@hono/bun": "^1.0.0",
+        "hono": "^4.13.12",
+      },
+      "devDependencies": {
+        "@repo/eslint-config": "workspace:*",
+        "bun-types": "^1.4.2",
+        "eslint": "^10.11.0",
+        "typescript": "6.0.3",
       },
     },
   },
@@ -878,6 +897,8 @@
     "@repo/tokens": ["@repo/tokens@workspace:packages/tokens"],
 
     "@repo/ui": ["@repo/ui@workspace:packages/ui"],
+
+    "@repo/web-host": ["@repo/web-host@workspace:packages/web-host"],
 
     "@rolldown/binding-android-arm-eabi": ["@rolldown/binding-android-arm-eabi@1.2.12", "", { "os": "android", "cpu": "arm" }, "sha512-dB/a1214qKfHMXCpgqR4OZT+jS4kTyEXbQGJPqzobt5EwH5rX080pxE37alt3RzvR1bf1Yz/yGqRfrYAxuPw0A=="],
 

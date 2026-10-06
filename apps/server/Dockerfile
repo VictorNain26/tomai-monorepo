@@ -32,6 +32,7 @@ WORKDIR /app
 COPY package.json bun.lock bunfig.toml ./
 COPY apps/web/package.json ./apps/web/
 COPY packages/tokens/package.json ./packages/tokens/
+COPY packages/web-host/package.json ./packages/web-host/
 COPY packages/eslint-config/package.json ./packages/eslint-config/
 
 RUN --mount=type=cache,target=/root/.bun/install/cache \
@@ -56,6 +57,7 @@ ENV BUILD_DATE=${BUILD_DATE}
 
 COPY package.json bun.lock bunfig.toml ./
 COPY apps/server/package.json ./apps/server/
+COPY packages/web-host/package.json ./packages/web-host/
 COPY packages/eslint-config/package.json ./packages/eslint-config/
 
 # Full install (dev + prod) for build
@@ -63,6 +65,7 @@ RUN --mount=type=cache,target=/root/.bun/install/cache \
     bun install --frozen-lockfile --ignore-scripts --filter tomai-server
 
 # Sources, and the test runner the typecheck and the lint read too
+COPY packages/web-host/src/ ./packages/web-host/src/
 COPY apps/server/src/ ./apps/server/src/
 COPY apps/server/scripts/ ./apps/server/scripts/
 COPY apps/server/tsconfig*.json apps/server/eslint.config.mjs ./apps/server/

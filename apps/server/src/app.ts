@@ -2,14 +2,13 @@
  * TomAI Server — Hono on Bun, Better Auth, AI orchestration.
  */
 
+import { securityHeaders, webClient } from '@repo/web-host';
 import { Hono } from 'hono';
 import { requestId } from 'hono/request-id';
 
 import { auth } from './platform/auth/auth.js';
 import { env, isDevelopment } from './platform/config/env.js';
 import type { AppEnv } from './platform/http/context.js';
-import { securityHeaders } from './platform/http/security-headers.js';
-import { webClient } from './platform/http/web-client.js';
 import { sentryMiddleware } from './platform/observability/sentry.js';
 
 import { apiRoutes } from './routes/api/index.js';
@@ -38,7 +37,9 @@ const app = base
     await next();
   })
 
-  .use(securityHeaders({ development: isDev }))
+  // In development, better-auth's API reference (openAPI plugin, dev only) loads Scalar from
+  // jsdelivr with an inline script the CSP would block.
+  .use(securityHeaders({ hsts: !isDev, exempt: isDev ? ['/api/auth/reference'] : [] }))
 
   .use('/api/*', apiRateLimit)
   .use('/health', apiRateLimit)

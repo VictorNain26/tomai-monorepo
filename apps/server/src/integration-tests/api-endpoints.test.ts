@@ -4,11 +4,9 @@
  * Tests the real Hono app composition via app.request()
  */
 
-import { afterAll, describe, it, expect, beforeEach, mock } from 'bun:test';
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { describe, it, expect, beforeEach, mock } from 'bun:test';
 import { Hono, type Context } from 'hono';
+import { fakeWebBuild } from '../tests/_helpers/boot-env';
 import { createMockLogger } from '../tests/_helpers/mock-logger';
 
 const SESSION_ID = '0199a3c4-7b1e-7d2a-9f00-123456789abc';
@@ -62,11 +60,7 @@ mock.module('../platform/auth/auth', () => ({
 }));
 
 // A web build, served by the app after its API routes.
-const WEB_DIST_DIR = mkdtempSync(join(tmpdir(), 'web-dist-'));
-writeFileSync(join(WEB_DIST_DIR, 'index.html'), '<!doctype html><title>Tom</title>');
-afterAll(() => {
-  rmSync(WEB_DIST_DIR, { recursive: true, force: true });
-});
+const WEB_DIST_DIR = fakeWebBuild();
 
 mock.module('../platform/config/env', () => ({
   env: {
@@ -245,10 +239,13 @@ beforeEach(() => {
 // TESTS
 // ============================================
 
+// What a browser sends when it navigates to a page.
+const NAVIGATION = { Accept: 'text/html' };
+
 describe('API Endpoints', () => {
   describe('web client', () => {
     it('serves the web build at /, under the CSP', async () => {
-      const res = await app.fetch(new Request('http://localhost/'));
+      const res = await app.fetch(new Request('http://localhost/', { headers: NAVIGATION }));
       expect(res.status).toBe(200);
       expect(res.headers.get('content-type')).toStartWith('text/html');
       expect(res.headers.get('content-security-policy')).toContain("default-src 'self'");
@@ -256,7 +253,7 @@ describe('API Endpoints', () => {
     });
 
     it('hands a client route to index.html', async () => {
-      const res = await app.fetch(new Request('http://localhost/parent/enfants'));
+      const res = await app.fetch(new Request('http://localhost/parent/enfants', { headers: NAVIGATION }));
       expect(res.status).toBe(200);
       expect(await res.text()).toContain('<title>Tom</title>');
     });
@@ -268,7 +265,8 @@ describe('API Endpoints', () => {
     });
 
     it('counts API requests against the rate limit, never the files of the web client', async () => {
-      const limited = async (path: string) => (await app.fetch(new Request(`http://localhost${path}`))).headers.has('X-RateLimit-Limit');
+      const limited = async (path: string) =>
+        (await app.fetch(new Request(`http://localhost${path}`, { headers: NAVIGATION }))).headers.has('X-RateLimit-Limit');
       expect(await limited('/')).toBe(false);
       expect(await limited('/parent/enfants')).toBe(false);
       expect(await limited('/health')).toBe(true);

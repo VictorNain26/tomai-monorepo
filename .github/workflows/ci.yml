@@ -175,13 +175,13 @@ jobs:
         with:
           fetch-depth: 0
       # Cheap check before the install: a PR that touches neither the apps under test, the
-      # packages they use, the server that serves the web, nor the tooling skips the job's setup.
+      # packages they use nor the tooling skips the job's setup.
       - name: Check whether the e2e suites are concerned
         id: scope
         run: |
           if [ "${{ github.event_name }}" != "pull_request" ]; then
             echo "run=true" >> "$GITHUB_OUTPUT"
-          elif git diff --name-only "origin/${{ github.base_ref }}...HEAD" | grep -qE '^(apps/(web|landing|server)/|packages/|bun\.lock$|package\.json$|turbo\.json$|\.github/)'; then
+          elif git diff --name-only "origin/${{ github.base_ref }}...HEAD" | grep -qE '^(apps/(web|landing)/|packages/|bun\.lock$|package\.json$|turbo\.json$|\.github/)'; then
             echo "run=true" >> "$GITHUB_OUTPUT"
           else
             echo "run=false" >> "$GITHUB_OUTPUT"
@@ -195,10 +195,6 @@ jobs:
         id: tasks
         run: |
           if [ "${{ github.event_name }}" = "push" ] && [ "${{ github.ref }}" = "refs/heads/main" ]; then
-            AFFECTED=""
-          # web's e2e run on the server's own serving (web#test:e2e inputs in turbo.json), files
-          # outside apps/web that --affected, package by package, never maps to web.
-          elif git diff --name-only "origin/${{ github.base_ref }}...HEAD" | grep -qE '^apps/server/(scripts/serve-web|src/platform/http/(security-headers|web-client))\.ts$'; then
             AFFECTED=""
           else
             AFFECTED="--affected"
