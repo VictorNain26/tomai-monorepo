@@ -8,7 +8,8 @@
 
 import { hc, type ClientResponse } from 'hono/client';
 import type { ClientErrorStatusCode, ServerErrorStatusCode } from 'hono/utils/http-status';
-import type { AppType, FieldError } from 'tomai-server/app';
+import type { AppType } from 'tomai-server/app';
+import type { FieldError } from './types';
 import { getApiConfig } from './config';
 
 export interface ApiError extends Error {
@@ -73,7 +74,7 @@ function buildApiError(status: number, errorValue: unknown): ApiError {
       const errObj = ev['error'] as Record<string, unknown>;
       message = (errObj['message'] as string | undefined) ?? message;
       code = (errObj['code'] as string | undefined) ?? code;
-      fields = errObj['fields'] as FieldError[] | undefined;
+      if (Array.isArray(errObj['fields'])) fields = errObj['fields'] as FieldError[];
     } else {
       // Legacy format fallback: { message, _error, error, code }
       message =

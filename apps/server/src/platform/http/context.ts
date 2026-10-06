@@ -2,9 +2,9 @@ import { zValidator } from '@hono/zod-validator';
 import { createMiddleware } from 'hono/factory';
 import type { ValidationTargets } from 'hono';
 import type { RequestIdVariables } from 'hono/request-id';
-import type { ZodType } from 'zod';
+import { z, type ZodType } from 'zod';
 import { requireAuth, requireParentRole } from '../auth/session.js';
-import { AppError } from './errors.js';
+import { AppError, type FieldError } from './errors.js';
 import type { AuthenticatedUser } from '../../types/index.js';
 
 export interface AppEnv { Variables: RequestIdVariables }
@@ -42,6 +42,20 @@ export const requireParent = createMiddleware<AuthEnv>(async (c, next) => {
 
 const JSON_CONTENT_TYPE = /^application\/([a-z-.]+\+)?json\b/i;
 
+// Validation messages reach the client's forms: Zod's own in French, as the schemas' custom ones are
+// (https://zod.dev/error-customization#internationalization). Set here, where every route's validation
+// is defined, so it holds before the first request.
+z.config(z.locales.fr());
+
+/** One entry per field: an unknown-keys issue names each key, which Zod keeps outside the path. */
+function toFieldErrors(location: keyof ValidationTargets, issues: readonly z.core.$ZodIssue[]): FieldError[] {
+  return issues.flatMap((issue) => {
+    const path = issue.path.map(String);
+    const keys = issue.code === 'unrecognized_keys' ? issue.keys.map((key) => [...path, key]) : [path];
+    return keys.map((keyPath) => ({ location, path: keyPath.join('.'), code: issue.code, message: issue.message }));
+  });
+}
+
 /**
  * zValidator that routes failures through the global VALIDATION_ERROR envelope.
  * Hono validates `{}` when a json body arrives without a JSON Content-Type, so
@@ -53,7 +67,6 @@ export const validate = <T extends ZodType, Target extends keyof ValidationTarge
       throw new AppError('VALIDATION_ERROR', 'Expected an application/json body');
     }
     if (!result.success) {
-      const fields = result.error.issues.map((issue) => ({ path: issue.path.map(String).join('.'), code: issue.code }));
-      throw new AppError('VALIDATION_ERROR', result.error.message, fields);
+      throw new AppError('VALIDATION_ERROR', result.error.message, toFieldErrors(target, result.error.issues));
     }
   });
