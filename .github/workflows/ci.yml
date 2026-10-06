@@ -53,6 +53,10 @@ jobs:
           else
             bunx --no-install turbo run ${{ matrix.task }} --affected
           fi
+      # Repo-wide and fast, so not filtered by --affected.
+      - name: Check formatting (Prettier)
+        if: matrix.task == 'lint'
+        run: bunx --no-install prettier --check .
 
   # Root scripts: no database and no install needed, bun runs their tests.
   script-tests:

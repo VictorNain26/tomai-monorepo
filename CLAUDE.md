@@ -18,6 +18,7 @@ bun install                        # Bun 1.4.2+ ; Node 24+ pour la landing
 bun run dev                        # infra Docker + server:3000 + landing:3001 + web:3002
 bun run dev:down                   # arrêt de l'infra
 bun run typecheck && bun run lint  # obligatoire avant tout commit
+bun run format                     # Prettier, vérifié en CI et en pre-commit
 bun run test                       # tests serveur, aussi obligatoires si le serveur change
 bun run test:scripts               # tests de scripts/
 bun run doctor                     # diagnostic de la stack
@@ -62,4 +63,4 @@ connaître évite de croire couvert ce qui ne l'est pas :
   gabarit `.env.example`, rouvert par la négation `Read(!.env.example)`. Les porteurs de
   clés — `*.keystore`, `*.jks`, `*.p8`, `*.p12`, `*.pem` — sont bloqués par des règles
   distinctes.
-- **lefthook** : lint + typecheck en pre-commit, tests + build en pre-push.
+- **lefthook** : lint, format (Prettier) + typecheck en pre-commit, tests + build en pre-push.
