@@ -602,6 +602,7 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
   Quota au coût réel (#401) : la dépense de la journée se lit dans `cost_tracking` (somme des
   micro-euros depuis la remise à zéro de 10 h), cache à son prix et lecture vocale comprise, au lieu
   de compteurs de tokens tenus par le seul tour de chat. Budgets provisoires : 2 c par jour en
-  Gratuit, 10 c en Complet. La lecture vocale passe sous quota. La formule devient une colonne de
+  Gratuit, 10 c en Complet. Le budget se vérifie au chat, à la lecture vocale (prix connu avant
+  l'appel, une lecture à la fois), à la transcription d'un audio et aux cartes. La formule devient une colonne de
   `user_subscriptions` : `subscription_plans`, jamais remplie, disparaît avec le bug « Free plan not
   found » qui empêchait de compter la consommation.
