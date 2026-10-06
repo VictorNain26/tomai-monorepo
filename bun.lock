@@ -170,13 +170,11 @@
     },
   },
   "trustedDependencies": [
-    "drizzle-kit",
+    "protobufjs",
     "sharp",
+    "@evilmartians/lefthook",
     "esbuild",
     "@sentry/cli",
-    "protobufjs",
-    "@evilmartians/lefthook",
-    "better-auth",
   ],
   "overrides": {
     "@esbuild-kit/core-utils": {

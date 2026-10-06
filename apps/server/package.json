@@ -15,35 +15,24 @@
   },
   "scripts": {
     "dev": "bun --watch --hot src/index.ts",
-    "dev:memory": "bun --watch --hot --smol src/index.ts",
-    "start:prod": "bun --smol dist/index.js",
     "build": "bun run build:server && bun run build:migrate",
     "build:types": "bun --bun tsc -p tsconfig.build.types.json",
     "build:server": "bun build src/index.ts --outdir dist --target bun --minify --sourcemap=linked --format esm",
     "build:migrate": "bun build src/platform/db/migrate.ts --outdir dist --target bun --sourcemap=linked --format esm",
-    "build:validated": "bun run validate:prod && bun run build",
-    "build:koyeb": "bun run typecheck:strict && bun run lint && bun run build",
     "start": "bun dist/index.js",
     "typecheck": "bun --bun tsc --noEmit",
-    "typecheck:strict": "bun --bun tsc --noEmit",
     "lint": "bun --bun eslint src scripts --max-warnings 0",
     "lint:fix": "bun --bun eslint src --fix",
     "test": "bun run scripts/run-tests.ts src/tests",
     "test:integration": "bun run scripts/run-tests.ts src/integration-tests --jobs=1",
     "test:live": "bun run scripts/run-tests.ts src/live --jobs=1",
-    "test:watch": "bun test src/tests/ --isolate --watch",
     "test:coverage": "bun run scripts/run-tests.ts src/tests --coverage",
-    "validate": "bun run typecheck:strict && bun run lint",
-    "validate:ci": "bun run typecheck:strict && bun run lint",
-    "validate:prod": "bun run typecheck:strict && bun run lint",
-    "clean": "rm -rf dist bun.lockb node_modules/.cache",
+    "clean": "rm -rf dist",
     "db:generate": "bun --bun drizzle-kit generate --config=drizzle.config.ts",
     "db:migrate": "bun run src/platform/db/migrate.ts",
     "db:push": "bun --bun drizzle-kit push --config=drizzle.config.ts --force",
     "db:studio": "bunx drizzle-kit studio",
     "db:check": "bun --bun drizzle-kit check",
-    "db:pull": "bun --bun drizzle-kit pull --config=drizzle.config.ts",
-    "db:health": "bun -e \"import('./src/platform/db/connection.js').then(m => m.healthCheck()).then(console.log)\"",
     "seed": "bun run src/scripts/seed-dev.ts",
     "referential:extract": "bun src/referential/extract.ts",
     "eval": "NODE_ENV=test QUOTA_ENFORCEMENT_ENABLED=false LOG_LEVEL=warn bun src/eval/run.ts",
@@ -94,10 +83,5 @@
     "eslint": "^10.11.0",
     "lcov-result-merger": "6.0.0",
     "typescript": "6.0.3"
-  },
-  "trustedDependencies": [
-    "better-auth",
-    "@better-auth/cli",
-    "drizzle-kit"
-  ]
+  }
 }
