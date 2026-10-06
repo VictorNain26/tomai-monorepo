@@ -1,0 +1,24 @@
+---
+description: Client web apps/web — chargé uniquement sur ses fichiers
+paths:
+  - "apps/web/**"
+---
+
+# Client web (`apps/web`)
+
+Seul client produit. Cible et choix : `docs/architecture.md`, « Client web » ; options
+comparées : `docs/etudes/2026-10-06/client-web.md`.
+
+- **Téléphone d'abord** : chaque parcours se conçoit et se prouve à largeur de téléphone, le
+  bureau s'en déduit. Playwright joue deux projets, `iphone` (WebKit) et `android`
+  (Chromium) ; prérequis : `cd apps/web && bunx playwright install chromium webkit`, puis les
+  bibliothèques système de WebKit, `bunx playwright install-deps webkit`.
+- **Frontière** : le serveur s'appelle par le client typé `@repo/api`, dont les types viennent
+  du serveur ; les primitives interactives viennent de `@repo/ui`. Aujourd'hui `apps/web` ne
+  dépend que de `@repo/tokens` et n'appelle pas encore le serveur.
+- Port 3002 en dev.
+- `src/routeTree.gen.ts` est généré par le plugin TanStack Router (`vite.config.ts`) à partir
+  de `src/routes/` : on ne l'édite pas, ESLint l'ignore.
+- TypeScript en trois projets sous `tsc -b` : `tsconfig.app.json` (`src`),
+  `tsconfig.node.json` (configs Vite et Playwright), `tsconfig.e2e.json` (`tests`). Un fichier
+  hors de ces `include` n'est pas vérifié.
