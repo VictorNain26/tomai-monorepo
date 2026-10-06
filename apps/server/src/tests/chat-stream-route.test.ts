@@ -58,11 +58,8 @@ mock.module('../platform/http/rate-limit', () => ({
 let quotaAllowed = true;
 const checkQuota = mock(async (_userId: string) => ({
   allowed: quotaAllowed,
-  message: quotaAllowed ? undefined : 'Limite atteinte.',
-  windowUsagePercent: 100,
-  dailyUsagePercent: 100,
-  windowRefreshIn: 3600,
-  plan: 'free',
+  plan: 'free' as const,
+  usage: { plan: 'free' as const, spentMicroEur: 20_000, budgetMicroEur: 20_000, usagePercent: 100, resetsIn: '3h' },
 }));
 mock.module('../modules/billing/index', () => ({ checkQuota }));
 
@@ -223,8 +220,10 @@ describe('POST /api/chat/stream', () => {
     quotaAllowed = false;
     const res = await app.fetch(makeRequest());
     expect(res.status).toBe(429);
-    const json = (await res.json()) as { error: { code: string } };
-    expect(json.error.code).toBe('QUOTA_EXCEEDED');
+    expect(await res.json()).toMatchObject({
+      error: { code: 'QUOTA_EXCEEDED', message: 'Tu as atteint la limite du jour. Elle se remet à zéro à 10 h.' },
+      usage: { usagePercent: 100, resetsIn: '3h', plan: 'free' },
+    });
   });
 
   it('refuses a level outside the collège, which the prompt does not serve', async () => {

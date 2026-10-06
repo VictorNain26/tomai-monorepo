@@ -11,7 +11,10 @@ mock.module('../platform/auth/session', () => {
 const synthesize = mock((_text: string, _owner: unknown, _options: unknown) =>
   Promise.resolve({ success: true, audioData: 'AAA', mimeType: 'audio/mpeg' }),
 );
-mock.module('../modules/voice/text-to-speech.service', () => ({ textToSpeechService: { synthesize } }));
+mock.module('../modules/voice/text-to-speech.service', () => ({ textToSpeechService: { synthesize, costMicroEur: (text: string) => text.length * 18 } }));
+let allowed = true;
+const checkQuota = mock(async (_userId: string, _plannedMicroEur?: number) => ({ allowed }));
+mock.module('../modules/billing/index', () => ({ checkQuota }));
 
 const { voiceRoutes } = await import('../modules/voice/voice.routes');
 const { handleError } = await import('../platform/http/error-handler');
@@ -26,7 +29,11 @@ function post(body: unknown) {
 }
 
 describe('voice routes', () => {
-  beforeEach(() => synthesize.mockClear());
+  beforeEach(() => {
+    synthesize.mockClear();
+    checkQuota.mockClear();
+    allowed = true;
+  });
 
   it.each([
     ['a language without a voice', { text: 'Bonjour', language: 'de' }],
@@ -41,5 +48,32 @@ describe('voice routes', () => {
     const res = await post({ text: 'Bonjour', schoolLevel: 'cinquieme' });
     expect(res.status).toBe(200);
     expect(synthesize.mock.calls[0]?.slice(1)).toEqual([{ userId: 'u1' }, { language: 'fr', schoolLevel: 'cinquieme' }]);
+  });
+
+  it('refuses speech once the day\'s budget is spent, before any synthesis', async () => {
+    allowed = false;
+    const res = await post({ text: 'Bonjour' });
+    expect(res.status).toBe(429);
+    expect(((await res.json()) as { error: { code: string } }).error.code).toBe('QUOTA_EXCEEDED');
+    expect(synthesize).not.toHaveBeenCalled();
+  });
+
+  it('checks the budget against the cost of the reading, known before the call', async () => {
+    await post({ text: 'Bonjour' });
+    expect(checkQuota.mock.calls[0]).toEqual(['u1', 7 * 18]);
+  });
+
+  it('reads one text at a time per student, and frees the slot once done', async () => {
+    let finish = () => {};
+    synthesize.mockImplementationOnce(() => new Promise((resolve) => {
+      finish = () => { resolve({ success: true, audioData: 'AAA', mimeType: 'audio/mpeg' }); };
+    }));
+    const first = post({ text: 'Bonjour' });
+    await Bun.sleep(5);
+    const second = await post({ text: 'Bonjour' });
+    expect(second.status).toBe(409);
+    finish();
+    expect((await first).status).toBe(200);
+    expect((await post({ text: 'Bonjour' })).status).toBe(200);
   });
 });

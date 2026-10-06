@@ -81,8 +81,8 @@ surveillance de l'enfant. Pas de classement, pas de points, pas de séries.
 
 - **Gratuit, utilisable chaque soir** : le quota se fixe en échanges ou en coût réel, à partir du coût
   mesuré (un compte gratuit à son plafond coûte de l'ordre de 0,18 € par mois,
-  `etudes/2026-10-01/couts.md`). Le quota actuel (1 à 2 échanges par soirée, parce qu'il
-  compte au prix plein les tokens en cache) est un défaut, pas une offre.
+  `etudes/2026-10-01/couts.md`). Le quota compte le coût réel de la journée ; ses
+  montants actuels (2 c par jour en Gratuit, 10 c en Complet) sont provisoires.
 - **Complet à 7,99 € TTC par mois** : plancher défendable du modèle de coûts (marge
   positive dans le pire cas mesuré). Plus d'échanges et les fiches de révision. Prix non
   vérifié auprès de parents. Repères : Dinobot 5,99 et 9,99 €, Le Prof IA

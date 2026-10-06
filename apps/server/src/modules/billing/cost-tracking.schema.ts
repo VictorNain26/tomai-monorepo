@@ -36,7 +36,8 @@ export const costTracking = pgTable('cost_tracking', {
     name: 'cost_tracking_session_id_fkey'
   }).onDelete('set null'),
 
-  index('idx_cost_tracking_user_id').on(table.userId),
+  // The quota sums a user's spend since the daily reset.
+  index('idx_cost_tracking_user_created_at').on(table.userId, table.createdAt),
   index('idx_cost_tracking_created_at').on(table.createdAt),
 ]);
 

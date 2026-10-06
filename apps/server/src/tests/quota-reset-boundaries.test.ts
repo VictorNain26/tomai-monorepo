@@ -1,8 +1,9 @@
 import { describe, it, expect, afterEach, setSystemTime } from 'bun:test';
 import {
   getDailyResetTime,
+  lastDailyReset,
   needsDailyReset,
-  needsWeeklyReset,
+  needsMonthlyReset,
 } from '../modules/billing/quota-config';
 
 const at = (iso: string) => setSystemTime(new Date(iso));
@@ -25,22 +26,23 @@ describe('needsDailyReset — 10:00 Europe/Paris boundary', () => {
   });
 });
 
-describe('needsWeeklyReset — Monday 00:00 Europe/Paris', () => {
-  it('resets on Monday 00:30 Paris for a counter reset on Sunday', () => {
-    at('2026-09-20T22:30:00Z'); // Monday 21/09 00:30 CEST
-    expect(needsWeeklyReset(new Date('2026-09-20T12:00:00Z'))).toBe(true);
+describe('lastDailyReset — what the budget counts from', () => {
+  it('is today at 10:00 Paris after it, yesterday before it', () => {
+    expect(lastDailyReset(new Date('2026-10-06T08:30:00Z'))).toEqual(new Date('2026-10-06T08:00:00Z')); // 10:30 CEST
+    expect(lastDailyReset(new Date('2026-10-06T07:30:00Z'))).toEqual(new Date('2026-10-05T08:00:00Z')); // 09:30 CEST
+  });
+});
+
+describe('needsMonthlyReset — the 1st at 00:00 Europe/Paris', () => {
+  it('resets on the 1st just after Paris midnight, even when UTC is still in the previous month', () => {
+    at('2026-10-31T23:30:00Z'); // 1 November 00:30 CET
+    expect(needsMonthlyReset(new Date('2026-10-31T22:00:00Z'))).toBe(true); // 31 October 23:00 CET
+    expect(needsMonthlyReset(new Date('2026-10-31T23:00:00Z'))).toBe(false); // 1 November 00:00 CET
   });
 
-  it('does not reset again on Monday noon once reset after Paris midnight', () => {
-    at('2026-09-21T10:00:00Z'); // Monday 12:00 CEST
-    expect(needsWeeklyReset(new Date('2026-09-20T22:30:00Z'))).toBe(false); // Monday 00:30 CEST
-    expect(needsWeeklyReset(new Date('2026-09-20T21:59:00Z'))).toBe(true); // Sunday 23:59 CEST
-  });
-
-  it('uses the winter offset on the Monday after the October fallback', () => {
-    at('2026-10-26T00:30:00Z'); // Monday 01:30 CET
-    expect(needsWeeklyReset(new Date('2026-10-25T23:00:00Z'))).toBe(false); // Monday 00:00 CET
-    expect(needsWeeklyReset(new Date('2026-10-25T22:59:00Z'))).toBe(true);
+  it('does not reset within the month', () => {
+    at('2026-10-20T10:00:00Z');
+    expect(needsMonthlyReset(new Date('2026-10-01T08:00:00Z'))).toBe(false);
   });
 });
 

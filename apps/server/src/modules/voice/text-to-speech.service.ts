@@ -34,6 +34,11 @@ class TextToSpeechService {
     }
   }
 
+  /** What reading `text` will cost, as it will be read. */
+  costMicroEur(text: string): number {
+    return getVoxtralTTSService().costMicroEur(normalizeForSpeech(text));
+  }
+
   async synthesize(text: string, owner: CostOwner, options: TTSOptions = {}): Promise<TTSResult> {
     const startTime = Date.now();
 

@@ -6,6 +6,8 @@ import * as storage from './storage.js';
 import { getVoxtralTranscribeService } from '../voice/index.js';
 import { filesRepository } from './files.repository.js';
 import { env } from '../../platform/config/env.js';
+import { AppError, toErrorResponse } from '../../platform/http/errors.js';
+import { checkQuota } from '../billing/index.js';
 import {
   MAX_FILE_SIZE,
   detectFileType,
@@ -142,6 +144,13 @@ export const uploadRoutes = new Hono<AppEnv>()
         return c.json({ success: false, error: 'Access denied' }, 403);
       }
 
+      const metadata = fileRecord.metadata as { fileType?: string } | null;
+      const fileType = metadata?.fileType ?? detectFileType(fileRecord.mimeType);
+      // An audio file is transcribed, billed: not past the day's budget.
+      if (fileType === 'audio' && !(await checkQuota(user.id)).allowed) {
+        return c.json(toErrorResponse(new AppError('QUOTA_EXCEEDED')), 429);
+      }
+
       // Verify file exists in Scaleway
       const fileInfo = await storage.getFileInfo(fileRecord.storageKey);
       if (!fileInfo) {
@@ -157,10 +166,6 @@ export const uploadRoutes = new Hono<AppEnv>()
         userId: user.id,
         sizeBytes: fileInfo.sizeBytes,
       });
-
-      // Get file type from metadata
-      const metadata = fileRecord.metadata as { fileType?: string } | null;
-      const fileType = metadata?.fileType ?? detectFileType(fileRecord.mimeType);
 
       let transcription: string | undefined;
 

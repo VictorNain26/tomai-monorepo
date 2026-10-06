@@ -22,7 +22,6 @@ import { detectDistress } from './distress.js';
 import { closedForDistress } from './distress.service.js';
 import { moderateStudentTurn, type InputModeration } from '../../platform/ai/moderation.js';
 import { exerciseSheetsRepository } from './exercise-sheets.repository.js';
-import { incrementTokenUsage } from '../billing/index.js';
 import { recordAiCost } from '../../platform/ai/cost.js';
 import { structuredUsage } from '../../platform/ai/usage.js';
 import { logger } from '../../platform/observability/logger.js';
@@ -256,10 +255,7 @@ class ChatOrchestrationService {
 
     // A turn that reasoned without writing anything was billed all the same.
     if (tokensUsed > 0) {
-      await Promise.all([
-        incrementTokenUsage(userId, tokensUsed),
-        recordAiCost({ userId, sessionId }, { model, operation: 'chat', ...structuredUsage(usage) }),
-      ]);
+      await recordAiCost({ userId, sessionId }, { model, operation: 'chat', ...structuredUsage(usage) });
     }
 
     if (fullContent.length === 0) {

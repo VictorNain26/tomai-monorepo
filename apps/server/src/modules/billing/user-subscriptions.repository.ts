@@ -1,24 +1,6 @@
-import { eq, sql } from 'drizzle-orm';
+import { and, eq, gte, sql, sum } from 'drizzle-orm';
 import { db } from '../../db/connection';
-import {
-  userSubscriptions,
-  subscriptionPlans,
-  type UserSubscription,
-  type NewUserSubscription,
-  type SubscriptionPlan,
-} from '../../db/schema';
-
-type SubscriptionWithPlanName = UserSubscription & { planName: string };
-
-interface TokenIncrementParams {
-  tokensUsed: number;
-  shouldResetWindow: boolean;
-  windowStartAt: Date;
-  shouldResetDaily: boolean;
-  lastResetAt: Date;
-  shouldResetWeekly: boolean;
-  lastWeeklyResetAt: Date;
-}
+import { costTracking, userSubscriptions, type UserSubscription } from '../../db/schema';
 
 interface DeckIncrementParams {
   shouldResetDaily: boolean;
@@ -37,80 +19,24 @@ class UserSubscriptionsRepository {
     return row;
   }
 
-  async findByUserIdWithPlanName(userId: string): Promise<SubscriptionWithPlanName | undefined> {
+  /** The user's row, created with the defaults (Gratuit) the first time it is needed. */
+  async ensure(userId: string): Promise<UserSubscription> {
+    await db.insert(userSubscriptions).values({ userId }).onConflictDoNothing({ target: userSubscriptions.userId });
+    const row = await this.findByUserId(userId);
+    if (!row) throw new Error('Subscription not found after insert');
+    return row;
+  }
+
+  /** What the user's AI calls cost since `since`, in micro-euros (`cost_tracking`). */
+  async spentSince(userId: string, since: Date): Promise<number> {
     const [row] = await db
-      .select({
-        subscription: userSubscriptions,
-        planName: subscriptionPlans.name,
-      })
-      .from(userSubscriptions)
-      .innerJoin(subscriptionPlans, eq(userSubscriptions.planId, subscriptionPlans.id))
-      .where(eq(userSubscriptions.userId, userId))
-      .limit(1);
-
-    if (!row) return undefined;
-    return { ...row.subscription, planName: row.planName };
+      .select({ spent: sum(costTracking.costMicroEur).mapWith(Number) })
+      .from(costTracking)
+      .where(and(eq(costTracking.userId, userId), gte(costTracking.createdAt, since)));
+    return row?.spent ?? 0;
   }
 
-  async findPlanByName(name: string): Promise<SubscriptionPlan | undefined> {
-    const [plan] = await db
-      .select()
-      .from(subscriptionPlans)
-      .where(eq(subscriptionPlans.name, name))
-      .limit(1);
-    return plan;
-  }
-
-  async insertDefault(input: NewUserSubscription): Promise<void> {
-    await db.insert(userSubscriptions).values(input);
-  }
-
-  /**
-   * Atomic token-usage increment in a single UPDATE ... RETURNING.
-   * The service decides the reset booleans (window/daily/weekly) from a prior
-   * read; this method applies them atomically — the CASE-style branches make
-   * concurrent writers crossing the same boundary converge to a correct
-   * "reset + delta" outcome without a lost-write race.
-   */
-  async applyTokenIncrement(
-    userId: string,
-    params: TokenIncrementParams,
-  ): Promise<{ windowTokensUsed: number; tokensUsedToday: number } | undefined> {
-    const { tokensUsed } = params;
-
-    const [updated] = await db
-      .update(userSubscriptions)
-      .set({
-        windowTokensUsed: params.shouldResetWindow
-          ? tokensUsed
-          : sql`${userSubscriptions.windowTokensUsed} + ${tokensUsed}`,
-        windowStartAt: params.shouldResetWindow ? new Date() : params.windowStartAt,
-        tokensUsedToday: params.shouldResetDaily
-          ? tokensUsed
-          : sql`${userSubscriptions.tokensUsedToday} + ${tokensUsed}`,
-        lastResetAt: params.shouldResetDaily ? new Date() : params.lastResetAt,
-        tokensUsedThisWeek: params.shouldResetWeekly
-          ? tokensUsed
-          : sql`${userSubscriptions.tokensUsedThisWeek} + ${tokensUsed}`,
-        lastWeeklyResetAt: params.shouldResetWeekly ? new Date() : params.lastWeeklyResetAt,
-        totalTokensUsed: sql`${userSubscriptions.totalTokensUsed} + ${tokensUsed}`,
-        totalMessagesCount: sql`${userSubscriptions.totalMessagesCount} + ${1}`,
-        updatedAt: new Date(),
-      })
-      .where(eq(userSubscriptions.userId, userId))
-      .returning({
-        windowTokensUsed: userSubscriptions.windowTokensUsed,
-        tokensUsedToday: userSubscriptions.tokensUsedToday,
-      });
-
-    return updated;
-  }
-
-  /**
-   * Atomic deck-usage increment. A daily reset here also zeroes the token
-   * window counters (same boundary), preserving the original combined-reset
-   * behaviour.
-   */
+  /** Atomic deck-usage increment: concurrent generations cannot lose a write. */
   async applyDeckIncrement(
     userId: string,
     params: DeckIncrementParams,
@@ -124,11 +50,6 @@ class UserSubscriptionsRepository {
         decksGeneratedThisMonth: params.shouldResetMonthly
           ? 1
           : sql`${userSubscriptions.decksGeneratedThisMonth} + ${1}`,
-        ...(params.shouldResetDaily && {
-          tokensUsedToday: 0,
-          windowTokensUsed: 0,
-          windowStartAt: new Date(),
-        }),
         lastResetAt: params.shouldResetDaily ? new Date() : params.lastResetAt,
         lastMonthlyResetAt: params.shouldResetMonthly ? new Date() : params.lastMonthlyResetAt,
         updatedAt: new Date(),

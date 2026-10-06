@@ -77,6 +77,11 @@ export function computeCostMicroEur(model: string, usage: CallUsage, upcharge: n
   return { costMicroEur: Math.round(usd * upcharge * USD_TO_EUR * 1_000_000), unknownModel: false };
 }
 
+/** What a call costs, in micro-euros, at this server's endpoint; known beforehand for speech. */
+export function costOf(model: string, usage: CallUsage): number {
+  return computeCostMicroEur(model, usage, UPCHARGE).costMicroEur;
+}
+
 /** Writes the call's cost for its owner; nothing without one. A failed write is logged, never thrown. */
 export async function recordAiCost(owner: CostOwner, call: AiCall): Promise<void> {
   if (!owner) return;

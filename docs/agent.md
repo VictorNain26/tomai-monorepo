@@ -436,7 +436,8 @@ succès). Coûts mesurés : `etudes/2026-10-01/couts.md` ; défauts du code 
 
 - Le quota compte des échanges ou le coût réel, tokens en cache à leur prix (10 %), jamais
   des tokens bruts.
-- La lecture vocale (TTS) entre dans le quota : c'est le premier poste de coût.
+- La lecture vocale (TTS) entre dans le quota : c'est le premier poste de coût. Fait (#401) : le quota
+  est un budget du jour en micro-euros, lu dans `cost_tracking` (`modules/billing/quota.ts`).
 - Les fiches de révision sont réservées au Complet, qu'elles viennent de la route de
   génération ou de l'outil du chat.
 - Le résumé de conversation est incrémental : il ne se relance qu'après un nombre fixe de

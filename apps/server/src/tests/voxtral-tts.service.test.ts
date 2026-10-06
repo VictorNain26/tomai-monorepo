@@ -12,7 +12,8 @@ mock.module('../platform/config/env', () => ({
 }));
 
 const recordAiCost = mock(async (_owner: unknown, _call: unknown) => {});
-mock.module('../platform/ai/cost', () => ({ recordAiCost }));
+const costOf = mock((_model: string, usage: { characters?: number }) => (usage.characters ?? 0) * 18);
+mock.module('../platform/ai/cost', () => ({ recordAiCost, costOf }));
 const owner = { userId: 'u1' };
 
 const { getVoxtralTTSService } = await import('../modules/voice/voxtral-tts.service');
@@ -130,5 +131,10 @@ describe('VoxtralTTSService', () => {
 
     expect(result.success).toBe(false);
     expect(captured?.aborted).toBe(true);
+  });
+
+  it('prices a reading before the call, on the graphemes of the text', () => {
+    expect(getVoxtralTTSService().costMicroEur('Bonjour 🙂')).toBe(9 * 18);
+    expect(costOf.mock.calls.at(-1)).toEqual(['voxtral-mini-tts-2603', { characters: 9 }]);
   });
 });

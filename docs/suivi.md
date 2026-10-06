@@ -30,7 +30,9 @@ bloquant levé).
   d'élève (#394), mémoire (#395). Nettoyage demandé par Victor le 2026-10-06, en trois PR :
   mémoire entre séances (#396), colonnes et tables jamais lues (#397), restes hors vision et
   migration de base unique (#399) : les trois faites. Point 8 commencé : chaque appel IA tracé
-  en micro-euros par le client (#400). Prochaine : le quota au coût réel, puis le passage de fin.
+  en micro-euros par le client (#400) ; quota au coût réel de la journée (#401), budgets provisoires
+  à fixer par Victor sur le coût mesuré au passage de fin. Prochaine : les fiches de l'outil du chat
+  réservées au Complet et l'outil imposé par le code, puis le passage de fin.
   - Décidé le 2026-10-06, sur délégation de Victor, à porter par les PR du point 8 : le quota
     compte le coût réel (cache à 10 %, lecture vocale comprise) ; l'outil de fiches est imposé
     par le code quand l'analyse du tour relève une demande ou un accord. Plan d'abord dans `docs/plans/`.
@@ -155,14 +157,9 @@ contraire.
   vérifier les calculs de la solution de référence ; sa résolution d'équations et
   l'équivalence restent à lire dans sa documentation avant tout usage.
 - **Défauts de coût** relevés par `etudes/2026-10-01/couts.md` sur le code du 2026-10-01 :
-  - la synthèse vocale (`/api/tts`, `modules/voice/voice.routes.ts`) n'a aucun quota, seulement le
-    rate limit global : c'est le seul poste non borné ;
   - l'outil `generate_flashcards` du chat (`modules/tutor/chat-tools.ts`) n'a ni contrôle
     de plan ni quota de cartes, alors que la route `/api/learning/generate` réserve les
-    fiches au Complet ;
-  - le quota compte `usage.totalTokens` (`ChatOrchestrationService.finishTurn`) : les tokens
-    en cache au prix plein alors qu'ils coûtent 10 %, raisonnement compris ; le préfixe fixe
-    consomme 63 % de la fenêtre gratuite.
+    fiches au Complet (PR suivante du point 8).
 - **TTS** : une seule voix, française (`fr_marie_*`) ; `/api/tts` n'accepte et n'annonce
   plus que `fr` (#349). Décider s'il faut d'autres voix pour les cours de langue.
 - **Cartes** en `json_schema` non strict : le mode strict de Mistral refuse `format: uri`
@@ -170,13 +167,6 @@ contraire.
   Revoir ce schéma pour repasser en strict, et unifier au passage les trois définitions des
   types de cartes (enum `card_type`, `modules/learning/card-generation.types.ts`, schémas Zod
   de `cards.schema.ts`).
-- **Forfaits absents** : aucune migration ni aucun seed n'insère de ligne dans
-  `subscription_plans`. Sur une base neuve, `ensureUserSubscription`
-  (`modules/billing/quota.ts`) lève « Free plan not found in database » à chaque fin de
-  tour : la consommation n'est jamais comptée au quota (constaté par `bun run eval` le
-  2026-10-02). Les insérer par migration avec la correction du quota.
-- **Quota** : `needsMonthlyReset` (`modules/billing/quota-config.ts`) passe par `Intl.DateTimeFormat` alors que les bornes du
-  jour et de la semaine passent par date-fns. Une seule méthode.
 - `modules/voice/speech-normalize.ts` à réévaluer avec la lecture vocale.
 - **Tests réels instables** : `live/mistral-eu.test.ts`, la fiche d'exercice garde parfois zéro
   notion connue (`keepKnownNotions`, échec du 2026-10-05) ; le test du juge échoue aussi par
@@ -608,3 +598,11 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
   transcription et la lecture vocale reçoivent un propriétaire obligatoire et tracent eux-mêmes, au
   prix daté de chaque modèle : analyse du tour, titre, résumé, cartes, STT et TTS s'ajoutent au chat,
   à la fiche, au diagnostic et à la lecture d'image. Le calcul passe de `billing` à `platform/ai`.
+
+  Quota au coût réel (#401) : la dépense de la journée se lit dans `cost_tracking` (somme des
+  micro-euros depuis la remise à zéro de 10 h), cache à son prix et lecture vocale comprise, au lieu
+  de compteurs de tokens tenus par le seul tour de chat. Budgets provisoires : 2 c par jour en
+  Gratuit, 10 c en Complet. Le budget se vérifie au chat, à la lecture vocale (prix connu avant
+  l'appel, une lecture à la fois), à la transcription d'un audio et aux cartes. La formule devient une colonne de
+  `user_subscriptions` : `subscription_plans`, jamais remplie, disparaît avec le bug « Free plan not
+  found » qui empêchait de compter la consommation.

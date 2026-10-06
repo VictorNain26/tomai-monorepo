@@ -103,17 +103,8 @@ export const chatMessageRoutes = new Hono<AppEnv>()
     const quotaCheck = await checkQuota(user.id);
     if (!quotaCheck.allowed) {
       return unlessDistress(c.json({
-        error: {
-          code: 'QUOTA_EXCEEDED' as const,
-          message: quotaCheck.message ?? 'Limite atteinte. Réessaie bientôt.',
-        },
-        usage: {
-          windowUsagePercent: quotaCheck.windowUsagePercent,
-          dailyUsagePercent: quotaCheck.dailyUsagePercent,
-          windowRefreshIn: quotaCheck.windowRefreshIn,
-          plan: quotaCheck.plan,
-        },
-        requestId,
+        ...toErrorResponse(new AppError('QUOTA_EXCEEDED'), requestId),
+        ...(quotaCheck.usage && { usage: { usagePercent: quotaCheck.usage.usagePercent, resetsIn: quotaCheck.usage.resetsIn, plan: quotaCheck.usage.plan } }),
       }, 429));
     }
 

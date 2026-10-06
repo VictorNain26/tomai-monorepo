@@ -1,5 +1,5 @@
-import { pgTable, uuid, varchar, timestamp, boolean, integer, jsonb, pgEnum, index, foreignKey } from 'drizzle-orm/pg-core';
-import { relations, sql } from 'drizzle-orm';
+import { pgTable, uuid, varchar, timestamp, integer, pgEnum, index, foreignKey } from 'drizzle-orm/pg-core';
+import { relations } from 'drizzle-orm';
 import { user } from '../auth/auth.schema';
 
 // =============================================
@@ -29,87 +29,22 @@ export const billingStatusEnum = pgEnum('billing_status', ['active', 'past_due',
 // TABLES
 // =============================================
 
-/**
- * Table subscription_plans - Définition des plans d'abonnement
- *
- * Modèle de tarification TomIA:
- * - Free: 5000 tokens/jour, 1 enfant max
- * - Premium: 50000 tokens/jour par enfant, tarification par enfant (15€ + 5€)
- */
-export const subscriptionPlans = pgTable('subscription_plans', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  name: varchar('name', { length: 50 }).notNull().unique(), // 'free' | 'premium'
-  type: subscriptionPlanTypeEnum('type').notNull(),
-  displayName: varchar('display_name', { length: 100 }).notNull(),
-
-  // Token quotas
-  dailyTokenLimit: integer('daily_token_limit').notNull(),
-  resetIntervalHours: integer('reset_interval_hours').notNull().default(24),
-
-  // Pricing (en centimes)
-  priceFirstChildCents: integer('price_first_child_cents').notNull().default(0),
-  priceAdditionalChildCents: integer('price_additional_child_cents').notNull().default(0),
-  currency: varchar('currency', { length: 3 }).notNull().default('EUR'),
-
-  // Features list
-  features: jsonb('features').default(sql`'[]'::jsonb`),
-
-  // Status
-  isActive: boolean('is_active').notNull().default(true),
-
-  // Audit
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
-});
 
 /**
- * Table user_subscriptions - Abonnement individuel par enfant
- *
- * Chaque enfant a son propre enregistrement avec:
- * - Plan associé (free ou premium)
- * - Compteur de tokens journalier
- * - Date de dernier reset
+ * Table user_subscriptions - la formule de chaque élève et ses compteurs de fiches.
+ * Pas de ligne : formule Gratuit. La consommation se lit dans `cost_tracking`.
  */
 export const userSubscriptions = pgTable('user_subscriptions', {
   id: uuid('id').primaryKey().defaultRandom(),
   userId: varchar('user_id', { length: 255 }).notNull().unique(), // L'enfant
-  planId: uuid('plan_id').notNull(),
+  plan: subscriptionPlanTypeEnum('plan').notNull().default('free'),
   status: subscriptionStatusEnum('status').notNull().default('active'),
-
-  // ===== ROLLING WINDOW 5H (nouveau système) =====
-  // Tokens utilisés dans la fenêtre actuelle de 5h
-  windowTokensUsed: integer('window_tokens_used').notNull().default(0),
-  // Début de la fenêtre actuelle
-  windowStartAt: timestamp('window_start_at', { withTimezone: true }).notNull().defaultNow(),
-
-  // ===== DAILY CAP (sécurité anti-abus) =====
-  // Reset quotidien à 10h Paris - limite max journalière
-  tokensUsedToday: integer('tokens_used_today').notNull().default(0),
   decksGeneratedToday: integer('decks_generated_today').notNull().default(0),
   lastResetAt: timestamp('last_reset_at', { withTimezone: true }).notNull().defaultNow(),
-
-  // Monthly usage tracking (reset le 1er du mois)
   decksGeneratedThisMonth: integer('decks_generated_this_month').notNull().default(0),
   lastMonthlyResetAt: timestamp('last_monthly_reset_at', { withTimezone: true }).notNull().defaultNow(),
-
-  // ===== WEEKLY STATS (pour dashboard parent) =====
-  tokensUsedThisWeek: integer('tokens_used_this_week').notNull().default(0),
-  lastWeeklyResetAt: timestamp('last_weekly_reset_at', { withTimezone: true }).notNull().defaultNow(),
-
-  // Usage statistics (lifetime)
-  totalTokensUsed: integer('total_tokens_used').notNull().default(0),
-  totalMessagesCount: integer('total_messages_count').notNull().default(0),
-  totalDaysActive: integer('total_days_active').notNull().default(0),
-
-  // Subscription lifecycle
   startedAt: timestamp('started_at', { withTimezone: true }).notNull().defaultNow(),
   expiresAt: timestamp('expires_at', { withTimezone: true }),
-  cancelledAt: timestamp('cancelled_at', { withTimezone: true }),
-
-  // Metadata
-  metadata: jsonb('metadata').default(sql`'{}'::jsonb`),
-
-  // Audit
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [
@@ -119,11 +54,6 @@ export const userSubscriptions = pgTable('user_subscriptions', {
     name: 'user_subscriptions_user_id_fkey'
   }).onDelete('cascade'),
 
-  foreignKey({
-    columns: [table.planId],
-    foreignColumns: [subscriptionPlans.id],
-    name: 'user_subscriptions_plan_id_fkey'
-  }).onDelete('restrict'),
 
   index('idx_user_subscriptions_status').on(table.status),
   index('idx_user_subscriptions_last_reset').on(table.lastResetAt),
@@ -178,18 +108,10 @@ export const familyBilling = pgTable('family_billing', {
 // RELATIONS
 // =============================================
 
-export const subscriptionPlansRelations = relations(subscriptionPlans, ({ many }) => ({
-  userSubscriptions: many(userSubscriptions),
-}));
-
 export const userSubscriptionsRelations = relations(userSubscriptions, ({ one }) => ({
   user: one(user, {
     fields: [userSubscriptions.userId],
     references: [user.id]
-  }),
-  plan: one(subscriptionPlans, {
-    fields: [userSubscriptions.planId],
-    references: [subscriptionPlans.id]
   }),
 }));
 
@@ -206,9 +128,6 @@ export const familyBillingRelations = relations(familyBilling, ({ one }) => ({
 export type SubscriptionPlanTypeEnum = typeof subscriptionPlanTypeEnum.enumValues[number];
 export type SubscriptionStatusEnum = typeof subscriptionStatusEnum.enumValues[number];
 
-export type SubscriptionPlan = typeof subscriptionPlans.$inferSelect;
-export type NewSubscriptionPlan = typeof subscriptionPlans.$inferInsert;
-
 export type UserSubscription = typeof userSubscriptions.$inferSelect;
 export type NewUserSubscription = typeof userSubscriptions.$inferInsert;
 
@@ -217,7 +136,6 @@ export type NewFamilyBilling = typeof familyBilling.$inferInsert;
 
 export type UserSubscriptionWithRelations = UserSubscription & {
   user?: typeof user.$inferSelect;
-  plan?: SubscriptionPlan;
 };
 
 export type FamilyBillingWithRelations = FamilyBilling & {

@@ -11,7 +11,7 @@
 import { logger } from '../../platform/observability/logger.js';
 import { env } from '../../platform/config/env.js';
 import { getMistralSdk } from '../../platform/ai/mistral-sdk.js';
-import { recordAiCost, type CostOwner } from '../../platform/ai/cost.js';
+import { costOf, recordAiCost, type CostOwner } from '../../platform/ai/cost.js';
 import { MistralError } from '@mistralai/mistralai/models/errors';
 import type { EducationLevelType } from '../../types/index.js';
 
@@ -46,8 +46,15 @@ const MAX_INPUT_CHARS = 5_000;
 
 const GRAPHEMES = new Intl.Segmenter('fr', { granularity: 'grapheme' });
 
+const characters = (text: string) => [...GRAPHEMES.segment(text)].length;
+
 class VoxtralTTSService {
   private readonly model = env.MISTRAL_TTS_MODEL;
+
+  /** What reading `text` will cost, before the call. */
+  costMicroEur(text: string): number {
+    return costOf(this.model, { characters: characters(text) });
+  }
 
   async synthesize(text: string, owner: CostOwner, options: VoxtralTTSOptions = {}): Promise<VoxtralTTSResult> {
     const startTime = Date.now();
@@ -79,7 +86,7 @@ class VoxtralTTSService {
       });
       // Billed on the characters of the text read (https://mistral.ai/news/voxtral-tts/), counted as
       // graphemes, not UTF-16 units: an emoji or a decomposed accent is one. The response gives no usage.
-      void recordAiCost(owner, { model: this.model, operation: 'text-to-speech', characters: [...GRAPHEMES.segment(text)].length });
+      void recordAiCost(owner, { model: this.model, operation: 'text-to-speech', characters: characters(text) });
 
       logger.info('Voxtral TTS synthesis completed', {
         operation: 'voxtral:tts:complete',

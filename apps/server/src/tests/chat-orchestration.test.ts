@@ -71,10 +71,7 @@ mock.module('../modules/tutor/turn-analysis.service', () => ({
 
 const record = mock(async (_owner: unknown, _call: unknown) => {});
 mock.module('../platform/ai/cost', () => ({ recordAiCost: record }));
-const incrementTokenUsage = mock(async () => {});
-mock.module('../modules/billing/index', () => ({
-  incrementTokenUsage,
-}));
+
 
 const sheet = (statement: string): ExerciseSheet => ({
   statement, kind: 'short', answer: '5', answerForms: ['5'], mathEquation: null, mathAnswer: '5', steps: [], commonErrors: [],
@@ -275,7 +272,6 @@ describe('ChatOrchestrationService.prepareTurn — exercise', () => {
 describe('ChatOrchestrationService.finishTurn', () => {
   beforeEach(() => {
     saveMessage.mockClear();
-    incrementTokenUsage.mockClear();
     record.mockClear();
     summarizeIfNeeded.mockClear();
     generateTitleIfNeeded.mockClear();
@@ -298,7 +294,6 @@ describe('ChatOrchestrationService.finishTurn', () => {
     });
 
     expect(saveMessage).not.toHaveBeenCalled();
-    expect(incrementTokenUsage).not.toHaveBeenCalled();
     expect(record).not.toHaveBeenCalled();
     expect(summarizeIfNeeded).not.toHaveBeenCalled();
     expect(generateTitleIfNeeded).not.toHaveBeenCalled();
@@ -324,7 +319,6 @@ describe('ChatOrchestrationService.finishTurn', () => {
       check: noExercise,
     });
 
-    expect(incrementTokenUsage).toHaveBeenCalledWith('user-001', 910);
     expect(record.mock.calls).toEqual([[
       { userId: 'user-001', sessionId: 'session-001' },
       { model: 'mistral-small-2603', operation: 'chat', inputTokens: 10, cachedInputTokens: 0, outputTokens: 900 },
@@ -404,7 +398,6 @@ describe('ChatOrchestrationService.finishTurn', () => {
     expect(saveMessage.mock.calls[0]?.[1]).toBe('assistant');
     expect(saveMessage.mock.calls[0]?.[2]).toBe('Bonjour à toi');
     expect((saveMessage.mock.calls[0]?.[3] as Record<string, unknown> | undefined)?.['modelMessages']).toBeUndefined();
-    expect(incrementTokenUsage).toHaveBeenCalledWith('user-001', 15);
     expect(record).toHaveBeenCalledTimes(1);
     expect(summarizeIfNeeded).toHaveBeenCalledWith('session-001');
     expect(generateTitleIfNeeded).toHaveBeenCalledWith('session-001', 'Bonjour', 'Bonjour à toi', noExercise);
