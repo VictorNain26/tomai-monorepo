@@ -27,13 +27,6 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build", "^build:types"],
-      "inputs": [
-        "$TURBO_DEFAULT$",
-        ".env.production",
-        ".env.staging",
-        "!.env.local",
-        "!.env.*.local"
-      ],
       "outputs": [
         ".next/**",
         "!.next/cache/**",
@@ -51,19 +44,10 @@
       "persistent": true
     },
     "lint": {
-      "inputs": [
-        "$TURBO_DEFAULT$",
-        "eslint.config.*"
-      ],
       "outputs": []
     },
     "typecheck": {
       "dependsOn": ["^typecheck", "^build:types"],
-      "inputs": [
-        "$TURBO_DEFAULT$",
-        "tsconfig.json",
-        "tsconfig.*.json"
-      ],
       "outputs": []
     },
     "clean": {
@@ -80,12 +64,7 @@
       "persistent": true
     },
     "test": {
-      "inputs": [
-        "$TURBO_DEFAULT$",
-        "**/*.test.ts"
-      ],
       "outputs": ["coverage/**"],
-      "env": ["NODE_ENV", "CI"],
       "passThroughEnv": ["DATABASE_URL", "BETTER_AUTH_SECRET"]
     }
   }
