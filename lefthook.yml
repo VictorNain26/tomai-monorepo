@@ -19,6 +19,11 @@ pre-commit:
       glob: "**/*.{ts,tsx}"
       run: bunx --no-install eslint --max-warnings 0 {staged_files}
 
+    - name: lint-web
+      root: "apps/web/"
+      glob: "**/*.{ts,tsx}"
+      run: bunx --no-install eslint --max-warnings 0 --no-warn-ignored {staged_files}
+
     - name: typecheck
       run: bunx --no-install turbo run typecheck --affected --output-logs=errors-only
 

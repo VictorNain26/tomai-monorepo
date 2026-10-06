@@ -6,6 +6,7 @@
     "test": "bun test"
   },
   "exports": {
-    "./theme.css": "./theme.css"
+    "./theme.css": "./theme.css",
+    "./base.css": "./base.css"
   }
 }

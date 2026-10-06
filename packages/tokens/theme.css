@@ -4,12 +4,14 @@
  * Importer APRÈS l'import de Tailwind de l'app.
  * Contrastes AA vérifiés par contrast.test.mjs. */
 
-/* inline : les variables next/font sont posées sur <html> par l'app ; sans
- * inline, la fonte se résoudrait là où le token est défini. */
+/* inline : les variables next/font sont posées sur <html> par la landing ; sans
+ * inline, la fonte se résoudrait là où le token est défini. Une app sans next/font
+ * charge la fonte par Fontsource : la valeur de repli de var() porte son nom, sinon
+ * toute la pile serait invalide et le navigateur retomberait sur sa serif. */
 @theme inline {
-  --font-sans: var(--font-nunito), ui-sans-serif, system-ui, sans-serif;
-  --font-heading: var(--font-nunito), ui-sans-serif, system-ui, sans-serif;
-  --font-hand: var(--font-caveat), cursive;
+  --font-sans: var(--font-nunito, "Nunito Variable"), ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--font-nunito, "Nunito Variable"), ui-sans-serif, system-ui, sans-serif;
+  --font-hand: var(--font-caveat, "Caveat Variable"), cursive;
 }
 
 @theme {
