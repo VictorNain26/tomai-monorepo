@@ -16,7 +16,15 @@ comparées : `docs/etudes/2026-10-06/client-web.md`.
 - **Frontière** : le serveur s'appelle par le client typé `@repo/api`, dont les types viennent
   du serveur ; les primitives interactives viennent de `@repo/ui`. Aujourd'hui `apps/web` ne
   dépend que de `@repo/tokens` et n'appelle pas encore le serveur.
-- Port 3002 en dev.
+- Port 3002 en dev ; le proxy de Vite (`vite.config.ts`) envoie `/api/` au serveur sur 3000,
+  pour une seule origine comme en production, où Hono sert le build.
+- **CSP du serveur** (`apps/server/src/platform/http/security-headers.ts`) :
+  `default-src 'self'`. Le dev et l'e2e (Vite) tournent sans elle : pas de script ni de style en
+  ligne, pas d'asset en `data:` (`assetsInlineLimit: 0`), aucune origine tierce sans l'ajouter
+  à la CSP dans la même PR.
+- **PWA** (`vite-plugin-pwa`, `tests/pwa.spec.ts`) : le service worker ne met en cache que le
+  build ; jamais de `runtimeCaching` sur `/api` (données d'élève), et les navigations `/api`
+  restent hors de son fallback.
 - `src/routeTree.gen.ts` est généré par le plugin TanStack Router (`vite.config.ts`) à partir
   de `src/routes/` : on ne l'édite pas, ESLint l'ignore.
 - TypeScript en trois projets sous `tsc -b` : `tsconfig.app.json` (`src`),

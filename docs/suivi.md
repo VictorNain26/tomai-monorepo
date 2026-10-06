@@ -24,13 +24,14 @@ bloquant levé). L'historique vit dans git et les PR.
   - **Lot 3 :** client web choisi (`etudes/2026-10-06/client-web.md`, #406), squelette
     `apps/web` (#408), champs en erreur dans `VALIDATION_ERROR` (#405). `@repo/ui` reste sur
     Radix : la bascule sur Base UI (#407) est fermée, car sur iOS Base UI ne verrouille pas le
-    défilement derrière un panneau quand la barre de Safari est repliée.
+    défilement derrière un panneau quand la barre de Safari est repliée. Hono sert `apps/web`
+    sur la même origine que l'API, sans CORS, sous CSP, et le web est une PWA installable (#414).
   - Hors lot : environnement de travail nettoyé (#410).
 - **Prochaine action :**
   - lot 2 : une PR ciblée sur les questions de connaissance, mesurée sur les cinq exercices
     concernés seulement ;
   - Victor fixe les budgets du quota sur le coût mesuré ;
-  - lot 3 : Hono sert `apps/web` sur la même origine, PWA, puis comptes et consentement.
+  - lot 3 : comptes et consentement.
   - Une relecture humaine d'une partie des conversations lues par Claude reste due avant
     toute publication (lot 4).
 - **PR ouvertes :** voir `gh pr list`.
@@ -70,7 +71,9 @@ explicitement renvoyé (`.claude/rules/plans-and-agents.md`). Chemins relatifs �
 - **Conformité** : mention « vous parlez à une IA » dès la première interaction, consentement conjoint sous 15 ans, AIPD, résumé parent proportionné et connu de l'enfant, aucun lien avec un établissement sans réévaluer le haut risque (`etudes/2026-10-01/education-nationale.md`, c ; `tuteur.md` §11).
 - **Facturation** : colonnes et enum RevenueCat de `modules/billing/billing.schema.ts`, restes du mobile, refaits avec le paiement web ; les routes qui ont besoin des enfants vont dans `family`, `billing` reste un module feuille (#354).
 - **Hébergement** : délai de grâce SIGTERM d'au moins un tour de chat, stockage partagé du rate limit s'il y a plusieurs instances, `advanced.ipAddress.trustedProxies` de better-auth derrière le proxy de l'hébergeur.
-- **Client web**, point 1 : `@repo/api` en base relative, `ai` aligné sur la version qu'épingle `@ai-sdk/react`, Hono qui sert la SPA (fallback après `/api`, cache des assets, CSP), mesures sur un vrai iPhone et un Android (`etudes/2026-10-06/client-web.md`).
+- **Client web**, point 1, reste de #414 : `ai` aligné sur la version qu'épingle `@ai-sdk/react`, avec la PR qui l'installe ; mesures sur un vrai iPhone et un Android (`etudes/2026-10-06/client-web.md`).
+- **Connexion** : `onAPIError.errorURL` de better-auth vers une page du web, car sa page d'erreur (`/api/auth/error`) a un `<style>` en ligne que la CSP bloque ; un `callbackURL` absolu vers `http://localhost:3002` en dev, la base de better-auth restant le serveur (`platform/auth/auth.ts`).
+- **Voix** : la `Permissions-Policy` interdit le micro (`platform/http/security-headers.ts`) ; l'ouvrir à `self` avec l'enregistrement d'un oral dans le web.
 - **Alerte au parent** : le push web n'atteint qu'un parent qui a installé l'app (iOS) ; l'alerte de détresse demande un canal garanti, l'e-mail par exemple, à décider avec le parcours parent (point 3).
 - **Langue d'un oral** : la transcription impose le français, et un oral de langue se transcrit mal (« Yes. » bruité devient « Oui. ») ; le client déclare la langue d'un oral de langue et la route la passe à Voxtral (`modules/voice/voxtral-transcribe.service.ts`).
 
