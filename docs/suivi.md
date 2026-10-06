@@ -215,6 +215,11 @@ contraire.
 
 Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pas.
 
+- **typescript-eslint 8.71** (groupe `eslint` de Renovate) : les presets typés y activent
+  `no-unsafe-enum-assignment`, qui signale trois lignes (`modules/learning/fsrs.service.ts`,
+  `tests/learning.service.test.ts`, mesuré le 2026-10-06) ; la PR de Renovate échouera au lint
+  tant qu'elles ne sont pas corrigées. D'ici là, `@typescript-eslint/*` existe en 8.70 et en
+  8.71 (la seconde tirée par `@eslint-react/eslint-plugin`, #412).
 - **Taux de Mistral** (`MISTRAL_USD_TO_EUR`, `platform/ai/cost.ts`) : 0,85, lu sur la page Coûts de
   l'organisation le 2026-10-06. Le revérifier à chaque facture : un écart change chaque coût et
   chaque quota.
@@ -282,6 +287,8 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
 | Relecture des 32 exercices : confiée à Claude le 2026-10-02 et outillée (32 citations retrouvées mot pour mot dans leur PDF officiel, 14 sources de réponse en ligne, 14 réponses recalculées par le test) ; un regard pédagogique humain sur un échantillon reste à prévoir avant de publier les mesures | Lot 1, jeu rejouable par un tiers ; lot 4 pour la publication | fait |
 | Projet Langfuse « tomai » en région UE (`https://cloud.langfuse.com`, offre Hobby) et ses clés dans `apps/server/.env`, vérifiées par l'API (HTTP 200) le 2026-10-02 | Lot 1, point 2 | fait |
 | Espace Mistral « ci » et sa clé `github-actions`, en secret GitHub `MISTRAL_API_KEY_CI` (2026-10-02). Sans paiement à l'usage, la dépense reste bornée par les 8,50 € inclus ; la valeur du secret se vérifie au premier passage en CI | Lot 1, point 6 | fait |
+| Ajouter `E2E (Playwright)` et `Script tests` aux checks requis du ruleset `Protect main` (Settings › Rules) : ils tournent depuis #412 mais ne bloquent pas un merge | Outillage | à faire |
+| Lundi 2026-10-12 : vérifier que Renovate a ouvert les mises à jour en attente du tableau de bord (#310), fenêtre élargie à tout le lundi par #412 ; sinon cocher « Create all awaiting schedule PRs at once » | Outillage | à faire |
 | Mettre à jour les plugins Claude Code (`claude plugin marketplace update`, puis `claude plugin update <nom>`) | Outillage | à faire |
 
 ## Historique
