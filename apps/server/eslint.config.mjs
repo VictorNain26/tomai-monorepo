@@ -18,6 +18,20 @@ const files = [
   { pattern: 'src/config.ts', category: 'config' },
 ];
 
+// A test passes its doubles in; replacing a module hides the wiring and breaks silently.
+const NO_MOCK_MODULE = {
+  object: 'mock',
+  property: 'module',
+  message: 'Pas de mock.module : passer la dépendance en paramètre (.claude/rules/testing.md).',
+};
+
+// Only the entry points read the environment: everything else receives the config.
+const NO_ENVIRONMENT = ['Bun', 'process'].map((object) => ({
+  object,
+  property: 'env',
+  message: "L'environnement ne se lit que dans src/main.ts et src/migrate.ts : recevoir la config en paramètre.",
+}));
+
 const element = (type) => ({ element: { type } });
 const file = (categories) => ({ file: { categories } });
 const allow = (from, ...to) => ({ from, allow: { to } });
@@ -59,11 +73,7 @@ export default [
       ],
       // A file outside every element and descriptor would escape the rules above.
       'boundaries/no-unknown-files': 'error',
-      // A test passes its doubles in; replacing a module hides the wiring and breaks silently.
-      'no-restricted-properties': [
-        'error',
-        { object: 'mock', property: 'module', message: 'Pas de mock.module : passer la dépendance en paramètre (.claude/rules/testing.md).' },
-      ],
+      'no-restricted-properties': ['error', NO_MOCK_MODULE],
       'no-restricted-syntax': [
         'error',
         {
@@ -71,6 +81,13 @@ export default [
           message: 'Les imports dynamiques dans les types sont interdits. Utilisez des imports statiques en haut de fichier.',
         },
       ],
+    },
+  },
+  {
+    files: ['src/**/*.ts'],
+    ignores: ['src/main.ts', 'src/migrate.ts', 'src/testing/**'],
+    rules: {
+      'no-restricted-properties': ['error', NO_MOCK_MODULE, ...NO_ENVIRONMENT],
     },
   },
 ];
