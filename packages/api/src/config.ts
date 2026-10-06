@@ -5,11 +5,14 @@
  * // Dans l'app (une seule fois au démarrage)
  * import { initializeApi } from '@repo/api/config';
  *
- * initializeApi({ baseUrl: '/' });
+ * initializeApi({ baseUrl: window.location.origin });
  */
 
 export interface ApiConfig {
-  /** Base des requêtes : `'/'` pour le client web, servi sur l'origine de l'API. */
+  /**
+   * URL absolue du serveur : `window.location.origin` pour le client web, servi sur l'origine de
+   * l'API. hono/client construit `$url()` et `$ws()` avec `new URL`, qui refuse un chemin relatif.
+   */
   baseUrl: string;
 }
 
@@ -20,6 +23,9 @@ let apiConfig: ApiConfig | null = null;
  * DOIT être appelé une fois au démarrage de l'application.
  */
 export function initializeApi(config: ApiConfig): void {
+  if (!URL.canParse(config.baseUrl)) {
+    throw new Error(`[API] baseUrl must be an absolute URL, got "${config.baseUrl}".`);
+  }
   if (apiConfig !== null) {
     console.warn('[API] Configuration already initialized, skipping.');
     return;

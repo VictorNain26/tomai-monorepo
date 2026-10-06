@@ -29,9 +29,10 @@ export function setUnauthorizedHandler(handler: UnauthorizedHandler): void {
   unauthorizedHandler = handler;
 }
 
-// Same origin as the server (the web client is served by it): fetch's defaults send the session cookie.
+// The session cookie goes with every request, whatever the origin of the base URL.
 function createClient(baseUrl: string) {
   return hc<AppType>(baseUrl, {
+    init: { credentials: 'include' },
     fetch: async (input: RequestInfo | URL, init?: RequestInit) => {
       const response = await fetch(input, init);
       if (response.status === 401) unauthorizedHandler?.();

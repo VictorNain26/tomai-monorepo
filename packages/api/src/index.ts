@@ -7,7 +7,7 @@
  * // Initialize at app startup
  * import { initializeApi, getClient, unwrap } from '@repo/api';
  *
- * initializeApi({ baseUrl: '/' });
+ * initializeApi({ baseUrl: window.location.origin });
  *
  * // Type-safe API calls
  * const data = await unwrap(await getClient().api.parent.dashboard.$get());

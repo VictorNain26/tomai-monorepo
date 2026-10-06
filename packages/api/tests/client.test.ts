@@ -57,23 +57,34 @@ describe('unwrap error handling', () => {
   });
 });
 
-describe('getClient on the web client origin', () => {
+describe('getClient', () => {
   afterEach(() => {
     mock.restore();
     resetClient();
     resetApiConfig();
   });
 
-  it('requests a path relative to the page, with the fetch defaults that send a same-origin cookie', async () => {
+  it('requests the server origin with the session cookie', async () => {
     const fetchSpy = spyOn(globalThis, 'fetch').mockResolvedValue(Response.json({ status: 'healthy' }));
-    initializeApi({ baseUrl: '/' });
+    initializeApi({ baseUrl: 'https://tom.example' });
 
     await getClient().health.$get();
 
     expect(fetchSpy).toHaveBeenCalledTimes(1);
     const [input, init] = fetchSpy.mock.calls[0] ?? [];
-    expect(input).toBe('/health');
-    expect(init).not.toHaveProperty('mode');
-    expect(init).not.toHaveProperty('credentials');
+    expect(input).toBe('https://tom.example/health');
+    expect(init).toMatchObject({ credentials: 'include' });
+  });
+
+  it('builds the URL of a route', () => {
+    initializeApi({ baseUrl: 'https://tom.example' });
+
+    expect(getClient().health.$url().href).toBe('https://tom.example/health');
+  });
+
+  it.each(['/', '', 'tom.example'])('refuses the base %p, which is not an absolute URL', (baseUrl) => {
+    expect(() => {
+      initializeApi({ baseUrl });
+    }).toThrow('[API] baseUrl must be an absolute URL');
   });
 });
