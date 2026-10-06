@@ -26,11 +26,11 @@ const app = new Hono<AppEnv>()
     throw new Error('connection string postgres://secret');
   })
   .get('/ok', (c) => c.json({ requestId: c.var.requestId }))
-  .post('/json', validate('json', z.object({ a: z.number() })), (c) => c.json(c.req.valid('json')))
+  .post('/json', validate('json', z.object({ a: z.number(), items: z.array(z.object({ name: z.string().min(1) })).optional() })), (c) => c.json(c.req.valid('json')))
   .onError(handleError)
   .notFound(handleNotFound);
 
-interface Envelope { error: { code: string; message: string }; requestId: string }
+interface Envelope { error: { code: string; message: string; fields?: { path: string; code: string }[] }; requestId: string }
 
 async function call(path: string, init?: RequestInit) {
   const res = await app.request(path, init);
@@ -63,6 +63,28 @@ describe('request id + global error envelope', () => {
     expect(res.status).toBe(400);
     expect(body.error.code).toBe('VALIDATION_ERROR');
     expect(body.requestId).toMatch(UUID_V4);
+  });
+
+  it('names each invalid field by its path and Zod code, without echoing the values', async () => {
+    const { res, body } = await call('/json', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ a: 'secret-value', items: [{ name: 'ok' }, { name: '' }] }),
+    });
+
+    expect(res.status).toBe(400);
+    expect(body.error.code).toBe('VALIDATION_ERROR');
+    expect(body.error.message).toBe('Les données envoyées sont invalides.');
+    expect(body.error.fields).toEqual([
+      { path: 'a', code: 'invalid_type' },
+      { path: 'items.1.name', code: 'too_small' },
+    ]);
+    expect(JSON.stringify(body)).not.toContain('secret-value');
+  });
+
+  it('leaves the fields out of an error that is not about the request body', async () => {
+    const { body } = await call('/app-error');
+    expect('fields' in body.error).toBe(false);
   });
 
   it('rejects a json body sent without a JSON Content-Type instead of validating {}', async () => {

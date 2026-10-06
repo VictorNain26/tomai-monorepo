@@ -8,12 +8,14 @@
 
 import { hc, type ClientResponse } from 'hono/client';
 import type { ClientErrorStatusCode, ServerErrorStatusCode } from 'hono/utils/http-status';
-import type { AppType } from 'tomai-server/app';
+import type { AppType, FieldError } from 'tomai-server/app';
 import { getApiConfig } from './config';
 
 export interface ApiError extends Error {
   status: number;
   code?: string;
+  /** On VALIDATION_ERROR: each field the request got wrong. */
+  fields?: FieldError[];
   suggestions?: string[];
 }
 
@@ -60,16 +62,18 @@ export function resetClient(): void {
 function buildApiError(status: number, errorValue: unknown): ApiError {
   let message = `HTTP ${status}`;
   let code: string | undefined;
+  let fields: FieldError[] | undefined;
   let suggestions: string[] | undefined;
 
   if (errorValue && typeof errorValue === 'object') {
     const ev = errorValue as Record<string, unknown>;
 
-    // New format: { error: { code, message }, requestId? }
+    // New format: { error: { code, message, fields? }, requestId? }
     if (ev['error'] && typeof ev['error'] === 'object') {
       const errObj = ev['error'] as Record<string, unknown>;
       message = (errObj['message'] as string | undefined) ?? message;
       code = (errObj['code'] as string | undefined) ?? code;
+      fields = errObj['fields'] as FieldError[] | undefined;
     } else {
       // Legacy format fallback: { message, _error, error, code }
       message =
@@ -87,6 +91,7 @@ function buildApiError(status: number, errorValue: unknown): ApiError {
   const err = new Error(message) as ApiError;
   err.status = status;
   if (code !== undefined) err.code = code;
+  if (fields !== undefined) err.fields = fields;
   if (suggestions !== undefined) err.suggestions = suggestions;
   return err;
 }

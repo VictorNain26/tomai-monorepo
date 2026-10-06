@@ -52,5 +52,8 @@ export const validate = <T extends ZodType, Target extends keyof ValidationTarge
     if (target === 'json' && !JSON_CONTENT_TYPE.test(c.req.header('content-type') ?? '')) {
       throw new AppError('VALIDATION_ERROR', 'Expected an application/json body');
     }
-    if (!result.success) throw new AppError('VALIDATION_ERROR', result.error.message);
+    if (!result.success) {
+      const fields = result.error.issues.map((issue) => ({ path: issue.path.map(String).join('.'), code: issue.code }));
+      throw new AppError('VALIDATION_ERROR', result.error.message, fields);
+    }
   });

@@ -75,17 +75,25 @@ const USER_MESSAGES: Record<ErrorCode, string> = {
   INTERNAL_ERROR: 'Erreur interne. Réessaie ou contacte le support.',
 };
 
+/** A field the client got wrong: its dotted path in the request and the Zod issue code. */
+export interface FieldError {
+  path: string;
+  code: string;
+}
+
 export class AppError extends Error {
   public readonly code: ErrorCode;
   public readonly statusCode: ContentfulStatusCode;
   public readonly userMessage: string;
+  public readonly fields: FieldError[] | undefined;
 
-  constructor(code: ErrorCode, internalMessage?: string) {
+  constructor(code: ErrorCode, internalMessage?: string, fields?: FieldError[]) {
     super(internalMessage ?? USER_MESSAGES[code]);
     this.name = 'AppError';
     this.code = code;
     this.statusCode = STATUS_MAP[code];
     this.userMessage = USER_MESSAGES[code];
+    this.fields = fields;
   }
 }
 
@@ -94,6 +102,7 @@ export interface ErrorResponse {
   error: {
     code: ErrorCode;
     message: string;
+    fields?: FieldError[];
   };
   requestId?: string;
 }
@@ -104,6 +113,7 @@ export function toErrorResponse(error: AppError, requestId?: string): ErrorRespo
     error: {
       code: error.code,
       message: error.userMessage,
+      ...(error.fields && { fields: error.fields }),
     },
     ...(requestId && { requestId }),
   };

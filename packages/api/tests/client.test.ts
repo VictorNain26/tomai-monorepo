@@ -20,6 +20,14 @@ describe('unwrap error handling', () => {
     expect(err.status).toBe(400);
     expect(err.message).toBe('Champ invalide');
     expect(err.code).toBe('VALIDATION_ERROR');
+    expect('fields' in err).toBe(false);
+  });
+
+  it('reads the fields of a VALIDATION_ERROR', async () => {
+    const fields = [{ path: 'children.0.schoolLevel', code: 'invalid_value' }];
+    const err = await caught(errorResponse(400, JSON.stringify({ error: { code: 'VALIDATION_ERROR', message: 'Champ invalide', fields } })));
+
+    expect(err.fields).toEqual(fields);
   });
 
   it('falls back to the legacy { message, suggestions } body', async () => {

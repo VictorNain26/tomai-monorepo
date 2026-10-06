@@ -4,7 +4,7 @@
  * Platform-agnostic types shared by the clients.
  */
 
-export type { TomChatMessage, TomDataParts, DeckCreatedData } from 'tomai-server/app';
+export type { TomChatMessage, TomDataParts, DeckCreatedData, FieldError } from 'tomai-server/app';
 
 /** Utilisateur applicatif, miroir de l'enum PostgreSQL `user_role`. */
 export interface IAppUser {
