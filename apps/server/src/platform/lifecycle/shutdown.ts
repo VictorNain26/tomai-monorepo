@@ -1,7 +1,8 @@
 /**
- * Graceful shutdown: readiness fails first, then the server stops taking connections and waits
- * for the requests in flight (https://bun.com/docs/runtime/http/server), then the resources
- * close; past the deadline the process exits anyway, before the host's grace period ends.
+ * Graceful shutdown: readiness fails first, and stays failed for `drainMs`, long enough for the
+ * host's probe to see it and stop routing here; then the server stops taking connections and
+ * waits for the requests in flight (https://bun.com/docs/runtime/http/server), then the
+ * resources close. Past the deadline the process exits anyway, before the host's grace period.
  */
 
 import type { Logger } from 'pino';
@@ -19,11 +20,12 @@ interface ShutdownDeps {
   stopServer: () => Promise<void>;
   close: (() => Promise<void>)[];
   logger: Logger;
+  drainMs: number;
   deadlineMs: number;
 }
 
 /** Resolves with the exit code: 0 once everything closed, 1 on an error or past the deadline. */
-export async function shutdown({ lifecycle, stopServer, close, logger, deadlineMs }: ShutdownDeps): Promise<number> {
+export async function shutdown({ lifecycle, stopServer, close, logger, drainMs, deadlineMs }: ShutdownDeps): Promise<number> {
   lifecycle.draining = true;
   let timer: Timer | undefined;
   const deadline = new Promise<number>((resolve) => {
@@ -33,6 +35,7 @@ export async function shutdown({ lifecycle, stopServer, close, logger, deadlineM
     }, deadlineMs);
   });
   const graceful = (async () => {
+    await Bun.sleep(drainMs);
     await stopServer();
     await Promise.all(close.map((fn) => fn()));
     return 0;

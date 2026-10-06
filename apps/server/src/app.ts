@@ -11,6 +11,7 @@ import type { Auth } from './platform/auth/auth';
 import type { Db } from './platform/db/client';
 import type { AppEnv } from './platform/http/env';
 import { notFound, problemHandler } from './platform/http/problem';
+import { rateLimit } from './platform/http/rate-limit';
 import { securityHeaders } from './platform/http/security-headers';
 import { webClient } from './platform/http/web-client';
 import { healthRoutes } from './platform/lifecycle/health';
@@ -25,6 +26,9 @@ export interface AppDeps {
 }
 
 export function createApp({ config, logger, db, auth, lifecycle }: AppDeps) {
+  // One budget for the API and the probes: /health/ready runs a query on every call. The web's
+  // files don't count, a page load fetches a dozen of them.
+  const budget = rateLimit({ points: 100, durationSeconds: 60 });
   const app = new Hono<AppEnv>()
     .use(contextStorage())
     // Always generated here: an incoming X-Request-Id would let a client forge log correlation.
@@ -34,6 +38,8 @@ export function createApp({ config, logger, db, auth, lifecycle }: AppDeps) {
       await next();
     })
     .use(securityHeaders({ hsts: config.production }))
+    .use('/api/*', budget)
+    .use('/health/*', budget)
     // A response of the API is a user's own data: no cache keeps it (OWASP REST Security Cheat Sheet).
     .use('/api/*', async (c, next) => {
       await next();

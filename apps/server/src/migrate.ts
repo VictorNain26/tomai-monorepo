@@ -4,14 +4,8 @@
  */
 
 import { loadDatabaseConfig } from './config';
-import { createDb } from './platform/db/client';
 import { runMigrations } from './platform/db/migrations';
 
 const config = loadDatabaseConfig(Bun.env);
-const database = createDb(config.databaseUrl, { production: config.production, max: 1 });
-try {
-  await runMigrations(database.db);
-  console.log('Migrations applied');
-} finally {
-  await database.close();
-}
+await runMigrations(config.databaseUrl, { production: config.production });
+console.log('Migrations applied');

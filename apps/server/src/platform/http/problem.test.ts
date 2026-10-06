@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import { Hono } from 'hono';
+import { HTTPException } from 'hono/http-exception';
 import { requestId } from 'hono/request-id';
 import pino from 'pino';
 import type { AppEnv } from './env';
@@ -12,6 +13,12 @@ const app = new Hono<AppEnv>()
   .use(requestId())
   .get('/known', () => {
     throw new Problem('NOT_FOUND', 'Séance introuvable');
+  })
+  .get('/refused', () => {
+    throw new HTTPException(413);
+  })
+  .get('/hono-crash', () => {
+    throw new HTTPException(503, { message: 'upstream at 10.0.0.4 down' });
   })
   .get('/crash', () => {
     throw new Error('connection to db at 10.0.0.3 refused, user lea');
@@ -33,6 +40,21 @@ describe('problem details', () => {
     const res = await app.request('/nope');
     expect(res.status).toBe(404);
     expect(((await res.json()) as { code: string }).code).toBe('NOT_FOUND');
+  });
+
+  it("keeps the status of one of Hono's client errors, without logging it as a failure", async () => {
+    const before = lines.length;
+    const res = await app.request('/refused');
+    expect(res.status).toBe(413);
+    expect(res.headers.get('content-type')).toStartWith('application/problem+json');
+    expect(await res.json()).toMatchObject({ status: 413, code: 'HTTP_ERROR' });
+    expect(lines.length).toBe(before);
+  });
+
+  it("answers one of Hono's server errors as an internal error, without its message", async () => {
+    const res = await app.request('/hono-crash');
+    expect(res.status).toBe(500);
+    expect(await res.text()).not.toContain('10.0.0.4');
   });
 
   it('answers an unexpected error with a bare 500, and logs it', async () => {

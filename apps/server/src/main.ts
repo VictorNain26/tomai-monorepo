@@ -11,14 +11,27 @@ import { pendingMigrations } from './platform/db/migrations';
 import { createLifecycle, shutdown } from './platform/lifecycle/shutdown';
 import { createLogger } from './platform/observability/logger';
 
-// Under a host's usual 30 s grace period after SIGTERM.
+// Readiness stays failed this long before the server closes: a few probe intervals of the host,
+// to align with it at the preproduction step. The deadline stays under a host's usual 30 s
+// grace period after SIGTERM.
+const DRAIN_MS = 5_000;
 const SHUTDOWN_DEADLINE_MS = 25_000;
 
 const config = loadConfig(Bun.env);
 const logger = createLogger(config.logLevel);
+
+// A fatal error goes through pino and its content-free serializer, never Bun's own printer,
+// which copies every field of an error (a database error's detail holds row values).
+function fatal(error: unknown, message: string): never {
+  logger.fatal({ err: error }, message);
+  process.exit(1);
+}
+process.on('uncaughtException', (error) => fatal(error, 'Uncaught exception'));
+process.on('unhandledRejection', (reason) => fatal(reason, 'Unhandled rejection'));
+
 const database = createDb(config.databaseUrl, { production: config.production });
 
-const pending = await pendingMigrations(database.db);
+const pending = await pendingMigrations(database.db).catch((error: unknown) => fatal(error, 'Database unreachable at boot'));
 if (pending.length > 0) {
   logger.fatal({ pending: pending.length }, 'Migrations not applied: run `bun run db:migrate` first');
   await database.close();
@@ -43,6 +56,7 @@ for (const signal of ['SIGTERM', 'SIGINT'] as const) {
       stopServer: () => server.stop(),
       close: [database.close],
       logger,
+      drainMs: DRAIN_MS,
       deadlineMs: SHUTDOWN_DEADLINE_MS,
     }).then((code) => process.exit(code));
   });

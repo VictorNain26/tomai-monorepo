@@ -1,17 +1,18 @@
 import { describe, expect, it } from 'bun:test';
+import { sql } from 'drizzle-orm';
 import { readMigrationFiles } from 'drizzle-orm/migrator';
 import { emptyDatabase, testDatabase } from '../../testing/database';
 import { createDb } from './client';
 import { MIGRATIONS_FOLDER, pendingMigrations, runMigrations } from './migrations';
 
-const journal = readMigrationFiles({ migrationsFolder: MIGRATIONS_FOLDER }).map((migration) => migration.hash);
+const journal = readMigrationFiles({ migrationsFolder: MIGRATIONS_FOLDER });
 
 describe('migrations', () => {
   it('reports every migration of the journal as pending on a database never migrated', async () => {
     const { url } = await emptyDatabase();
     const database = createDb(url, { production: false });
     try {
-      expect(await pendingMigrations(database.db)).toEqual(journal);
+      expect(await pendingMigrations(database.db)).toEqual(journal.map((migration) => migration.folderMillis));
     } finally {
       await database.close();
     }
@@ -22,15 +23,24 @@ describe('migrations', () => {
     expect(await pendingMigrations(db)).toEqual([]);
   });
 
-  it('lets several instances migrate at once, one after the other', async () => {
+  it('agrees with migrate(): a migration whose file changed after it was applied is not pending', async () => {
+    const { db } = await testDatabase();
+    await db.execute(sql`UPDATE drizzle.__drizzle_migrations SET hash = 'edited since'`);
+    expect(await pendingMigrations(db)).toEqual([]);
+  });
+
+  it('lets several instances migrate at once, one after the other, and releases the lock', async () => {
     const { url } = await emptyDatabase();
-    const instances = [1, 2, 3].map(() => createDb(url, { production: false, max: 1 }));
+    await Promise.all([1, 2, 3].map(() => runMigrations(url, { production: false })));
+
+    const database = createDb(url, { production: false, max: 1 });
     try {
-      await Promise.all(instances.map((instance) => runMigrations(instance.db)));
-      const [first] = instances;
-      expect(first && (await pendingMigrations(first.db))).toEqual([]);
+      expect(await pendingMigrations(database.db)).toEqual([]);
+      const [held] = await database.db.execute<{ count: string }>(sql`SELECT count(*)::text AS count FROM pg_locks
+        WHERE locktype = 'advisory' AND database = (SELECT oid FROM pg_database WHERE datname = current_database())`);
+      expect(held?.count).toBe('0');
     } finally {
-      await Promise.all(instances.map((instance) => instance.close()));
+      await database.close();
     }
   });
 });
