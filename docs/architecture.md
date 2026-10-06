@@ -72,14 +72,18 @@ En place (`apps/web`) :
   tests Playwright à largeur de téléphone (WebKit et Chromium).
 - Servie par Hono sur la même origine que l'API (`platform/http/web-client.ts`) : cookie de
   session limité à l'hôte, sans CORS ni blocage de Safari, un seul déploiement. Le serveur lit le
-  build dans `WEB_DIST_DIR`, que l'image Docker embarque ; un `GET` hors de `/api` sans fichier
-  reçoit `index.html`. Assets hachés en cache `immutable`, le reste en `no-cache`. CSP
-  `default-src 'self'` sur toutes les réponses (`platform/http/security-headers.ts`). En dev,
-  le proxy de Vite envoie `/api/` au serveur : une seule origine aussi.
+  build dans `WEB_DIST_DIR`, que l'image Docker embarque ; un `GET` hors de `/api`, sans fichier
+  et sans extension, reçoit `index.html`. Assets hachés en cache `immutable`, le reste en
+  `no-cache` revalidé par ETag ; fichiers compressés. CSP `default-src 'self'` sur toutes les
+  réponses (`platform/http/security-headers.ts`) ; le rate limit ne compte que `/api` et
+  `/health`. En dev, le proxy de Vite envoie `/api/` et `/health` au serveur : une seule origine
+  aussi, le proxy donnant aux requêtes de la page l'origine de l'API.
+- Après un déploiement, un onglet ouvert qui demande un morceau disparu de son ancien build se
+  recharge une fois sur le nouveau (TanStack Router, `lazyRouteComponent`).
 - Installable (PWA, `vite-plugin-pwa`) : manifest et service worker, qui ne met en cache que le
   build, jamais une réponse `/api`, et laisse passer les navigations `/api` (callback OAuth).
   Photo, voix et push passeront par le web, sans application native en V1.
-- `@repo/api` appelle l'API en base relative `'/'`.
+- `@repo/api` prend une base absolue : `window.location.origin` pour le web.
 
 Cible :
 - Consommateur du client typé via `@repo/api` ; aujourd'hui `apps/web` n'appelle pas encore le

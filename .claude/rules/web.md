@@ -14,14 +14,18 @@ comparées : `docs/etudes/2026-10-06/client-web.md`.
   (Chromium) ; prérequis : `cd apps/web && bunx playwright install chromium webkit`, puis les
   bibliothèques système de WebKit, `bunx playwright install-deps webkit`.
 - **Frontière** : le serveur s'appelle par le client typé `@repo/api`, dont les types viennent
-  du serveur ; les primitives interactives viennent de `@repo/ui`. Aujourd'hui `apps/web` ne
-  dépend que de `@repo/tokens` et n'appelle pas encore le serveur.
-- Port 3002 en dev ; le proxy de Vite (`vite.config.ts`) envoie `/api/` au serveur sur 3000,
-  pour une seule origine comme en production, où Hono sert le build.
+  du serveur, initialisé avec `window.location.origin` ; les primitives interactives viennent de
+  `@repo/ui`. Aujourd'hui `apps/web` ne dépend que de `@repo/tokens` et n'appelle pas encore le
+  serveur.
+- Port 3002 en dev ; le proxy de Vite (`vite.config.ts`) envoie `/api/` et `/health` au serveur
+  sur 3000, pour une seule origine comme en production, où Hono sert le build. Il donne aux
+  requêtes de la page l'origine de l'API, la seule à laquelle better-auth fait confiance.
+- `preview` et l'e2e servent le build par le code du serveur (`apps/server/scripts/serve-web.ts`) :
+  ses en-têtes, sa CSP, son fallback, sans l'API.
 - **CSP du serveur** (`apps/server/src/platform/http/security-headers.ts`) :
-  `default-src 'self'`. Le dev et l'e2e (Vite) tournent sans elle : pas de script ni de style en
-  ligne, pas d'asset en `data:` (`assetsInlineLimit: 0`), aucune origine tierce sans l'ajouter
-  à la CSP dans la même PR.
+  `default-src 'self'`, vérifiée par `tests/server.spec.ts` ; le dev (Vite) tourne sans elle.
+  Pas de script ni de style en ligne, pas d'asset en `data:` (`assetsInlineLimit: 0`), aucune
+  origine tierce sans l'ajouter à la CSP dans la même PR.
 - **PWA** (`vite-plugin-pwa`, `tests/pwa.spec.ts`) : le service worker ne met en cache que le
   build ; jamais de `runtimeCaching` sur `/api` (données d'élève), et les navigations `/api`
   restent hors de son fallback.

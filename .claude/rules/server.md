@@ -50,5 +50,5 @@ services) : un client qui typecheckerait `src/app.ts` directement hériterait de
 - Une seule origine sert l'API et le client web (`platform/http/web-client.ts`, monté après
   les routes `/api`, hors de `AppType`) : pas de CORS, cookie de session limité à l'hôte.
 - En-têtes de sécurité, CSP comprise (`platform/http/security-headers.ts`), et rate limit
-  global se posent dans `src/app.ts` ; le preset `ai` de `platform/http/rate-limit.ts`, plus
+  de `/api` et `/health` se posent dans `src/app.ts` ; le preset `ai` de `platform/http/rate-limit.ts`, plus
   strict, garde les routes du chat.
