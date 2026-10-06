@@ -107,6 +107,14 @@ COPY --chown=tomai:tomai apps/server/drizzle/ ./apps/server/drizzle/
 COPY --chown=tomai:tomai apps/server/docker-entrypoint.sh ./apps/server/docker-entrypoint.sh
 RUN chmod +x ./apps/server/docker-entrypoint.sh
 
+# Smoke import: every static import of a bundle resolves before its first line runs. Started
+# without an environment, a bundle whose imports all resolve stops on its config; one that
+# needs a module missing from node_modules stops on "Cannot find module" (the bug class of #120).
+RUN cd apps/server && \
+    bun --no-env-file dist/main.js 2>&1 | grep -q 'Invalid environment' && \
+    bun --no-env-file dist/migrate.js 2>&1 | grep -q 'Invalid environment' \
+    || (echo "ERREUR: un bundle ne se charge pas, un module importé n'est pas résolvable" && exit 1)
+
 WORKDIR /app/apps/server
 ENV NODE_ENV=production
 ENV WEB_DIST_DIR=/app/apps/web/dist

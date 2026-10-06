@@ -25,7 +25,8 @@ bloquant levé). L'historique vit dans git et les PR.
   en place (composition, erreurs RFC 9457, better-auth, base et migrations, logs, santé, arrêt,
   service du web), testé sur une vraie base, frontières vérifiées au lint ; la suite de bout en
   bout du web tourne contre le serveur construit (`tooling/playwright-web`).
-- **Prochaine action** : étape 3, la CI en un pipeline avec `ci-ok` et l'image réécrite ; l'étude
+- **Prochaine action** : étape 3, la CI en un pipeline avec `ci-ok` et l'image réécrite, sans
+  `node_modules` (les bundles se chargent sans, vérifié le 2026-10-07) ; l'étude
   des hébergeurs UE avance en parallèle. L'ordre complet est dans l'étude. Test complet dans
   Chrome à la fin de chaque étape.
 - **Décisions de Victor en attente**, au moment de l'étape qui en dépend : budgets du quota
@@ -50,7 +51,7 @@ supprime ou que l'étude couvre n'y figure plus.
 
 - **Observabilité** : OpenTelemetry et Sentry côté serveur, avec une destination dans l'UE contrainte par la config (`refonte-architecture.md`, « Données et autorisation »).
 - **Postgres de l'hébergeur** : `verify-full` vérifie le certificat contre les CA du système ; une CA privée demande l'option `ssl` avec `ca` (`platform/db/client.ts`).
-- **Hébergement** : délai de grâce SIGTERM d'au moins un tour de chat, stockage partagé du rate limit s'il y a plusieurs instances, `trustedProxies` de better-auth derrière le proxy de l'hébergeur ; compression des fichiers du web par le build ou par le proxy, selon l'hébergeur.
+- **Hébergement** : délai de grâce SIGTERM d'au moins un tour de chat, et `DRAIN_MS` (`src/main.ts`, 5 s) recalé sur l'intervalle de la sonde de l'hébergeur ; stockage partagé du rate limit s'il y a plusieurs instances ; derrière le proxy de l'hébergeur, ses sauts de confiance pour la clé du rate limit (`platform/http/rate-limit.ts`, aujourd'hui l'adresse de la connexion) et pour `trustedProxies` de better-auth ; compression des fichiers du web par le build ou par le proxy, selon l'hébergeur.
 - **Client web** : `ai` aligné sur la version qu'épingle `@ai-sdk/react`, avec l'étape 6 ; mesures sur un vrai iPhone et un Android (`etudes/2026-10-06/client-web.md`).
 - **Connexion** : la page d'erreur de better-auth (`/api/auth/error`) a un `<style>` en ligne que la CSP bloque ; `onAPIError.errorURL` vers une page du web, avec l'étape 6.
 
