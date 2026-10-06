@@ -33,6 +33,7 @@ const baseContext = {
   userId: 'user-001',
   sessionId: 'session-001',
   schoolLevel: 'troisieme' as const,
+  flashcards: true,
   check: noExercise,
   emitDeckCreated: mock(() => {}),
 };
@@ -51,6 +52,10 @@ describe('buildChatTools', () => {
   it('exposes exactly the declared tool keys', () => {
     const tools = buildChatTools(baseContext);
     expect(Object.keys(tools)).toEqual(['generate_flashcards']);
+  });
+
+  it('gives the cards tool to the Complet plan only', () => {
+    expect(buildChatTools({ ...baseContext, flashcards: false })).toEqual({});
   });
 
   describe('input JSON Schema', () => {

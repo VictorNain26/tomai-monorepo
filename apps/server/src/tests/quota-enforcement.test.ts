@@ -44,7 +44,6 @@ mock.module('../modules/billing/user-subscriptions.repository', () => ({
 
 // Import after env + mocks so env picks up the flag value.
 const { checkQuota, dailyUsage } = await import('../modules/billing/quota');
-const { checkDeckQuota } = await import('../modules/billing/quota-deck');
 const { lastDailyReset } = await import('../modules/billing/quota-config');
 
 beforeEach(() => {
@@ -59,7 +58,7 @@ describe('checkQuota (enforcement ON)', () => {
     dbSelectResult = [{ plan: 'free' }];
     spent = 12_000;
     const result = await checkQuota('user-001');
-    expect(result).toMatchObject({ allowed: true, plan: 'free', usage: { spentMicroEur: 12_000, budgetMicroEur: 20_000, usagePercent: 60 } });
+    expect(result).toMatchObject({ allowed: true, flashcards: false, usage: { plan: 'free', spentMicroEur: 12_000, budgetMicroEur: 20_000, usagePercent: 60 } });
     expect(spentSince.mock.calls[0]?.[1]).toEqual(lastDailyReset(new Date()));
   });
 
@@ -76,22 +75,32 @@ describe('checkQuota (enforcement ON)', () => {
     expect((await checkQuota('user-001', 5_000)).allowed).toBe(true);
   });
 
-  it('gives the Complet plan its own budget', async () => {
-    dbSelectResult = [{ plan: 'premium' }];
+  it('gives an active Complet plan its own budget and the cards', async () => {
+    dbSelectResult = [{ plan: 'premium', status: 'active', expiresAt: null }];
     spent = 20_000;
-    expect(await checkQuota('user-001')).toMatchObject({ allowed: true, plan: 'premium', usage: { budgetMicroEur: 100_000 } });
+    expect(await checkQuota('user-001')).toMatchObject({ allowed: true, flashcards: true, usage: { plan: 'premium', budgetMicroEur: 100_000 } });
+  });
+
+  it('counts a cancelled or expired Complet plan as Gratuit: its budget, no cards', async () => {
+    for (const row of [
+      { plan: 'premium', status: 'cancelled', expiresAt: null },
+      { plan: 'premium', status: 'active', expiresAt: new Date(Date.now() - 60_000) },
+    ]) {
+      dbSelectResult = [row];
+      expect(await checkQuota('user-001')).toMatchObject({ flashcards: false, usage: { plan: 'free', budgetMicroEur: 20_000 } });
+    }
   });
 
   it('treats a user without a subscription row as Gratuit', async () => {
-    expect(await checkQuota('brand-new-user')).toMatchObject({ allowed: true, plan: 'free', usage: { spentMicroEur: 0 } });
+    expect(await checkQuota('brand-new-user')).toMatchObject({ allowed: true, flashcards: false, usage: { plan: 'free', spentMicroEur: 0 } });
   });
 
-  it('fails OPEN when the DB read throws: allowed, the plan not held against the user, no usage claimed', async () => {
+  it('fails OPEN on the budget when the DB read throws, but grants no cards and claims no usage', async () => {
     // Deliberate billing-safety choice: a DB blip must not block paying users.
     // This locks the direction of the fallback so a refactor can't silently
     // flip it to fail-closed.
     dbShouldThrow = new Error('connection terminated unexpectedly');
-    expect(await checkQuota('user-001')).toEqual({ allowed: true, plan: 'premium', usage: null });
+    expect(await checkQuota('user-001')).toEqual({ allowed: true, flashcards: null, usage: null });
   });
 });
 
@@ -99,48 +108,5 @@ describe('dailyUsage', () => {
   it('throws on a failed read instead of showing a spend it could not read', async () => {
     dbShouldThrow = new Error('connection terminated unexpectedly');
     expect(dailyUsage('user-001')).rejects.toThrow('connection terminated');
-  });
-});
-
-describe('checkDeckQuota (enforcement ON)', () => {
-  it('returns allowed=true under premium deck limits', async () => {
-    dbSelectResult = [{
-      decksGeneratedToday: 2,
-      decksGeneratedThisMonth: 10,
-      lastResetAt: new Date(),
-      lastMonthlyResetAt: new Date(),
-    }];
-    const result = await checkDeckQuota('user-001');
-    expect(result.allowed).toBe(true);
-    expect(result.decksRemainingToday).toBe(3);     // 5 - 2
-    expect(result.decksRemainingThisMonth).toBe(40); // 50 - 10
-    expect(result.dailyLimit).toBe(5);
-    expect(result.monthlyLimit).toBe(50);
-  });
-
-  it('returns allowed=false when daily deck limit is reached', async () => {
-    dbSelectResult = [{
-      decksGeneratedToday: 5, // at limit
-      decksGeneratedThisMonth: 10,
-      lastResetAt: new Date(),
-      lastMonthlyResetAt: new Date(),
-    }];
-    const result = await checkDeckQuota('user-001');
-    expect(result.allowed).toBe(false);
-    expect(result.decksRemainingToday).toBe(0);
-  });
-
-  it('returns full allowance for brand-new user with no subscription row', async () => {
-    dbSelectResult = [];
-    const result = await checkDeckQuota('brand-new-user');
-    expect(result.allowed).toBe(true);
-    expect(result.decksRemainingToday).toBe(5);
-    expect(result.decksRemainingThisMonth).toBe(50);
-  });
-
-  it('fails OPEN (allowed=true) when the DB read throws', async () => {
-    dbShouldThrow = new Error('connection terminated unexpectedly');
-    const result = await checkDeckQuota('user-001');
-    expect(result.allowed).toBe(true);
   });
 });

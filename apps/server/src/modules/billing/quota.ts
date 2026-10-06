@@ -19,7 +19,10 @@ export async function dailyUsage(userId: string): Promise<DailyUsage> {
     userSubscriptionsRepository.findByUserId(userId),
     userSubscriptionsRepository.spentSince(userId, lastDailyReset(new Date())),
   ]);
-  const plan = subscription?.plan ?? 'free';
+  // A Complet plan counts while it is active and not expired; otherwise the Gratuit budget.
+  const plan = subscription?.plan === 'premium' && subscription.status === 'active' && (subscription.expiresAt === null || subscription.expiresAt > new Date())
+    ? 'premium'
+    : 'free';
   const budgetMicroEur = QUOTA_CONFIG[plan].dailyBudgetMicroEur;
   return {
     plan,
@@ -36,11 +39,11 @@ export async function dailyUsage(userId: string): Promise<DailyUsage> {
  */
 export async function checkQuota(userId: string, plannedMicroEur = 0): Promise<QuotaCheckResult> {
   // Enforcement off: every caller gets unlimited access; `cost_tracking` still records each call.
-  if (!env.QUOTA_ENFORCEMENT_ENABLED) return { allowed: true, plan: 'premium', usage: null };
+  if (!env.QUOTA_ENFORCEMENT_ENABLED) return { allowed: true, flashcards: true, usage: null };
   try {
     const usage = await dailyUsage(userId);
     const allowed = usage.spentMicroEur < usage.budgetMicroEur && usage.spentMicroEur + plannedMicroEur <= usage.budgetMicroEur;
-    return { allowed, plan: usage.plan, usage };
+    return { allowed, flashcards: usage.plan === 'premium', usage };
   } catch (error) {
     logger.error('checkQuota failed, falling back to allowed', {
       operation: 'quota:check:error',
@@ -48,8 +51,8 @@ export async function checkQuota(userId: string, plannedMicroEur = 0): Promise<Q
       severity: 'high' as const,
       userId,
     });
-    // Fail-open: a DB blip must not block a paying user, so the plan is not held against
-    // them either; the spend stays recorded.
-    return { allowed: true, plan: 'premium', usage: null };
+    // Fail-open on the budget: a DB blip must not block a paying user; the spend stays recorded.
+    // Not on the plan: a failed read does not make anyone Complet.
+    return { allowed: true, flashcards: null, usage: null };
   }
 }

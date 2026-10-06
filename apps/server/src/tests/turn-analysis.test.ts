@@ -3,6 +3,7 @@ import { describe, it, expect, beforeEach, mock } from 'bun:test';
 import { createMockLogger } from './_helpers/mock-logger';
 import type { z } from 'zod';
 import type { TurnAnalysis } from '../modules/tutor/turn-analysis.service';
+import { analysis } from './_helpers/turn-analysis';
 
 const mockLogger = createMockLogger();
 mock.module('../platform/observability/logger', () => ({ logger: mockLogger }));
@@ -117,5 +118,13 @@ describe('turnInstruction', () => {
 
   it('gives no instruction when the turn asks nothing in particular', () => {
     expect(turnInstruction({ ...none, asksExplanation: true })).toBeNull();
+  });
+});
+
+describe('flashcardsUnavailable', () => {
+  it('tells the tutor the cards are the Complet plan\'s when the student asks for them, and nothing otherwise', async () => {
+    const { flashcardsUnavailable } = await import('../modules/tutor/turn-analysis.service');
+    expect(flashcardsUnavailable(analysis({ wantsFlashcards: true }))).toContain('réservées à la formule Complet');
+    expect(flashcardsUnavailable(analysis())).toBeNull();
   });
 });

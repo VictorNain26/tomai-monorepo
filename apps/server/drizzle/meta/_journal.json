@@ -22,6 +22,13 @@
       "when": 1791282948072,
       "tag": "0002_quota_real_cost",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1791284857419,
+      "tag": "0003_drop_deck_counters",
+      "breakpoints": true
     }
   ]
 }

@@ -31,7 +31,7 @@ export const billingStatusEnum = pgEnum('billing_status', ['active', 'past_due',
 
 
 /**
- * Table user_subscriptions - la formule de chaque élève et ses compteurs de fiches.
+ * Table user_subscriptions - la formule de chaque élève.
  * Pas de ligne : formule Gratuit. La consommation se lit dans `cost_tracking`.
  */
 export const userSubscriptions = pgTable('user_subscriptions', {
@@ -39,10 +39,6 @@ export const userSubscriptions = pgTable('user_subscriptions', {
   userId: varchar('user_id', { length: 255 }).notNull().unique(), // L'enfant
   plan: subscriptionPlanTypeEnum('plan').notNull().default('free'),
   status: subscriptionStatusEnum('status').notNull().default('active'),
-  decksGeneratedToday: integer('decks_generated_today').notNull().default(0),
-  lastResetAt: timestamp('last_reset_at', { withTimezone: true }).notNull().defaultNow(),
-  decksGeneratedThisMonth: integer('decks_generated_this_month').notNull().default(0),
-  lastMonthlyResetAt: timestamp('last_monthly_reset_at', { withTimezone: true }).notNull().defaultNow(),
   startedAt: timestamp('started_at', { withTimezone: true }).notNull().defaultNow(),
   expiresAt: timestamp('expires_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
@@ -56,7 +52,6 @@ export const userSubscriptions = pgTable('user_subscriptions', {
 
 
   index('idx_user_subscriptions_status').on(table.status),
-  index('idx_user_subscriptions_last_reset').on(table.lastResetAt),
 ]);
 
 /**

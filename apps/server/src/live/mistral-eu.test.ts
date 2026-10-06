@@ -65,7 +65,7 @@ describe('Mistral Small 4 on the EU endpoint (real API)', () => {
   }, 180_000);
 
   it('accepts the chat tools in strict mode and fills a valid input', async () => {
-    const tools = buildChatTools({ userId: 'live-user', sessionId: randomUUID(), schoolLevel: 'troisieme', check: { sheet: null, uncertain: false, diagnosis: null, studentText: '', pastStudentTexts: [] }, emitDeckCreated: () => undefined });
+    const tools = buildChatTools({ userId: 'live-user', sessionId: randomUUID(), schoolLevel: 'troisieme', flashcards: true, check: { sheet: null, uncertain: false, diagnosis: null, studentText: '', pastStudentTexts: [] }, emitDeckCreated: () => undefined });
     const asks: [string, string][] = [
       ['generate_flashcards', 'Crée-moi 5 cartes de révision sur le théorème de Pythagore, en mathématiques.'],
     ];

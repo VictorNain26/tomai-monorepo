@@ -56,9 +56,10 @@ mock.module('../platform/http/rate-limit', () => ({
 
 // checkQuota — mutable quota outcome
 let quotaAllowed = true;
+let quotaFlashcards: boolean | null = false;
 const checkQuota = mock(async (_userId: string) => ({
   allowed: quotaAllowed,
-  plan: 'free' as const,
+  flashcards: quotaFlashcards,
   usage: { plan: 'free' as const, spentMicroEur: 20_000, budgetMicroEur: 20_000, usagePercent: 100, resetsIn: '3h' },
 }));
 mock.module('../modules/billing/index', () => ({ checkQuota }));
@@ -100,8 +101,9 @@ const chatTools: ToolSet = {
     execute: async () => 'ok',
   }),
 };
+const buildChatTools = mock((_ctx: { flashcards: boolean }) => chatTools);
 mock.module('../modules/tutor/chat-tools', () => ({
-  buildChatTools: mock(() => chatTools),
+  buildChatTools,
 }));
 
 // ai-chat.service — a real streamText over a mock model: step 1 calls a
@@ -203,6 +205,8 @@ describe('POST /api/chat/stream', () => {
     quotaAllowed = true;
     checkQuota.mockClear();
     prepareTurn.mockClear();
+    buildChatTools.mockClear();
+    quotaFlashcards = false;
     persistUserTurn.mockClear();
     finishTurn.mockClear();
     lastStreamChatResult = undefined;
@@ -244,6 +248,18 @@ describe('POST /api/chat/stream', () => {
       subject: 'philosophie',
     }));
     expect(res.status).toBe(400);
+  });
+
+  it('passes the plan\'s cards to the turn and the tools: given on Complet, refused on Gratuit, neither when unread', async () => {
+    currentUser = { id: 'user-001', role: 'student', schoolLevel: 'sixieme', firstName: 'Léo' };
+    for (const [flashcards, tools] of [[true, true], [false, false], [null, false]] as const) {
+      prepareTurn.mockClear();
+      buildChatTools.mockClear();
+      quotaFlashcards = flashcards;
+      await (await app.fetch(makeRequest())).text();
+      expect(prepareTurn.mock.calls[0]?.[0]).toMatchObject({ flashcards });
+      expect(buildChatTools.mock.calls[0]?.[0]).toMatchObject({ flashcards: tools });
+    }
   });
 
   it('returns a 200 UI Message Stream response with the expected headers', async () => {

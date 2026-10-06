@@ -99,7 +99,7 @@ function flashcardsApproval(analysis: TurnAnalysis | undefined) {
  * Streams the assistant's response for one chat turn, running the agentic
  * tool loop internally (`stopWhen: isStepCount(MAX_TOOL_ITERATIONS)`).
  */
-export function streamChat(params: ChatStreamParams) {
+export function streamChat(params: ChatStreamParams): ReturnType<typeof streamText<ToolSet>> {
   const systemPrompt = buildSystemPrompt({
     level: params.schoolLevel,
     levelText: levelLabel(params.schoolLevel),
@@ -141,19 +141,30 @@ export function streamChat(params: ChatStreamParams) {
     reasoningEffort,
   });
 
+  // The cards tool is the Complet plan's (`chat-tools.ts`), and a regeneration runs without tools.
+  const cards = 'generate_flashcards' in params.tools;
+
   return streamText({
     model,
     instructions: system,
     messages,
     tools: params.tools,
-    // Cards are made when the student asks for them or accepts them, as the turn analysis read
-    // it; denied, the call returns to the model with the reason.
-    toolApproval: { generate_flashcards: flashcardsApproval(params.turnAnalysis) },
-    // Denial holds for the whole turn: a model that calls again would only spend steps.
-    prepareStep: ({ steps }) =>
-      params.turnAnalysis?.wantsFlashcards || !steps.some((step) => step.toolCalls.some((call) => call.toolName === 'generate_flashcards'))
-        ? undefined
-        : { activeTools: Object.keys(params.tools).filter((name) => name !== 'generate_flashcards') },
+    ...(cards && {
+      // Cards are made when the student asks for them or accepts them, as the turn analysis read
+      // it; denied, the call returns to the model with the reason.
+      toolApproval: { generate_flashcards: flashcardsApproval(params.turnAnalysis) },
+      prepareStep: ({ steps, stepNumber }) => {
+        // One call per turn, made or denied: a second one would make another deck, or spend steps.
+        if (steps.some((step) => step.toolCalls.some((call) => call.toolName === 'generate_flashcards'))) {
+          return { activeTools: Object.keys(params.tools).filter((name) => name !== 'generate_flashcards') };
+        }
+        // Asked or accepted: the code makes the call, the model does not decide it (S4, 2026-10-05,
+        // Small 4 refused confirmed cards on a rule no instruction gives).
+        return params.turnAnalysis?.wantsFlashcards && stepNumber === 0
+          ? { toolChoice: { type: 'tool', toolName: 'generate_flashcards' } }
+          : undefined;
+      },
+    }),
     stopWhen: isStepCount(MAX_TOOL_ITERATIONS),
     temperature: env.MISTRAL_TEMPERATURE,
     // No output cap on a reasoning turn: the thinking counts in completion_tokens and a cap

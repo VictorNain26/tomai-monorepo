@@ -23,8 +23,6 @@ mock.module('../platform/config/env', () => ({
 mock.module('../db/connection', () => ({ db: {} }));
 mock.module('../modules/billing/index', () => ({
   checkQuota: async () => ({ plan: 'premium' }),
-  checkDeckQuota: async () => ({ allowed: true }),
-  incrementDeckUsage: async () => ({}),
 }));
 mock.module('../modules/learning/card-generator.service', () => ({ generateCards: async () => ({ cards: [] }), isGenerationError: () => false }));
 mock.module('../modules/learning/learning.service', () => ({

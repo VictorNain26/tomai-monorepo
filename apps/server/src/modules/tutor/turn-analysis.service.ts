@@ -92,6 +92,15 @@ export async function analyseTurn(studentText: string, lastTutorText: string | n
   }
 }
 
+/** A request for cards on a plan without them: say so, write none. */
+export function flashcardsUnavailable(analysis: TurnAnalysis): string | null {
+  if (!analysis.wantsFlashcards) return null;
+  return `<critical_instruction>
+L'élève demande des fiches de révision. Elles sont réservées à la formule Complet : dis-le-lui en
+une phrase, sans en écrire toi-même, puis reviens à ce qu'il faisait.
+</critical_instruction>`;
+}
+
 /**
  * The turn's instruction, in the turn's message. A demand is no attempt: only the student's own
  * work moves the hint level. A proposal is checked before asking for the method, or the error

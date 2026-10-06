@@ -1,5 +1,5 @@
 import { tz } from '@date-fns/tz';
-import { addDays, differenceInMinutes, isBefore, setHours, startOfDay, startOfMonth } from 'date-fns';
+import { addDays, differenceInMinutes, isBefore, setHours, startOfDay } from 'date-fns';
 
 // =============================================
 // CONFIGURATION QUOTAS
@@ -15,8 +15,6 @@ export const QUOTA_CONFIG = {
   },
   premium: {
     dailyBudgetMicroEur: 100_000,
-    dailyDecks: 5,
-    monthlyDecks: 50,
   },
 } as const;
 
@@ -38,27 +36,13 @@ export interface DailyUsage {
 
 export interface QuotaCheckResult {
   allowed: boolean;
-  /** The plan to gate features on; `premium` when the quota is off or could not be read. */
-  plan: Plan;
+  /**
+   * The revision cards are open to this user: an active Complet plan, or the quota off. Null when
+   * the plan could not be read: the budget opens on a failure, the plan does not.
+   */
+  flashcards: boolean | null;
   /** The day's usage; null when the quota is off or could not be read. */
   usage: DailyUsage | null;
-}
-
-export interface DeckQuotaResult {
-  allowed: boolean;
-  decksRemainingToday: number;
-  decksRemainingThisMonth: number;
-  dailyLimit: number;
-  monthlyLimit: number;
-  message?: string;
-}
-
-export interface DeckUsageResult {
-  success: boolean;
-  newDecksGeneratedToday: number;
-  newDecksGeneratedThisMonth: number;
-  decksRemainingToday: number;
-  decksRemainingThisMonth: number;
 }
 
 // =============================================
@@ -73,17 +57,9 @@ export function lastDailyReset(now: Date): Date {
   return isBefore(now, todayReset) ? addDays(todayReset, -1, { in: inParis }) : todayReset;
 }
 
-export function needsDailyReset(lastResetAt: Date): boolean {
-  return isBefore(lastResetAt, lastDailyReset(new Date()));
-}
-
 export function getDailyResetTime(): string {
   const now = new Date();
   const nextReset = addDays(lastDailyReset(now), 1, { in: inParis });
   const minutes = differenceInMinutes(nextReset, now, { roundingMethod: 'ceil' });
   return minutes < 60 ? `${minutes}min` : `${Math.round(minutes / 60)}h`;
-}
-
-export function needsMonthlyReset(lastMonthlyResetAt: Date): boolean {
-  return isBefore(lastMonthlyResetAt, startOfMonth(new Date(), { in: inParis }));
 }
