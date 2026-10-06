@@ -8,3 +8,16 @@ test("the home page renders in French at phone width, with one h1 and no horizon
   const overflows = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
   expect(overflows).toBe(false);
 });
+
+test("the brand applies: cream background and Nunito, loaded", async ({ page }) => {
+  await page.goto("/");
+
+  const body = page.locator("body");
+  await expect(body).toHaveCSS("background-color", "rgb(250, 247, 240)");
+  await expect(body).toHaveCSS("font-family", /^"Nunito Variable"/);
+  const loaded = await page.evaluate(async () => {
+    await document.fonts.ready;
+    return document.fonts.check('16px "Nunito Variable"');
+  });
+  expect(loaded).toBe(true);
+});

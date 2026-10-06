@@ -17,3 +17,19 @@ serveur.
    typecheck), Tailwind 4 et `@repo/tokens`, page d'accueil en français.
 2. Playwright : iPhone (WebKit) et Android (Chromium).
 3. README, `scripts/dev.mjs` (port 3002), suivi.
+
+## Revue
+
+`/code-review` : 10 constats, tous corrigés.
+
+- Page en serif sur fond blanc : les tokens supposaient `--font-nunito`, que seul `next/font` pose.
+  `theme.css` donne le nom de la fonte en repli de `var()` ; `apps/web` charge Nunito par Fontsource
+  (`@fontsource-variable/nunito` 5.3.0 : release 2026-07-19, dépôt actif, 183 k téléchargements
+  par semaine). La couche de base (fond, texte, fonte, focus) passe dans `@repo/tokens/base.css`,
+  importée par les deux apps ; la landing passe ses 79 tests Playwright.
+- Un test vérifie désormais le fond crème et Nunito chargée, que l'ancien laissait passer.
+- TypeScript séparé comme dans le gabarit Vite : navigateur (`src`), Node (configs), e2e (DOM et
+  Node) ; `@types/node` déclaré.
+- `lint-web` en pre-commit, `--strictPort`, `.prettierignore` pour l'arbre de routes,
+  `dev:web` et `build:web`, `clean`, `CLAUDE.md` racine à jour, favicon, icône d'écran d'accueil
+  et `theme-color`.
