@@ -11,7 +11,7 @@ bloquant levé). L'historique vit dans git et les PR.
 
 ## Où on en est
 
-- **Dernière mise à jour :** 2026-10-06.
+- **Dernière mise à jour :** 2026-10-07.
 - **Lot en cours : 0, la refonte** (`roadmap.md`). Victor a demandé le 2026-10-06 de reprendre toute
   la codebase sur des pratiques établies, sans rien garder de l'ancienne architecture. Quatre
   audits et l'architecture cible : `etudes/2026-10-06/refonte-architecture.md` (#418), sept
@@ -155,6 +155,7 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
 | Relecture des 32 exercices : confiée à Claude le 2026-10-02 et outillée (32 citations retrouvées mot pour mot dans leur PDF officiel, 14 sources de réponse en ligne, 14 réponses recalculées par le test) ; un regard pédagogique humain sur un échantillon reste à prévoir avant de publier les mesures | Lot 1, jeu rejouable par un tiers ; lot 4 pour la publication | fait |
 | Projet Langfuse « tomai » en région UE (`https://cloud.langfuse.com`, offre Hobby) et ses clés dans `apps/server/.env`, vérifiées par l'API (HTTP 200) le 2026-10-02 | Lot 1, point 2 | fait |
 | Espace Mistral « ci » et sa clé `github-actions`, en secret GitHub `MISTRAL_API_KEY_CI` (2026-10-02). Sans paiement à l'usage, la dépense reste bornée par les 8,50 € inclus ; la valeur du secret se vérifie au premier passage en CI | Lot 1, point 6 | fait |
-| Dans le ruleset `Protect main` (Settings › Rules › Protect main › Require status checks to pass) : retirer les anciens checks (typecheck, lint, Test, Build, Migration Sync, Dependency audit) et n'exiger que `ci-ok`. Puis demander à Claude de rétablir la fusion automatique de Renovate (#419) | Outillage | à faire, après le merge de l'étape 3 |
-| Lundi 2026-10-12 : vérifier que Renovate a ouvert les mises à jour en attente du tableau de bord (#310), fenêtre élargie à tout le lundi par #412 ; sinon cocher « Create all awaiting schedule PRs at once ». Sans fusion automatique (#419), ses PR se mergent à la main | Outillage | à faire |
+| Ruleset `Protect main` : seul `ci-ok` est exigé (2026-10-07), la fusion automatique de Renovate rétablie | Outillage | fait |
+| GHCR : l'ancien paquet `tomai-server`, publié à la main et rattaché à aucun dépôt, bloquait la publication (`permission_denied: write_package`) ; supprimé avec `tomai-ai-service` le 2026-10-07, la CI a recréé `tomai-server` rattaché au dépôt | Image publiée, étape 3 | fait |
+| Lundi 2026-10-12 : vérifier que Renovate a ouvert les mises à jour en attente du tableau de bord (#310), fenêtre élargie à tout le lundi par #412 ; sinon cocher « Create all awaiting schedule PRs at once ». Les mineures et correctifs se mergent seuls quand `ci-ok` est vert, les majeures à la main | Outillage | à faire |
 | Mettre à jour les plugins Claude Code (`claude plugin marketplace update`, puis `claude plugin update <nom>`) | Outillage | à faire |
