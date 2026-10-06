@@ -52,7 +52,8 @@ export interface Totals {
 
 /** The counts `bun test` prints at the end of a file's run, read without colours. */
 export function totalsOf(output: string): Totals {
-  const count = (word: keyof Totals) => [...output.matchAll(new RegExp(`^\\s*(\\d+) ${word}$`, 'gm'))].reduce((sum, match) => sum + Number(match[1]), 0);
+  const count = (word: keyof Totals) =>
+    [...output.matchAll(new RegExp(`^\\s*(\\d+) ${word}$`, 'gm'))].reduce((sum, match) => sum + Number(match[1]), 0);
   return { pass: count('pass'), fail: count('fail'), skip: count('skip'), todo: count('todo') };
 }
 
@@ -94,7 +95,9 @@ async function main(): Promise<void> {
   };
   await Promise.all(Array.from({ length: Math.min(options.jobs, files.length) }, worker));
 
-  const totals = runs.map((run) => totalsOf(run.output)).reduce((a, b) => ({ pass: a.pass + b.pass, fail: a.fail + b.fail, skip: a.skip + b.skip, todo: a.todo + b.todo }));
+  const totals = runs
+    .map((run) => totalsOf(run.output))
+    .reduce((a, b) => ({ pass: a.pass + b.pass, fail: a.fail + b.fail, skip: a.skip + b.skip, todo: a.todo + b.todo }));
   const failed = runs.filter((run) => run.code !== 0);
   console.log(`\n ${totals.pass} pass`);
   if (totals.skip > 0) console.log(` ${totals.skip} skip`);

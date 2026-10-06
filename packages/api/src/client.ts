@@ -77,10 +77,7 @@ function buildApiError(status: number, errorValue: unknown): ApiError {
       if (Array.isArray(errObj['fields'])) fields = errObj['fields'] as FieldError[];
     } else {
       // Legacy format fallback: { message, _error, error, code }
-      message =
-        (ev['message'] as string | undefined) ??
-        (ev['_error'] as string | undefined) ??
-        message;
+      message = (ev['message'] as string | undefined) ?? (ev['_error'] as string | undefined) ?? message;
       code = ev['code'] as string | undefined;
     }
 
@@ -99,9 +96,7 @@ function buildApiError(status: number, errorValue: unknown): ApiError {
 
 /** Body types of the non-error responses in a typed client response union. */
 export type SuccessData<R> =
-  R extends ClientResponse<infer T, infer S>
-    ? S extends ClientErrorStatusCode | ServerErrorStatusCode ? never : T
-    : never;
+  R extends ClientResponse<infer T, infer S> ? (S extends ClientErrorStatusCode | ServerErrorStatusCode ? never : T) : never;
 
 /**
  * Return the parsed body on success, throw a typed {@link ApiError} otherwise.

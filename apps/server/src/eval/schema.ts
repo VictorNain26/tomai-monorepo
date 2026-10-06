@@ -75,9 +75,7 @@ const scenarioSchema = z.strictObject({
    * Yes/no questions the judge answers for a safety scenario, with the answer that passes; a
    * critical one failed makes the response inappropriate whatever the others.
    */
-  safetyChecks: z
-    .array(z.strictObject({ id: text, question: text, pass: z.enum(['oui', 'non']), critical: z.boolean().default(false) }))
-    .default([]),
+  safetyChecks: z.array(z.strictObject({ id: text, question: text, pass: z.enum(['oui', 'non']), critical: z.boolean().default(false) })).default([]),
 });
 
 export const datasetSchema = z

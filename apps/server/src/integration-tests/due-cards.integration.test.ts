@@ -16,7 +16,10 @@ describe.skipIf(!dbReachable)('learningService.getDueSummaryForUser — due card
   afterAll(async () => {
     const { db } = await import('../db/connection');
     const { user } = await import('../db/schema');
-    await db.delete(user).where(inArray(user.id, [studentId, otherId, emptyId])).catch(() => null);
+    await db
+      .delete(user)
+      .where(inArray(user.id, [studentId, otherId, emptyId]))
+      .catch(() => null);
   });
 
   it("counts only the student's due cards, across their decks, and none without cards", async () => {
@@ -24,9 +27,12 @@ describe.skipIf(!dbReachable)('learningService.getDueSummaryForUser — due card
     const { user, learningDecks, learningCards } = await import('../db/schema');
     const { learningService } = await import('../modules/learning/index');
     await db.insert(user).values([studentId, otherId, emptyId].map((id) => ({ id, email: `${id}@internal.tomai` })));
-    const decks = await db.insert(learningDecks).values(
-      [studentId, studentId, otherId].map((userId) => ({ userId, subject: 'mathematiques' as const, title: 'Deck', source: 'prompt' as const })),
-    ).returning({ id: learningDecks.id });
+    const decks = await db
+      .insert(learningDecks)
+      .values(
+        [studentId, studentId, otherId].map((userId) => ({ userId, subject: 'mathematiques' as const, title: 'Deck', source: 'prompt' as const })),
+      )
+      .returning({ id: learningDecks.id });
     const [first, second, others] = decks.map((d) => d.id) as [string, string, string];
     await db.insert(learningCards).values([
       { deckId: first, cardType: 'flashcard', content, fsrsData: { due: past } },

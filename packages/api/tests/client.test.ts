@@ -9,7 +9,9 @@ function errorResponse(status: number, body: string): ClientResponse<unknown> {
 
 async function caught(response: ClientResponse<unknown>): Promise<ApiError> {
   return unwrap(response).then(
-    () => { throw new Error('unwrap should have thrown'); },
+    () => {
+      throw new Error('unwrap should have thrown');
+    },
     (error: unknown) => error as ApiError,
   );
 }

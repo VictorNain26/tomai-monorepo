@@ -84,13 +84,7 @@ mock.module('drizzle-orm', () => ({
 const { fsrsService } = await import('../modules/learning/fsrs.service');
 
 // Helper: create a card DB row with FSRS data
-function makeCardRow(
-  id: string,
-  deckId: string,
-  position: number,
-  fsrsData: FSRSData | null,
-  cardType = 'basic'
-) {
+function makeCardRow(id: string, deckId: string, position: number, fsrsData: FSRSData | null, cardType = 'basic') {
   return { id, deckId, position, fsrsData, cardType, content: { front: 'Q', back: 'A' } };
 }
 
@@ -222,9 +216,7 @@ describe('FSRS Service', () => {
 
     it('should throw for non-existent card', async () => {
       selectQueue = [[]]; // Empty result
-      expect(
-        fsrsService.reviewCard('card-missing', Rating.Good, 'troisieme')
-      ).rejects.toThrow('Card not found');
+      expect(fsrsService.reviewCard('card-missing', Rating.Good, 'troisieme')).rejects.toThrow('Card not found');
     });
   });
 
@@ -242,23 +234,37 @@ describe('FSRS Service', () => {
       const cards = [
         makeCardRow('new-card', 'deck-1', 0, null), // New (priority ~1000)
         makeCardRow('learning-card', 'deck-1', 1, {
-          state: State.Learning, due: yesterday.toISOString(),
-          stability: 0.5, difficulty: 5, reps: 1, lapses: 0,
+          state: State.Learning,
+          due: yesterday.toISOString(),
+          stability: 0.5,
+          difficulty: 5,
+          reps: 1,
+          lapses: 0,
         }), // Learning due (priority 100)
         makeCardRow('review-card', 'deck-1', 2, {
-          state: State.Review, due: yesterday.toISOString(),
-          stability: 10, difficulty: 5, reps: 5, lapses: 0,
+          state: State.Review,
+          due: yesterday.toISOString(),
+          stability: 10,
+          difficulty: 5,
+          reps: 5,
+          lapses: 0,
         }), // Review due (priority ~510)
         makeCardRow('overdue-card', 'deck-1', 3, {
-          state: State.Review, due: twoDaysAgo.toISOString(),
-          stability: 5, difficulty: 5, reps: 3, lapses: 0,
+          state: State.Review,
+          due: twoDaysAgo.toISOString(),
+          stability: 5,
+          difficulty: 5,
+          reps: 3,
+          lapses: 0,
         }), // Overdue >24h (priority negative)
       ];
 
       selectQueue = [[deck], cards];
 
       const result = await fsrsService.getDueCards({
-        deckId: 'deck-1', userId: 'user-1', limit: 10,
+        deckId: 'deck-1',
+        userId: 'user-1',
+        limit: 10,
       });
 
       // Should have all 4 cards (overdue + learning + review are due, new included by default)
@@ -276,15 +282,21 @@ describe('FSRS Service', () => {
       const cards = [
         makeCardRow('new-card', 'deck-1', 0, null),
         makeCardRow('due-card', 'deck-1', 1, {
-          state: State.Review, due: yesterday.toISOString(),
-          stability: 5, difficulty: 5, reps: 3, lapses: 0,
+          state: State.Review,
+          due: yesterday.toISOString(),
+          stability: 5,
+          difficulty: 5,
+          reps: 3,
+          lapses: 0,
         }),
       ];
 
       selectQueue = [[deck], cards];
 
       const result = await fsrsService.getDueCards({
-        deckId: 'deck-1', userId: 'user-1', includeNew: false,
+        deckId: 'deck-1',
+        userId: 'user-1',
+        includeNew: false,
       });
 
       expect(result.length).toBe(1);
@@ -295,15 +307,21 @@ describe('FSRS Service', () => {
       const deck = { id: 'deck-1', userId: 'user-1', cardCount: 1 };
       const cards = [
         makeCardRow('future-card', 'deck-1', 0, {
-          state: State.Review, due: tomorrow.toISOString(),
-          stability: 20, difficulty: 5, reps: 10, lapses: 0,
+          state: State.Review,
+          due: tomorrow.toISOString(),
+          stability: 20,
+          difficulty: 5,
+          reps: 10,
+          lapses: 0,
         }),
       ];
 
       selectQueue = [[deck], cards];
 
       const result = await fsrsService.getDueCards({
-        deckId: 'deck-1', userId: 'user-1', includeNew: false,
+        deckId: 'deck-1',
+        userId: 'user-1',
+        includeNew: false,
       });
 
       expect(result.length).toBe(0);
@@ -311,14 +329,14 @@ describe('FSRS Service', () => {
 
     it('should respect limit', async () => {
       const deck = { id: 'deck-1', userId: 'user-1', cardCount: 5 };
-      const cards = Array.from({ length: 5 }, (_, i) =>
-        makeCardRow(`card-${i}`, 'deck-1', i, null)
-      );
+      const cards = Array.from({ length: 5 }, (_, i) => makeCardRow(`card-${i}`, 'deck-1', i, null));
 
       selectQueue = [[deck], cards];
 
       const result = await fsrsService.getDueCards({
-        deckId: 'deck-1', userId: 'user-1', limit: 2,
+        deckId: 'deck-1',
+        userId: 'user-1',
+        limit: 2,
       });
 
       expect(result.length).toBe(2);
@@ -327,9 +345,7 @@ describe('FSRS Service', () => {
     it('should throw for non-existent deck', async () => {
       selectQueue = [[]]; // No deck found
 
-      expect(
-        fsrsService.getDueCards({ deckId: 'bad-deck', userId: 'user-1' })
-      ).rejects.toThrow('Deck not found');
+      expect(fsrsService.getDueCards({ deckId: 'bad-deck', userId: 'user-1' })).rejects.toThrow('Deck not found');
     });
   });
 
@@ -344,16 +360,28 @@ describe('FSRS Service', () => {
       const cards = [
         makeCardRow('c1', 'deck-1', 0, null), // New
         makeCardRow('c2', 'deck-1', 1, {
-          state: State.Learning, due: yesterday.toISOString(),
-          stability: 1, difficulty: 5, reps: 1, lapses: 0,
+          state: State.Learning,
+          due: yesterday.toISOString(),
+          stability: 1,
+          difficulty: 5,
+          reps: 1,
+          lapses: 0,
         }),
         makeCardRow('c3', 'deck-1', 2, {
-          state: State.Review, due: yesterday.toISOString(),
-          stability: 10, difficulty: 5, reps: 5, lapses: 0,
+          state: State.Review,
+          due: yesterday.toISOString(),
+          stability: 10,
+          difficulty: 5,
+          reps: 5,
+          lapses: 0,
         }),
         makeCardRow('c4', 'deck-1', 3, {
-          state: State.Relearning, due: yesterday.toISOString(),
-          stability: 2, difficulty: 7, reps: 3, lapses: 1,
+          state: State.Relearning,
+          due: yesterday.toISOString(),
+          stability: 2,
+          difficulty: 7,
+          reps: 3,
+          lapses: 1,
         }),
       ];
 
@@ -373,12 +401,20 @@ describe('FSRS Service', () => {
       const cards = [
         makeCardRow('c1', 'deck-1', 0, null), // New — excluded from averages
         makeCardRow('c2', 'deck-1', 1, {
-          state: State.Review, due: yesterday.toISOString(),
-          stability: 10, difficulty: 6, reps: 5, lapses: 0,
+          state: State.Review,
+          due: yesterday.toISOString(),
+          stability: 10,
+          difficulty: 6,
+          reps: 5,
+          lapses: 0,
         }),
         makeCardRow('c3', 'deck-1', 2, {
-          state: State.Review, due: yesterday.toISOString(),
-          stability: 20, difficulty: 4, reps: 8, lapses: 0,
+          state: State.Review,
+          due: yesterday.toISOString(),
+          stability: 20,
+          difficulty: 4,
+          reps: 8,
+          lapses: 0,
         }),
       ];
 
@@ -409,12 +445,20 @@ describe('FSRS Service', () => {
       const deck = { id: 'deck-1', userId: 'user-1', cardCount: 2 };
       const cards = [
         makeCardRow('overdue', 'deck-1', 0, {
-          state: State.Review, due: yesterday.toISOString(),
-          stability: 5, difficulty: 5, reps: 3, lapses: 0,
+          state: State.Review,
+          due: yesterday.toISOString(),
+          stability: 5,
+          difficulty: 5,
+          reps: 3,
+          lapses: 0,
         }), // overdue (due < now)
         makeCardRow('due-today', 'deck-1', 1, {
-          state: State.Learning, due: oneMinAgo.toISOString(),
-          stability: 1, difficulty: 5, reps: 1, lapses: 0,
+          state: State.Learning,
+          due: oneMinAgo.toISOString(),
+          stability: 1,
+          difficulty: 5,
+          reps: 1,
+          lapses: 0,
         }), // due (due <= todayEnd)
       ];
 

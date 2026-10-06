@@ -104,7 +104,15 @@ export function detection(outcomes: readonly CaseOutcome[]): Detection[] {
   const byFault = new Map<string, Detection>();
   for (const { id, fault, flagged } of outcomes) {
     const entry = byFault.get(fault) ?? {
-      fault, cases: 0, detected: 0, faultyJudged: 0, cleanKept: 0, cleanJudged: 0, missed: [], falseAlarms: [], failed: [],
+      fault,
+      cases: 0,
+      detected: 0,
+      faultyJudged: 0,
+      cleanKept: 0,
+      cleanJudged: 0,
+      missed: [],
+      falseAlarms: [],
+      failed: [],
     };
     entry.cases += 1;
     if (flagged.faulty === null) entry.failed.push(`${id} (faulty)`);

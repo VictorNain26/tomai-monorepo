@@ -8,11 +8,7 @@ import { filesRepository } from './files.repository.js';
 import { env } from '../../platform/config/env.js';
 import { AppError, toErrorResponse } from '../../platform/http/errors.js';
 import { checkQuota } from '../billing/index.js';
-import {
-  MAX_FILE_SIZE,
-  detectFileType,
-  sanitizeFileName,
-} from './upload.helpers.js';
+import { MAX_FILE_SIZE, detectFileType, sanitizeFileName } from './upload.helpers.js';
 
 const presignBody = z.object({
   fileName: z.string().min(1).max(255),
@@ -59,10 +55,13 @@ export const uploadRoutes = new Hono<AppEnv>()
 
       // Validate size
       if (sizeBytes > MAX_FILE_SIZE) {
-        return c.json({
-          success: false,
-          error: `File too large. Maximum: ${MAX_FILE_SIZE / (1024 * 1024)}MB`,
-        }, 400);
+        return c.json(
+          {
+            success: false,
+            error: `File too large. Maximum: ${MAX_FILE_SIZE / (1024 * 1024)}MB`,
+          },
+          400,
+        );
       }
 
       // Check Scaleway is configured
@@ -110,7 +109,6 @@ export const uploadRoutes = new Hono<AppEnv>()
         storageKey: presignedResult.storageKey,
         expiresAt: presignedResult.expiresAt.toISOString(),
       });
-
     } catch (error) {
       logger.error('Presign URL generation failed', {
         err: error,
@@ -177,7 +175,9 @@ export const uploadRoutes = new Hono<AppEnv>()
         try {
           const fileContent = await storage.getFileContent(fileRecord.storageKey);
           if (fileContent) {
-            const transcriptionResult = await getVoxtralTranscribeService().transcribe(fileContent.content, fileContent.contentType, { userId: user.id });
+            const transcriptionResult = await getVoxtralTranscribeService().transcribe(fileContent.content, fileContent.contentType, {
+              userId: user.id,
+            });
 
             if (transcriptionResult.success && transcriptionResult.transcription) {
               transcription = transcriptionResult.transcription;
@@ -210,7 +210,6 @@ export const uploadRoutes = new Hono<AppEnv>()
         fileId,
         transcription,
       });
-
     } catch (error) {
       logger.error('Upload confirmation failed', {
         err: error,
@@ -239,9 +238,7 @@ export const uploadRoutes = new Hono<AppEnv>()
         return c.json({ success: false, error: 'Access denied' }, 403);
       }
 
-      const downloadResult = await storage.generatePresignedDownloadUrl(
-        fileRecord.storageKey
-      );
+      const downloadResult = await storage.generatePresignedDownloadUrl(fileRecord.storageKey);
 
       return c.json({
         success: true,
@@ -251,7 +248,6 @@ export const uploadRoutes = new Hono<AppEnv>()
         mimeType: fileRecord.mimeType,
         sizeBytes: fileRecord.sizeBytes,
       });
-
     } catch (error) {
       logger.error('Download URL generation failed', {
         err: error,
@@ -296,7 +292,6 @@ export const uploadRoutes = new Hono<AppEnv>()
       });
 
       return c.json({ success: true, fileId });
-
     } catch (error) {
       logger.error('File deletion failed', {
         err: error,

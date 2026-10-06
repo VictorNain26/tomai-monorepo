@@ -1,29 +1,29 @@
-import Link from "next/link";
-import { BRAND_NAME } from "@/lib/brand";
-import { Logo } from "../atoms/logo";
+import Link from 'next/link';
+import { BRAND_NAME } from '@/lib/brand';
+import { Logo } from '../atoms/logo';
 
 const LINK_GROUPS = [
   {
-    title: "Produit",
+    title: 'Produit',
     links: [
-      { href: "/#how-it-works", label: "Comment ça marche" },
-      { href: "/#parents", label: "Parents" },
-      { href: "/#pricing", label: "Tarifs" },
+      { href: '/#how-it-works', label: 'Comment ça marche' },
+      { href: '/#parents', label: 'Parents' },
+      { href: '/#pricing', label: 'Tarifs' },
     ],
   },
   {
-    title: "Aide",
+    title: 'Aide',
     links: [
-      { href: "/aide", label: "Centre d'aide" },
-      { href: "/contact", label: "Contact" },
+      { href: '/aide', label: "Centre d'aide" },
+      { href: '/contact', label: 'Contact' },
     ],
   },
   {
-    title: "Légal",
+    title: 'Légal',
     links: [
-      { href: "/confidentialite", label: "Confidentialité" },
-      { href: "/cgu", label: "CGU" },
-      { href: "/mentions-legales", label: "Mentions légales" },
+      { href: '/confidentialite', label: 'Confidentialité' },
+      { href: '/cgu', label: 'CGU' },
+      { href: '/mentions-legales', label: 'Mentions légales' },
     ],
   },
 ] as const;
@@ -36,8 +36,8 @@ export function Footer() {
           <div className="space-y-4">
             <Logo />
             <p className="max-w-xs text-sm text-muted-foreground">
-              En préparation&nbsp;: une aide aux devoirs pour que, le soir, ce ne soit plus au parent
-              d&apos;expliquer, ni à l&apos;IA de faire l&apos;exercice.
+              En préparation&nbsp;: une aide aux devoirs pour que, le soir, ce ne soit plus au parent d&apos;expliquer, ni à l&apos;IA de faire
+              l&apos;exercice.
             </p>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li>Modèles de Mistral AI, appelés en Europe</li>

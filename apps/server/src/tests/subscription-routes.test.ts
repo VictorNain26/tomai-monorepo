@@ -19,7 +19,11 @@ const getFamilyStatus = mock(async (_parentId: string) => ({ plan: 'free', statu
 mock.module('../modules/family/subscription.service', () => ({ subscriptionService: { getFamilyStatus } }));
 
 const dailyUsage = mock(async (_userId: string) => ({
-  plan: 'free' as const, spentMicroEur: 5_000, budgetMicroEur: 20_000, usagePercent: 25, resetsIn: '5h',
+  plan: 'free' as const,
+  spentMicroEur: 5_000,
+  budgetMicroEur: 20_000,
+  usagePercent: 25,
+  resetsIn: '5h',
 }));
 mock.module('../modules/billing/index', () => ({ dailyUsage }));
 
@@ -58,7 +62,9 @@ describe('GET /api/subscriptions/usage', () => {
 
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({
-      userId: 'child-1', plan: 'free', daily: { spentMicroEur: 5_000, budgetMicroEur: 20_000, usagePercent: 25, resetsIn: '5h' },
+      userId: 'child-1',
+      plan: 'free',
+      daily: { spentMicroEur: 5_000, budgetMicroEur: 20_000, usagePercent: 25, resetsIn: '5h' },
     });
   });
 

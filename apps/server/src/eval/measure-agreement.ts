@@ -8,7 +8,17 @@ import { parseArgs } from 'node:util';
 import { LangfuseClient } from '@langfuse/client';
 import { basename } from 'node:path';
 import { z } from 'zod';
-import { currentConfigIds, fileValues, judgeValues, labelsFile, measures, queueValues, staleCriteria, toJudge, type AgreementLine } from './annotation.js';
+import {
+  currentConfigIds,
+  fileValues,
+  judgeValues,
+  labelsFile,
+  measures,
+  queueValues,
+  staleCriteria,
+  toJudge,
+  type AgreementLine,
+} from './annotation.js';
 import { judge } from './judge.js';
 import { NO_USAGE, addUsage } from './judge-config.js';
 import { judgeContext } from './judge-context.js';
@@ -52,7 +62,9 @@ function printTable(title: string, lines: readonly AgreementLine[]): void {
   console.log(`\n${title}\n\n| Criterion | Units | Raw | α | 95 % interval | ≥ ${String(THRESHOLD)} |\n|---|---|---|---|---|---|`);
   for (const { criterion, units, raw, alpha, interval } of lines) {
     const range = interval ? `${format(interval[0])} – ${format(interval[1])}` : 'n/a';
-    console.log(`| ${criterion} | ${String(units)} | ${format(raw)} | ${format(alpha)} | ${range} | ${alpha !== null && alpha >= THRESHOLD ? 'yes' : 'no'} |`);
+    console.log(
+      `| ${criterion} | ${String(units)} | ${format(raw)} | ${format(alpha)} | ${range} | ${alpha !== null && alpha >= THRESHOLD ? 'yes' : 'no'} |`,
+    );
   }
 }
 
@@ -91,20 +103,24 @@ async function main(): Promise<number> {
   const failures: string[] = [];
   let usage = NO_USAGE;
   for (let start = 0; start < selected.length; start += CONCURRENCY) {
-    judged.push(...await Promise.all(selected.slice(start, start + CONCURRENCY).map(async (row) => {
-      const verdicts = [];
-      for (let pass = 1; pass <= passes.data; pass++) {
-        try {
-          const result = await judge({ ...judgeContext(row), transcript: row.transcript }, generate);
-          usage = addUsage(usage, result.usage);
-          verdicts.push(result.judged);
-        } catch (error) {
-          failures.push(`${row.traceId}, pass ${String(pass)}: ${errorMessage(error)}`);
-          verdicts.push(null);
-        }
-      }
-      return { ...row, human: human.get(row.traceId) ?? null, passes: verdicts.map((v) => (v ? judgeValues(v) : null)), verdicts };
-    })));
+    judged.push(
+      ...(await Promise.all(
+        selected.slice(start, start + CONCURRENCY).map(async (row) => {
+          const verdicts = [];
+          for (let pass = 1; pass <= passes.data; pass++) {
+            try {
+              const result = await judge({ ...judgeContext(row), transcript: row.transcript }, generate);
+              usage = addUsage(usage, result.usage);
+              verdicts.push(result.judged);
+            } catch (error) {
+              failures.push(`${row.traceId}, pass ${String(pass)}: ${errorMessage(error)}`);
+              verdicts.push(null);
+            }
+          }
+          return { ...row, human: human.get(row.traceId) ?? null, passes: verdicts.map((v) => (v ? judgeValues(v) : null)), verdicts };
+        }),
+      )),
+    );
   }
 
   const { agreement: agreementLines, stability: stabilityLines } = measures(judged);
@@ -122,7 +138,10 @@ async function main(): Promise<number> {
     agreement: agreementLines,
     stability: stabilityLines,
     conversations: judged.map(({ scenarioId, exerciseId, repetition, traceId, human: h, passes: grades, verdicts }) => ({
-      scenarioId, exerciseId, repetition, traceId,
+      scenarioId,
+      exerciseId,
+      repetition,
+      traceId,
       human: h ? Object.fromEntries(h) : null,
       judge: grades.map((g) => (g ? Object.fromEntries(g) : null)),
       verdicts,

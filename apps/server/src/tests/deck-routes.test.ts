@@ -29,11 +29,12 @@ app.use(requireUser);
 app.route('/api/learning', deckRoutes);
 
 const DECK_ID = '0199a3c4-7b1e-7d2a-9f00-0000000000d1';
-const send = (method: 'POST' | 'PATCH', path: string, body: unknown) => app.request(path, {
-  method,
-  headers: { 'content-type': 'application/json' },
-  body: JSON.stringify(body),
-});
+const send = (method: 'POST' | 'PATCH', path: string, body: unknown) =>
+  app.request(path, {
+    method,
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(body),
+  });
 const deck = { title: 'Fractions', subject: 'mathematiques', source: 'prompt' };
 
 beforeEach(() => {
@@ -48,7 +49,11 @@ describe('POST /api/learning/decks', () => {
   });
 
   it('refuses a free-text or lycée subject, and the removed rag_program source', async () => {
-    for (const body of [{ ...deck, subject: 'Mathématiques' }, { ...deck, subject: 'philosophie' }, { ...deck, source: 'rag_program' }]) {
+    for (const body of [
+      { ...deck, subject: 'Mathématiques' },
+      { ...deck, subject: 'philosophie' },
+      { ...deck, source: 'rag_program' },
+    ]) {
       expect((await send('POST', '/api/learning/decks', body)).status).toBe(400);
     }
     expect(createDeckWithCards).not.toHaveBeenCalled();

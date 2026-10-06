@@ -4,11 +4,7 @@ import { costTracking, userSubscriptions, type UserSubscription } from '../../db
 
 class UserSubscriptionsRepository {
   async findByUserId(userId: string): Promise<UserSubscription | undefined> {
-    const [row] = await db
-      .select()
-      .from(userSubscriptions)
-      .where(eq(userSubscriptions.userId, userId))
-      .limit(1);
+    const [row] = await db.select().from(userSubscriptions).where(eq(userSubscriptions.userId, userId)).limit(1);
     return row;
   }
 

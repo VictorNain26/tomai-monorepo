@@ -52,7 +52,9 @@ function readable(expression: string): MathNode | null {
     if (!isOperatorNode(child) || !OPERATORS.has(child.op)) return false;
     if (child.op !== '^') return true;
     const exponent = child.args[1];
-    return exponent !== undefined && isConstantNode(exponent) && Number.isInteger(exponent.value) && exponent.value >= 0 && exponent.value <= MAX_POWER;
+    return (
+      exponent !== undefined && isConstantNode(exponent) && Number.isInteger(exponent.value) && exponent.value >= 0 && exponent.value <= MAX_POWER
+    );
   });
   return allowed && nodes.length <= MAX_NODES ? node : null;
 }

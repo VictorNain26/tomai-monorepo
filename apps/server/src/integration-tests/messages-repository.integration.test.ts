@@ -6,12 +6,23 @@ const dbReachable = await checkDbReachable();
 
 describe.skipIf(!dbReachable)('messagesRepository — stored model messages read for the replay window only, from postgres', () => {
   const studentId = `messages_${String(Date.now())}`;
-  const modelMessages = [{ role: 'assistant', content: [{ type: 'reasoning', text: 'raisonnement' }, { type: 'text', text: 'Que fais-tu du +5 ?' }] }];
+  const modelMessages = [
+    {
+      role: 'assistant',
+      content: [
+        { type: 'reasoning', text: 'raisonnement' },
+        { type: 'text', text: 'Que fais-tu du +5 ?' },
+      ],
+    },
+  ];
 
   afterAll(async () => {
     const { db } = await import('../db/connection');
     const { user } = await import('../db/schema');
-    await db.delete(user).where(eq(user.id, studentId)).catch(() => null);
+    await db
+      .delete(user)
+      .where(eq(user.id, studentId))
+      .catch(() => null);
   });
 
   it('leaves them out of the session history, and returns them for the asked messages', async () => {
@@ -41,7 +52,8 @@ describe.skipIf(!dbReachable)('messagesRepository — stored model messages read
     const [other] = await db.insert(studySessions).values({ userId: studentId }).returning({ id: studySessions.id });
     if (!session || !other) throw new Error('session not created');
     const created = [];
-    for (const content of ['un', 'deux', 'trois', 'quatre']) created.push(await messagesRepository.create({ sessionId: session.id, role: 'user', content }));
+    for (const content of ['un', 'deux', 'trois', 'quatre'])
+      created.push(await messagesRepository.create({ sessionId: session.id, role: 'user', content }));
     await messagesRepository.create({ sessionId: other.id, role: 'user', content: 'ailleurs' });
 
     expect((await messagesRepository.findAfter(session.id, created[1]?.id ?? null)).map((m) => m.content)).toEqual(['trois', 'quatre']);

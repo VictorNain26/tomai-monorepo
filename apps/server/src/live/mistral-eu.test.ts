@@ -20,13 +20,21 @@ import { env } from '../platform/config/env';
 // Live contre l'endpoint UE de Mistral. LOCAL-ONLY (`bun run test:live`), fail-closed.
 
 // « 3X + 5 = 20 » drawn in a 5×7 bitmap font, 420×66 px: past the 64 px Mistral wants.
-const EQUATION_PNG = 'iVBORw0KGgoAAAANSUhEUgAAAaQAAABCCAAAAAA9Tf3CAAAA90lEQVR42u3bURaCIBBAUfa/6VqAgYhMDIf7PjulNLcPjmb5KH3FCCAJEiRBEiRIgiRIkATpeKRS6fqeHweqvB7+BZotG2vHSvpXCwkSJEiQIEGCNIbUPmUc0qrPxvHMnSEkSJAgQYIECVIcUv8p/4n0fvMdvZVvT+xmsw4JEiRIkCBBgvQC6cGFv4DhRgwl26a8BgYJEiRIkCBBghSBtNcWfNYxI340PTfOj7jACgkSJEiQIEFKjLTL7fMMf46ctWZIkCBBggQJEqQxpB0ffamtPM9K2pM84vkkSJAgQYIECdIiJOUMEiRBgiRIggRJkAQJkiAd2RcJykrfFEVu7AAAAABJRU5ErkJggg==';
+const EQUATION_PNG =
+  'iVBORw0KGgoAAAANSUhEUgAAAaQAAABCCAAAAAA9Tf3CAAAA90lEQVR42u3bURaCIBBAUfa/6VqAgYhMDIf7PjulNLcPjmb5KH3FCCAJEiRBEiRIgiRIkATpeKRS6fqeHweqvB7+BZotG2vHSvpXCwkSJEiQIEGCNIbUPmUc0qrPxvHMnSEkSJAgQYIECVIcUv8p/4n0fvMdvZVvT+xmsw4JEiRIkCBBgvQC6cGFv4DhRgwl26a8BgYJEiRIkCBBghSBtNcWfNYxI340PTfOj7jACgkSJEiQIEFKjLTL7fMMf46ctWZIkCBBggQJEqQxpB0ffamtPM9K2pM84vkkSJAgQYIECdIiJOUMEiRBgiRIggRJkAQJkiAd2RcJykrfFEVu7AAAAABJRU5ErkJggg==';
 
 const mathTurn = {
   userId: 'live-user',
   schoolLevel: 'troisieme' as const,
   subject: 'mathematiques' as const,
-  turnAnalysis: { subject: 'mathematiques' as const, bringsExercise: false, proposesAnswer: false, asksSolution: true, asksExplanation: false, wantsFlashcards: false },
+  turnAnalysis: {
+    subject: 'mathematiques' as const,
+    bringsExercise: false,
+    proposesAnswer: false,
+    asksSolution: true,
+    asksExplanation: false,
+    wantsFlashcards: false,
+  },
   tools: {},
 };
 
@@ -65,10 +73,15 @@ describe('Mistral Small 4 on the EU endpoint (real API)', () => {
   }, 180_000);
 
   it('accepts the chat tools in strict mode and fills a valid input', async () => {
-    const tools = buildChatTools({ userId: 'live-user', sessionId: randomUUID(), schoolLevel: 'troisieme', flashcards: true, check: { sheet: null, uncertain: false, diagnosis: null, studentText: '', pastStudentTexts: [] }, emitDeckCreated: () => undefined });
-    const asks: [string, string][] = [
-      ['generate_flashcards', 'Crée-moi 5 cartes de révision sur le théorème de Pythagore, en mathématiques.'],
-    ];
+    const tools = buildChatTools({
+      userId: 'live-user',
+      sessionId: randomUUID(),
+      schoolLevel: 'troisieme',
+      flashcards: true,
+      check: { sheet: null, uncertain: false, diagnosis: null, studentText: '', pastStudentTexts: [] },
+      emitDeckCreated: () => undefined,
+    });
+    const asks: [string, string][] = [['generate_flashcards', 'Crée-moi 5 cartes de révision sur le théorème de Pythagore, en mathématiques.']];
     for (const [name, prompt] of asks) {
       const result = await generateWithTools({
         model: mistralProvider()(env.MISTRAL_MODEL),
@@ -100,12 +113,23 @@ describe('Mistral Small 4 on the EU endpoint (real API)', () => {
     const next = await analyseTurn('Autre exercice : résous 2x - 3 = 7.', 'Bravo, x = 5 est juste !', 'Résous 3x + 5 = 20.', null);
     expect(next.bringsExercise).toBe(true);
 
-    const agreement = await analyseTurn('Oui, je veux bien !', 'Veux-tu que je te crée des cartes de révision sur les équations ?', 'Résous 3x + 5 = 20.', null);
+    const agreement = await analyseTurn(
+      'Oui, je veux bien !',
+      'Veux-tu que je te crée des cartes de révision sur les équations ?',
+      'Résous 3x + 5 = 20.',
+      null,
+    );
     expect(agreement.wantsFlashcards).toBe(true);
   }, 60_000);
 
   it("emits no reasoning when the route says 'none'", async () => {
-    const turn = streamChat({ ...mathTurn, subject: 'francais', sessionId: randomUUID(), content: 'Donne un synonyme de rapide.', conversationHistory: [] });
+    const turn = streamChat({
+      ...mathTurn,
+      subject: 'francais',
+      sessionId: randomUUID(),
+      content: 'Donne un synonyme de rapide.',
+      conversationHistory: [],
+    });
     await turn.text;
 
     expect((await turn.finalStep).reasoningText ?? '').toBe('');
@@ -133,11 +157,26 @@ describe('Mistral Small 4 on the EU endpoint (real API)', () => {
 
   it('diagnoses a proposal against the sheet under the strict schema', async () => {
     const sheet = {
-      statement: 'Résous 3x + 5 = 20.', kind: 'short' as const, answer: 'x = 5', answerForms: ['5', 'x = 5'], mathEquation: '3*x + 5 = 20', mathAnswer: 'x = 5',
-      steps: ['Retrancher 5 aux deux membres : 3x = 15', 'Diviser par 3 : x = 5'], commonErrors: ['Diviser 20 par 3 sans retrancher 5'],
-      rule: null, facts: [], expectedElements: [], entries: [], laterEntries: [],
+      statement: 'Résous 3x + 5 = 20.',
+      kind: 'short' as const,
+      answer: 'x = 5',
+      answerForms: ['5', 'x = 5'],
+      mathEquation: '3*x + 5 = 20',
+      mathAnswer: 'x = 5',
+      steps: ['Retrancher 5 aux deux membres : 3x = 15', 'Diviser par 3 : x = 5'],
+      commonErrors: ['Diviser 20 par 3 sans retrancher 5'],
+      rule: null,
+      facts: [],
+      expectedElements: [],
+      entries: [],
+      laterEntries: [],
     };
-    const diagnosis = await diagnose(sheet, { studentText: "J'ai divisé 20 par 3, ça fait x = 20/3.", lastTutorText: 'Que vaut x ?', userId: 'live-user', sessionId: randomUUID() });
+    const diagnosis = await diagnose(sheet, {
+      studentText: "J'ai divisé 20 par 3, ça fait x = 20/3.",
+      lastTutorText: 'Que vaut x ?',
+      userId: 'live-user',
+      sessionId: randomUUID(),
+    });
 
     expect(diagnosis.error).toBeUndefined();
     expect(diagnosis.verdict).toBe('incorrect');

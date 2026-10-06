@@ -5,16 +5,20 @@
 const SUPPORTED_MIME_TYPES = {
   image: ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'],
   pdf: ['application/pdf'],
-  document: [
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    'application/msword',
-    'text/plain'
-  ],
+  document: ['application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/msword', 'text/plain'],
   audio: [
-    'audio/webm', 'audio/ogg', 'audio/mp4', 'audio/mpeg',
-    'audio/wav', 'audio/x-wav', 'audio/mp3',
-    'audio/aac', 'audio/flac', 'audio/aiff', 'audio/x-aiff'
-  ]
+    'audio/webm',
+    'audio/ogg',
+    'audio/mp4',
+    'audio/mpeg',
+    'audio/wav',
+    'audio/x-wav',
+    'audio/mp3',
+    'audio/aac',
+    'audio/flac',
+    'audio/aiff',
+    'audio/x-aiff',
+  ],
 } as const;
 
 export const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB (Scaleway optimal)

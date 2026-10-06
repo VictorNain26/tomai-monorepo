@@ -34,7 +34,7 @@ import {
   getEducationCycle,
   getCycleAdaptationInstructions,
   getPedagogyPromptBlock,
-  KATEX_INSTRUCTIONS
+  KATEX_INSTRUCTIONS,
 } from './prompts/index.js';
 import { logger } from '../../platform/observability/logger.js';
 import type { CardGenerationParams } from './card-generation.types.js';
@@ -114,9 +114,7 @@ Règles: correctIndex=0-based, isTrue=boolean (pas string).`);
 // SERVICE PRINCIPAL
 // ============================================================================
 
-export async function generateCards(
-  params: CardGenerationParams
-): Promise<CardGenerationResult | CardGenerationError> {
+export async function generateCards(params: CardGenerationParams): Promise<CardGenerationResult | CardGenerationError> {
   const startTime = Date.now();
   const provider = 'Mistral';
 
@@ -126,7 +124,7 @@ export async function generateCards(
       hasTopic: Boolean(params.topic),
       subject: params.subject,
       schoolLevel: params.level,
-      requestedCards: params.cardCount
+      requestedCards: params.cardCount,
     });
 
     const prompt = buildPrompt(params);
@@ -152,7 +150,7 @@ export async function generateCards(
         operation: 'learning:generate:validation_error',
         hasTopic: Boolean(params.topic),
         durationMs,
-        severity: 'high' as const
+        severity: 'high' as const,
       });
       return { success: false, error: 'Cartes invalides', code: 'INVALID_OUTPUT' };
     }
@@ -166,16 +164,15 @@ export async function generateCards(
       cardsSetAside: object.cards.length - cards.length,
       requestedCards: params.cardCount,
       tokensUsed,
-      durationMs
+      durationMs,
     });
 
     return {
       cards,
       count: cards.length,
       tokensUsed,
-      provider
+      provider,
     };
-
   } catch (error) {
     if (NoObjectGeneratedError.isInstance(error)) {
       logger.error('Card validation failed', {
@@ -183,7 +180,7 @@ export async function generateCards(
         hasTopic: Boolean(params.topic),
         durationMs: Date.now() - startTime,
         err: error,
-        severity: 'high' as const
+        severity: 'high' as const,
       });
       return { success: false, error: 'Cartes invalides', code: 'INVALID_OUTPUT' };
     }
@@ -209,8 +206,18 @@ export async function generateCards(
       cardCount: params.cardCount,
       durationMs: Date.now() - startTime,
       err: error,
-      errorType: isRateLimit ? 'rate_limit' : isApiKey ? 'api_key' : isModelNotFound ? 'model_not_found' : isQuota ? 'quota' : isUnavailable ? 'unavailable' : 'unknown',
-      severity: 'high' as const
+      errorType: isRateLimit
+        ? 'rate_limit'
+        : isApiKey
+          ? 'api_key'
+          : isModelNotFound
+            ? 'model_not_found'
+            : isQuota
+              ? 'quota'
+              : isUnavailable
+                ? 'unavailable'
+                : 'unknown',
+      severity: 'high' as const,
     });
 
     // User-friendly error message based on error type
@@ -221,7 +228,7 @@ export async function generateCards(
     } else if (isApiKey) {
       userMessage = 'Erreur de configuration du service AI. Contactez le support.';
     } else if (isModelNotFound) {
-      userMessage = 'Le modèle AI n\'est pas disponible. Contactez le support.';
+      userMessage = "Le modèle AI n'est pas disponible. Contactez le support.";
     } else if (isQuota) {
       userMessage = 'Quota API dépassé. Réessayez plus tard.';
     } else if (isUnavailable) {
@@ -236,8 +243,6 @@ export async function generateCards(
   }
 }
 
-export function isGenerationError(
-  result: CardGenerationResult | CardGenerationError
-): result is CardGenerationError {
+export function isGenerationError(result: CardGenerationResult | CardGenerationError): result is CardGenerationError {
   return 'success' in result && !result.success;
 }

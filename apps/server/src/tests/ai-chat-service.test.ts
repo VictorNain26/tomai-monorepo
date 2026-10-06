@@ -71,12 +71,27 @@ describe('streamChat', () => {
   it('gives the writer the statement of the exercise in progress, out of the system prompt, and not its answer', async () => {
     const model = new MockLanguageModelV4({
       doStream: async () => ({
-        stream: simulateReadableStream({ chunkDelayInMs: 0, initialDelayInMs: 0, chunks: [{ type: 'stream-start', warnings: [] }, finishStreamPart()] }),
+        stream: simulateReadableStream({
+          chunkDelayInMs: 0,
+          initialDelayInMs: 0,
+          chunks: [{ type: 'stream-start', warnings: [] }, finishStreamPart()],
+        }),
       }),
     });
     const exerciseSheet = {
-      statement: 'Résous 3x + 5 = 20.', kind: 'short' as const, answer: 'x = 5', answerForms: ['x = 5'], mathEquation: null, mathAnswer: null,
-      steps: ['Retrancher 5'], commonErrors: [], rule: null, facts: [], expectedElements: [], entries: [], laterEntries: [],
+      statement: 'Résous 3x + 5 = 20.',
+      kind: 'short' as const,
+      answer: 'x = 5',
+      answerForms: ['x = 5'],
+      mathEquation: null,
+      mathAnswer: null,
+      steps: ['Retrancher 5'],
+      commonErrors: [],
+      rule: null,
+      facts: [],
+      expectedElements: [],
+      entries: [],
+      laterEntries: [],
     };
 
     await streamChat({ ...baseParams, tools: noopTools, model, exerciseSheet }).text;
@@ -93,11 +108,16 @@ describe('streamChat', () => {
   it("sends the session's files as fenced texts opening the window, never in the turn message", async () => {
     const model = new MockLanguageModelV4({
       doStream: async () => ({
-        stream: simulateReadableStream({ chunkDelayInMs: 0, initialDelayInMs: 0, chunks: [{ type: 'stream-start', warnings: [] }, finishStreamPart()] }),
+        stream: simulateReadableStream({
+          chunkDelayInMs: 0,
+          initialDelayInMs: 0,
+          chunks: [{ type: 'stream-start', warnings: [] }, finishStreamPart()],
+        }),
       }),
     });
 
-    await streamChat({ ...baseParams, tools: noopTools, model, attachedFiles: [{ fileId: 'f1', fileName: 'exo.png', text: 'Résous 3x + 5 = 20.' }] }).text;
+    await streamChat({ ...baseParams, tools: noopTools, model, attachedFiles: [{ fileId: 'f1', fileName: 'exo.png', text: 'Résous 3x + 5 = 20.' }] })
+      .text;
 
     const prompt = model.doStreamCalls[0]?.prompt ?? [];
     expect(prompt).toHaveLength(2);
@@ -200,7 +220,13 @@ describe('streamChat', () => {
     try {
       const model = new MockLanguageModelV4({
         doStream: async () => {
-          throw new APICallError({ message: 'overloaded', url: 'https://api.eu.mistral.ai', requestBodyValues: {}, statusCode: 503, isRetryable: true });
+          throw new APICallError({
+            message: 'overloaded',
+            url: 'https://api.eu.mistral.ai',
+            requestBodyValues: {},
+            statusCode: 503,
+            isRetryable: true,
+          });
         },
       });
 
@@ -234,11 +260,23 @@ describe('flashcards confirmed by the code', () => {
               }),
             };
           }
-          return { stream: simulateReadableStream({ chunkDelayInMs: 0, initialDelayInMs: 0, chunks: [{ type: 'stream-start', warnings: [] }, finishStreamPart()] }) };
+          return {
+            stream: simulateReadableStream({
+              chunkDelayInMs: 0,
+              initialDelayInMs: 0,
+              chunks: [{ type: 'stream-start', warnings: [] }, finishStreamPart()],
+            }),
+          };
         },
       });
       const tools: ToolSet = {
-        generate_flashcards: tool({ inputSchema: z.object({}), execute: async () => { made += 1; return 'deck'; } }),
+        generate_flashcards: tool({
+          inputSchema: z.object({}),
+          execute: async () => {
+            made += 1;
+            return 'deck';
+          },
+        }),
       };
 
       await streamChat({ ...baseParams, tools, model, turnAnalysis: analysis({ wantsFlashcards }) }).text;
@@ -250,7 +288,13 @@ describe('flashcards confirmed by the code', () => {
   it('imposes the cards tool on the first step of a turn that asks for cards, and only then', async () => {
     for (const wantsFlashcards of [true, false]) {
       const model = new MockLanguageModelV4({
-        doStream: async () => ({ stream: simulateReadableStream({ chunkDelayInMs: 0, initialDelayInMs: 0, chunks: [{ type: 'stream-start', warnings: [] }, finishStreamPart()] }) }),
+        doStream: async () => ({
+          stream: simulateReadableStream({
+            chunkDelayInMs: 0,
+            initialDelayInMs: 0,
+            chunks: [{ type: 'stream-start', warnings: [] }, finishStreamPart()],
+          }),
+        }),
       });
       const tools: ToolSet = { ...noopTools, generate_flashcards: tool({ inputSchema: z.object({}), execute: async () => 'deck' }) };
 
@@ -267,7 +311,13 @@ describe('flashcards confirmed by the code', () => {
       doStream: async () => {
         callIndex += 1;
         if (callIndex > 2) {
-          return { stream: simulateReadableStream({ chunkDelayInMs: 0, initialDelayInMs: 0, chunks: [{ type: 'stream-start', warnings: [] }, finishStreamPart()] }) };
+          return {
+            stream: simulateReadableStream({
+              chunkDelayInMs: 0,
+              initialDelayInMs: 0,
+              chunks: [{ type: 'stream-start', warnings: [] }, finishStreamPart()],
+            }),
+          };
         }
         return {
           stream: simulateReadableStream({
@@ -282,7 +332,16 @@ describe('flashcards confirmed by the code', () => {
         };
       },
     });
-    const tools: ToolSet = { ...noopTools, generate_flashcards: tool({ inputSchema: z.object({}), execute: async () => { made += 1; return 'deck'; } }) };
+    const tools: ToolSet = {
+      ...noopTools,
+      generate_flashcards: tool({
+        inputSchema: z.object({}),
+        execute: async () => {
+          made += 1;
+          return 'deck';
+        },
+      }),
+    };
 
     await streamChat({ ...baseParams, tools, model, turnAnalysis: analysis({ wantsFlashcards: true }) }).text;
 
@@ -294,7 +353,13 @@ describe('flashcards confirmed by the code', () => {
 
   it('forces nothing without the cards tool (Gratuit, or a regeneration)', async () => {
     const model = new MockLanguageModelV4({
-      doStream: async () => ({ stream: simulateReadableStream({ chunkDelayInMs: 0, initialDelayInMs: 0, chunks: [{ type: 'stream-start', warnings: [] }, finishStreamPart()] }) }),
+      doStream: async () => ({
+        stream: simulateReadableStream({
+          chunkDelayInMs: 0,
+          initialDelayInMs: 0,
+          chunks: [{ type: 'stream-start', warnings: [] }, finishStreamPart()],
+        }),
+      }),
     });
 
     await streamChat({ ...baseParams, tools: noopTools, model, turnAnalysis: analysis({ wantsFlashcards: true }) }).text;
@@ -369,7 +434,9 @@ describe('a turn cut by the timeout', () => {
                 controller.enqueue({ type: 'stream-start', warnings: [] });
                 controller.enqueue({ type: 'reasoning-start', id: 'r1' });
                 controller.enqueue({ type: 'reasoning-delta', id: 'r1', delta: 'r'.repeat(400) });
-                abortSignal?.addEventListener('abort', () => { controller.error(abortSignal.reason); });
+                abortSignal?.addEventListener('abort', () => {
+                  controller.error(abortSignal.reason);
+                });
               },
             }),
           };
@@ -400,10 +467,13 @@ describe('streamChat — Mistral wire request', () => {
       `data: ${JSON.stringify({ id: 'c1', object: 'chat.completion.chunk', created: 0, model: 'mistral-small-2603', choices: [{ index: 0, delta, finish_reason: extra['finish_reason'] ?? null }], ...extra })}\n\n`;
     const sse =
       chunk({ role: 'assistant', content: 'ok' }) +
-      chunk({ content: '' }, {
-        finish_reason: 'stop',
-        usage: { prompt_tokens: 200, completion_tokens: 1, total_tokens: 201, prompt_tokens_details: { cached_tokens: 128 } },
-      }) +
+      chunk(
+        { content: '' },
+        {
+          finish_reason: 'stop',
+          usage: { prompt_tokens: 200, completion_tokens: 1, total_tokens: 201, prompt_tokens_details: { cached_tokens: 128 } },
+        },
+      ) +
       'data: [DONE]\n\n';
     globalThis.fetch = (async (url: string | URL | Request, init?: RequestInit) => {
       capture.url = url instanceof Request ? url.url : url.toString();
@@ -447,7 +517,15 @@ describe('streamChat — Mistral wire request', () => {
           role: 'assistant',
           content: 'Que fais-tu du +5 ?',
           timestamp: '2026-10-04T10:00:05Z',
-          modelMessages: [{ role: 'assistant', content: [{ type: 'reasoning', text: 'Il a oublié de soustraire 5.' }, { type: 'text', text: 'Que fais-tu du +5 ?' }] }],
+          modelMessages: [
+            {
+              role: 'assistant',
+              content: [
+                { type: 'reasoning', text: 'Il a oublié de soustraire 5.' },
+                { type: 'text', text: 'Que fais-tu du +5 ?' },
+              ],
+            },
+          ],
         },
       ],
       tools: noopTools,

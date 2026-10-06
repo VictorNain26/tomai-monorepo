@@ -12,10 +12,7 @@ class SessionFilesRepository {
    * Attacher un fichier à une session (idempotent)
    */
   async attach(sessionId: string, fileId: string): Promise<void> {
-    await db
-      .insert(sessionFiles)
-      .values({ sessionId, fileId })
-      .onConflictDoNothing();
+    await db.insert(sessionFiles).values({ sessionId, fileId }).onConflictDoNothing();
   }
 
   /**
@@ -24,12 +21,7 @@ class SessionFilesRepository {
   async detach(sessionId: string, fileId: string): Promise<boolean> {
     const result = await db
       .delete(sessionFiles)
-      .where(
-        and(
-          eq(sessionFiles.sessionId, sessionId),
-          eq(sessionFiles.fileId, fileId)
-        )
-      )
+      .where(and(eq(sessionFiles.sessionId, sessionId), eq(sessionFiles.fileId, fileId)))
       .returning();
 
     return result.length > 0;
@@ -54,12 +46,7 @@ class SessionFilesRepository {
       })
       .from(sessionFiles)
       .innerJoin(files, eq(sessionFiles.fileId, files.id))
-      .where(
-        and(
-          eq(sessionFiles.sessionId, sessionId),
-          eq(files.status, 'ready')
-        )
-      );
+      .where(and(eq(sessionFiles.sessionId, sessionId), eq(files.status, 'ready')));
 
     return rows;
   }
@@ -76,12 +63,7 @@ class SessionFilesRepository {
       })
       .from(sessionFiles)
       .innerJoin(files, eq(sessionFiles.fileId, files.id))
-      .where(
-        and(
-          eq(sessionFiles.sessionId, sessionId),
-          eq(files.status, 'ready')
-        )
-      )
+      .where(and(eq(sessionFiles.sessionId, sessionId), eq(files.status, 'ready')))
       .orderBy(asc(sessionFiles.attachedAt), asc(sessionFiles.id));
 
     return rows;
@@ -91,10 +73,7 @@ class SessionFilesRepository {
    * Compter les fichiers attachés à une session
    */
   async countBySession(sessionId: string): Promise<number> {
-    const [row] = await db
-      .select({ value: count() })
-      .from(sessionFiles)
-      .where(eq(sessionFiles.sessionId, sessionId));
+    const [row] = await db.select({ value: count() }).from(sessionFiles).where(eq(sessionFiles.sessionId, sessionId));
 
     return row?.value ?? 0;
   }

@@ -1,8 +1,5 @@
 import { describe, it, expect, afterEach, setSystemTime } from 'bun:test';
-import {
-  getDailyResetTime,
-  lastDailyReset,
-} from '../modules/billing/quota-config';
+import { getDailyResetTime, lastDailyReset } from '../modules/billing/quota-config';
 
 const at = (iso: string) => setSystemTime(new Date(iso));
 

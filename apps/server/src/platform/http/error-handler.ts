@@ -51,8 +51,5 @@ export const handleError: ErrorHandler<AppEnv> = (error, c) => {
 
 export const handleNotFound: NotFoundHandler<AppEnv> = (c) => {
   const requestId = c.get('requestId');
-  return c.json(
-    { error: { code: 'NOT_FOUND' as const, message: 'Route introuvable.' }, ...(requestId && { requestId }) },
-    404,
-  );
+  return c.json({ error: { code: 'NOT_FOUND' as const, message: 'Route introuvable.' }, ...(requestId && { requestId }) }, 404);
 };

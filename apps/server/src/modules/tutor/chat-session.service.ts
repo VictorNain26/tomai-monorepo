@@ -15,7 +15,7 @@ export class ChatSessionService {
         logger.info('Resuming existing active session', {
           sessionId: existingSession.id,
           userId,
-          operation: 'getOrCreateActiveSession:resume'
+          operation: 'getOrCreateActiveSession:resume',
         });
         return existingSession.id;
       }
@@ -26,7 +26,7 @@ export class ChatSessionService {
         err: error,
         userId,
         operation: 'getOrCreateActiveSession',
-        severity: 'high' as const
+        severity: 'high' as const,
       });
       throw error;
     }
@@ -37,7 +37,7 @@ export class ChatSessionService {
       const input: CreateStudySessionInput = {
         userId,
         subject,
-        ...(topic && { topic })
+        ...(topic && { topic }),
       };
 
       const session = await studySessionsRepository.create(input);
@@ -46,11 +46,10 @@ export class ChatSessionService {
         sessionId: session.id,
         userId,
         subject,
-        operation: 'createSession'
+        operation: 'createSession',
       });
 
       return session.id;
-
     } catch (_error) {
       const error = _error instanceof Error ? _error : new Error(String(_error));
 
@@ -61,7 +60,7 @@ export class ChatSessionService {
         userId,
         subject,
         hasTopic: Boolean(topic),
-        severity: 'high' as const
+        severity: 'high' as const,
       });
 
       throw error;
@@ -117,7 +116,7 @@ export class ChatSessionService {
         operation: 'chat:session:summary',
         err: _error,
         sessionId,
-        severity: 'medium' as const
+        severity: 'medium' as const,
       });
       return null;
     }
@@ -127,7 +126,7 @@ export class ChatSessionService {
     try {
       const sessions = await studySessionsRepository.findByUserIdWithStats(userId, limit);
 
-      const result = sessions.map(session => ({
+      const result = sessions.map((session) => ({
         id: session.id,
         subject: session.subject,
         startedAt: session.startedAt,
@@ -137,7 +136,6 @@ export class ChatSessionService {
       }));
 
       return result;
-
     } catch (_error) {
       logger.error('Error getting user sessions', { operation: 'chat:sessions:list', err: _error, userId, severity: 'medium' as const });
       throw new Error('Failed to get user sessions', { cause: _error });
@@ -152,7 +150,7 @@ export class ChatSessionService {
     try {
       const sessions = await studySessionsRepository.findByUserIdWithLastMessage(userId, options);
 
-      return sessions.map(session => ({
+      return sessions.map((session) => ({
         id: session.id,
         title: session.topic ?? null,
         subject: session.subject,
@@ -207,7 +205,7 @@ export class ChatSessionService {
         operation: 'chat:session:reset',
         err: _error,
         sessionId,
-        severity: 'medium' as const
+        severity: 'medium' as const,
       });
       throw new Error('Failed to reset session', { cause: _error });
     }
@@ -227,7 +225,7 @@ export class ChatSessionService {
       return {
         id: user.id,
         schoolLevel: user.schoolLevel,
-        ...(user.firstName && { firstName: user.firstName })
+        ...(user.firstName && { firstName: user.firstName }),
       };
     } catch (_error) {
       logger.error('Error getting user by ID', { operation: 'chat:user:get', err: _error, userId, severity: 'medium' as const });

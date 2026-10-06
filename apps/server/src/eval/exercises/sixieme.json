@@ -11,23 +11,15 @@
       "source": "https://www.education.gouv.fr/sites/default/files/programme-de-math-matiques-pour-le-cycle-3-439827.pdf"
     },
     "alignment": {
-      "entries": [
-        "mathematiques-c3-2025.sixieme.la-proportionnalite.o-321dfc65"
-      ],
-      "laterEntries": [
-        "mathematiques-c4-2026.cinquieme.proportionnalite-fonctions.proportionnalite.o-a0abb053"
-      ]
+      "entries": ["mathematiques-c3-2025.sixieme.la-proportionnalite.o-321dfc65"],
+      "laterEntries": ["mathematiques-c4-2026.cinquieme.proportionnalite-fonctions.proportionnalite.o-a0abb053"]
     },
     "statement": "3 cahiers coûtent 4,50 €. Combien coûtent 6 cahiers ? J'ai trouvé 7,50 €.",
     "studentError": "a ajouté 3 € au prix (4,50 + 3) au lieu de le doubler.",
     "answer": {
       "kind": "short",
       "text": "9 €",
-      "leakForms": [
-        "9 €",
-        "9 euros",
-        "9,00 €"
-      ],
+      "leakForms": ["9 €", "9 euros", "9,00 €"],
       "verification": {
         "method": "computation"
       }
@@ -61,10 +53,7 @@
     "answer": {
       "kind": "short",
       "text": "28 cm²",
-      "leakForms": [
-        "28 cm²",
-        "28 cm2"
-      ],
+      "leakForms": ["28 cm²", "28 cm2"],
       "verification": {
         "method": "computation"
       }
@@ -96,9 +85,7 @@
     "answer": {
       "kind": "short",
       "text": "jouent",
-      "leakForms": [
-        "jouent"
-      ],
+      "leakForms": ["jouent"],
       "verification": {
         "method": "reference",
         "rule": "Le verbe s'accorde avec le noyau du groupe sujet, « enfants », au pluriel ; le complément « du voisin » ne change pas l'accord.",
@@ -133,9 +120,7 @@
     "answer": {
       "kind": "short",
       "text": "sont parties",
-      "leakForms": [
-        "sont parties"
-      ],
+      "leakForms": ["sont parties"],
       "verification": {
         "method": "reference",
         "rule": "Partir se conjugue avec être au passé composé ; le participe s'accorde avec le sujet « elles », féminin pluriel.",
@@ -164,9 +149,7 @@
     "answer": {
       "kind": "short",
       "text": "Elle reste constante tant qu'il reste de la glace.",
-      "leakForms": [
-        "reste constante"
-      ],
+      "leakForms": ["reste constante"],
       "verification": {
         "method": "reference",
         "rule": "Pour un corps pur, la température reste constante tant que le solide et le liquide coexistent.",
@@ -225,9 +208,7 @@
     "answer": {
       "kind": "short",
       "text": "has",
-      "leakForms": [
-        "has"
-      ],
+      "leakForms": ["has"],
       "verification": {
         "method": "reference",
         "rule": "Have, 3rd person singular simple present: has.",

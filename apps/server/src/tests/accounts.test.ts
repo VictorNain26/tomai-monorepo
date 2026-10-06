@@ -47,7 +47,10 @@ describe('createStudentAccount', () => {
   it('removes the half-created account when the profile update fails', async () => {
     updateFails = true;
 
-    const error = await createStudentAccount(input).then(() => undefined, (err: unknown) => err);
+    const error = await createStudentAccount(input).then(
+      () => undefined,
+      (err: unknown) => err,
+    );
 
     expect(error).toBeInstanceOf(Error);
     expect(deleteById).toHaveBeenCalledWith('student-1');

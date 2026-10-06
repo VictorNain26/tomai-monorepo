@@ -45,11 +45,7 @@ interface DeckCreatedToolResult {
 }
 
 export function isDeckCreatedResult(value: unknown): value is DeckCreatedToolResult {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    (value as { kind?: unknown }).kind === 'deck_created'
-  );
+  return typeof value === 'object' && value !== null && (value as { kind?: unknown }).kind === 'deck_created';
 }
 
 /**
@@ -81,10 +77,7 @@ export async function executeTool(
       durationMs: Date.now() - startTime,
       severity: 'high' as const,
     });
-    return makeToolError(
-      'business',
-      `Erreur lors de l'exécution de ${toolName}.`,
-    );
+    return makeToolError('business', `Erreur lors de l'exécution de ${toolName}.`);
   }
 }
 
@@ -97,7 +90,6 @@ async function executeGenerateFlashcards(
   context: ToolExecutionContext,
   signal?: AbortSignal,
 ): Promise<object> {
-
   // Adapt card count to school level (half of cardsPerSession, capped at 10 for chat)
   const levelConfig = getLevelConfig(context.schoolLevel);
   const maxChatCards = Math.min(Math.floor(levelConfig.cardsPerSession / 2), 10);
@@ -112,10 +104,7 @@ async function executeGenerateFlashcards(
   });
 
   if ('success' in result) {
-    return makeToolError(
-      'business',
-      `Erreur lors de la génération des cartes: ${result.error}`,
-    );
+    return makeToolError('business', `Erreur lors de la génération des cartes: ${result.error}`);
   }
 
   // A turn cut while the cards were written leaves no deck the student would never hear of.
@@ -128,7 +117,12 @@ async function executeGenerateFlashcards(
     titlePasses(topic, context.check),
   ]);
   if (setAside > 0) {
-    logger.warn('Cards set aside by the check', { operation: 'tool-executor:cards-set-aside', sessionId: context.sessionId, setAside, kept: checkedCards.length });
+    logger.warn('Cards set aside by the check', {
+      operation: 'tool-executor:cards-set-aside',
+      sessionId: context.sessionId,
+      setAside,
+      kept: checkedCards.length,
+    });
   }
   if (unmoderated) return makeToolError('transient', "Les cartes n'ont pas pu être vérifiées : aucune n'a été enregistrée, propose de réessayer.");
   if (checkedCards.length === 0) {

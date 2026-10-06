@@ -8,7 +8,8 @@ export function matchesCriterion(
   config: { description?: string | null; categories?: readonly { value: number; label: string }[] },
   criterion: Criterion,
 ): boolean {
-  const pairs = (categories: readonly { value: number; label: string }[]) => categories.map(({ value, label }) => `${String(value)}=${label}`).join('|');
+  const pairs = (categories: readonly { value: number; label: string }[]) =>
+    categories.map(({ value, label }) => `${String(value)}=${label}`).join('|');
   return config.description === describeCriterion(criterion) && pairs(config.categories ?? []) === pairs(criterion.categories);
 }
 
@@ -56,11 +57,13 @@ export const labelsFile = z.object({
   results: z.string(),
   /** Per criterion, the rule it was graded under (`describeCriterion` at the time). */
   rules: z.record(z.string(), z.string()),
-  conversations: z.array(z.object({
-    key: z.string(),
-    traceId: z.string(),
-    labels: z.record(z.string(), z.object({ label: z.string(), evidence: z.string() })),
-  })),
+  conversations: z.array(
+    z.object({
+      key: z.string(),
+      traceId: z.string(),
+      labels: z.record(z.string(), z.object({ label: z.string(), evidence: z.string() })),
+    }),
+  ),
 });
 
 /** Scores of the annotation queue, as the v3 scores API returns them. */
@@ -79,10 +82,12 @@ export function queueValues(scores: readonly QueueScore[]): Map<string, Map<stri
     if (dataType !== 'CATEGORICAL' || subject?.kind !== 'trace' || typeof value !== 'string') continue;
     byTrace.set(subject.id, [...(byTrace.get(subject.id) ?? []), { name, label: value, timestamp }]);
   }
-  return new Map([...byTrace].flatMap(([traceId, grades]) => {
-    const values = humanValues(grades);
-    return values.size > 0 ? [[traceId, values] as const] : [];
-  }));
+  return new Map(
+    [...byTrace].flatMap(([traceId, grades]) => {
+      const values = humanValues(grades);
+      return values.size > 0 ? [[traceId, values] as const] : [];
+    }),
+  );
 }
 
 /**
@@ -95,10 +100,12 @@ export function fileValues(
 ): Map<string, Map<string, number>> {
   const keys = new Map(rows.map((row) => [row.traceId, `${row.scenarioId}:${row.exerciseId}:${String(row.repetition)}`]));
   const stale = new Set(staleCriteria(file));
-  return new Map(file.conversations.map(({ key, traceId, labels }) => {
-    if (keys.get(traceId) !== key) throw new Error(`labels ${key} (${traceId}) are not a conversation of this run`);
-    return [traceId, labelValues(Object.fromEntries(Object.entries(labels).filter(([name]) => !stale.has(name))))];
-  }));
+  return new Map(
+    file.conversations.map(({ key, traceId, labels }) => {
+      if (keys.get(traceId) !== key) throw new Error(`labels ${key} (${traceId}) are not a conversation of this run`);
+      return [traceId, labelValues(Object.fromEntries(Object.entries(labels).filter(([name]) => !stale.has(name))))];
+    }),
+  );
 }
 
 /**
@@ -114,20 +121,32 @@ export function staleCriteria(file: Pick<z.infer<typeof labelsFile>, 'rules' | '
 }
 
 /** The ids of the stored score configs that still match a criterion: grades under any other are stale. */
-export function currentConfigIds(configs: readonly { id: string; name: string; isArchived: boolean; description?: string | null; categories?: readonly { value: number; label: string }[] }[]): string[] {
-  return configs.filter((config) => {
-    const criterion = CRITERIA.find((c) => c.name === config.name);
-    return !config.isArchived && criterion !== undefined && matchesCriterion(config, criterion);
-  }).map((config) => config.id);
+export function currentConfigIds(
+  configs: readonly {
+    id: string;
+    name: string;
+    isArchived: boolean;
+    description?: string | null;
+    categories?: readonly { value: number; label: string }[];
+  }[],
+): string[] {
+  return configs
+    .filter((config) => {
+      const criterion = CRITERIA.find((c) => c.name === config.name);
+      return !config.isArchived && criterion !== undefined && matchesCriterion(config, criterion);
+    })
+    .map((config) => config.id);
 }
 
 /** The grades of one conversation of a labels file, failing on a criterion or label the grid lacks. */
 export function labelValues(labels: Record<string, { label: string }>): Map<string, number> {
-  return new Map(Object.entries(labels).map(([name, { label }]) => {
-    const value = labelValue(name, label);
-    if (value === undefined) throw new Error(`unknown grade ${name} = ${label}`);
-    return [name, value];
-  }));
+  return new Map(
+    Object.entries(labels).map(([name, { label }]) => {
+      const value = labelValue(name, label);
+      if (value === undefined) throw new Error(`unknown grade ${name} = ${label}`);
+      return [name, value];
+    }),
+  );
 }
 
 export interface Graded {

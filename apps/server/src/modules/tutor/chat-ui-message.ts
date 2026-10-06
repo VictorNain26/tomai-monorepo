@@ -52,7 +52,7 @@ export function extractTextFromParts(parts: unknown): string {
         (part as { type?: unknown }).type === 'text' &&
         typeof (part as { text?: unknown }).text === 'string',
     )
-    .map(part => part.text)
+    .map((part) => part.text)
     .join('');
 }
 

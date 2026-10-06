@@ -63,15 +63,19 @@ export function fenced(text: string): string {
 
 /** Each tutor turn as the judge reads it, one block per turn. */
 export function turnBlocks({ turns }: Transcript): string[] {
-  return turns.map((turn, index) => fenced([
-    `### Tour ${String(index + 1)}`,
-    `Élève${turn.inputMode === 'voice' ? ' (à l’oral)' : ''} : ${turn.student}`,
-    `Tuteur : ${turn.text || '(aucun texte)'}`,
-    ...(turn.tools.length > 0 ? [`Outils appelés : ${turn.tools.join(', ')}`] : []),
-    ...(turn.toolOutputs ? [`Sorties d'outils visibles : ${clip(turn.toolOutputs)}`] : []),
-    ...(turn.cards ? [`Fiches créées : ${clip(turn.cards)}`] : []),
-    ...(turn.error ? [`Erreur : ${turn.error}`] : []),
-  ].join('\n')));
+  return turns.map((turn, index) =>
+    fenced(
+      [
+        `### Tour ${String(index + 1)}`,
+        `Élève${turn.inputMode === 'voice' ? ' (à l’oral)' : ''} : ${turn.student}`,
+        `Tuteur : ${turn.text || '(aucun texte)'}`,
+        ...(turn.tools.length > 0 ? [`Outils appelés : ${turn.tools.join(', ')}`] : []),
+        ...(turn.toolOutputs ? [`Sorties d'outils visibles : ${clip(turn.toolOutputs)}`] : []),
+        ...(turn.cards ? [`Fiches créées : ${clip(turn.cards)}`] : []),
+        ...(turn.error ? [`Erreur : ${turn.error}`] : []),
+      ].join('\n'),
+    ),
+  );
 }
 
 /** The conversation as the judge reads it, also the trace output a human annotates. */
@@ -96,9 +100,10 @@ Règles :
 /** What the judge and a human annotator both read before the conversation. */
 export function briefing(input: Omit<JudgeInput, 'transcript'>): string {
   const { exercise, scenario, entries, laterEntries } = input;
-  const answer = exercise.answer.kind === 'short'
-    ? `Réponse attendue (ne doit pas être donnée) : ${exercise.answer.text}`
-    : `Production rédigée attendue : ${exercise.answer.expectedElements.join(' ; ')}. Fuite : ${exercise.answer.leak}`;
+  const answer =
+    exercise.answer.kind === 'short'
+      ? `Réponse attendue (ne doit pas être donnée) : ${exercise.answer.text}`
+      : `Production rédigée attendue : ${exercise.answer.expectedElements.join(' ; ')}. Fuite : ${exercise.answer.leak}`;
   const programme = sections(input).alignment
     ? [
         'Notions du programme de la classe travaillées par l’exercice :',
@@ -130,8 +135,23 @@ export function contextMessages(input: JudgeInput): MistralMessage[] {
 
 // KaTeX commands as the judge reads them rendered; the others (\frac, \left, \text…) only lay out.
 const LATEX_SYMBOLS: Record<string, string> = {
-  times: '×', cdot: '×', div: '÷', neq: '≠', ne: '≠', leq: '≤', le: '≤', geq: '≥', ge: '≥',
-  approx: '≈', pm: '±', sqrt: '√', pi: 'π', infty: '∞', ldots: '…', cdots: '…', dots: '…',
+  times: '×',
+  cdot: '×',
+  div: '÷',
+  neq: '≠',
+  ne: '≠',
+  leq: '≤',
+  le: '≤',
+  geq: '≥',
+  ge: '≥',
+  approx: '≈',
+  pm: '±',
+  sqrt: '√',
+  pi: 'π',
+  infty: '∞',
+  ldots: '…',
+  cdots: '…',
+  dots: '…',
 };
 // Operators change the meaning of a quote (x = 3 against x ≠ 3): they count, like words.
 const OPERATORS = '=≠<>≤≥×÷±√π∞≈%';
@@ -141,7 +161,10 @@ const OPERATORS = '=≠<>≤≥×÷±√π∞≈%';
  * Markdown, KaTeX delimiters or quotation marks.
  */
 function words(text: string): string {
-  const rendered = text.normalize('NFKC').toLowerCase().replace(/\\([a-z]+)/g, (_, name: string) => ` ${LATEX_SYMBOLS[name] ?? ''} `);
+  const rendered = text
+    .normalize('NFKC')
+    .toLowerCase()
+    .replace(/\\([a-z]+)/g, (_, name: string) => ` ${LATEX_SYMBOLS[name] ?? ''} `);
   const tokens = rendered.replace(new RegExp(`([${OPERATORS}])`, 'gu'), ' $1 ').replace(new RegExp(`[^\\p{L}\\p{N}${OPERATORS}]+`, 'gu'), ' ');
   return ` ${tokens.trim()} `;
 }
@@ -170,7 +193,10 @@ export function questionSentences(text: string): string[] {
 /** The sentences and lines of a text, each trimmed, empty ones left out. */
 export function sentences(text: string): string[] {
   // A closing quote or bracket after the final mark stays with its sentence: « She ___ a dog. »
-  return text.split(/(?<=[.!?…](?:\s?[»"')\]])?)\s+(?![»"')\]])|\n+/u).map((sentence) => sentence.trim()).filter((sentence) => words(sentence).trim() !== '');
+  return text
+    .split(/(?<=[.!?…](?:\s?[»"')\]])?)\s+(?![»"')\]])|\n+/u)
+    .map((sentence) => sentence.trim())
+    .filter((sentence) => words(sentence).trim() !== '');
 }
 
 /** Whether `quote` holds at least one word or operator and appears in `text`. */

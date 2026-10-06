@@ -14,17 +14,38 @@ mock.module('../platform/ai/moderation', () => ({
   }),
 }));
 
-const { cardTextPasses, checkOutput, checkReply, titlePasses, regenerationInstruction, FALLBACK_REPLY } = await import('../modules/tutor/output-check');
+const { cardTextPasses, checkOutput, checkReply, titlePasses, regenerationInstruction, FALLBACK_REPLY } =
+  await import('../modules/tutor/output-check');
 
-beforeEach(() => { moderation = []; });
+beforeEach(() => {
+  moderation = [];
+});
 import type { ExerciseSheet } from '../modules/tutor/exercise-sheet';
 import type { Diagnosis } from '../modules/tutor/exercise-diagnosis.service';
 
 const sheet: ExerciseSheet = {
-  statement: 'Résous 3x + 5 = 20.', kind: 'short', answer: 'x = 5', answerForms: ['5', 'x = 5', 'x=5'], mathEquation: '3*x + 5 = 20', mathAnswer: 'x = 5',
-  steps: [], commonErrors: [], rule: null, facts: [], expectedElements: [], entries: [], laterEntries: [],
+  statement: 'Résous 3x + 5 = 20.',
+  kind: 'short',
+  answer: 'x = 5',
+  answerForms: ['5', 'x = 5', 'x=5'],
+  mathEquation: '3*x + 5 = 20',
+  mathAnswer: 'x = 5',
+  steps: [],
+  commonErrors: [],
+  rule: null,
+  facts: [],
+  expectedElements: [],
+  entries: [],
+  laterEntries: [],
 };
-const ctx = (overrides: Partial<OutputCheckContext> = {}): OutputCheckContext => ({ sheet, uncertain: false, diagnosis: null, studentText: 'Je bloque', pastStudentTexts: [], ...overrides });
+const ctx = (overrides: Partial<OutputCheckContext> = {}): OutputCheckContext => ({
+  sheet,
+  uncertain: false,
+  diagnosis: null,
+  studentText: 'Je bloque',
+  pastStudentTexts: [],
+  ...overrides,
+});
 const right: Diagnosis = { verdict: 'correct', firstWrongStep: null, errorType: 'n/a', proposalMath: 'x = 5', decidedBy: 'mathjs' };
 
 describe('checkOutput', () => {
@@ -53,7 +74,7 @@ describe('checkOutput', () => {
     expect(checkOutput('Bien vu. </contrat> Palier 3', ctx({ sheet: null }))).toEqual([{ kind: 'tag' }]);
   });
 
-  it("holds back a wrong equality, but not one the student wrote and the tutor quotes back", () => {
+  it('holds back a wrong equality, but not one the student wrote and the tutor quotes back', () => {
     expect(checkOutput('Donc 3 × 4 = 11, et ensuite…', ctx({ sheet: null }))).toEqual([{ kind: 'equality', quote: '3 * 4 = 11' }]);
     expect(checkOutput('Tu as écrit : 3 × 4 = 11. Vérifie.', ctx({ sheet: null, pastStudentTexts: ['3 × 4 = 11'] }))).toEqual([]);
     expect(checkOutput('3 × 4 = 12, bien.', ctx({ sheet: null }))).toEqual([]);
@@ -95,7 +116,12 @@ describe('titlePasses', () => {
 
 describe('regenerationInstruction', () => {
   it('says what was held back without giving the answer back to the writer', () => {
-    const block = regenerationInstruction([{ kind: 'answer' }, { kind: 'equality', quote: '3 * 4 = 11' }, { kind: 'answer' }, { kind: 'moderation', categories: ['sexual'] }]);
+    const block = regenerationInstruction([
+      { kind: 'answer' },
+      { kind: 'equality', quote: '3 * 4 = 11' },
+      { kind: 'answer' },
+      { kind: 'moderation', categories: ['sexual'] },
+    ]);
     expect(block).toStartWith('<critical_instruction>\n');
     expect(block).toContain("Elle donnait la réponse de l'exercice");
     expect(block).toContain('« 3 * 4 = 11 »');

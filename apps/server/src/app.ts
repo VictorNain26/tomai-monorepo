@@ -36,36 +36,40 @@ const app = base
     await next();
   })
 
-  .use(cors({
-    origin: getCorsOrigins(),
-    // credentials=true pour les cookies de session cross-origin
-    credentials: true,
-    allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowHeaders: [
-      'Content-Type',
-      'Authorization',
-      'Cookie', // REQUIRED pour Better Auth sessions
-      'Cache-Control',
-      'Accept',
-      'X-Requested-With'
-    ],
-    // Set-Cookie intentionally NOT exposed: JavaScript must not be able to read
-    // session cookies cross-origin.
-    exposeHeaders: ['X-Request-Id', 'Retry-After', 'X-RateLimit-Limit', 'X-RateLimit-Remaining', 'X-RateLimit-Reset'],
-    maxAge: 86400,
-  }))
+  .use(
+    cors({
+      origin: getCorsOrigins(),
+      // credentials=true pour les cookies de session cross-origin
+      credentials: true,
+      allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+      allowHeaders: [
+        'Content-Type',
+        'Authorization',
+        'Cookie', // REQUIRED pour Better Auth sessions
+        'Cache-Control',
+        'Accept',
+        'X-Requested-With',
+      ],
+      // Set-Cookie intentionally NOT exposed: JavaScript must not be able to read
+      // session cookies cross-origin.
+      exposeHeaders: ['X-Request-Id', 'Retry-After', 'X-RateLimit-Limit', 'X-RateLimit-Remaining', 'X-RateLimit-Reset'],
+      maxAge: 86400,
+    }),
+  )
 
   // HSTS only in production so local http://localhost keeps working. CORP and
   // COOP stay off: the web client runs on another origin and the OAuth flow
   // may rely on window.opener.
-  .use(secureHeaders({
-    crossOriginResourcePolicy: false,
-    crossOriginOpenerPolicy: false,
-    xFrameOptions: 'DENY',
-    referrerPolicy: 'strict-origin-when-cross-origin',
-    permissionsPolicy: { geolocation: [], microphone: [], camera: [] },
-    strictTransportSecurity: isDev ? false : 'max-age=31536000; includeSubDomains',
-  }))
+  .use(
+    secureHeaders({
+      crossOriginResourcePolicy: false,
+      crossOriginOpenerPolicy: false,
+      xFrameOptions: 'DENY',
+      referrerPolicy: 'strict-origin-when-cross-origin',
+      permissionsPolicy: { geolocation: [], microphone: [], camera: [] },
+      strictTransportSecurity: isDev ? false : 'max-age=31536000; includeSubDomains',
+    }),
+  )
 
   .use(createRateLimitMiddleware(RateLimitPresets.api))
 
@@ -75,7 +79,6 @@ const app = base
 
   // GET /health is mounted via apiRoutes (routes/api/health.routes.ts) — the
   // single canonical health endpoint (Dockerfile HEALTHCHECK target).
-
 
   .route('/', apiRoutes)
   .route('/api/chat', chatMessageRoutes)

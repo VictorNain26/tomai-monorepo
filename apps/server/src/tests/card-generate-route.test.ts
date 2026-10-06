@@ -51,11 +51,12 @@ const authed = new Hono<AuthEnv>()
   .route('/', cardGenerateRoutes);
 const app = new Hono<AppEnv>().route('/', authed).onError(handleError);
 
-const generate = (subject = 'mathematiques') => app.request('/generate', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ subject, domaine: 'Nombres et calculs', topic: 'Priorités opératoires' }),
-});
+const generate = (subject = 'mathematiques') =>
+  app.request('/generate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ subject, domaine: 'Nombres et calculs', topic: 'Priorités opératoires' }),
+  });
 
 const trueFalse = { cardType: 'vrai_faux', content: { statement: '3 + 4 × 2 = 14', isTrue: false, explanation: 'La multiplication passe avant.' } };
 const flashcard = { cardType: 'flashcard', content: { front: 'Priorité', back: 'La multiplication avant l’addition' } };
@@ -68,7 +69,7 @@ beforeEach(() => {
 });
 
 describe('POST /generate — plan and budget', () => {
-  it('reserves the cards to Complet, answers 503 when the plan cannot be read, and refuses past the day\'s budget, storing nothing', async () => {
+  it("reserves the cards to Complet, answers 503 when the plan cannot be read, and refuses past the day's budget, storing nothing", async () => {
     quota = { allowed: true, flashcards: false };
     expect((await generate()).status).toBe(403);
     quota = { allowed: true, flashcards: null };

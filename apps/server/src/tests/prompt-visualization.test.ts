@@ -7,7 +7,7 @@ import { stripPromptTags } from '../modules/tutor/mistral-helpers.js';
 describe('generateVisualizationPolicy', () => {
   const block = generateVisualizationPolicy();
 
-  it('déclare les deux formats que l\'interface sait rendre', () => {
+  it("déclare les deux formats que l'interface sait rendre", () => {
     expect(block).toContain('KaTeX');
     expect(block).toContain('```mermaid');
   });
@@ -17,7 +17,7 @@ describe('generateVisualizationPolicy', () => {
     expect(block).toContain('sans attendre');
   });
 
-  it('garde le garde-fou socratique : un visuel ne résout pas à la place de l\'élève', () => {
+  it("garde le garde-fou socratique : un visuel ne résout pas à la place de l'élève", () => {
     expect(block).toContain('JAMAIS la solution');
   });
 
@@ -51,7 +51,7 @@ describe('buildSystemPrompt — intégration du bloc visualisation', () => {
 });
 
 describe('by-subject — déclinaison visuelle par matière', () => {
-  it('maths : remplace l\'ASCII mort, interdit explicitement l\'ASCII et oriente vers Mermaid + KaTeX', () => {
+  it("maths : remplace l'ASCII mort, interdit explicitement l'ASCII et oriente vers Mermaid + KaTeX", () => {
     const maths = generateSubjectBlock('mathematiques');
     expect(maths).not.toBeNull();
     expect(maths).not.toContain('ASCII optionnel');

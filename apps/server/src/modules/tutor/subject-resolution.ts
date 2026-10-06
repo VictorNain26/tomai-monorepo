@@ -22,9 +22,6 @@ export function resolveEffectiveSubject(opts: {
  * Anti-thrash : on ne persiste la matière détectée que si elle est réelle ET que
  * la session est encore sur le défaut ('general') — première détection confiante.
  */
-export function shouldPersistDetectedSubject(opts: {
-  detected?: SubjectFamily;
-  sessionSubject?: SubjectFamily | null;
-}): boolean {
+export function shouldPersistDetectedSubject(opts: { detected?: SubjectFamily; sessionSubject?: SubjectFamily | null }): boolean {
   return isReal(opts.detected) && !isReal(opts.sessionSubject);
 }

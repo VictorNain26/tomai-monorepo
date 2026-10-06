@@ -18,7 +18,9 @@ describe('judge version', () => {
       expect(asked).toBe(answerer(check.id) === 'model');
     }
     // The sentences as the claims call lists them, cut by the code.
-    expect(sent).toContain(JSON.stringify('<phrases>\n1. Une règle… sauf une exception.\n2. « Une citation. »\n3. Une question ?\n4. fiche\n5. Tuteur\n</phrases>'));
+    expect(sent).toContain(
+      JSON.stringify('<phrases>\n1. Une règle… sauf une exception.\n2. « Une citation. »\n3. Une question ?\n4. fiche\n5. Tuteur\n</phrases>'),
+    );
     expect(sent).toContain(JSON.stringify(QUOTE_RETRY));
     expect(sent).toContain(JSON.stringify(EXTRACTOR_INSTRUCTIONS));
     // The extractor's schema, with the turns of the reference transcript.

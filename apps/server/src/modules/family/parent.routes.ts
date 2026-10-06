@@ -19,17 +19,17 @@ export const parentRoutes = new Hono<AppEnv>()
         success: true,
         parent: {
           id: user.id,
-          name: user.firstName ?? 'Parent'
+          name: user.firstName ?? 'Parent',
         },
         children,
-        metrics
+        metrics,
       });
     } catch (_error) {
       logger.error('Parent dashboard retrieval failed', {
         operation: 'api:parent:dashboard',
         userId: user.id,
         err: _error,
-        severity: 'medium' as const
+        severity: 'medium' as const,
       });
       return c.json({ error: 'Dashboard retrieval failed' }, 500);
     }
@@ -45,7 +45,7 @@ export const parentRoutes = new Hono<AppEnv>()
         operation: 'api:parent:children',
         userId: user.id,
         err: _error,
-        severity: 'medium' as const
+        severity: 'medium' as const,
       });
       return c.json({ error: 'Children retrieval failed' }, 500);
     }
@@ -58,7 +58,7 @@ export const parentRoutes = new Hono<AppEnv>()
       operation: 'api:parent:child:request',
       userId: user.id,
       bodyKeys: Object.keys(body),
-      severity: 'low' as const
+      severity: 'low' as const,
     });
 
     try {
@@ -69,7 +69,7 @@ export const parentRoutes = new Hono<AppEnv>()
         operation: 'api:parent:child:create',
         userId: user.id,
         err: _error,
-        severity: 'high' as const
+        severity: 'high' as const,
       });
       return c.json({ error: 'Creation failed', message: _error instanceof Error ? _error.message : 'Failed to create child' }, 400);
     }
@@ -87,7 +87,7 @@ export const parentRoutes = new Hono<AppEnv>()
         operation: 'api:parent:child:update',
         userId: user.id,
         err: _error,
-        severity: 'medium' as const
+        severity: 'medium' as const,
       });
       return c.json({ error: 'Update failed', message: _error instanceof Error ? _error.message : 'Failed to update child' }, 400);
     }
@@ -104,7 +104,7 @@ export const parentRoutes = new Hono<AppEnv>()
         operation: 'api:parent:child:delete',
         userId: user.id,
         err: _error,
-        severity: 'medium' as const
+        severity: 'medium' as const,
       });
       return c.json({ error: 'Deletion failed', message: _error instanceof Error ? _error.message : 'Failed to delete child' }, 400);
     }

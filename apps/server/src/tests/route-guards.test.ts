@@ -41,18 +41,12 @@ const { learningRoutes } = await import('../modules/learning/learning.routes');
 const { uploadRoutes } = await import('../modules/documents/upload.routes');
 const { handleError } = await import('../platform/http/error-handler');
 
-const app = new Hono<AppEnv>()
-  .route('/api/learning', learningRoutes)
-  .route('/api/upload', uploadRoutes)
-  .onError(handleError);
+const app = new Hono<AppEnv>().route('/api/learning', learningRoutes).route('/api/upload', uploadRoutes).onError(handleError);
 
 describe('module-level auth guards', () => {
-  it.each(['/api/learning/decks', '/api/learning/due-summary', '/api/upload/status'])(
-    'GET %s answers 401 without a session',
-    async (path) => {
-      const res = await app.request(path);
-      expect(res.status).toBe(401);
-      expect(((await res.json()) as { error: { code: string } }).error.code).toBe('UNAUTHORIZED');
-    },
-  );
+  it.each(['/api/learning/decks', '/api/learning/due-summary', '/api/upload/status'])('GET %s answers 401 without a session', async (path) => {
+    const res = await app.request(path);
+    expect(res.status).toBe(401);
+    expect(((await res.json()) as { error: { code: string } }).error.code).toBe('UNAUTHORIZED');
+  });
 });

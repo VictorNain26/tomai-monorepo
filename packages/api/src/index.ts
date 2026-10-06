@@ -16,13 +16,7 @@
  */
 
 // Configuration
-export {
-  initializeApi,
-  getBaseUrl,
-  getApiConfig,
-  resetApiConfig,
-  type ApiConfig,
-} from './config';
+export { initializeApi, getBaseUrl, getApiConfig, resetApiConfig, type ApiConfig } from './config';
 
 // Typed client
 export {
@@ -37,10 +31,4 @@ export {
 } from './client';
 
 // Shared Types (platform-agnostic)
-export {
-  type IAppUser,
-  type TomChatMessage,
-  type TomDataParts,
-  type DeckCreatedData,
-  type FieldError,
-} from './types';
+export { type IAppUser, type TomChatMessage, type TomDataParts, type DeckCreatedData, type FieldError } from './types';

@@ -10,12 +10,36 @@ describe('createGracefulShutdown', () => {
     const calls: string[] = [];
     const shutdown = createGracefulShutdown(
       [
-        { name: 'app.stop', run: async () => { await Bun.sleep(5); calls.push('app.stop'); } },
-        { name: 'otel', run: async () => { calls.push('otel'); } },
-        { name: 'sentry', run: async () => { calls.push('sentry'); return true; } },
-        { name: 'db', run: async () => { calls.push('db'); } },
+        {
+          name: 'app.stop',
+          run: async () => {
+            await Bun.sleep(5);
+            calls.push('app.stop');
+          },
+        },
+        {
+          name: 'otel',
+          run: async () => {
+            calls.push('otel');
+          },
+        },
+        {
+          name: 'sentry',
+          run: async () => {
+            calls.push('sentry');
+            return true;
+          },
+        },
+        {
+          name: 'db',
+          run: async () => {
+            calls.push('db');
+          },
+        },
       ],
-      (code) => { calls.push(`exit:${code}`); },
+      (code) => {
+        calls.push(`exit:${code}`);
+      },
     );
 
     await shutdown('SIGTERM');
@@ -27,10 +51,22 @@ describe('createGracefulShutdown', () => {
     const calls: string[] = [];
     const shutdown = createGracefulShutdown(
       [
-        { name: 'app.stop', run: () => { throw new Error('not running'); } },
-        { name: 'db', run: async () => { calls.push('db'); } },
+        {
+          name: 'app.stop',
+          run: () => {
+            throw new Error('not running');
+          },
+        },
+        {
+          name: 'db',
+          run: async () => {
+            calls.push('db');
+          },
+        },
       ],
-      (code) => { calls.push(`exit:${code}`); },
+      (code) => {
+        calls.push(`exit:${code}`);
+      },
     );
 
     await shutdown('SIGTERM');
@@ -42,7 +78,15 @@ describe('createGracefulShutdown', () => {
     let runs = 0;
     const exit = mock((_code: number) => {});
     const shutdown = createGracefulShutdown(
-      [{ name: 'slow', run: async () => { runs++; await Bun.sleep(5); } }],
+      [
+        {
+          name: 'slow',
+          run: async () => {
+            runs++;
+            await Bun.sleep(5);
+          },
+        },
+      ],
       exit,
     );
 

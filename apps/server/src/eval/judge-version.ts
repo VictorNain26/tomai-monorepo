@@ -19,7 +19,14 @@ const REFERENCE: JudgeInput = {
     exerciseId: 'M1',
     repetition: 1,
     turns: [
-      { student: 'Élève', text: '1. Une règle… sauf une exception. « Une citation. » Une question ?', tools: ['outil'], toolOutputs: 'sortie', cards: 'fiche', durationMs: 1 },
+      {
+        student: 'Élève',
+        text: '1. Une règle… sauf une exception. « Une citation. » Une question ?',
+        tools: ['outil'],
+        toolOutputs: 'sortie',
+        cards: 'fiche',
+        durationMs: 1,
+      },
       { student: 'Élève', inputMode: 'voice', text: 'Tuteur', tools: [], toolOutputs: '', cards: '', durationMs: 1, error: 'erreur' },
     ],
   },

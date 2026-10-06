@@ -16,10 +16,10 @@ export class ParentService {
       logger.debug('Retrieved children from database', {
         parentId,
         childrenCount: children.length,
-        operation: 'parent:getChildren'
+        operation: 'parent:getChildren',
       });
 
-      const result = children.map(child => ({
+      const result = children.map((child) => ({
         id: child.id,
         firstName: child.firstName ?? '',
         lastName: child.lastName ?? '',
@@ -35,7 +35,7 @@ export class ParentService {
       logger.debug('Processed children data', {
         parentId,
         processedCount: result.length,
-        operation: 'parent:getChildren'
+        operation: 'parent:getChildren',
       });
       return result;
     } catch (_error) {
@@ -43,7 +43,7 @@ export class ParentService {
         err: _error,
         parentId,
         operation: 'parent:getChildren',
-        severity: 'high' as const
+        severity: 'high' as const,
       });
       throw new Error('Failed to get parent children', { cause: _error });
     }
@@ -53,17 +53,20 @@ export class ParentService {
     return this.dashboard.getParentDashboardMetrics(parentId, children);
   }
 
-  async createChild(parentId: string, childData: {
-    firstName: string;
-    lastName: string;
-    username: string;
-    password: string;
-    schoolLevel: string;
-    dateOfBirth: string;
-  }): Promise<ChildInfo> {
+  async createChild(
+    parentId: string,
+    childData: {
+      firstName: string;
+      lastName: string;
+      username: string;
+      password: string;
+      schoolLevel: string;
+      dateOfBirth: string;
+    },
+  ): Promise<ChildInfo> {
     const existingUser = await usersRepository.findByUsername(childData.username);
     if (existingUser) {
-      throw new Error('Ce nom d\'utilisateur existe déjà');
+      throw new Error("Ce nom d'utilisateur existe déjà");
     }
 
     const childId = await createStudentAccount({
@@ -92,16 +95,20 @@ export class ParentService {
     };
   }
 
-  async updateChild(parentId: string, childId: string, updateData: {
-    firstName?: string | undefined;
-    lastName?: string | undefined;
-    dateOfBirth?: string | undefined;
-    schoolLevel?: string | undefined;
-    password?: string | undefined;
-  }): Promise<ChildInfo> {
+  async updateChild(
+    parentId: string,
+    childId: string,
+    updateData: {
+      firstName?: string | undefined;
+      lastName?: string | undefined;
+      dateOfBirth?: string | undefined;
+      schoolLevel?: string | undefined;
+      password?: string | undefined;
+    },
+  ): Promise<ChildInfo> {
     try {
       const children = await this.getParentChildren(parentId);
-      const child = children.find(c => c.id === childId);
+      const child = children.find((c) => c.id === childId);
 
       if (!child) {
         throw new Error('Access denied: Student does not belong to parent');
@@ -114,7 +121,7 @@ export class ParentService {
         dateOfBirth: string;
         updatedAt: Date;
       }> = {
-        updatedAt: new Date()
+        updatedAt: new Date(),
       };
 
       if (updateData.firstName !== undefined) updateObject.firstName = updateData.firstName;
@@ -153,7 +160,7 @@ export class ParentService {
   async deleteChild(parentId: string, childId: string): Promise<void> {
     try {
       const children = await this.getParentChildren(parentId);
-      const child = children.find(c => c.id === childId);
+      const child = children.find((c) => c.id === childId);
 
       if (!child) {
         throw new Error('Access denied: Student does not belong to parent');
@@ -169,16 +176,20 @@ export class ParentService {
 
       const checkUser = await usersRepository.findById(childId);
       if (checkUser) {
-        logger.error('CRITICAL: Child still exists after deletion', { operation: 'parent:child:delete:verify', reason: 'Child persists after delete query', childId, parentId, severity: 'critical' as const });
+        logger.error('CRITICAL: Child still exists after deletion', {
+          operation: 'parent:child:delete:verify',
+          reason: 'Child persists after delete query',
+          childId,
+          parentId,
+          severity: 'critical' as const,
+        });
         throw new Error('Deletion failed: User still exists in database');
       }
 
       // Best-effort S3 purge — a storage failure must never block the erasure
       // right. One batched DeleteObjects instead of one request per file.
       // deleteFiles never throws: it returns the keys it could not delete.
-      const { deleted: filesPurged, failed: filesFailedKeys } = await deleteFiles(
-        fileRecords.map((record) => record.storageKey)
-      );
+      const { deleted: filesPurged, failed: filesFailedKeys } = await deleteFiles(fileRecords.map((record) => record.storageKey));
       if (filesFailedKeys.length > 0) {
         logger.error('S3 purge failed for some child files', {
           operation: 'parent:delete-child-s3-purge',

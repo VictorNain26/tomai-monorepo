@@ -27,11 +27,12 @@ export const fsrsExtraRoutes = new Hono<AuthEnv>()
         return {
           nextReview: data.due.toISOString(),
           intervalDays: data.interval,
-          message: data.interval === 0
-            ? 'Maintenant'
-            : data.interval < 1
-              ? `Dans ${Math.round(data.interval * 24 * 60)} minutes`
-              : `Dans ${data.interval} jour${data.interval > 1 ? 's' : ''}`,
+          message:
+            data.interval === 0
+              ? 'Maintenant'
+              : data.interval < 1
+                ? `Dans ${Math.round(data.interval * 24 * 60)} minutes`
+                : `Dans ${data.interval} jour${data.interval > 1 ? 's' : ''}`,
         };
       };
 

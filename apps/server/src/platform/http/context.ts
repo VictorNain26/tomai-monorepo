@@ -7,7 +7,9 @@ import { requireAuth, requireParentRole } from '../auth/session.js';
 import { AppError, type FieldError } from './errors.js';
 import type { AuthenticatedUser } from '../../types/index.js';
 
-export interface AppEnv { Variables: RequestIdVariables }
+export interface AppEnv {
+  Variables: RequestIdVariables;
+}
 
 export interface AuthEnv {
   Variables: RequestIdVariables & {

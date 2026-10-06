@@ -1,14 +1,11 @@
-import { test } from "node:test";
-import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 
-const read = (file) => readFileSync(new URL(file, import.meta.url), "utf8");
-const colors = (css) =>
-  Object.fromEntries(
-    [...css.matchAll(/--color-([a-z-]+):\s*(#[0-9A-Fa-f]{6})/g)].map(([, name, hex]) => [name, hex]),
-  );
+const read = (file) => readFileSync(new URL(file, import.meta.url), 'utf8');
+const colors = (css) => Object.fromEntries([...css.matchAll(/--color-([a-z-]+):\s*(#[0-9A-Fa-f]{6})/g)].map(([, name, hex]) => [name, hex]));
 
-const palette = colors(read("./theme.css"));
+const palette = colors(read('./theme.css'));
 
 function luminance(hex) {
   const channel = (i) => {
@@ -24,30 +21,30 @@ function contrast(a, b) {
 }
 
 const PAIRS = [
-  ["foreground", "background"],
-  ["foreground", "card"],
-  ["foreground", "secondary"],
-  ["foreground", "highlight"],
-  ["card-foreground", "card"],
-  ["popover-foreground", "popover"],
-  ["secondary-foreground", "secondary"],
-  ["accent-foreground", "accent"],
-  ["muted-foreground", "background"],
-  ["muted-foreground", "card"],
-  ["muted-foreground", "secondary"],
-  ["primary", "background"],
-  ["primary", "card"],
-  ["primary", "secondary"],
-  ["primary-foreground", "primary"],
-  ["success-foreground", "success"],
-  ["destructive-foreground", "destructive"],
-  ["warning-foreground", "warning"],
-  ["success", "background"],
-  ["success", "card"],
-  ["destructive", "background"],
-  ["annotation", "background"],
-  ["annotation", "card"],
-  ["annotation", "secondary"],
+  ['foreground', 'background'],
+  ['foreground', 'card'],
+  ['foreground', 'secondary'],
+  ['foreground', 'highlight'],
+  ['card-foreground', 'card'],
+  ['popover-foreground', 'popover'],
+  ['secondary-foreground', 'secondary'],
+  ['accent-foreground', 'accent'],
+  ['muted-foreground', 'background'],
+  ['muted-foreground', 'card'],
+  ['muted-foreground', 'secondary'],
+  ['primary', 'background'],
+  ['primary', 'card'],
+  ['primary', 'secondary'],
+  ['primary-foreground', 'primary'],
+  ['success-foreground', 'success'],
+  ['destructive-foreground', 'destructive'],
+  ['warning-foreground', 'warning'],
+  ['success', 'background'],
+  ['success', 'card'],
+  ['destructive', 'background'],
+  ['annotation', 'background'],
+  ['annotation', 'card'],
+  ['annotation', 'secondary'],
 ];
 
 for (const [fg, bg] of PAIRS) {
@@ -60,9 +57,9 @@ for (const [fg, bg] of PAIRS) {
 }
 
 const CONTROL_PAIRS = [
-  ["input", "background"],
-  ["input", "card"],
-  ["input", "secondary"],
+  ['input', 'background'],
+  ['input', 'card'],
+  ['input', 'secondary'],
 ];
 
 for (const [fg, bg] of CONTROL_PAIRS) {

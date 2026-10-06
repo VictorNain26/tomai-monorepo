@@ -6,7 +6,15 @@ import type { AppEnv } from '../platform/http/context';
 const SESSION_ID = '0199a3c4-7b1e-7d2a-9f00-123456789abc';
 const MESSAGE_ID = '0199a3c4-7b1e-7d2a-9f00-123456789abd';
 // What the model produced, stored to be replayed: it never goes back to the client.
-const modelMessages = [{ role: 'assistant', content: [{ type: 'reasoning', text: 'La réponse est x = 5.' }, { type: 'text', text: 'Que fais-tu du +5 ?' }] }];
+const modelMessages = [
+  {
+    role: 'assistant',
+    content: [
+      { type: 'reasoning', text: 'La réponse est x = 5.' },
+      { type: 'text', text: 'Que fais-tu du +5 ?' },
+    ],
+  },
+];
 const assistantRow = {
   id: MESSAGE_ID,
   sessionId: SESSION_ID,
@@ -22,11 +30,12 @@ const assistantRow = {
 
 mock.module('../platform/observability/logger', () => ({ logger: createMockLogger() }));
 mock.module('../platform/auth/session', () => {
-  const signedIn = () => Promise.resolve({
-    success: true as const,
-    user: { id: 'student-1', role: 'student', firstName: 'Léa', schoolLevel: 'quatrieme' },
-    session: {},
-  });
+  const signedIn = () =>
+    Promise.resolve({
+      success: true as const,
+      user: { id: 'student-1', role: 'student', firstName: 'Léa', schoolLevel: 'quatrieme' },
+      session: {},
+    });
   return { requireAuth: signedIn, requireParentRole: signedIn };
 });
 mock.module('../modules/tutor/chat-session.service', () => ({

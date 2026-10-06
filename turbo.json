@@ -1,14 +1,8 @@
 {
   "$schema": "https://turborepo.dev/schema.v2.json",
   "ui": "tui",
-  "globalDependencies": [
-    "tsconfig.base.json"
-  ],
-  "globalEnv": [
-    "NODE_ENV",
-    "CI",
-    "APP_ENV"
-  ],
+  "globalDependencies": ["tsconfig.base.json"],
+  "globalEnv": ["NODE_ENV", "CI", "APP_ENV"],
   "globalPassThroughEnv": [
     "GITHUB_ACTIONS",
     "VERCEL",
@@ -27,19 +21,8 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build", "^build:types"],
-      "inputs": [
-        "$TURBO_DEFAULT$",
-        ".env.production",
-        ".env.staging",
-        "!.env.local",
-        "!.env.*.local"
-      ],
-      "outputs": [
-        ".next/**",
-        "!.next/cache/**",
-        "dist/**",
-        "build/**"
-      ],
+      "inputs": ["$TURBO_DEFAULT$", ".env.production", ".env.staging", "!.env.local", "!.env.*.local"],
+      "outputs": [".next/**", "!.next/cache/**", "dist/**", "build/**"],
       "env": ["NEXT_RUNTIME", "VERCEL_ENV", "SENTRY_AUTH_TOKEN"]
     },
     "build:types": {

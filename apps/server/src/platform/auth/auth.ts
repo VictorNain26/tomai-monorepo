@@ -7,13 +7,13 @@
  * - username: Autonomous child login
  */
 
-import { betterAuth, type BetterAuthPlugin } from "better-auth";
-import { openAPI, username } from "better-auth/plugins";
-import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { db } from "../../db/connection";
-import { user, session, account, verification } from "../../db/schema";
-import { env, isProduction, isDevelopment, getCorsOrigins } from "../config/env";
-import { logger } from "../observability/logger";
+import { betterAuth, type BetterAuthPlugin } from 'better-auth';
+import { openAPI, username } from 'better-auth/plugins';
+import { drizzleAdapter } from 'better-auth/adapters/drizzle';
+import { db } from '../../db/connection';
+import { user, session, account, verification } from '../../db/schema';
+import { env, isProduction, isDevelopment, getCorsOrigins } from '../config/env';
+import { logger } from '../observability/logger';
 
 // Validation des services requis pour l'authentification
 if (!env.BETTER_AUTH_SECRET || env.BETTER_AUTH_SECRET.length < 32) {
@@ -72,7 +72,7 @@ logger.info('Better Auth Configuration', {
   isProduction: isProduction(),
   cookieDomain,
   crossSubDomainCookies: isProduction(),
-  operation: 'auth:config'
+  operation: 'auth:config',
 });
 
 // Configuration Better Auth - Architecture sous-domaines
@@ -93,32 +93,34 @@ export const auth = betterAuth({
   // Configuration des cookies pour sous-domaines
   advanced: {
     // Cookies partagés entre sous-domaines (tomia.fr <-> api.tomia.fr)
-    crossSubDomainCookies: isProduction() ? {
-      enabled: true,
-      ...(cookieDomain !== undefined && { domain: cookieDomain }), // ".tomia.fr"
-    } : undefined,
+    crossSubDomainCookies: isProduction()
+      ? {
+          enabled: true,
+          ...(cookieDomain !== undefined && { domain: cookieDomain }), // ".tomia.fr"
+        }
+      : undefined,
 
     defaultCookieAttributes: {
       // SameSite: "lax" suffit pour les sous-domaines du même domaine parent
-      sameSite: "lax",
+      sameSite: 'lax',
       secure: isProduction(),
       httpOnly: true,
-      path: "/",
+      path: '/',
     },
 
     generateSessionToken: true,
-    cookiePrefix: "",
+    cookiePrefix: '',
     useSecureCookies: isProduction(),
   },
-  
+
   database: drizzleAdapter(db, {
-    provider: "pg",
+    provider: 'pg',
     schema: {
       user,
       session,
       account,
       verification,
-    }
+    },
   }),
 
   emailAndPassword: {
@@ -129,55 +131,57 @@ export const auth = betterAuth({
   account: {
     accountLinking: {
       enabled: true,
-      trustedProviders: ["google"],
+      trustedProviders: ['google'],
     },
   },
 
-  socialProviders: env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET ? {
-    google: {
-      clientId: env.GOOGLE_CLIENT_ID,
-      clientSecret: env.GOOGLE_CLIENT_SECRET,
-      prompt: "select_account",
-      // Google omits given_name and family_name for some accounts, whatever its types say.
-      mapProfileToUser: (profile) => ({
-        firstName: (profile.given_name as string | undefined) ?? null,
-        lastName: (profile.family_name as string | undefined) ?? null,
-      }),
-    },
-  } : {},
-
+  socialProviders:
+    env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET
+      ? {
+          google: {
+            clientId: env.GOOGLE_CLIENT_ID,
+            clientSecret: env.GOOGLE_CLIENT_SECRET,
+            prompt: 'select_account',
+            // Google omits given_name and family_name for some accounts, whatever its types say.
+            mapProfileToUser: (profile) => ({
+              firstName: (profile.given_name as string | undefined) ?? null,
+              lastName: (profile.family_name as string | undefined) ?? null,
+            }),
+          },
+        }
+      : {},
 
   user: {
     additionalFields: {
       firstName: {
-        type: "string",
+        type: 'string',
         required: false,
       },
       lastName: {
-        type: "string",
+        type: 'string',
         required: false,
       },
       // Written by the server only (createStudentAccount): a client could otherwise make itself
       // a parent through update-user, or store a level the enum refuses.
       role: {
-        type: "string",
-        defaultValue: "parent",
+        type: 'string',
+        defaultValue: 'parent',
         input: false,
       },
       schoolLevel: {
-        type: "string",
+        type: 'string',
         required: false,
         input: false,
       },
       dateOfBirth: {
-        type: "string",
+        type: 'string',
         required: false,
       },
       isActive: {
-        type: "boolean",
+        type: 'boolean',
         defaultValue: true,
       },
-    }
+    },
   },
 
   plugins: [

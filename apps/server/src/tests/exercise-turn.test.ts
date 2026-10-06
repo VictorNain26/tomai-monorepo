@@ -8,25 +8,58 @@ import type { Diagnosis } from '../modules/tutor/exercise-diagnosis.service';
 mock.module('../platform/observability/logger', () => ({ logger: createMockLogger() }));
 
 const sheet: ExerciseSheet = {
-  statement: 'Résous 3x + 5 = 20.', kind: 'short', answer: 'x = 5', answerForms: ['5'], mathEquation: null, mathAnswer: 'x = 5',
-  steps: ['Retrancher 5', 'Diviser par 3'], commonErrors: [], rule: null, facts: [], expectedElements: [], entries: [], laterEntries: [],
+  statement: 'Résous 3x + 5 = 20.',
+  kind: 'short',
+  answer: 'x = 5',
+  answerForms: ['5'],
+  mathEquation: null,
+  mathAnswer: 'x = 5',
+  steps: ['Retrancher 5', 'Diviser par 3'],
+  commonErrors: [],
+  rule: null,
+  facts: [],
+  expectedElements: [],
+  entries: [],
+  laterEntries: [],
 };
-const state = (overrides: Partial<ExerciseState> = {}): ExerciseState => ({ id: 'ex-1', sheet, uncertain: false, hintLevel: 1, stepsDone: 0, hints: [], solved: false, ...overrides });
+const state = (overrides: Partial<ExerciseState> = {}): ExerciseState => ({
+  id: 'ex-1',
+  sheet,
+  uncertain: false,
+  hintLevel: 1,
+  stepsDone: 0,
+  hints: [],
+  solved: false,
+  ...overrides,
+});
 
 let current: ExerciseState | null = state();
 const prepareExerciseSheet = mock(async (_params: unknown): Promise<ExerciseState> => state({ id: 'ex-new', hintLevel: 0 }));
 mock.module('../modules/tutor/exercise-sheet.service', () => ({ prepareExerciseSheet }));
 
 let verdict: Diagnosis['verdict'] = 'incorrect';
-const diagnose = mock(async (_sheet: ExerciseSheet, _turn: unknown): Promise<Diagnosis> => ({ verdict, firstWrongStep: null, errorType: 'careless', proposalMath: null, decidedBy: 'model' }));
+const diagnose = mock(async (_sheet: ExerciseSheet, _turn: unknown): Promise<Diagnosis> => ({
+  verdict,
+  firstWrongStep: null,
+  errorType: 'careless',
+  proposalMath: null,
+  decidedBy: 'model',
+}));
 mock.module('../modules/tutor/exercise-diagnosis.service', () => ({ diagnose }));
-
 
 const { prepareExerciseTurn } = await import('../modules/tutor/exercise-turn');
 
 const params = (overrides: Partial<Parameters<typeof prepareExerciseTurn>[0]> = {}) => ({
-  userId: 'u1', sessionId: 's1', level: 'quatrieme' as const, subject: 'mathematiques' as const, analysis: analysis(), current,
-  studentText: 'Je bloque', lastTutorText: 'Que cherches-tu ?', attachedFilesBlock: null, ...overrides,
+  userId: 'u1',
+  sessionId: 's1',
+  level: 'quatrieme' as const,
+  subject: 'mathematiques' as const,
+  analysis: analysis(),
+  current,
+  studentText: 'Je bloque',
+  lastTutorText: 'Que cherches-tu ?',
+  attachedFilesBlock: null,
+  ...overrides,
 });
 
 beforeEach(() => {
@@ -63,7 +96,11 @@ describe('prepareExerciseTurn', () => {
     expect(turn.contract).toContain("l'exercice est terminé");
 
     verdict = 'right-step';
-    expect((await prepareExerciseTurn(params({ analysis: analysis({ proposesAnswer: true }) }))).change).toMatchObject({ stepDone: true, levelChange: -1, solved: false });
+    expect((await prepareExerciseTurn(params({ analysis: analysis({ proposesAnswer: true }) }))).change).toMatchObject({
+      stepDone: true,
+      levelChange: -1,
+      solved: false,
+    });
   });
 
   it('keeps a solved exercise before the tutor without a contract, and reopens it on a new attempt', async () => {
@@ -88,10 +125,12 @@ describe('prepareExerciseTurn', () => {
 
   it('keeps the exercise in progress when its statement comes back with a new try, the level with it', async () => {
     current = state({ hintLevel: 2 });
-    const turn = await prepareExerciseTurn(params({
-      analysis: analysis({ bringsExercise: true, proposesAnswer: true }),
-      studentText: "Résous 3x+5 = 20. J'ai réessayé, je trouve x = 4.",
-    }));
+    const turn = await prepareExerciseTurn(
+      params({
+        analysis: analysis({ bringsExercise: true, proposesAnswer: true }),
+        studentText: "Résous 3x+5 = 20. J'ai réessayé, je trouve x = 4.",
+      }),
+    );
 
     expect(prepareExerciseSheet).not.toHaveBeenCalled();
     expect(turn.exercise?.id).toBe('ex-1');
@@ -99,9 +138,16 @@ describe('prepareExerciseTurn', () => {
   });
 
   it('prepares the sheet of a new exercise, and diagnoses a proposal brought with it', async () => {
-    const turn = await prepareExerciseTurn(params({ analysis: analysis({ bringsExercise: true, proposesAnswer: true }), attachedFilesBlock: '<attached_file name="p">x</attached_file>' }));
+    const turn = await prepareExerciseTurn(
+      params({ analysis: analysis({ bringsExercise: true, proposesAnswer: true }), attachedFilesBlock: '<attached_file name="p">x</attached_file>' }),
+    );
 
-    expect(prepareExerciseSheet.mock.calls[0]?.[0]).toMatchObject({ sessionId: 's1', level: 'quatrieme', subject: 'mathematiques', attachedFilesBlock: '<attached_file name="p">x</attached_file>' });
+    expect(prepareExerciseSheet.mock.calls[0]?.[0]).toMatchObject({
+      sessionId: 's1',
+      level: 'quatrieme',
+      subject: 'mathematiques',
+      attachedFilesBlock: '<attached_file name="p">x</attached_file>',
+    });
     expect(diagnose).toHaveBeenCalledTimes(1);
     expect(turn.hintLevel).toBe(1);
     expect(turn.exercise?.id).toBe('ex-new');

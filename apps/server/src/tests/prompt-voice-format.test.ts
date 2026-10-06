@@ -36,7 +36,7 @@ describe('generateResponseFormatPolicy', () => {
     expect(block).toMatch(/pas de markdown/i);
   });
 
-  it('autorise schéma/formule même en vocal (affichés à l\'écran)', () => {
+  it("autorise schéma/formule même en vocal (affichés à l'écran)", () => {
     expect(block).toMatch(/affichent à l'écran|s'affichent/i);
   });
 

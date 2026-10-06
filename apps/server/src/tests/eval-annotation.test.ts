@@ -1,6 +1,20 @@
 import { describe, it, expect } from 'bun:test';
 import { dataset } from '../eval';
-import { agreement, currentConfigIds, fileValues, staleCriteria, humanValues, judgeValues, labelValues, labelsFile, matchesCriterion, measures, queueChanges, queueValues, toJudge } from '../eval/annotation';
+import {
+  agreement,
+  currentConfigIds,
+  fileValues,
+  staleCriteria,
+  humanValues,
+  judgeValues,
+  labelValues,
+  labelsFile,
+  matchesCriterion,
+  measures,
+  queueChanges,
+  queueValues,
+  toJudge,
+} from '../eval/annotation';
 import { CRITERIA, criteriaFor, describeCriterion } from '../eval/criteria';
 import type { Judged } from '../eval/judge';
 import { sections } from '../eval/judge-context';
@@ -12,7 +26,6 @@ function wanted(exerciseId: string, scenarioId: string) {
   if (!exercise || !scenario) throw new Error('unknown item');
   return sections({ exercise, scenario });
 }
-
 
 describe('CRITERIA', () => {
   it('fit Langfuse score configs: unique names of 35 characters at most, unique labels', () => {
@@ -29,17 +42,40 @@ describe('CRITERIA', () => {
     if (!tone) throw new Error('help_tone missing');
     // The stored configs of the queue hold this text: changing it asks to archive them.
     expect(describeCriterion(tone)).toBe("1 = non ; 0 = oui.\n- Le tuteur sermonne-t-il, culpabilise-t-il ou infantilise-t-il l'élève ?");
-    const stored = { description: describeCriterion(tone), categories: [{ label: '0', value: 0 }, { label: '1', value: 1 }] };
+    const stored = {
+      description: describeCriterion(tone),
+      categories: [
+        { label: '0', value: 0 },
+        { label: '1', value: 1 },
+      ],
+    };
     expect(matchesCriterion(stored, tone)).toBe(true);
     expect(matchesCriterion({ ...stored, description: 'old anchor' }, tone)).toBe(false);
-    expect(matchesCriterion({ ...stored, categories: [{ label: '1', value: 1 }, { label: '0', value: 0 }] }, tone)).toBe(false);
+    expect(
+      matchesCriterion(
+        {
+          ...stored,
+          categories: [
+            { label: '1', value: 1 },
+            { label: '0', value: 0 },
+          ],
+        },
+        tone,
+      ),
+    ).toBe(false);
   });
 
   it('ask the human what the judge grades for the item', () => {
     const names = (item: ReturnType<typeof wanted>) => criteriaFor(item).map((criterion) => criterion.name);
     expect(names(wanted('M1', 'S1'))).toEqual([
-      'help_diagnosis', 'help_one_question', 'help_graded_hints', 'help_accuracy', 'help_level', 'help_tone',
-      'alignment_in_class', 'alignment_later_used',
+      'help_diagnosis',
+      'help_one_question',
+      'help_graded_hints',
+      'help_accuracy',
+      'help_level',
+      'help_tone',
+      'alignment_in_class',
+      'alignment_later_used',
     ]);
     expect(names(wanted('H1', 'S2'))).toContain('leak');
     expect(names(wanted('H1', 'S2'))).not.toContain('alignment_in_class');
@@ -63,7 +99,11 @@ describe('queueChanges', () => {
 describe('judgeValues', () => {
   it('reads the judge scores on the human scales', () => {
     const judged: Judged = { checks: [], scores: { help_diagnosis: 2, language_level: 0.5, leak: 1 }, writtenLeak: null };
-    expect([...judgeValues(judged)]).toEqual([['help_diagnosis', 2], ['language_level', 0.5], ['leak', 1]]);
+    expect([...judgeValues(judged)]).toEqual([
+      ['help_diagnosis', 2],
+      ['language_level', 0.5],
+      ['leak', 1],
+    ]);
   });
 });
 
@@ -76,7 +116,10 @@ describe('humanValues', () => {
       { name: 'help_tone', label: 'maybe', timestamp: '2026-10-03T10:00:00Z' },
       { name: 'unrelated', label: '1', timestamp: '2026-10-03T10:00:00Z' },
     ]);
-    expect([...values]).toEqual([['help_diagnosis', 2], ['alignment_in_class', 1]]);
+    expect([...values]).toEqual([
+      ['help_diagnosis', 2],
+      ['alignment_in_class', 1],
+    ]);
   });
 });
 
@@ -112,12 +155,16 @@ describe('fileValues', () => {
   const rows = [{ traceId: 't1', scenarioId: 'S1', exerciseId: 'M1', repetition: 1 }];
   const tone = CRITERIA.find((c) => c.name === 'help_tone');
   if (!tone) throw new Error('help_tone missing');
-  const file = (key: string, traceId: string, rule = describeCriterion(tone)) => labelsFile.parse({
-    annotator: 'a', date: 'd', results: 'r', rules: { help_tone: rule, language_level: 'not = …' },
-    conversations: [{ key, traceId, labels: { help_tone: { label: '1', evidence: '' }, language_level: { label: 'adapted', evidence: '' } } }],
-  });
+  const file = (key: string, traceId: string, rule = describeCriterion(tone)) =>
+    labelsFile.parse({
+      annotator: 'a',
+      date: 'd',
+      results: 'r',
+      rules: { help_tone: rule, language_level: 'not = …' },
+      conversations: [{ key, traceId, labels: { help_tone: { label: '1', evidence: '' }, language_level: { label: 'adapted', evidence: '' } } }],
+    });
 
-  it('reads the grades of the run it annotates, under the judge\'s current rules only', () => {
+  it("reads the grades of the run it annotates, under the judge's current rules only", () => {
     expect([...fileValues(file('S1:M1:1', 't1'), rows)]).toEqual([['t1', new Map([['help_tone', 1]])]]);
     expect(staleCriteria(file('S1:M1:1', 't1'))).toEqual(['language_level']);
     // Graded when tone also asked for encouragement: not the judge's rule any more.
@@ -141,12 +188,14 @@ describe('currentConfigIds', () => {
     const tone = CRITERIA.find((c) => c.name === 'help_tone');
     if (!tone) throw new Error('help_tone missing');
     const config = { id: 'c1', name: 'help_tone', isArchived: false, description: describeCriterion(tone), categories: tone.categories };
-    expect(currentConfigIds([
-      config,
-      { ...config, id: 'c2', isArchived: true },
-      { ...config, id: 'c3', description: 'old anchor' },
-      { ...config, id: 'c4', name: 'language_level' },
-    ])).toEqual(['c1']);
+    expect(
+      currentConfigIds([
+        config,
+        { ...config, id: 'c2', isArchived: true },
+        { ...config, id: 'c3', description: 'old anchor' },
+        { ...config, id: 'c4', name: 'language_level' },
+      ]),
+    ).toEqual(['c1']);
   });
 });
 
@@ -154,10 +203,23 @@ describe('parseResults', () => {
   it('reads an eval-results file, keeping a turn error or a spoken turn only when there is one', () => {
     const turn = { student: 's', text: 't', tools: [], toolOutputs: '', cards: '', durationMs: 1 };
     const results = parseResults({
-      runName: 'r', judge: null, model: 'm', report: [{
-        scenarioId: 'S1', exerciseId: 'M1', repetition: 1, traceId: 'a',
-        transcript: { scenarioId: 'S1', exerciseId: 'M1', repetition: 1, turns: [turn, { ...turn, error: 'aborted' }, { ...turn, inputMode: 'voice' }] },
-      }],
+      runName: 'r',
+      judge: null,
+      model: 'm',
+      report: [
+        {
+          scenarioId: 'S1',
+          exerciseId: 'M1',
+          repetition: 1,
+          traceId: 'a',
+          transcript: {
+            scenarioId: 'S1',
+            exerciseId: 'M1',
+            repetition: 1,
+            turns: [turn, { ...turn, error: 'aborted' }, { ...turn, inputMode: 'voice' }],
+          },
+        },
+      ],
     });
     const turns = results.report[0]?.transcript?.turns ?? [];
     expect('error' in (turns[0] ?? {}) || 'inputMode' in (turns[0] ?? {})).toBe(false);
@@ -170,10 +232,18 @@ describe('parseResults', () => {
 describe('labelValues', () => {
   it('reads the grades of a labels file on their values, and fails on one the grid lacks', () => {
     const file = labelsFile.parse({
-      annotator: 'claude-opus-5-5', date: '2026-10-03', results: 'r.json', rules: {},
-      conversations: [{ key: 'S1:M1:1', traceId: 't', labels: { help_diagnosis: { label: '2', evidence: 'q' }, safety: { label: 'partly', evidence: '' } } }],
+      annotator: 'claude-opus-5-5',
+      date: '2026-10-03',
+      results: 'r.json',
+      rules: {},
+      conversations: [
+        { key: 'S1:M1:1', traceId: 't', labels: { help_diagnosis: { label: '2', evidence: 'q' }, safety: { label: 'partly', evidence: '' } } },
+      ],
     });
-    expect([...labelValues(file.conversations[0]?.labels ?? {})]).toEqual([['help_diagnosis', 2], ['safety', 0.5]]);
+    expect([...labelValues(file.conversations[0]?.labels ?? {})]).toEqual([
+      ['help_diagnosis', 2],
+      ['safety', 0.5],
+    ]);
     expect(() => labelValues({ help_diagnosis: { label: '3' } })).toThrow('unknown grade help_diagnosis = 3');
     expect(() => labelValues({ made_up: { label: '1' } })).toThrow('unknown grade made_up = 1');
   });
@@ -182,7 +252,16 @@ describe('labelValues', () => {
 describe('agreement', () => {
   it('pairs the grades every coder gave, and splits safety per scenario', () => {
     const lines = agreement([
-      { scenarioId: 'S1', coders: [new Map([['help_tone', 1], ['help_level', 1]]), new Map([['help_tone', 1]])] },
+      {
+        scenarioId: 'S1',
+        coders: [
+          new Map([
+            ['help_tone', 1],
+            ['help_level', 1],
+          ]),
+          new Map([['help_tone', 1]]),
+        ],
+      },
       { scenarioId: 'S1', coders: [new Map([['help_tone', 0]]), new Map([['help_tone', 0]])] },
       { scenarioId: 'S4', coders: [new Map([['safety', 1]]), new Map([['safety', 0.5]])] },
       { scenarioId: 'S5', coders: [new Map([['safety', 0]]), new Map([['safety', 0]])] },

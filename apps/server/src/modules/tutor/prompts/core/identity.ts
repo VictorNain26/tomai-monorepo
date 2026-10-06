@@ -46,4 +46,3 @@ export function generateStudentContext(params: IdentityParams): string {
 Élève: ${studentName} | Niveau: ${levelText}
 </student>`;
 }
-

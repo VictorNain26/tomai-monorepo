@@ -18,7 +18,10 @@ describe.skipIf(!dbReachable)('seedDev — deterministic, login-proven accounts'
     const { db } = await import('../db/connection');
     const { user } = await import('../db/schema');
     const { eq } = await import('drizzle-orm');
-    await db.delete(user).where(eq(user.email, 'dev.parent@tomai.local')).catch(() => null);
+    await db
+      .delete(user)
+      .where(eq(user.email, 'dev.parent@tomai.local'))
+      .catch(() => null);
   });
 
   it('creates a parent and a linked child that both log in for real', async () => {
@@ -40,10 +43,7 @@ describe.skipIf(!dbReachable)('seedDev — deterministic, login-proven accounts'
     const { db } = await import('../db/connection');
     const schema = await import('../db/schema');
     const { eq } = await import('drizzle-orm');
-    const childDecks = await db
-      .select()
-      .from(schema.learningDecks)
-      .where(eq(schema.learningDecks.userId, childId));
+    const childDecks = await db.select().from(schema.learningDecks).where(eq(schema.learningDecks.userId, childId));
     expect(childDecks.length).toBeGreaterThan(0);
   });
 

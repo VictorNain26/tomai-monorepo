@@ -42,7 +42,7 @@ const CSEN_FOUR_PILLARS = {
   },
   // Dehaene 2018, Chap. 8 - Le retour sur erreur
   retourErreur: {
-    name: 'RETOUR D\'INFORMATION',
+    name: "RETOUR D'INFORMATION",
     cardApplication: 'Explications après réponse, feedback constructif',
   },
   // Dehaene 2018, Chap. 9 - Consolidation et automatisation
@@ -128,4 +128,3 @@ export function generateCardsPedagogyPrompt(): string {
 - hints?: ["indice1", "indice2"] - aide progressive avant correction
 - commonMistakes?: [{"mistake":"...", "why":"..."}] - erreurs fréquentes à éviter`;
 }
-

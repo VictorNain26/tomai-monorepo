@@ -10,7 +10,10 @@ describe.skipIf(!dbReachable)('answerDistress — from postgres', () => {
   afterAll(async () => {
     const { db } = await import('../db/connection');
     const { user } = await import('../db/schema');
-    await db.delete(user).where(eq(user.id, studentId)).catch(() => null);
+    await db
+      .delete(user)
+      .where(eq(user.id, studentId))
+      .catch(() => null);
   });
 
   it('records the event once, closes the session, and keeps every message with the fixed reply', async () => {
@@ -24,9 +27,17 @@ describe.skipIf(!dbReachable)('answerDistress — from postgres', () => {
     const [session] = await db.insert(studySessions).values({ userId: studentId }).returning({ id: studySessions.id });
     if (!session) throw new Error('session not created');
 
-    await answerDistress({ turn: { kind: 'distress', sessionId: session.id, source: 'both', selfharmScore: 0.35 }, userId: studentId, content: "j'ai envie de disparaître" });
+    await answerDistress({
+      turn: { kind: 'distress', sessionId: session.id, source: 'both', selfharmScore: 0.35 },
+      userId: studentId,
+      content: "j'ai envie de disparaître",
+    });
     expect(await closedForDistress(session.id)).toBe(true);
-    await answerDistress({ turn: { kind: 'distress', sessionId: session.id, source: 'closed', selfharmScore: null }, userId: studentId, content: 'Tu es là ?' });
+    await answerDistress({
+      turn: { kind: 'distress', sessionId: session.id, source: 'closed', selfharmScore: null },
+      userId: studentId,
+      content: 'Tu es là ?',
+    });
 
     const events = await db.select().from(distressEvents).where(eq(distressEvents.sessionId, session.id));
     expect(events.map((event) => [event.userId, event.detectedBy, event.selfharmScore?.toFixed(2)])).toEqual([[studentId, 'both', '0.35']]);
@@ -51,7 +62,8 @@ describe.skipIf(!dbReachable)('answerDistress — from postgres', () => {
     const { answerDistress } = await import('../modules/tutor/distress.service');
     const [session] = await db.insert(studySessions).values({ userId: studentId }).returning({ id: studySessions.id });
     if (!session) throw new Error('session not created');
-    const turn = (content: string) => answerDistress({ turn: { kind: 'distress', sessionId: session.id, source: 'rules', selfharmScore: 0.1 }, userId: studentId, content });
+    const turn = (content: string) =>
+      answerDistress({ turn: { kind: 'distress', sessionId: session.id, source: 'rules', selfharmScore: 0.1 }, userId: studentId, content });
 
     await Promise.all([turn('je veux mourir'), turn('je veux en finir')]);
 

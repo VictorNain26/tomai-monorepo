@@ -1,9 +1,7 @@
 import { joinRuns, type Block, type PositionedText } from './parse.js';
 
 /** The parts of pdf.js text content and structure tree the extraction reads. */
-export type TextContentItem =
-  | { str: string; transform: unknown[]; width: number; height: number; hasEOL: boolean }
-  | { type: string; id: string };
+export type TextContentItem = { str: string; transform: unknown[]; width: number; height: number; hasEOL: boolean } | { type: string; id: string };
 export interface StructNode {
   role: string;
   /** Alternative text, which pdf.js returns although its type omits it. */
@@ -31,7 +29,14 @@ export function runsById(items: readonly TextContentItem[]): Map<string, Positio
     const id = stack.at(-1);
     if (!id) continue;
     const runs = byId.get(id) ?? [];
-    runs.push({ str: item.str, x: Number(item.transform[4]), y: Number(item.transform[5]), width: item.width, height: item.height, eol: item.hasEOL });
+    runs.push({
+      str: item.str,
+      x: Number(item.transform[4]),
+      y: Number(item.transform[5]),
+      width: item.width,
+      height: item.height,
+      eol: item.hasEOL,
+    });
     byId.set(id, runs);
   }
   return byId;
@@ -77,7 +82,9 @@ export function pageBlocks(tree: StructNode, runs: Map<string, PositionedText[]>
     else if (node.role === 'LI') emit('LI', node);
     else if (node.role === 'Table') {
       banner(node);
-      const cellText = cells(node).map((cell) => joinRuns(contentIds(cell).flatMap((id) => runs.get(id) ?? [])).text).filter(Boolean);
+      const cellText = cells(node)
+        .map((cell) => joinRuns(contentIds(cell).flatMap((id) => runs.get(id) ?? [])).text)
+        .filter(Boolean);
       if (cellText.length > 0) blocks.push({ role: 'TABLE', text: cellText.join(' '), page, formula: false });
     } else node.children.filter(isNode).forEach(walk);
   };
@@ -91,7 +98,10 @@ export function pageBlocks(tree: StructNode, runs: Map<string, PositionedText[]>
  * list labels and as minus signs in the page text.
  */
 export function canonical(text: string): string {
-  return text.normalize('NFKC').toLowerCase().replace(/[\s/—–−•-]/gu, '');
+  return text
+    .normalize('NFKC')
+    .toLowerCase()
+    .replace(/[\s/—–−•-]/gu, '');
 }
 
 /** Plain text of a page, straight from its text runs, without the structure tree. */

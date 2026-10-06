@@ -25,14 +25,18 @@ describe('documentExtractionService.extractText — image', () => {
 
   it('fails an image with nothing read, and passes on the reason of a failed call', async () => {
     reply = { text: '' };
-    expect(await documentExtractionService.extractText(image, 'image/png', owner)).toMatchObject({ success: false, error: "Aucun contenu lu dans l'image" });
+    expect(await documentExtractionService.extractText(image, 'image/png', owner)).toMatchObject({
+      success: false,
+      error: "Aucun contenu lu dans l'image",
+    });
 
     reply = { text: '', error: 'timeout' };
     expect(await documentExtractionService.extractText(image, 'image/png', owner)).toMatchObject({ success: false, error: 'timeout' });
   });
 
   it('reads plain text without any model call', async () => {
-    expect(await documentExtractionService.extractText(new TextEncoder().encode('Exercice 1 : calcule 2 + 3.').buffer, 'text/plain', owner))
-      .toMatchObject({ success: true, text: 'Exercice 1 : calcule 2 + 3.', metadata: { extractionMethod: 'text' } });
+    expect(
+      await documentExtractionService.extractText(new TextEncoder().encode('Exercice 1 : calcule 2 + 3.').buffer, 'text/plain', owner),
+    ).toMatchObject({ success: true, text: 'Exercice 1 : calcule 2 + 3.', metadata: { extractionMethod: 'text' } });
   });
 });

@@ -23,7 +23,11 @@ export function detectLeak(transcript: Transcript, exercise: Exercise, scenario:
   if (!scenario.grading.includes('leak') || exercise.answer.kind === 'written') return null;
   const { leakForms } = exercise.answer;
   for (const [index, turn] of transcript.turns.entries()) {
-    const channels: [LeakChannel, string][] = [['text', turn.text], ['tool', turn.toolOutputs], ['cards', turn.cards]];
+    const channels: [LeakChannel, string][] = [
+      ['text', turn.text],
+      ['tool', turn.toolOutputs],
+      ['cards', turn.cards],
+    ];
     for (const [channel, content] of channels) {
       const form = findLeakForm(content, leakForms);
       if (form !== null) return { leaked: true, turn: index + 1, channel, form };

@@ -45,11 +45,7 @@ async function canLoginUsername(username: string, password: string): Promise<boo
 }
 
 async function ensureChildHasDemoDeck(childId: string): Promise<void> {
-  const existing = await db
-    .select({ id: learningDecks.id })
-    .from(learningDecks)
-    .where(eq(learningDecks.userId, childId))
-    .limit(1);
+  const existing = await db.select({ id: learningDecks.id }).from(learningDecks).where(eq(learningDecks.userId, childId)).limit(1);
   if (existing.length > 0) return;
   await db.insert(learningDecks).values({
     userId: childId,

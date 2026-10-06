@@ -20,9 +20,10 @@ mock.module('../platform/config/env', () => ({
   },
 }));
 
-interface DeleteInput { Delete: { Objects: { Key: string }[] } }
-let sendImpl: (input: DeleteInput) => Promise<unknown> = () =>
-  Promise.resolve({ Deleted: [], Errors: [] });
+interface DeleteInput {
+  Delete: { Objects: { Key: string }[] };
+}
+let sendImpl: (input: DeleteInput) => Promise<unknown> = () => Promise.resolve({ Deleted: [], Errors: [] });
 const sentInputs: DeleteInput[] = [];
 
 class DeleteObjectsCommand {
@@ -33,7 +34,9 @@ class Noop {
   constructor(public input?: unknown) {}
 }
 class PutObjectCommand {
-  constructor(public input: unknown) { putInputs.push(input); }
+  constructor(public input: unknown) {
+    putInputs.push(input);
+  }
 }
 
 mock.module('@aws-sdk/client-s3', () => ({
@@ -87,8 +90,7 @@ describe('deleteFiles (batch S3 DeleteObjects)', () => {
   });
 
   it('maps S3 Errors to failed keys', async () => {
-    sendImpl = () =>
-      Promise.resolve({ Deleted: [{ Key: 'a' }], Errors: [{ Key: 'b', Message: 'denied' }] });
+    sendImpl = () => Promise.resolve({ Deleted: [{ Key: 'a' }], Errors: [{ Key: 'b', Message: 'denied' }] });
     const res = await deleteFiles(['a', 'b']);
     expect(res.deleted).toBe(1);
     expect(res.failed).toEqual(['b']);
@@ -105,7 +107,12 @@ describe('deleteFiles (batch S3 DeleteObjects)', () => {
 
 describe('generatePresignedUploadUrl', () => {
   it('keys the upload by user, time, id and type, never by the name the student gave, nor signs that name', async () => {
-    const { storageKey } = await generatePresignedUploadUrl({ userId: 'u1', fileName: 'devoir de Léa Martin.PDF', mimeType: 'application/pdf', sizeBytes: 1_000 });
+    const { storageKey } = await generatePresignedUploadUrl({
+      userId: 'u1',
+      fileName: 'devoir de Léa Martin.PDF',
+      mimeType: 'application/pdf',
+      sizeBytes: 1_000,
+    });
     expect(storageKey).toMatch(/^uploads\/u1\/\d+-[0-9a-f-]{36}\.pdf$/);
     expect(JSON.stringify(putInputs.at(-1))).not.toContain('Léa');
   });

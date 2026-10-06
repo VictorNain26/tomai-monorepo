@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import { useEffect, useRef, useState } from "react";
-import Image from "next/image";
-import { useReducedMotion } from "motion/react";
-import { cn } from "@repo/ui";
-import tom from "@/assets/tom.png";
+import { useEffect, useRef, useState } from 'react';
+import Image from 'next/image';
+import { useReducedMotion } from 'motion/react';
+import { cn } from '@repo/ui';
+import tom from '@/assets/tom.png';
 
-type Clip = "still" | "salut" | "respiration";
+type Clip = 'still' | 'salut' | 'respiration';
 
 function Sources({ name }: { name: string }) {
   return (
@@ -22,7 +22,7 @@ export function TomIllustration({ className }: { className?: string }) {
   const reducedMotion = useReducedMotion();
   const salutRef = useRef<HTMLVideoElement>(null);
   const respirationRef = useRef<HTMLVideoElement>(null);
-  const [clip, setClip] = useState<Clip>("still");
+  const [clip, setClip] = useState<Clip>('still');
 
   useEffect(() => {
     // Hidden on small screens, Tom must not download his clips; autoplay can also be refused
@@ -35,18 +35,22 @@ export function TomIllustration({ className }: { className?: string }) {
       role="img"
       aria-label="Tom, une loutre en pull bleu avec un stylo dans la poche"
       data-testid="tom"
-      className={cn("relative aspect-square w-full max-w-sm", className)}
+      className={cn('relative aspect-square w-full max-w-sm', className)}
     >
-      <Image src={tom} alt="" sizes="176px" className={cn("size-full", clip !== "still" && "invisible")} />
+      <Image src={tom} alt="" sizes="176px" className={cn('size-full', clip !== 'still' && 'invisible')} />
       <video
         ref={salutRef}
         aria-hidden="true"
         muted
         playsInline
         preload="none"
-        onPlaying={() => { setClip("salut"); }}
-        onEnded={() => { respirationRef.current?.play().catch(() => undefined); }}
-        className={cn("absolute inset-0 size-full", clip !== "salut" && "invisible")}
+        onPlaying={() => {
+          setClip('salut');
+        }}
+        onEnded={() => {
+          respirationRef.current?.play().catch(() => undefined);
+        }}
+        className={cn('absolute inset-0 size-full', clip !== 'salut' && 'invisible')}
       >
         <Sources name="salut" />
       </video>
@@ -57,8 +61,10 @@ export function TomIllustration({ className }: { className?: string }) {
         playsInline
         loop
         preload="none"
-        onPlaying={() => { setClip("respiration"); }}
-        className={cn("absolute inset-0 size-full", clip !== "respiration" && "invisible")}
+        onPlaying={() => {
+          setClip('respiration');
+        }}
+        className={cn('absolute inset-0 size-full', clip !== 'respiration' && 'invisible')}
       >
         <Sources name="respiration" />
       </video>

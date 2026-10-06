@@ -30,7 +30,10 @@ export function twoQuestions({ messages }: Extraction): CodeVerdict {
 
 /** A wrong written calculation of the tutor; one that also stands in a student line is the student's work, shown back. */
 export function wrongCalculation(transcript: Transcript): CodeVerdict {
-  const wrong = wrongEqualities(transcript.turns.map((turn) => turn.text).join('\n'), transcript.turns.map((turn) => turn.student)).map((e) => e.quote);
+  const wrong = wrongEqualities(
+    transcript.turns.map((turn) => turn.text).join('\n'),
+    transcript.turns.map((turn) => turn.student),
+  ).map((e) => e.quote);
   return { answer: wrong.length > 0, evidence: wrong };
 }
 

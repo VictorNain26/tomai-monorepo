@@ -62,7 +62,9 @@ export async function runControlledTurn(
   check: OutputCheckContext,
 ): Promise<ControlledTurn> {
   const first = streamChat(params);
-  const chunks = await readAll(toUIMessageStream<typeof params.tools, TomChatMessage>({ stream: first.stream, tools: params.tools, sendReasoning: false }));
+  const chunks = await readAll(
+    toUIMessageStream<typeof params.tools, TomChatMessage>({ stream: first.stream, tools: params.tools, sendReasoning: false }),
+  );
   const firstText = textOf(chunks);
   const findings = firstText ? await checkReply(firstText, check) : [];
 
@@ -76,9 +78,14 @@ export async function runControlledTurn(
   const cut = chunks.some((chunk) => chunk.type === 'error' || chunk.type === 'abort');
   const usedTools = chunks.some((chunk) => chunk.type === 'tool-input-available');
   const unmoderated = findings.some((finding) => finding.kind === 'unmoderated');
-  const second = cut || usedTools || unmoderated
-    ? null
-    : streamChat({ ...params, tools: {}, turnInstruction: [params.turnInstruction, regenerationInstruction(findings)].filter(Boolean).join('\n\n') });
+  const second =
+    cut || usedTools || unmoderated
+      ? null
+      : streamChat({
+          ...params,
+          tools: {},
+          turnInstruction: [params.turnInstruction, regenerationInstruction(findings)].filter(Boolean).join('\n\n'),
+        });
   const secondText = second ? await Promise.resolve(second.text).catch(() => '') : '';
   const passed = secondText !== '' && (await checkReply(secondText, check)).length === 0;
   const text = passed ? secondText : FALLBACK_REPLY;
