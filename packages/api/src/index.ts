@@ -7,9 +7,7 @@
  * // Initialize at app startup
  * import { initializeApi, getClient, unwrap } from '@repo/api';
  *
- * initializeApi({
- *   baseUrl: 'https://api.tomia.fr',
- * });
+ * initializeApi({ baseUrl: '/' });
  *
  * // Type-safe API calls
  * const data = await unwrap(await getClient().api.parent.dashboard.$get());

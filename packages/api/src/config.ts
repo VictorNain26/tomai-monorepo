@@ -5,11 +5,11 @@
  * // Dans l'app (une seule fois au démarrage)
  * import { initializeApi } from '@repo/api/config';
  *
- * initializeApi({ baseUrl: 'https://api.tomia.fr' });
+ * initializeApi({ baseUrl: '/' });
  */
 
 export interface ApiConfig {
-  /** URL de base du backend API (ex: https://api.tomia.fr) */
+  /** Base des requêtes : `'/'` pour le client web, servi sur l'origine de l'API. */
   baseUrl: string;
 }
 
