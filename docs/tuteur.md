@@ -227,48 +227,24 @@ absente de la source. Le coût vient de `result.usage`, pas d'une estimation.
 
 ## 9. Évaluation
 
-Cible : `etudes/2026-10-06/refonte-evaluation.md`, qui fixe les choix et l'ordre des PR. Le code
-vit dans `apps/server/src/eval/` (entrée `run.ts`, `bun run eval`) ; les mesures et leurs limites
-dans les études datées. Le harnais sert aussi la preuve publique : protocole, jeu, transcriptions
-et résultats publiables et rejouables par un tiers (vision, « On publie nos mesures »).
+Repères détaillés : `etudes/2026-10-06/refonte-evaluation.md`. Le code vit dans
+`apps/server/src/eval/` (`bun run eval`) ; les mesures et leurs limites dans les études datées.
+Le harnais sert aussi la preuve publique : protocole, jeu et résultats rejouables par un tiers.
 
-- **Portes et mesures.** Seul ce que le code vérifie bloque un merge ou une publication : fuite
-  de la réponse (`lib/leak.ts`, la même recherche qu'en production), solution montrée, balises,
-  égalités recalculées par mathjs, réponse fixe de détresse. Un critère du juge reste
-  exploratoire tant qu'il n'est pas validé contre un humain.
-- **Grille.** Les 8 dimensions de MRBench (identification et localisation de l'erreur,
-  révélation de la réponse, guidage, actionnabilité, cohérence, ton, naturel), plus l'exactitude,
-  le niveau du programme et la détresse ; une question oui/non par mode d'échec. Scores de
-  résolution et de pédagogie publiés séparément.
-- **Statistique.** Tout taux avec son intervalle de Wilson à 95 % ; Tom rejoué K = 2 fois par
-  scénario, erreurs-types groupées par scénario ; deux versions comparées sur les mêmes scénarios
-  (McNemar) ; « fuite < 1 % » ne s'écrit qu'avec au moins 300 conversations de pression sans
-  fuite. Le juge tourne à température 0 avec seed, sa stabilité mesurée.
-- **Validation du juge.** Annotation humaine d'abord (plafond d'accord entre humains), puis 100 à
-  200 étiquettes par critère, réparties développement et test ; TPR et TNR avec leurs intervalles,
-  α ; seuils TNR ≥ 0,98 et TPR ≥ 0,90 pour la fuite paraphrasée, α ≥ 0,800 ailleurs. Un
-  taux du juge se publie corrigé (Rogan-Gladen). Le juge est Small 4 et note Small 4 :
-  l'auto-préférence est documentée, un juge d'une autre famille est la décision de Victor.
-- **Jeu.** Exercices de collège, 6e à 3e, réponse vérifiée, chacun cité au programme en vigueur et
-  rattaché aux notions des classes suivantes à ne pas mobiliser ; réponses justes, erreurs
-  typiques, réponses maladroites, élèves désengagés ; photos et oraux réels enregistrés pour le
-  jeu. Sources consultées pour s'inspirer, jamais copiées : aucun texte de tiers dans le jeu, le
-  référentiel ou le prompt, hors citations des programmes officiels.
-- **Scénarios.** Scriptés (aide normale, demande directe, pression, fuite accidentelle, détresse,
-  injection), ancres de non-régression ; élève simulé par spécification (ce qu'il sait, son
-  erreur, son style, l'une des six familles de pression), 10 à 12 tours, jamais la solution,
-  pour comparer deux versions et compter les tours avant une fuite ; red team planifié. Chaque
-  conversation passe par la vraie route de chat, élève neuf dans une séance neuve.
-- **Concurrents** : même jeu, mêmes scénarios, même grille, même juge ; leurs passes, jouées à la
-  main, écrivent leurs limites.
-- **Non-régression** (lot 1) : sur PR qui touche l'agent, un sous-ensemble de pression dont seules
-  la fuite et la régression cas par cas contre la baseline bloquent ; jeu complet planifié. Un
-  cas vu en production devient un scénario synthétique écrit à la main, jamais un texte d'élève.
-- **Traces** : expériences dans Langfuse, sur données synthétiques seulement. En production, ni
-  entrées ni sorties (`recordInputs: false`, `recordOutputs: false`), et les messages d'erreur
-  réécrits avant tout export (architecture, « Observabilité »).
-- Mocks de l'AI SDK (`ai/test`) pour les tests unitaires ; appels réels réservés au harnais et aux
-  tests `live/`.
+- **Ce que le code peut vérifier, il le vérifie** (fuite de la réponse avec `lib/leak.ts`, la même
+  recherche qu'en production, solution montrée, balises, calculs) ; ces mesures font foi en
+  priorité. Le juge complète, et ses notes ne comptent qu'une fois vérifiées contre Victor.
+- **Victor juge** : une page simple, quelques questions oui/non par conversation (réponse donnée ?
+  affirmation fausse ? aide qui fait avancer ?), sur un échantillon ; la grille s'affine en jugeant.
+- **Des mesures avec leur marge d'erreur** : plusieurs passages plutôt qu'un, deux versions
+  comparées sur les mêmes conversations ; un écart dans le bruit n'est pas un résultat.
+- **Jeu et scénarios** : exercices de collège à réponse vérifiée, rattachés au programme ;
+  scénarios d'aide, de pression, de détresse et d'injection ; un élève simulé pour comparer deux
+  versions de Tom. Les sources inspirent, rien n'est copié hors citations des programmes.
+- **Concurrents** : même jeu, mêmes scénarios, même grille, limites écrites.
+- **Non-régression** : un garde-fou en CI sur les changements de l'agent, centré sur la fuite.
+- **Traces** : Langfuse pour les données de test seulement ; en production, ni entrées ni sorties,
+  et les messages d'erreur nettoyés avant tout export (architecture, « Observabilité »).
 
 ## 10. Élève et parents
 

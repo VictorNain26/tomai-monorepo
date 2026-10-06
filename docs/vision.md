@@ -1,6 +1,7 @@
 # Vision produit
 
-Statut : validée par Victor le 2026-10-01. Source de vérité du produit : pour qui, quelle
+Statut : validée par Victor le 2026-10-01, revue le 2026-10-06 (contraintes, preuve jugée par le
+fondateur, critères mesurables). Source de vérité du produit : pour qui, quelle
 promesse, quelles preuves, quel prix, ce qu'on n'est pas. Les specs techniques
 (`architecture.md`, `tuteur.md`) et la roadmap en découlent. Les
 faits viennent des études du 2026-10-01 (`docs/etudes/`), qui portent les
@@ -41,7 +42,7 @@ concurrent est mesurée ; ce qui n'est pas construit ne se promet pas.
 | **Il explique bien** | Il repère l'erreur, pose une question à la fois, monte d'un cran seulement si l'élève bloque, ne se trompe pas, parle comme en collège | Lot 2, mesuré par le lot 1 |
 | **Le parent voit sans surveiller** | Un résumé de la semaine (ce qui a été travaillé, ce qui résiste) et une alerte de détresse, jamais les conversations ; l'élève sait ce que voit son parent | Lot 3 |
 | **Les données d'un enfant restent en Europe** | Modèles Mistral sur l'endpoint UE, hébergement UE, aucune donnée réutilisée pour entraîner | Lot 3 (hébergement), ZDR à demander |
-| **On publie nos mesures** | Le protocole, le jeu d'exercices et les résultats (fuite et qualité d'aide), y compris face aux concurrents, sont publics et rejouables | Lot 1, publié au lot 4 |
+| **On publie nos mesures** | Le protocole, le jeu d'exercices et les résultats (fuite et qualité d'aide), y compris face aux concurrents, sont publics et rejouables, avec leur marge d'erreur et le nom de qui a jugé | Lot 1, publié au lot 4 |
 
 On ne dit pas qu'il fait progresser : un tuteur à garde-fous évite le dommage d'une IA qui
 donne la réponse, sans gain mesuré à ce jour (Bastani et al., PNAS 2025, dans
@@ -71,6 +72,15 @@ Ce que ça veut dire :
   4. un parent informé par un résumé, sans lecture des conversations.
 - Cette place est étroite. Elle tient si la qualité est réellement supérieure et si on la
   montre ; elle ne tient pas sur un slogan. Le lot 1 dira si on y arrive.
+
+## Repères de travail
+
+- **Un budget serré** : on privilégie Mistral Small 4 et on cherche la fiabilité dans les
+  garde-fous tenus par le code plutôt que dans un modèle plus cher.
+- **Le fondateur juge** la qualité de Tom ; on le dit tel quel quand on publie une mesure.
+- **Les données d'élèves restent en Europe** ; les conversations de test, synthétiques, ne sont
+  pas des données d'élèves.
+- **Tester tôt** : Victor utilise Tom lui-même le plus tôt possible, puis on élargit.
 
 ## Ce qu'on n'est pas
 
@@ -131,10 +141,11 @@ explorées jusqu'au 2026-10-01 sont abandonnées.
 
 ## Critères de succès de la V1
 
-- au harnais, aucune réponse donnée sur au moins 300 conversations de pression, soit moins
-  de 1 % avec 95 % de confiance, et aucune solution montrée par accident ;
-- un score d'aide au moins égal au meilleur concurrent mesuré avec le même protocole, sur les
-  critères dont le juge est validé contre une annotation humaine ;
+Des repères pour savoir si on y est, pas des seuils figés :
+- au harnais, sous pression, la réponse n'est presque jamais donnée, mesure publiée avec sa marge
+  d'erreur, et aucune solution n'est montrée par accident ;
+- une aide au moins aussi bonne que celle du meilleur concurrent, sur des critères que Victor a
+  validés ;
 - un gratuit qui couvre une soirée de devoirs normale ;
-- un coût par élève payant inférieur à son revenu net dans le pire cas mesuré ;
+- un coût par élève payant inférieur à ce qu'il rapporte ;
 - chaque phrase publique adossée à une source ou à une mesure publiée.
