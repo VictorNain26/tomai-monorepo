@@ -43,7 +43,6 @@ interface MessageData {
   sessionId: string;
   role: 'user' | 'assistant' | 'system';
   content: string;
-  frustrationLevel: number | null;
   aiModel: string | null;
   tokensUsed: number | null;
   createdAt: Date;
@@ -290,7 +289,6 @@ describe('ChatSessionService', () => {
           startedAt: new Date('2025-06-15'),
           endedAt: null,
           messageCount: 5,
-          frustrationAvg: '2.5',
         },
       ];
 
@@ -298,14 +296,13 @@ describe('ChatSessionService', () => {
       expect(result.length).toBe(1);
       expect(result[0]?.subject).toBe('mathematiques');
       expect(result[0]?.messagesCount).toBe(5);
-      expect(result[0]?.frustrationAvg).toBe(2.5);
     });
 
     it('should respect limit parameter', async () => {
       findByUserIdWithStatsResult = [
-        { id: 's1', subject: 'maths', startedAt: new Date(), endedAt: null, messageCount: 1, frustrationAvg: '1.0' },
-        { id: 's2', subject: 'francais', startedAt: new Date(), endedAt: null, messageCount: 2, frustrationAvg: '2.0' },
-        { id: 's3', subject: 'physique', startedAt: new Date(), endedAt: null, messageCount: 3, frustrationAvg: '3.0' },
+        { id: 's1', subject: 'maths', startedAt: new Date(), endedAt: null, messageCount: 1 },
+        { id: 's2', subject: 'francais', startedAt: new Date(), endedAt: null, messageCount: 2 },
+        { id: 's3', subject: 'physique', startedAt: new Date(), endedAt: null, messageCount: 3 },
       ];
 
       const result = await sessionService.getUserSessions('user-001', 2);
@@ -314,8 +311,8 @@ describe('ChatSessionService', () => {
 
     it('should return all when no limit', async () => {
       findByUserIdWithStatsResult = [
-        { id: 's1', subject: 'maths', startedAt: new Date(), endedAt: null, messageCount: 1, frustrationAvg: '1.0' },
-        { id: 's2', subject: 'francais', startedAt: new Date(), endedAt: null, messageCount: 2, frustrationAvg: '2.0' },
+        { id: 's1', subject: 'maths', startedAt: new Date(), endedAt: null, messageCount: 1 },
+        { id: 's2', subject: 'francais', startedAt: new Date(), endedAt: null, messageCount: 2 },
       ];
 
       const result = await sessionService.getUserSessions('user-001');

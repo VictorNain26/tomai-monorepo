@@ -72,8 +72,6 @@ mock.module('../modules/documents/index', () => ({
 mock.module('../modules/tutor/index', () => ({
   getStudyStats: mock(async () => ({
     totalSessions: 10,
-    totalMinutes: 300,
-    averageFrustration: 2.5,
     subjectBreakdown: { maths: 6, francais: 4 },
     lastSessionDate: new Date('2026-09-30T17:00:00Z'),
     studyDays: 5,
@@ -141,9 +139,6 @@ describe('Parent Service', () => {
       expect(metrics.length).toBe(1);
       expect(metrics[0]).toMatchObject({
         totalSessions: 10,
-        totalStudyTime: 300,
-        avgSessionDuration: 30,
-        avgFrustration: 2.5,
         subjectsStudied: 2,
         studyDays: 5,
         lastSessionDate: new Date('2026-09-30T17:00:00Z'),

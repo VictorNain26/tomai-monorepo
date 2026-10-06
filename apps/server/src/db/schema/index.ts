@@ -2,7 +2,6 @@ import { relations } from 'drizzle-orm';
 import { user, session, account } from '../../modules/auth/auth.schema';
 import { parentChild } from '../../modules/family/family.schema';
 import { studySessions, messages } from '../../modules/tutor/session.schema';
-import { progress } from './progress.schema';
 import { costTracking } from '../../modules/billing/cost-tracking.schema';
 import { learningDecks } from '../../modules/learning/decks.schema';
 import { files, sessionFiles } from '../../modules/documents/files.schema';
@@ -22,7 +21,6 @@ export const userRelations = relations(user, ({ many }) => ({
 
   // Learning relationships
   studySessions: many(studySessions),
-  progress: many(progress),
   costTracking: many(costTracking),
 
   // File uploads (Scaleway Object Storage)
@@ -47,13 +45,11 @@ export const studySessionsRelations = relations(studySessions, ({ one, many }) =
 // =============================================
 import type { User, Session, Account } from '../../modules/auth/auth.schema';
 import type { StudySession } from '../../modules/tutor/session.schema';
-import type { Progress } from './progress.schema';
 
 export type UserWithRelations = User & {
   sessions?: Session[];
   accounts?: Account[];
   studySessions?: StudySession[];
-  progress?: Progress[];
 };
 
 // =============================================
@@ -64,7 +60,6 @@ export * from '../../modules/family/family.schema';
 export * from '../../modules/tutor/session.schema';
 export * from '../../modules/tutor/exercise-sheet.schema';
 export * from '../../modules/tutor/distress.schema';
-export * from './progress.schema';
 export * from '../../modules/billing/cost-tracking.schema';
 export * from '../../modules/billing/billing.schema';
 export * from '../../modules/documents/files.schema';

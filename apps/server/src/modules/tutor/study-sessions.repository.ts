@@ -25,27 +25,6 @@ interface UpdateStudySessionInput {
   topic?: string;
   status?: 'draft' | 'active' | 'paused' | 'completed' | 'abandoned' | 'timeout' | 'error';
   endedAt?: Date;
-  durationMinutes?: number;
-  frustrationAvg?: string;
-  frustrationMin?: string;
-  frustrationMax?: string;
-  questionLevelsAvg?: string;
-  conceptsCovered?: string[];
-  socraticEffectiveness?: string;
-  studentEngagement?: string;
-  questionsAsked?: number;
-  questionsAnswered?: number;
-  hintsGiven?: number;
-  aiModelUsed?: string;
-  totalTokensUsed?: number;
-  apiCostCents?: number;
-  averageResponseTimeMs?: number;
-  deviceType?: string;
-  userSatisfaction?: number;
-  sessionRating?: number;
-  sessionMetadata?: Record<string, unknown>;
-  conversationSummary?: string;
-  summaryUpToMessageId?: string;
 }
 
 class StudySessionsRepository {
@@ -55,7 +34,7 @@ class StudySessionsRepository {
    */
   async create(input: CreateStudySessionInput): Promise<StudySession> {
     // Drizzle applique automatiquement les defaults du schema
-    // pour les champs omis (id, status, startedAt, aiModelUsed, createdAt, updatedAt, etc.)
+    // pour les champs omis (id, status, startedAt, createdAt, updatedAt, etc.)
     const [session] = await db
       .insert(studySessions)
       .values({
@@ -202,8 +181,6 @@ class StudySessionsRepository {
 
   async getSessionStats(userId: string): Promise<{
     totalSessions: number;
-    totalMinutes: number;
-    averageFrustration: number;
     subjectBreakdown: Record<string, number>;
     lastSessionDate: Date | null;
     studyDays: number;
@@ -213,8 +190,6 @@ class StudySessionsRepository {
     const [aggregate] = await db
       .select({
         totalSessions: sql<number>`COUNT(*)::int`,
-        totalMinutes: sql<number>`COALESCE(SUM(${studySessions.durationMinutes}), 0)::int`,
-        averageFrustration: sql<number>`COALESCE(AVG(${studySessions.frustrationAvg}), 0)::float`,
         lastSessionDate: sql<Date | null>`MAX(${studySessions.startedAt})`.mapWith(studySessions.startedAt),
         studyDays: sql<number>`COUNT(DISTINCT DATE(${studySessions.startedAt}))::int`,
       })
@@ -237,8 +212,6 @@ class StudySessionsRepository {
 
     return {
       totalSessions: aggregate?.totalSessions ?? 0,
-      totalMinutes: aggregate?.totalMinutes ?? 0,
-      averageFrustration: Math.round((aggregate?.averageFrustration ?? 0) * 10) / 10,
       subjectBreakdown,
       lastSessionDate: aggregate?.lastSessionDate ?? null,
       studyDays: aggregate?.studyDays ?? 0,

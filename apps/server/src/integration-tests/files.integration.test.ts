@@ -16,7 +16,7 @@ describe.skipIf(!dbReachable)('files the chat reads — from postgres', () => {
   });
 
   const file = (userId: string, fileName: string, status: 'ready' | 'pending') => ({
-    userId, fileName, mimeType: 'image/png', sizeBytes: 1, storageKey: `${userId}/${fileName}`, storageBucket: 'test', status,
+    userId, fileName, mimeType: 'image/png', sizeBytes: 1, storageKey: `${userId}/${fileName}`, status,
   });
 
   it("finds the user's own uploaded files only, never another user's nor an unfinished upload", async () => {

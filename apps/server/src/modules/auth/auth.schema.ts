@@ -1,5 +1,5 @@
-import { pgTable, varchar, text, timestamp, boolean, integer, jsonb, pgEnum, index, foreignKey, uuid } from 'drizzle-orm/pg-core';
-import { relations, sql } from 'drizzle-orm';
+import { pgTable, varchar, text, timestamp, boolean, pgEnum, index, foreignKey } from 'drizzle-orm/pg-core';
+import { relations } from 'drizzle-orm';
 import { EDUCATION_LEVELS } from '../../lib/education-levels.js';
 
 // =============================================
@@ -38,25 +38,6 @@ export const user = pgTable('user', {
   schoolLevel: schoolLevelEnum('school_level'), // Niveau scolaire pour élèves
   dateOfBirth: varchar('date_of_birth', { length: 10 }), // Format YYYY-MM-DD string (comme auth.ts)
   isActive: boolean('is_active').notNull().default(true), // État du compte
-  loginCount: integer('login_count').default(0), // Compteur de connexions
-
-  // ===== METADATA ET PREFERENCES =====
-  preferences: jsonb('preferences').default(sql`'{"theme": "light", "language": "fr", "notifications": true, "adaptive_difficulty": true}'::jsonb`),
-  metadata: jsonb('metadata').default(sql`'{}'::jsonb`),
-
-  // Subscription fields live on family_billing (RevenueCat-driven, single
-  // source of truth). Previously duplicated here but never read — removed
-  // to avoid accidental reads of stale data.
-
-  // ===== BETTER AUTH ADMIN PLUGIN FIELDS =====
-  banned: boolean('banned').default(false),
-  banReason: text('ban_reason'),
-  banExpires: timestamp('ban_expires', { withTimezone: true }),
-
-  // ===== LOCALISATION =====
-  countryCode: varchar('country_code', { length: 2 }).default('FR'),
-  timezone: varchar('timezone', { length: 50 }).default('Europe/Paris'),
-  lastLoginAt: timestamp('last_login_at', { withTimezone: true }),
 }, (table) => [
   // Index pour performance
   index('idx_user_email').on(table.email),
@@ -66,7 +47,7 @@ export const user = pgTable('user', {
 ]);
 
 /**
- * Table session - Better Auth standard + Admin plugin impersonation
+ * Table session - Better Auth standard
  */
 export const session = pgTable('session', {
   id: varchar('id', { length: 255 }).primaryKey(),
@@ -77,8 +58,6 @@ export const session = pgTable('session', {
   userAgent: text('user_agent'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
-  // Better Auth Admin Plugin: impersonation tracking
-  impersonatedBy: varchar('impersonated_by', { length: 255 }),
 }, (table) => [
   foreignKey({
     columns: [table.userId],
@@ -86,16 +65,9 @@ export const session = pgTable('session', {
     name: 'session_user_id_fkey'
   }).onDelete('cascade'),
 
-  foreignKey({
-    columns: [table.impersonatedBy],
-    foreignColumns: [user.id],
-    name: 'session_impersonated_by_fkey'
-  }).onDelete('cascade'),
-
   index('idx_session_token').on(table.token),
   index('idx_session_user_id').on(table.userId),
   index('idx_session_expires_at').on(table.expiresAt),
-  index('idx_session_impersonated_by').on(table.impersonatedBy),
 ]);
 
 /**
@@ -141,41 +113,6 @@ export const verification = pgTable('verification', {
   index('idx_verification_identifier').on(table.identifier),
 ]);
 
-/**
- * Table parent_restore_token - Quick Switch tokens (Parent → Child)
- *
- * Sécurité 2026:
- * - Token aléatoire stocké en base (pas de signature cryptographique côté client)
- * - Usage unique (usedAt marqué à l'utilisation)
- * - Expiration courte (24h)
- * - Audit trail complet (parentId, childId, timestamps)
- * - Révocation possible (suppression du token)
- */
-export const parentRestoreToken = pgTable('parent_restore_token', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  token: varchar('token', { length: 64 }).notNull().unique(), // 32 bytes hex = 64 chars
-  parentId: varchar('parent_id', { length: 255 }).notNull(),
-  childId: varchar('child_id', { length: 255 }).notNull(), // For audit trail
-  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
-  usedAt: timestamp('used_at', { withTimezone: true }), // NULL = not used, set on restore
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-}, (table) => [
-  index('idx_parent_restore_token_token').on(table.token),
-  index('idx_parent_restore_token_parent_id').on(table.parentId),
-  index('idx_parent_restore_token_expires_at').on(table.expiresAt),
-
-  foreignKey({
-    columns: [table.parentId],
-    foreignColumns: [user.id],
-    name: 'parent_restore_token_parent_id_fkey'
-  }).onDelete('cascade'),
-
-  foreignKey({
-    columns: [table.childId],
-    foreignColumns: [user.id],
-    name: 'parent_restore_token_child_id_fkey'
-  }).onDelete('cascade'),
-]);
 
 // =============================================
 // RELATIONS

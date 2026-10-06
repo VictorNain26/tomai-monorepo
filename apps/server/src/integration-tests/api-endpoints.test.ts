@@ -130,10 +130,6 @@ mock.module('../modules/tutor/chat-session.service', () => ({
       subject: 'test',
       startedAt: new Date(),
       endedAt: null,
-      durationMinutes: null,
-      frustrationAvg: null,
-      questionLevelsAvg: null,
-      conceptsCovered: null,
     })),
     getSessionForUser: mock(async (sessionId: string, userId: string) =>
       userId === 'user-001'
@@ -143,10 +139,6 @@ mock.module('../modules/tutor/chat-session.service', () => ({
             subject: 'test',
             startedAt: new Date(),
             endedAt: null,
-            durationMinutes: null,
-            frustrationAvg: null,
-            questionLevelsAvg: null,
-            conceptsCovered: null,
           }
         : null
     ),
@@ -190,7 +182,6 @@ mock.module('../modules/learning/index', () => ({
 import * as authSchema from '../modules/auth/auth.schema';
 import * as familySchema from '../modules/family/family.schema';
 import * as sessionSchema from '../modules/tutor/session.schema';
-import * as progressSchema from '../db/schema/progress.schema';
 import * as costTrackingSchema from '../modules/billing/cost-tracking.schema';
 import * as billingSchema from '../modules/billing/billing.schema';
 import * as filesSchema from '../modules/documents/files.schema';
@@ -199,7 +190,6 @@ mock.module('../db/schema', () => ({
   ...authSchema,
   ...familySchema,
   ...sessionSchema,
-  ...progressSchema,
   ...costTrackingSchema,
   ...billingSchema,
   ...filesSchema,

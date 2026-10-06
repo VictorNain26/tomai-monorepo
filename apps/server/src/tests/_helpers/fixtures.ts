@@ -85,7 +85,6 @@ interface MessageData {
   sessionId: string;
   role: 'user' | 'assistant' | 'system';
   content: string;
-  frustrationLevel: number | null;
   aiModel: string | null;
   tokensUsed: number | null;
   createdAt: Date;
@@ -97,7 +96,6 @@ export function makeMessage(overrides?: Partial<MessageData>): MessageData {
     sessionId: 'session-001',
     role: 'user',
     content: 'Bonjour, je ne comprends pas les fractions.',
-    frustrationLevel: null,
     aiModel: null,
     tokensUsed: null,
     createdAt: BASE_DATE,

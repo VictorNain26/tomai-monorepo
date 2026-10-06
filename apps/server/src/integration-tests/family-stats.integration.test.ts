@@ -42,16 +42,15 @@ describe.skipIf(!dbReachable)('family children and study stats from postgres', (
     const day1Later = new Date('2026-09-28T11:00:00Z');
     const day2 = new Date('2026-09-30T10:00:00Z');
     await db.insert(studySessions).values([
-      { userId: activeId, subject: 'mathematiques', startedAt: day1, durationMinutes: 20 },
-      { userId: activeId, subject: 'mathematiques', startedAt: day1Later, durationMinutes: 10 },
-      { userId: activeId, subject: 'francais', startedAt: day2, durationMinutes: 30 },
+      { userId: activeId, subject: 'mathematiques', startedAt: day1 },
+      { userId: activeId, subject: 'mathematiques', startedAt: day1Later },
+      { userId: activeId, subject: 'francais', startedAt: day2 },
     ]);
 
     const stats = await getStudyStats(activeId);
 
     expect(stats).toMatchObject({
       totalSessions: 3,
-      totalMinutes: 60,
       studyDays: 2,
       subjectBreakdown: { mathematiques: 2, francais: 1 },
     });

@@ -18,9 +18,6 @@ export interface ParentDashboardMetrics {
   age: number;
   totalSessions: number;
   studyDays: number;
-  avgSessionDuration: number;
-  avgFrustration: number;
   subjectsStudied: number;
-  totalStudyTime: number;
   lastSessionDate: Date | null;
 }
