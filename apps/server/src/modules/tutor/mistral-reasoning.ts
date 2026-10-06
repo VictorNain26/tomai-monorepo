@@ -23,14 +23,14 @@ const REASONING_LEVELS: ReadonlySet<EducationLevelType> = new Set<EducationLevel
  * explanations and checks. Typed against the turn analysis' taxonomy:
  * the chat turn's subject is one of those families, never a fine-grained slug.
  */
-const STEM_SUBJECTS: ReadonlySet<string> = new Set<SubjectFamily>([
+const STEM_SUBJECTS: ReadonlySet<SubjectFamily> = new Set<SubjectFamily>([
   'mathematiques',
   'sciences',
 ]);
 
 interface ReasoningRouteParams {
   schoolLevel: EducationLevelType;
-  subject?: string | undefined;
+  subject?: SubjectFamily | undefined;
   /** The turn's analysis; without it, "none". */
   analysis?: Pick<TurnAnalysis, 'proposesAnswer' | 'asksSolution' | 'asksExplanation'> | undefined;
   /** The turn follows a contract: the sheet and the diagnosis carry the exactness. */

@@ -25,7 +25,7 @@ mock.module('../modules/tutor/exercise-diagnosis.service', () => ({ diagnose }))
 const { prepareExerciseTurn } = await import('../modules/tutor/exercise-turn');
 
 const params = (overrides: Partial<Parameters<typeof prepareExerciseTurn>[0]> = {}) => ({
-  userId: 'u1', sessionId: 's1', level: 'quatrieme' as const, subject: 'mathematiques', analysis: analysis(), current,
+  userId: 'u1', sessionId: 's1', level: 'quatrieme' as const, subject: 'mathematiques' as const, analysis: analysis(), current,
   studentText: 'Je bloque', lastTutorText: 'Que cherches-tu ?', attachedFilesBlock: null, ...overrides,
 });
 

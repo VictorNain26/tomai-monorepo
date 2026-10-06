@@ -9,6 +9,7 @@ import { env } from '../../platform/config/env.js';
 import { logger } from '../../platform/observability/logger.js';
 import { costTrackingService } from '../billing/index.js';
 import type { EducationLevelType } from '../../types/index.js';
+import type { SubjectFamily } from '../../lib/subjects.js';
 import { ExerciseSheetSchema, keepKnownNotions, notionsFor, schoolYearOf, sheetMessages, vote, type ExerciseSheet } from './exercise-sheet.js';
 import { exerciseSheetsRepository } from './exercise-sheets.repository.js';
 import { KEPT_HINTS, type Hint } from './hint-ladder.js';
@@ -23,7 +24,7 @@ interface PrepareSheetParams {
   userId: string;
   sessionId: string;
   level: EducationLevelType;
-  subject: string | undefined;
+  subject: SubjectFamily | undefined;
   studentText: string;
   /** The texts read from the session's files, oldest first, fenced. */
   attachedFilesBlock: string | null;

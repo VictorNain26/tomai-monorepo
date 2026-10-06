@@ -5,6 +5,8 @@ CREATE TYPE "public"."file_status" AS ENUM('pending', 'uploaded', 'processing', 
 CREATE TYPE "public"."message_role" AS ENUM('user', 'assistant', 'system');--> statement-breakpoint
 CREATE TYPE "public"."school_level" AS ENUM('sixieme', 'cinquieme', 'quatrieme', 'troisieme');--> statement-breakpoint
 CREATE TYPE "public"."session_status" AS ENUM('draft', 'active', 'paused', 'completed', 'abandoned', 'timeout', 'error');--> statement-breakpoint
+CREATE TYPE "public"."subject" AS ENUM('mathematiques', 'francais', 'anglais', 'espagnol', 'allemand', 'italien', 'histoire-geo', 'physique-chimie', 'svt', 'technologie');--> statement-breakpoint
+CREATE TYPE "public"."subject_family" AS ENUM('mathematiques', 'francais', 'langues', 'sciences', 'histoire-geo', 'general');--> statement-breakpoint
 CREATE TYPE "public"."subscription_plan_type" AS ENUM('free', 'premium');--> statement-breakpoint
 CREATE TYPE "public"."subscription_status" AS ENUM('active', 'paused', 'cancelled', 'expired');--> statement-breakpoint
 CREATE TYPE "public"."user_role" AS ENUM('student', 'parent');--> statement-breakpoint
@@ -108,7 +110,7 @@ CREATE TABLE "learning_decks" (
 	"user_id" varchar(255) NOT NULL,
 	"title" varchar(200) NOT NULL,
 	"description" text,
-	"subject" varchar(100) NOT NULL,
+	"subject" "subject" NOT NULL,
 	"source" "deck_source" NOT NULL,
 	"source_id" varchar(255),
 	"source_prompt" text,
@@ -162,7 +164,7 @@ CREATE TABLE "session_files" (
 CREATE TABLE "study_sessions" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"user_id" varchar(255) NOT NULL,
-	"subject" varchar(100) DEFAULT 'general' NOT NULL,
+	"subject" "subject_family" DEFAULT 'general' NOT NULL,
 	"topic" varchar(200),
 	"status" "session_status" DEFAULT 'active' NOT NULL,
 	"started_at" timestamp with time zone DEFAULT now() NOT NULL,

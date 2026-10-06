@@ -8,6 +8,7 @@
 import { z } from 'zod';
 import { programmeFor, programmes, type Entry } from '../../referential/index.js';
 import { EDUCATION_LEVELS, LEVEL_SHORT_LABELS } from '../../lib/education-levels.js';
+import type { SubjectFamily } from '../../lib/subjects.js';
 import type { EducationLevelType } from '../../types/index.js';
 import { checkAnswer, sameMath, type MathCheck } from './exercise-math.js';
 import { stripPromptTags, wrapUserMessage } from './mistral-helpers.js';
@@ -48,7 +49,7 @@ export interface Notions {
  * The programme of the class and of the later college classes for a subject, or null without a
  * referential: a subject other than mathematics and French.
  */
-export function notionsFor(level: EducationLevelType, subject: string | undefined, schoolYear: number): Notions | null {
+export function notionsFor(level: EducationLevelType, subject: SubjectFamily | undefined, schoolYear: number): Notions | null {
   if (subject !== 'mathematiques' && subject !== 'francais') return null;
   const entries = programmeFor(level, subject, schoolYear)?.entries ?? [];
   if (entries.length === 0) return null;

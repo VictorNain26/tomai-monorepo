@@ -31,7 +31,7 @@ const writtenAnswerSchema = z.strictObject({
 const exerciseSchema = z.strictObject({
   id: text,
   origin: z.enum(['protocol-2026-10-01', 'original']),
-  level: educationLevelSchema.extract(['sixieme', 'cinquieme', 'quatrieme', 'troisieme']),
+  level: educationLevelSchema,
   subject: z.enum(SUBJECT_SLUGS),
   topic: text,
   /** Programme in force in 2026-2027 that covers the exercise, quoted verbatim. */

@@ -1,7 +1,7 @@
 import { pgTable, uuid, varchar, text, timestamp, integer, jsonb, pgEnum, index, foreignKey } from 'drizzle-orm/pg-core';
 import { relations, sql } from 'drizzle-orm';
 import { user, schoolLevelEnum } from '../auth/auth.schema';
-import type { SubjectSlug } from '../../lib/subjects.js';
+import { SUBJECT_SLUGS } from '../../lib/subjects.js';
 
 // =============================================
 // ENUMS
@@ -26,6 +26,7 @@ export const cardTypeEnum = pgEnum('card_type', [
   'reformulation'
 ]);
 export const deckSourceEnum = pgEnum('deck_source', ['prompt', 'conversation', 'document']);
+export const subjectEnum = pgEnum('subject', SUBJECT_SLUGS);
 
 // =============================================
 // TABLES
@@ -44,7 +45,7 @@ export const learningDecks = pgTable('learning_decks', {
   // Contenu
   title: varchar('title', { length: 200 }).notNull(),
   description: text('description'),
-  subject: varchar('subject', { length: 100 }).$type<SubjectSlug>().notNull(),
+  subject: subjectEnum('subject').notNull(),
 
   // Source de création
   source: deckSourceEnum('source').notNull(),

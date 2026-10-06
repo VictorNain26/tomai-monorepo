@@ -7,6 +7,7 @@
 import { z } from 'zod';
 import { logger } from '../../platform/observability/logger';
 import type { EducationLevelType } from '../../types/index';
+import { isEducationLevel } from '../../lib/education-levels.js';
 import {
   DeckNotFoundError,
   DeckOwnershipError,
@@ -41,21 +42,18 @@ export function handleDeckDomainError(
 }
 
 /**
- * Get user's education level with fallback and logging
- * Logs warning if fallback is used (indicates incomplete profile)
+ * The user's level; a missing or unknown one falls back to the 6e, logged as an incomplete profile.
  */
 export function getUserLevel(
   userId: string,
   schoolLevel: string | null | undefined
 ): EducationLevelType {
-  if (!schoolLevel) {
-    logger.warn('User has no schoolLevel - using fallback', {
-      operation: 'learning:getUserLevel:fallback',
-      userId,
-      fallbackLevel: 'sixieme',
-      severity: 'low' as const,
-    });
-    return 'sixieme';
-  }
-  return schoolLevel as EducationLevelType;
+  if (isEducationLevel(schoolLevel)) return schoolLevel;
+  logger.warn('User has no collège level - using fallback', {
+    operation: 'learning:getUserLevel:fallback',
+    userId,
+    fallbackLevel: 'sixieme',
+    severity: 'low' as const,
+  });
+  return 'sixieme';
 }

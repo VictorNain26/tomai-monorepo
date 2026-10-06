@@ -1,5 +1,5 @@
 {
-  "id": "104f77d0-7eb1-48cf-a147-24a0602206ae",
+  "id": "0fd840ab-b002-4c16-9c23-4f38de95b988",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -988,7 +988,8 @@
         },
         "subject": {
           "name": "subject",
-          "type": "varchar(100)",
+          "type": "subject",
+          "typeSchema": "public",
           "primaryKey": false,
           "notNull": true
         },
@@ -1581,7 +1582,8 @@
         },
         "subject": {
           "name": "subject",
-          "type": "varchar(100)",
+          "type": "subject_family",
+          "typeSchema": "public",
           "primaryKey": false,
           "notNull": true,
           "default": "'general'"
@@ -2409,6 +2411,34 @@
         "abandoned",
         "timeout",
         "error"
+      ]
+    },
+    "public.subject": {
+      "name": "subject",
+      "schema": "public",
+      "values": [
+        "mathematiques",
+        "francais",
+        "anglais",
+        "espagnol",
+        "allemand",
+        "italien",
+        "histoire-geo",
+        "physique-chimie",
+        "svt",
+        "technologie"
+      ]
+    },
+    "public.subject_family": {
+      "name": "subject_family",
+      "schema": "public",
+      "values": [
+        "mathematiques",
+        "francais",
+        "langues",
+        "sciences",
+        "histoire-geo",
+        "general"
       ]
     },
     "public.subscription_plan_type": {
