@@ -158,7 +158,12 @@
     "@esbuild-kit/core-utils": {
       "esbuild": ">=0.25.0",
     },
-    "source-map-js": "^1.2.2",
+    "@tailwindcss/node": {
+      "source-map-js": "^1.2.2",
+    },
+    "postcss": {
+      "source-map-js": "^1.2.2",
+    },
   },
   "packages": {
     "@ai-sdk/gateway": ["@ai-sdk/gateway@4.0.87", "", { "dependencies": { "@ai-sdk/provider": "4.0.17", "@ai-sdk/provider-utils": "5.0.45", "@vercel/oidc": "3.2.0" }, "peerDependencies": { "zod": "^3.25.76 || ^4.1.8" } }, "sha512-6wJmX/D5OO7tvDJbtFdXdBuRt8AkCnW+FLK+W35UHe/tHgolAa4hclXtJcMSYnlTDy/t5DNRgdesVaoMXtwzow=="],

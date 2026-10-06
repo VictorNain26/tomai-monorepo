@@ -58,6 +58,11 @@
     "@esbuild-kit/core-utils": {
       "esbuild": ">=0.25.0"
     },
-    "source-map-js": "^1.2.2"
+    "postcss": {
+      "source-map-js": "^1.2.2"
+    },
+    "@tailwindcss/node": {
+      "source-map-js": "^1.2.2"
+    }
   }
 }
