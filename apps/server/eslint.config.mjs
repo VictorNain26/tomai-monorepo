@@ -59,6 +59,11 @@ export default [
       ],
       // A file outside every element and descriptor would escape the rules above.
       'boundaries/no-unknown-files': 'error',
+      // A test passes its doubles in; replacing a module hides the wiring and breaks silently.
+      'no-restricted-properties': [
+        'error',
+        { object: 'mock', property: 'module', message: 'Pas de mock.module : passer la dépendance en paramètre (.claude/rules/testing.md).' },
+      ],
       'no-restricted-syntax': [
         'error',
         {
