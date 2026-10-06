@@ -15,7 +15,7 @@ directement la cible.
 
 | Sujet | Décision | Motif |
 |---|---|---|
-| Client V1 | **Web uniquement, application monopage (orientation : Vite, React, TanStack Router), pensée d'abord pour le téléphone** | Un seul client à livrer ; le collégien travaille le soir, probablement sur téléphone, à vérifier (vision, « Pour qui ») |
+| Client V1 | **Web uniquement, application monopage Vite + React + TanStack Router, installable (PWA), servie par Hono sur la même origine que l'API, pensée d'abord pour le téléphone** | Un seul client à livrer ; le collégien travaille le soir, probablement sur téléphone, à vérifier (vision, « Pour qui ») ; options comparées, Next.js compris, dans `etudes/2026-10-06/client-web.md` |
 | Application native | **Hors V1** ; `apps/mobile` supprimé au lot 0 (l'historique git le garde) | Code mort à maintenir sinon |
 | Topologie | **Un dépôt, backend en monolithe modulaire** | `ai-service` et `curriculum` séparés ont pourri puis été supprimés ; un service séparé ne se justifie que par une contrainte réelle |
 | Serveur | Bun + Hono (Elysia remplacé le 2026-10-01) | Client typé de bout en bout (`hono/client`) ; adoption et maintenance bien plus larges qu'Elysia, qui reposait sur un seul mainteneur ; tourne sur Bun, Node et l'edge |
@@ -64,10 +64,15 @@ Rangement physique, fixé à la refonte demandée le 2026-10-01 (une PR par modu
 
 ## Client web
 
-- `apps/web` en application monopage Vite + React + TanStack Router (orientation du 2026-10-01, confirmée au démarrage du lot 3), consommateur du client typé via `@repo/api`.
+- `apps/web` en application monopage Vite + React + TanStack Router, consommateur du client typé via `@repo/api` (`etudes/2026-10-06/client-web.md`).
+- Installable (PWA, `vite-plugin-pwa`) : photo, voix et push passent par le web, sans application
+  native en V1.
+- Servie par Hono sur la même origine que l'API : cookies sans CORS ni blocage de Safari, un seul
+  déploiement.
+- Données par TanStack Query, formulaires par react-hook-form et Zod.
 - **Pensé d'abord pour le téléphone** : chaque parcours se conçoit et se prouve à largeur
   de téléphone, le bureau s'en déduit.
-- Primitives `@repo/ui` (shadcn) et tokens `@repo/tokens`.
+- Primitives `@repo/ui` (shadcn, sur Base UI au début du lot 3) et tokens `@repo/tokens`.
 - Le chat consomme le protocole de l'AI SDK (`useChat` de `@ai-sdk/react`), déjà
   celui du serveur.
 
@@ -77,7 +82,6 @@ Elles sont tranchées au démarrage du lot qui en dépend, doc-first, pas avant�
 
 | Décision | Lot | Ce qui doit être vérifié |
 |---|---|---|
-| Client web : SPA Vite + React + TanStack Router (orientation du 2026-10-01 : derrière une connexion, sans besoin de SEO ni de rendu serveur ; Vite 219 M et TanStack Router 28 M téléchargements par semaine) | 3 | Fichiers servis par Hono sur la même origine que l'API (cookies sans CORS) ou par un hébergeur statique ; intégration de `@repo/ui` et de `useChat` |
 | Hébergement web et serveur (UE) | 3 | Région UE, streaming SSE long, coût |
 | Fournisseur de paiement web | 3 | Conformité UE, abonnement familial multi-enfants, facturation sans piège réalisable telle que la vision la définit |
 | Landing : Astro à la place de Next.js (orientation du 2026-10-01 : site statique, SEO, HTML sans JavaScript par défaut, composants React en îlots) | 4 | Reprise de `@repo/ui` en îlots, hébergement, réécriture avec la nouvelle identité |
