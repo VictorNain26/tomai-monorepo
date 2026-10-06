@@ -12,7 +12,7 @@ bloquant levé).
 
 ## Où on en est
 
-- **Dernière mise à jour :** 2026-10-05.
+- **Dernière mise à jour :** 2026-10-06.
 - **Lot en cours :** 2 — Agent qui ne cède pas, refondu sur sources (`roadmap.md`).
   - Du lot 1 restent la baseline, réduite aux 38 conversations de l'échantillon
     (`etudes/2026-10-04/refonte-agent.md`, « Mesure »), les concurrents et la CI.
@@ -28,9 +28,32 @@ bloquant levé).
   corrigée (#391). Appels du SDK Mistral retentés, modération comprise sur un appel bloqué (#392).
   S4 repassé : aucune fuite sur 6. Point 7 terminé : appels annexes (#393), logs sans contenu
   d'élève (#394), mémoire (#395). Nettoyage demandé par Victor le 2026-10-06, en trois PR : la
-  mémoire entre séances, faite (#396) ; les colonnes et tables jamais lues ; les restes hors
-  vision et une migration de base unique, qui emporte pgvector. Puis le point 8, quotas et coûts,
-  et le passage de fin. Plan d'abord dans `docs/plans/`.
+  mémoire entre séances (#396) et colonnes et tables jamais lues (#397), faites. Prochaine : la
+  troisième, les restes hors vision (niveaux du lycée et du primaire, matières lycée, routes
+  sans client, `/health/ai` sans authentification, migrations en double de `drizzle/2025*`),
+  puis une migration de base unique, qui emporte pgvector et les valeurs d'enum sans usage
+  (`admin`, `rag_program`) ; elle recrée la base locale : demander l'accord de Victor avant.
+  Puis le point 8, quotas et coûts, et le passage de fin.
+  - Inventaire de la troisième PR (lecture du code serveur, 2026-10-06), chemins relatifs à
+    `apps/server/src/` : matières `ses`, `philosophie`, `nsi` (`lib/subjects.ts`) et trois listes
+    de matières au lieu d'une (`lib/subjects.ts`, `prompts/adaptation/subjects.ts`,
+    `COLLEGE_SUBJECTS` de `services/education.service.ts`) ; niveaux de seconde à terminale
+    dans `modules/tutor/mistral-reasoning.ts`, cycle 2 et lycée dans
+    `modules/learning/learning-config.ts` (`encourageBreaks`) et
+    `modules/learning/prompts/by-subject.ts`, repli `'seconde'` de
+    `modules/documents/upload.helpers.ts`, `EducationCycle 'lycee'` ; `GET /api/tts/voices`
+    (toujours vide), `GET /learning/config` (indications d'interface sans client), `GET
+    /health/ai` (sans authentification, un appel Mistral réel à chaque requête) ;
+    `currentMessageMaxTokens` jamais lu (`token-budget.service.ts`) ; `LEARNING_CONFIG` cite
+    `docs/AUDIT_LEARNING_FLASHCARDS.md`, qui n'existe pas ; dossiers `drizzle/2025*` non
+    référencés par le journal ; rôle `admin` de `packages/api/src/types.ts`. Laissés au lot 3 :
+    niveaux de l'inscription (`education-mapping.ts`), routes de séance qui se recouvrent.
+  - Point 8 en pause sur la branche `feat/cost-tracking-every-call` (plan commité, travail en
+    cours dans `git stash` de cette branche) : chaque appel IA tracé en micro-euros, tarifs
+    vérifiés le 2026-10-06 sur les pages Mistral. À reprendre sans les embeddings, supprimés.
+  - Décidé le 2026-10-06, sur délégation de Victor, à porter par les PR du point 8 : le quota
+    compte le coût réel (cache à 10 %, lecture vocale comprise) ; l'outil de fiches est imposé
+    par le code quand l'analyse du tour relève une demande ou un accord. Plan d'abord dans `docs/plans/`.
   - Une relecture humaine d'une partie des conversations lues par Claude reste due avant
     toute publication (lot 4).
 - **PR ouvertes :** aucune.
@@ -211,10 +234,6 @@ contraire.
   (`platform/http/error-handler.ts`) renvoie toujours le même message générique,
   sans dire quel champ est faux. Les formulaires d'enfant en auront besoin : exposer les
   champs en erreur dans l'enveloppe, pour toutes les routes.
-- **Tableaux de bord** : aucun code n'écrit la table `progress`, donc `conceptsLearned` de
-  `/api/progress/dashboard` vaut toujours 0 ; l'alimenter ou supprimer table, dépôt et champ
-  avec le tableau de bord du client web. La table `parent_restore_token` (bascule rapide du
-  mobile) n'est plus lue ni écrite : la supprimer par migration (#353).
 - **Facturation** : colonnes `revenuecat_customer_id` et `revenuecat_subscription_id` de
   `family_billing`, enum `billing_status` et commentaires RevenueCat de
   `modules/billing/billing.schema.ts`, restes du mobile, refaits avec le paiement web. Ses
@@ -589,3 +608,11 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
   90 et 180 jours) ; le profil cognitif gardait, sans durée ni accès, des notes libres du
   modèle sur un enfant. La page de confidentialité de la landing, qui décrivait ce profil et
   une mémoire de 90 jours, dit ce qui est : aucun profil, une séance ne sert pas à la suivante.
+
+  Colonnes et tables sans usage supprimées (#397), relevées colonne par colonne dans le code :
+  dix-neuf colonnes de `study_sessions` (frustration, métriques socratiques, coût, appareil,
+  note…), neuf de `messages`, neuf de `user` et `session.impersonated_by` (plugin admin de Better
+  Auth, non activé), les tables `progress` et `parent_restore_token`, `files.storage_*` ; avec
+  elles `/progress/dashboard` et les champs toujours nuls du tableau de bord parent (durée,
+  frustration).
+

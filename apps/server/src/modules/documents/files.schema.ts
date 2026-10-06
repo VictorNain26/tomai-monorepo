@@ -42,8 +42,6 @@ export const files = pgTable('files', {
 
   // Stockage Scaleway S3
   storageKey: varchar('storage_key', { length: 500 }).notNull(), // Clé S3 dans le bucket
-  storageBucket: varchar('storage_bucket', { length: 100 }).notNull(),
-  storageRegion: varchar('storage_region', { length: 20 }).notNull().default('fr-par'),
 
   // { subject, level, userId } from the upload, then { extractedText, extractionMethod, wordCount } once read.
   educationalContext: jsonb('educational_context').default(sql`'{}'::jsonb`),

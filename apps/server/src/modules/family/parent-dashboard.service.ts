@@ -24,12 +24,7 @@ export class ParentDashboardService {
               age: child.dateOfBirth ? this.calculateAge(new Date(child.dateOfBirth)) : 0,
               totalSessions: stats.totalSessions,
               studyDays: stats.studyDays,
-              avgSessionDuration: stats.totalSessions > 0
-                ? stats.totalMinutes / stats.totalSessions
-                : 0,
-              avgFrustration: stats.averageFrustration,
               subjectsStudied: Object.keys(stats.subjectBreakdown).length,
-              totalStudyTime: stats.totalMinutes,
               lastSessionDate: stats.lastSessionDate,
             };
           } catch (childError) {

@@ -80,10 +80,6 @@ export class ChatSessionService {
         subject: session.subject,
         startedAt: session.startedAt,
         endedAt: session.endedAt,
-        durationMinutes: session.durationMinutes,
-        frustrationAvg: session.frustrationAvg ? parseFloat(session.frustrationAvg) : null,
-        questionLevelsAvg: session.questionLevelsAvg ? parseFloat(session.questionLevelsAvg) : null,
-        conceptsCovered: Array.isArray(session.conceptsCovered) ? session.conceptsCovered.join(', ') : session.conceptsCovered
       };
     } catch (_error) {
       logger.error('Error getting session', { operation: 'chat:session:get', err: _error, sessionId, severity: 'medium' as const });
@@ -126,20 +122,17 @@ export class ChatSessionService {
     }
   }
 
-  async getUserSessions(userId: string, limit?: number): Promise<UserSession[]> {
+  async getUserSessions(userId: string, limit: number): Promise<UserSession[]> {
     try {
-      const sessions = await studySessionsRepository.findByUserIdWithStats(userId);
+      const sessions = await studySessionsRepository.findByUserIdWithStats(userId, limit);
 
-      const limitedSessions = limit ? sessions.slice(0, limit) : sessions;
-
-      const result = limitedSessions.map(session => ({
+      const result = sessions.map(session => ({
         id: session.id,
         subject: session.subject,
         startedAt: session.startedAt,
         endedAt: session.endedAt,
         messagesCount: session.messageCount,
         lastActivity: session.endedAt ?? session.startedAt,
-        frustrationAvg: parseFloat(session.frustrationAvg ?? '0')
       }));
 
       return result;

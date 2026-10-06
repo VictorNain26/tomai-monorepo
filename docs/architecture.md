@@ -34,7 +34,7 @@ jamais les fichiers internes d'un autre. Découpage cible, tiré du code actuel 
 | Module | Responsabilité | Code actuel |
 |---|---|---|
 | `auth` | Comptes parent (email, Google) et élève (username), création d'un compte élève, mot de passe ; le moteur de session (better-auth, gardes) est dans `platform/` et lit les tables par `db/schema` | `modules/auth/` |
-| `family` | Rattachement parent ↔ enfants ; côté parent, résumé de la semaine et alerte de détresse, jamais les conversations ; lecture du statut et de l'usage d'abonnement (`/api/subscriptions`), qui compose enfants, liens et données de `billing` | `modules/family/` ; `db/schema/progress.schema.ts` et `db/repositories/progress.repository.ts` en attente du lot 3 |
+| `family` | Rattachement parent ↔ enfants ; côté parent, résumé de la semaine et alerte de détresse, jamais les conversations ; lecture du statut et de l'usage d'abonnement (`/api/subscriptions`), qui compose enfants, liens et données de `billing` | `modules/family/` |
 | `tutor` | Agent IA : session de chat, classeur de séance, outils, résumé de séance, garde-fous, statistiques d'étude | `modules/tutor/` |
 | `learning` | Decks, cartes, révisions FSRS, génération de cartes | `modules/learning/` |
 | `documents` | Upload, liste des fichiers, extraction, analyse, stockage S3, fichiers prêts pour un tour de chat | `modules/documents/` |

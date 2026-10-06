@@ -29,7 +29,6 @@ interface MessageData {
   sessionId: string;
   role: 'user' | 'assistant' | 'system';
   content: string;
-  frustrationLevel: number | null;
   aiModel: string | null;
   tokensUsed: number | null;
   createdAt: Date;

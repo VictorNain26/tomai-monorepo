@@ -4,10 +4,6 @@ export interface SessionDetails {
   subject: string;
   startedAt: Date;
   endedAt: Date | null;
-  durationMinutes: number | null;
-  frustrationAvg: number | null;
-  questionLevelsAvg: number | null;
-  conceptsCovered: string | null;
 }
 
 export interface MessageDetails {
@@ -15,13 +11,9 @@ export interface MessageDetails {
   sessionId: string;
   role: 'user' | 'assistant';
   content: string;
-  frustrationLevel: number | null;
-  questionLevel: number | null;
   aiModel: string | null;
-  isFallback: boolean;
   timestamp: Date;
   tokensUsed: number | null;
-  costEstimate: number | null;
   attachedFile?: {
     fileName: string;
     fileId?: string;
@@ -37,7 +29,6 @@ export interface UserSession {
   endedAt: Date | null;
   messagesCount: number;
   lastActivity: Date;
-  frustrationAvg: number;
 }
 
 export interface ConversationListItem {

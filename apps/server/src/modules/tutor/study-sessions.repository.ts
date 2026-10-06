@@ -25,27 +25,6 @@ interface UpdateStudySessionInput {
   topic?: string;
   status?: 'draft' | 'active' | 'paused' | 'completed' | 'abandoned' | 'timeout' | 'error';
   endedAt?: Date;
-  durationMinutes?: number;
-  frustrationAvg?: string;
-  frustrationMin?: string;
-  frustrationMax?: string;
-  questionLevelsAvg?: string;
-  conceptsCovered?: string[];
-  socraticEffectiveness?: string;
-  studentEngagement?: string;
-  questionsAsked?: number;
-  questionsAnswered?: number;
-  hintsGiven?: number;
-  aiModelUsed?: string;
-  totalTokensUsed?: number;
-  apiCostCents?: number;
-  averageResponseTimeMs?: number;
-  deviceType?: string;
-  userSatisfaction?: number;
-  sessionRating?: number;
-  sessionMetadata?: Record<string, unknown>;
-  conversationSummary?: string;
-  summaryUpToMessageId?: string;
 }
 
 class StudySessionsRepository {
@@ -55,7 +34,7 @@ class StudySessionsRepository {
    */
   async create(input: CreateStudySessionInput): Promise<StudySession> {
     // Drizzle applique automatiquement les defaults du schema
-    // pour les champs omis (id, status, startedAt, aiModelUsed, createdAt, updatedAt, etc.)
+    // pour les champs omis (id, status, startedAt, createdAt, updatedAt, etc.)
     const [session] = await db
       .insert(studySessions)
       .values({
@@ -109,7 +88,7 @@ class StudySessionsRepository {
     return session;
   }
 
-  async findByUserIdWithStats(userId: string): Promise<(StudySession & { messageCount: number })[]> {
+  async findByUserIdWithStats(userId: string, limit: number): Promise<(StudySession & { messageCount: number })[]> {
     return await db
       .select({
         ...getTableColumns(studySessions),
@@ -119,7 +98,8 @@ class StudySessionsRepository {
       .leftJoin(messages, eq(messages.sessionId, studySessions.id))
       .where(eq(studySessions.userId, userId))
       .groupBy(studySessions.id)
-      .orderBy(desc(studySessions.startedAt));
+      .orderBy(desc(studySessions.startedAt))
+      .limit(limit);
   }
 
   /**
@@ -202,33 +182,29 @@ class StudySessionsRepository {
 
   async getSessionStats(userId: string): Promise<{
     totalSessions: number;
-    totalMinutes: number;
-    averageFrustration: number;
     subjectBreakdown: Record<string, number>;
     lastSessionDate: Date | null;
     studyDays: number;
   }> {
-    // Aggregated in SQL: single scan of study_sessions filtered by userId.
-    // Previous implementation loaded up to 1000 full rows to compute sums/averages in JS.
-    const [aggregate] = await db
-      .select({
-        totalSessions: sql<number>`COUNT(*)::int`,
-        totalMinutes: sql<number>`COALESCE(SUM(${studySessions.durationMinutes}), 0)::int`,
-        averageFrustration: sql<number>`COALESCE(AVG(${studySessions.frustrationAvg}), 0)::float`,
-        lastSessionDate: sql<Date | null>`MAX(${studySessions.startedAt})`.mapWith(studySessions.startedAt),
-        studyDays: sql<number>`COUNT(DISTINCT DATE(${studySessions.startedAt}))::int`,
-      })
-      .from(studySessions)
-      .where(eq(studySessions.userId, userId));
-
-    const perSubject = await db
-      .select({
-        subject: studySessions.subject,
-        count: sql<number>`COUNT(*)::int`,
-      })
-      .from(studySessions)
-      .where(eq(studySessions.userId, userId))
-      .groupBy(studySessions.subject);
+    // Aggregated in SQL, the totals and the per-subject counts at once.
+    const [[aggregate], perSubject] = await Promise.all([
+      db
+        .select({
+          totalSessions: sql<number>`COUNT(*)::int`,
+          lastSessionDate: sql<Date | null>`MAX(${studySessions.startedAt})`.mapWith(studySessions.startedAt),
+          studyDays: sql<number>`COUNT(DISTINCT DATE(${studySessions.startedAt}))::int`,
+        })
+        .from(studySessions)
+        .where(eq(studySessions.userId, userId)),
+      db
+        .select({
+          subject: studySessions.subject,
+          count: sql<number>`COUNT(*)::int`,
+        })
+        .from(studySessions)
+        .where(eq(studySessions.userId, userId))
+        .groupBy(studySessions.subject),
+    ]);
 
     const subjectBreakdown = perSubject.reduce<Record<string, number>>((acc, row) => {
       acc[row.subject] = row.count;
@@ -237,8 +213,6 @@ class StudySessionsRepository {
 
     return {
       totalSessions: aggregate?.totalSessions ?? 0,
-      totalMinutes: aggregate?.totalMinutes ?? 0,
-      averageFrustration: Math.round((aggregate?.averageFrustration ?? 0) * 10) / 10,
       subjectBreakdown,
       lastSessionDate: aggregate?.lastSessionDate ?? null,
       studyDays: aggregate?.studyDays ?? 0,

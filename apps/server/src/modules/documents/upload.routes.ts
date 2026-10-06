@@ -86,8 +86,6 @@ export const uploadRoutes = new Hono<AppEnv>()
         mimeType,
         sizeBytes,
         storageKey: presignedResult.storageKey,
-        storageBucket: env.SCALEWAY_BUCKET ?? '',
-        storageRegion: env.SCALEWAY_REGION,
         educationalContext,
         status: 'pending',
         metadata: {

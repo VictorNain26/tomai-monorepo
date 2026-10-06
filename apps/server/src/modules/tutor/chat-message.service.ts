@@ -57,10 +57,7 @@ export class ChatMessageService {
     role: 'user' | 'assistant',
     content: string,
     metadata: {
-      frustrationLevel?: number | null;
-      questionLevel?: number | null;
       tokensUsed?: number | null;
-      responseTimeMs?: number | null;
       aiModel?: string | null;
       attachedFile?: {
         fileName: string;
@@ -147,11 +144,8 @@ export class ChatMessageService {
         sessionId,
         role,
         content,
-        frustrationLevel: metadata.frustrationLevel ?? null,
-        questionLevel: metadata.questionLevel ?? null,
         aiModel: this.mapAIModelName(metadata.aiModel),
         tokensUsed: metadata.tokensUsed ?? null,
-        responseTimeMs: metadata.responseTimeMs ?? null,
         attachedFile: metadata.attachedFile ?? null,
         messageMetadata,
         modelMessages: metadata.modelMessages ?? null,
@@ -187,13 +181,9 @@ export class ChatMessageService {
         sessionId: message.sessionId,
         role: message.role as 'user' | 'assistant',
         content: message.content,
-        frustrationLevel: message.frustrationLevel,
-        questionLevel: message.questionLevel,
         aiModel: message.aiModel,
-        isFallback: false,
         timestamp: message.createdAt,
         tokensUsed: message.tokensUsed,
-        costEstimate: null,
         attachedFile: message.attachedFile &&
           typeof message.attachedFile === 'object' &&
           'fileName' in message.attachedFile &&
