@@ -27,7 +27,8 @@ import { checkQuota } from '../billing/index.js';
 import { AppError, toErrorResponse } from '../../platform/http/errors.js';
 import { logger } from '../../platform/observability/logger.js';
 import { env } from '../../platform/config/env.js';
-import { educationLevelSchema, isCollegeLevel, isEducationLevel } from '../../lib/education-levels.js';
+import { educationLevelSchema, isEducationLevel } from '../../lib/education-levels.js';
+import { SUBJECT_SLUGS } from '../../lib/subjects.js';
 
 // Track active UI message streams per user
 const activeStreams = new Map<string, number>();
@@ -37,8 +38,7 @@ const streamBody = z.object({
   // Last UIMessage sent by the client (AI SDK UI Message format); the server rebuilds full history from DB.
   message: z.looseObject({}),
   sessionId: z.uuid().optional(),
-  // Optional for multi-subject chat
-  subject: z.string().min(2).max(50).optional(),
+  subject: z.enum(SUBJECT_SLUGS).optional(),
   schoolLevel: educationLevelSchema.optional(),
   firstName: z.string().min(1).max(50).optional(),
   fileIds: z.array(z.string().min(20).max(100)).max(5).optional(),
@@ -139,12 +139,6 @@ export const chatMessageRoutes = new Hono<AppEnv>()
     };
 
     const resolvedSchoolLevel = schoolLevel ?? (isEducationLevel(user.schoolLevel) ? user.schoolLevel : 'sixieme');
-    // The prompt serves the collège only: another level would get a tutor that contradicts it.
-    if (!isCollegeLevel(resolvedSchoolLevel)) {
-      releaseStream();
-      const appError = new AppError('VALIDATION_ERROR', `school level ${resolvedSchoolLevel} is outside the collège`);
-      return unlessDistress(c.json(toErrorResponse(appError, requestId), appError.statusCode));
-    }
 
     let turnCtx: Awaited<ReturnType<typeof chatOrchestrationService.prepareTurn>>;
     try {

@@ -1,6 +1,7 @@
 import { pgTable, uuid, varchar, text, timestamp, integer, jsonb, pgEnum, index, foreignKey } from 'drizzle-orm/pg-core';
 import { relations, sql } from 'drizzle-orm';
 import { user } from '../auth/auth.schema';
+import type { SubjectFamily } from '../../lib/subjects.js';
 
 // =============================================
 // ENUMS
@@ -20,7 +21,7 @@ export const studySessions = pgTable('study_sessions', {
   userId: varchar('user_id', { length: 255 }).notNull(),
 
   // Détails pédagogiques
-  subject: varchar('subject', { length: 100 }).notNull().default('général'),
+  subject: varchar('subject', { length: 100 }).$type<SubjectFamily>().notNull().default('general'),
   topic: varchar('topic', { length: 200 }),
   status: sessionStatusEnum('status').notNull().default('active'),
 

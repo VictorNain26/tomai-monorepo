@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, mock } from 'bun:test';
 import { Hono } from 'hono';
 import { createMockLogger } from './_helpers/mock-logger';
-import type { AuthEnv } from '../platform/http/context';
+import type { AppEnv, AuthEnv } from '../platform/http/context';
 
 mock.module('../platform/observability/logger', () => ({ logger: createMockLogger() }));
 
@@ -41,18 +41,20 @@ mock.module('../platform/ai/moderation', () => ({
 }));
 
 const { cardGenerateRoutes } = await import('../modules/learning/card-generate.routes');
+const { handleError } = await import('../platform/http/error-handler');
 
-const app = new Hono<AuthEnv>()
+const authed = new Hono<AuthEnv>()
   .use(async (c, next) => {
     c.set('user', { id: 'u1', schoolLevel: 'quatrieme' } as AuthEnv['Variables']['user']);
     await next();
   })
   .route('/', cardGenerateRoutes);
+const app = new Hono<AppEnv>().route('/', authed).onError(handleError);
 
-const generate = () => app.request('/generate', {
+const generate = (subject = 'mathematiques') => app.request('/generate', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ subject: 'mathematiques', domaine: 'Nombres et calculs', topic: 'Priorités opératoires' }),
+  body: JSON.stringify({ subject, domaine: 'Nombres et calculs', topic: 'Priorités opératoires' }),
 });
 
 const trueFalse = { cardType: 'vrai_faux', content: { statement: '3 + 4 × 2 = 14', isTrue: false, explanation: 'La multiplication passe avant.' } };
@@ -62,6 +64,13 @@ beforeEach(() => {
   cards = [trueFalse, flashcard];
   moderation = [];
   stored.length = 0;
+});
+
+describe('POST /generate — the subject is a collège slug', () => {
+  it('refuses a free-text or lycée subject, and stores nothing', async () => {
+    for (const subject of ['Mathématiques', 'philosophie']) expect((await generate(subject)).status).toBe(400);
+    expect(stored).toHaveLength(0);
+  });
 });
 
 describe('POST /generate — the cards are checked before they are stored', () => {

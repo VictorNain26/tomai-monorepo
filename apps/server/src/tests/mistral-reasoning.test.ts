@@ -1,12 +1,12 @@
 import { describe, it, expect } from 'bun:test';
 import { routeReasoningEffort } from '../modules/tutor/mistral-reasoning.js';
-import { STUDENT_SUBJECTS } from '../modules/tutor/prompts/adaptation/subjects.js';
+import { SUBJECT_FAMILIES } from '../lib/subjects.js';
 import { analysis } from './_helpers/turn-analysis';
 
 describe('routeReasoningEffort', () => {
   it('reasons on a request for the solution or an explanation in STEM, from the 4e', () => {
     for (const subject of ['mathematiques', 'sciences'] as const) {
-      expect(STUDENT_SUBJECTS).toContain(subject);
+      expect(SUBJECT_FAMILIES).toContain(subject);
       expect(routeReasoningEffort({ schoolLevel: 'troisieme', subject, analysis: analysis({ asksSolution: true }) })).toBe('high');
       expect(routeReasoningEffort({ schoolLevel: 'quatrieme', subject, analysis: analysis({ asksExplanation: true }) })).toBe('high');
     }

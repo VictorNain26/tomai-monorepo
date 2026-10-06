@@ -97,7 +97,7 @@ export const chatSessionRoutes = new Hono<AppEnv>()
   .post('/chat/session/new', requireUser, async (c) => {
     const user = c.var.user;
     try {
-      const sessionId = await chatSessionService.createSession(user.id, 'général');
+      const sessionId = await chatSessionService.createSession(user.id, 'general');
       return c.json({ success: true, sessionId });
     } catch (_error) {
       logger.error('Session creation failed', {

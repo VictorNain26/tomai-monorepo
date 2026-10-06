@@ -9,13 +9,13 @@ import { z } from 'zod';
 import { generateStructured } from '../../platform/ai/mistral-client.js';
 import { logger } from '../../platform/observability/logger.js';
 import { stripPromptTags } from './mistral-helpers.js';
-import { STUDENT_SUBJECTS } from './prompts/adaptation/subjects.js';
+import { SUBJECT_FAMILIES } from '../../lib/subjects.js';
 
 const TURN_ANALYSIS_PROMPT_VERSION = '2026-10-05.2';
 const MAX_CHARS = 4000;
 
 const TurnAnalysisSchema = z.object({
-  subject: z.enum(STUDENT_SUBJECTS),
+  subject: z.enum(SUBJECT_FAMILIES),
   bringsExercise: z.boolean().describe("Le message contient l'énoncé d'un exercice, une consigne, une question ou un problème à résoudre, même suivi d'une réponse de l'élève ou d'une demande de solution, et ce n'est pas l'exercice en cours."),
   proposesAnswer: z.boolean().describe("L'élève propose une réponse ou une étape de sa résolution."),
   asksSolution: z.boolean().describe("L'élève demande la réponse, la solution ou que le tuteur fasse l'exercice."),

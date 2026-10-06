@@ -61,10 +61,9 @@ describe('notionsFor', () => {
     expect(notionsFor('troisieme', 'francais', 2026)?.later).toEqual([]);
   });
 
-  it('gives nothing without a referential: another subject, a class outside college', () => {
+  it('gives nothing without a referential: another subject, or none', () => {
     expect(notionsFor('quatrieme', 'histoire-geo', 2026)).toBeNull();
     expect(notionsFor('quatrieme', undefined, 2026)).toBeNull();
-    expect(notionsFor('seconde', 'mathematiques', 2026)).toBeNull();
   });
 });
 

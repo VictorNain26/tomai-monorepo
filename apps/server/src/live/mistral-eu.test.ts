@@ -25,7 +25,7 @@ const EQUATION_PNG = 'iVBORw0KGgoAAAANSUhEUgAAAaQAAABCCAAAAAA9Tf3CAAAA90lEQVR42u
 const mathTurn = {
   userId: 'live-user',
   schoolLevel: 'troisieme' as const,
-  subject: 'mathematiques',
+  subject: 'mathematiques' as const,
   turnAnalysis: { subject: 'mathematiques' as const, bringsExercise: false, proposesAnswer: false, asksSolution: true, asksExplanation: false, wantsFlashcards: false },
   tools: {},
 };

@@ -25,7 +25,7 @@ describe.skipIf(!dbReachable)('learningService.getDueSummaryForUser — due card
     const { learningService } = await import('../modules/learning/index');
     await db.insert(user).values([studentId, otherId, emptyId].map((id) => ({ id, email: `${id}@internal.tomai` })));
     const decks = await db.insert(learningDecks).values(
-      [studentId, studentId, otherId].map((userId) => ({ userId, subject: 'mathematiques', title: 'Deck', source: 'prompt' as const })),
+      [studentId, studentId, otherId].map((userId) => ({ userId, subject: 'mathematiques' as const, title: 'Deck', source: 'prompt' as const })),
     ).returning({ id: learningDecks.id });
     const [first, second, others] = decks.map((d) => d.id) as [string, string, string];
     await db.insert(learningCards).values([

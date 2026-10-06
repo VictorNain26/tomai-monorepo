@@ -1,24 +1,9 @@
 import { Hono } from 'hono';
 import type { AppEnv } from '../../platform/http/context.js';
-import { logger } from '../../platform/observability/logger';
-import { educationService } from '../../services/education.service';
+import { EDUCATION_LEVELS, levelLabel } from '../../lib/education-levels.js';
 
 export const educationApiRoutes = new Hono<AppEnv>()
 
-  .get('/education/levels', (c) => {
-    const levels = educationService.getAvailableLevels();
-
-    logger.info('Education levels retrieved', {
-      operation: 'api:education:levels:success',
-      total: levels.length,
-      availableCount: levels.filter(l => l.available).length,
-      severity: 'low' as const
-    });
-
-    return c.json({
-      success: true,
-      levels,
-      total: levels.length,
-      availableCount: levels.filter(l => l.available).length
-    });
-  });
+  .get('/education/levels', (c) => c.json({
+    levels: EDUCATION_LEVELS.map((key) => ({ key, label: levelLabel(key) })),
+  }));

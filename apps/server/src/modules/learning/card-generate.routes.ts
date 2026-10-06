@@ -12,9 +12,10 @@ import { learningService } from './learning.service.js';
 import { getUserLevel } from './routes.helpers.js';
 import { checkCards } from './card-check.js';
 import { PROMPT_TAG } from '../../lib/prompt-tags.js';
+import { SUBJECT_SLUGS } from '../../lib/subjects.js';
 
 const generateBody = z.object({
-  subject: z.string().min(1).max(100),
+  subject: z.enum(SUBJECT_SLUGS),
   domaine: z.string().min(1).max(200),
   topic: z.string().min(1).max(500).optional(),
 });

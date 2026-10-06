@@ -6,10 +6,11 @@ import mathematiquesAttendus4e from './texts/mathematiques-attendus-4e-2019.json
 import mathematiquesAttendus3e from './texts/mathematiques-attendus-3e-2019.json' with { type: 'json' };
 import francaisAttendus4e from './texts/francais-attendus-4e-2019.json' with { type: 'json' };
 import francaisAttendus3e from './texts/francais-attendus-3e-2019.json' with { type: 'json' };
-import { textFileSchema, type CollegeLevel, type Entry, type TextFile } from './schema.js';
+import type { EducationLevelType } from '../types/index.js';
+import { textFileSchema, type Entry, type TextFile } from './schema.js';
 import { PROGRAMME_SOURCES, type ProgrammeSource } from './sources.js';
 
-export type { CollegeLevel, Entry };
+export type { Entry };
 
 const texts: readonly TextFile[] = [
   mathematiquesC3,
@@ -35,7 +36,7 @@ export const programmes: readonly { source: ProgrammeSource; entries: readonly E
  * September of `schoolYear`, or null when none of the extracted texts applies yet.
  */
 export function programmeFor(
-  level: CollegeLevel,
+  level: EducationLevelType,
   subject: ProgrammeSource['subject'],
   schoolYear: number,
 ): { source: ProgrammeSource; entries: Entry[] } | null {

@@ -54,7 +54,7 @@ async function ensureChildHasDemoDeck(childId: string): Promise<void> {
   await db.insert(learningDecks).values({
     userId: childId,
     title: SEED.demoDeckTitle,
-    subject: 'mathématiques',
+    subject: 'mathematiques',
     source: 'prompt',
   });
 }

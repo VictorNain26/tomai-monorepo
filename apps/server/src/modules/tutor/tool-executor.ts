@@ -12,6 +12,7 @@ import { cardTextPasses, titlePasses, type OutputCheckContext } from './output-c
 import { makeToolError, type ToolResult } from './tool-errors.js';
 import { logger } from '../../platform/observability/logger.js';
 import type { EducationLevelType } from '../../types/index.js';
+import { SUBJECT_SLUGS } from '../../lib/subjects.js';
 
 interface ToolExecutionContext {
   userId: string;
@@ -106,7 +107,8 @@ async function executeGenerateFlashcards(
   signal?: AbortSignal,
 ): Promise<object> {
   const topic = typeof args['topic'] === 'string' ? args['topic'] : '';
-  const subject = typeof args['subject'] === 'string' ? args['subject'] : '';
+  const subject = SUBJECT_SLUGS.find((slug) => slug === args['subject']);
+  if (!subject) return makeToolError('validation', 'Matière inconnue.');
 
   // Adapt card count to school level (half of cardsPerSession, capped at 10 for chat)
   const levelConfig = getLevelConfig(context.schoolLevel);

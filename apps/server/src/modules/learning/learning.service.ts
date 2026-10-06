@@ -26,6 +26,7 @@ import { logger } from '../../platform/observability/logger.js';
 import { fsrsService, Rating } from './fsrs.service.js';
 import type { ReviewResult } from './fsrs-types.js';
 import type { EducationLevelType } from '../../types/index.js';
+import type { SubjectSlug } from '../../lib/subjects.js';
 import {
   DeckNotFoundError,
   DeckOwnershipError,
@@ -46,7 +47,7 @@ interface CreateDeckWithCardsInput {
 interface UpdateDeckInput {
   title?: string | undefined;
   description?: string | undefined;
-  subject?: string | undefined;
+  subject?: SubjectSlug | undefined;
 }
 
 interface AddCardsInput {

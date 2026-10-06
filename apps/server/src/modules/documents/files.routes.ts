@@ -11,17 +11,13 @@ export const filesRoutes = new Hono<AppEnv>()
       const userFiles = await filesRepository.findByUserId(user.id);
       return c.json({
         success: true,
-        files: userFiles.map(f => {
-          const eduCtx = f.educationalContext as { subject?: string } | null;
-          return {
-            id: f.id,
-            fileName: f.fileName,
-            mimeType: f.mimeType,
-            sizeBytes: f.sizeBytes,
-            subject: eduCtx?.subject ?? null,
-            createdAt: f.createdAt.toISOString(),
-          };
-        }),
+        files: userFiles.map(f => ({
+          id: f.id,
+          fileName: f.fileName,
+          mimeType: f.mimeType,
+          sizeBytes: f.sizeBytes,
+          createdAt: f.createdAt.toISOString(),
+        })),
       });
     } catch (_error) {
       logger.error('Files listing failed', {

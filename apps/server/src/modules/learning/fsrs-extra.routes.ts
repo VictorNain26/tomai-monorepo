@@ -1,7 +1,7 @@
 /**
  * Learning Routes - FSRS Extra Endpoints
  *
- * Preview scheduling, deck reset, and learning config.
+ * Preview scheduling and deck reset.
  */
 
 import { Hono } from 'hono';
@@ -9,7 +9,6 @@ import { validate, type AuthEnv } from '../../platform/http/context.js';
 import { logger } from '../../platform/observability/logger';
 import { learningService, CardNotFoundError } from './learning.service.js';
 import { fsrsService } from './fsrs.service.js';
-import { getLevelConfig } from './learning-config.js';
 import { getUserLevel, idParam } from './routes.helpers.js';
 
 export const fsrsExtraRoutes = new Hono<AuthEnv>()
@@ -96,25 +95,4 @@ export const fsrsExtraRoutes = new Hono<AuthEnv>()
       });
       return c.json({ error: 'Échec de la réinitialisation' }, 500);
     }
-  })
-
-  .get('/config', (c) => {
-    const user = c.var.user;
-    const level = getUserLevel(user.id, user.schoolLevel);
-    const config = getLevelConfig(level);
-
-    return c.json({
-      level,
-      config: {
-        cardsPerSession: config.cardsPerSession,
-        sessionMinutes: config.sessionMinutes,
-        cycle: config.cycle,
-        ageRange: config.ageRange,
-      },
-      ui: {
-        showTimer: config.sessionMinutes <= 20,
-        encourageBreaks: config.cycle === 'cycle2',
-        maxNewCardsPerSession: Math.ceil(config.cardsPerSession * 0.3),
-      },
-    });
   });

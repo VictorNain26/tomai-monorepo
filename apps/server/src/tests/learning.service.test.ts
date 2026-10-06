@@ -135,7 +135,7 @@ describe('LearningService', () => {
 
       const result = await learningService.createDeckWithCards({
         userId: 'user-1',
-        deck: { title: 'Maths', description: 'test', subject: 'Mathématiques', source: 'prompt' },
+        deck: { title: 'Maths', description: 'test', subject: 'mathematiques', source: 'prompt' },
         cards: [
           { cardType: 'flashcard', content: { front: 'Q1', back: 'A1' } },
           { cardType: 'qcm', content: { question: 'Q2' } },
@@ -158,7 +158,7 @@ describe('LearningService', () => {
 
       const result = await learningService.createDeckWithCards({
         userId: 'user-1',
-        deck: { title: 'Empty', description: null, subject: 'test', source: 'prompt' },
+        deck: { title: 'Empty', description: null, subject: 'francais', source: 'prompt' },
         cards: [],
       });
 
@@ -180,7 +180,7 @@ describe('LearningService', () => {
       expect(
         learningService.createDeckWithCards({
           userId: 'user-1',
-          deck: { title: 'x', description: null, subject: 'x', source: 'prompt' },
+          deck: { title: 'x', description: null, subject: 'svt', source: 'prompt' },
           cards: [{ cardType: 'flashcard', content: {} }],
         }),
       ).rejects.toThrow('boom');
@@ -199,7 +199,7 @@ describe('LearningService', () => {
       expect(
         learningService.createDeckWithCards({
           userId: 'user-1',
-          deck: { title: 'x', description: null, subject: 'x', source: 'prompt' },
+          deck: { title: 'x', description: null, subject: 'svt', source: 'prompt' },
           cards: [{ cardType: 'flashcard', content: {} }],
         }),
       ).rejects.toThrow('Failed to insert cards');

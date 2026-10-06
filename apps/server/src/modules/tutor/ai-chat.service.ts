@@ -23,7 +23,8 @@ import type { MistralLanguageModelChatOptions } from '@ai-sdk/mistral';
 import { routeReasoningEffort } from './mistral-reasoning.js';
 import { logger } from '../../platform/observability/logger.js';
 import { buildSystemPrompt, generateSubjectBlock } from './prompts/index.js';
-import { getLevelText } from '../../config/education/index.js';
+import { levelLabel } from '../../lib/education-levels.js';
+import type { SubjectFamily } from '../../lib/subjects.js';
 import { optimizeConversationHistory } from './conversation-optimizer.js';
 import { assembleChatPrompt, type HistoryTurn } from './chat-message-assembler.js';
 import {
@@ -45,7 +46,7 @@ const PROMPT_VERSION = '2026-10-06';
 export interface StreamGenerationParams {
   userId: string;
   content: string;
-  subject?: string | undefined;
+  subject?: SubjectFamily | undefined;
   schoolLevel: EducationLevelType;
   firstName?: string | undefined;
   sessionId: string;
@@ -101,7 +102,7 @@ function flashcardsApproval(analysis: TurnAnalysis | undefined) {
 export function streamChat(params: ChatStreamParams) {
   const systemPrompt = buildSystemPrompt({
     level: params.schoolLevel,
-    levelText: getLevelText(params.schoolLevel),
+    levelText: levelLabel(params.schoolLevel),
     firstName: params.firstName,
   });
 

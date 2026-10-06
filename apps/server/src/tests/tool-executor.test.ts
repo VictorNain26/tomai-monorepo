@@ -181,6 +181,14 @@ describe('Tool Executor', () => {
       expect(insertedValues[1]).toHaveLength(2);
     });
 
+    it('refuses a subject outside the collège taxonomy, before any generation', async () => {
+      mockTxInsert.mockClear();
+      const result = await executeTool('generate_flashcards', { topic: 'Kant', subject: 'philosophie' }, baseContext) as Record<string, unknown>;
+      expect(result['isError']).toBe(true);
+      expect(result['errorCategory']).toBe('validation');
+      expect(mockTxInsert).not.toHaveBeenCalled();
+    });
+
     it('should generate without a topic context', async () => {
       const result = await executeTool('generate_flashcards', {
         topic: 'Fractions', subject: 'mathematiques',

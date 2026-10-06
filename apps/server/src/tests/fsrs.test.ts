@@ -156,16 +156,16 @@ describe('FSRS Service', () => {
         lastReview: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
       };
 
-      const cpPreview = fsrsService.previewScheduling('cp', reviewedData);
-      const terminalePreview = fsrsService.previewScheduling('terminale', reviewedData);
+      const sixiemePreview = fsrsService.previewScheduling('sixieme', reviewedData);
+      const troisiemePreview = fsrsService.previewScheduling('troisieme', reviewedData);
 
       // Both should produce valid 4-grade previews
-      expect(cpPreview[Rating.Good]).toBeDefined();
-      expect(terminalePreview[Rating.Good]).toBeDefined();
-      // CP maxInterval=30 caps the Good interval
-      expect(cpPreview[Rating.Good].interval).toBeLessThanOrEqual(30);
-      // Terminale maxInterval=730, allows longer intervals
-      expect(terminalePreview[Rating.Good].interval).toBeLessThanOrEqual(730);
+      expect(sixiemePreview[Rating.Good]).toBeDefined();
+      expect(troisiemePreview[Rating.Good]).toBeDefined();
+      // 6e maxInterval=150 caps the Good interval
+      expect(sixiemePreview[Rating.Good].interval).toBeLessThanOrEqual(150);
+      // 3e maxInterval=365, allows longer intervals
+      expect(troisiemePreview[Rating.Good].interval).toBeLessThanOrEqual(365);
     });
 
     it('should handle empty object fsrsData (treated as new card)', () => {

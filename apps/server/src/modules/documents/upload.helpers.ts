@@ -1,6 +1,3 @@
-import type { User } from '../../types/auth.types.js';
-import type { EducationLevelType } from '../../types/education.types.js';
-
 // ============================================================================
 // Configuration
 // ============================================================================
@@ -42,13 +39,4 @@ export function sanitizeFileName(fileName: string): string {
     .replace(/\.{2,}/g, '_')
     .replace(/^\./, '_')
     .slice(0, 255);
-}
-
-export function buildEducationalContext(user: User, context?: string) {
-  const schoolLevel = (user.schoolLevel ?? 'seconde') as EducationLevelType;
-  return {
-    subject: context ?? 'analyse-generale',
-    level: schoolLevel,
-    userId: user.id,
-  };
 }

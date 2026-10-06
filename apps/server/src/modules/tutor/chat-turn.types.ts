@@ -3,6 +3,7 @@
 import type { LanguageModelUsage } from 'ai';
 import type { AttachedFileInfo, AttachedFileForPrompt } from '../documents/index.js';
 import type { EducationLevelType } from '../../types/index.js';
+import type { SubjectFamily, SubjectSlug } from '../../lib/subjects.js';
 import type { HistoryTurn, ResponseMessage } from './chat-message-assembler.js';
 import type { OutputCheckRecord } from './chat-message.service.js';
 import type { OutputCheckContext } from './output-check.js';
@@ -15,7 +16,7 @@ import type { DistressSource } from './distress.js';
 export interface PrepareTurnRequest {
   userId: string;
   sessionId?: string | undefined;
-  requestedSubject?: string | undefined;
+  requestedSubject?: SubjectSlug | undefined;
   content: string;
   fileIds: string[];
   schoolLevel: EducationLevelType;
@@ -27,7 +28,7 @@ export interface ChatTurnContext {
   /** The categories input moderation flagged, kept with the message; null when it could not answer, absent without text. */
   inputModeration?: string[] | null;
   sessionId: string;
-  subject?: string;
+  subject?: SubjectFamily;
   conversationSummary: string | null;
   conversationHistory: HistoryTurn[];
   turnInstruction: string | null;

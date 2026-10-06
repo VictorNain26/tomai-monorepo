@@ -4,19 +4,10 @@
  * La pédagogie (CSEN/Dehaene) est dans shared/pedagogy
  */
 
-type SubjectType =
-  | 'mathematiques'
-  | 'francais'
-  | 'langues'
-  | 'sciences'
-  | 'histoire-geo'
-  | null;
+import type { SubjectFamily } from '../../../../lib/subjects.js';
 
-/**
- * Source unique des spécificités par matière
- * Utilisé par generateSubjectSpecifics() et generateSubjectBlock()
- */
-const SUBJECT_SPECIFICS: Record<Exclude<SubjectType, null>, string> = {
+/** Bloc de consignes de chaque famille ; `general` vaut pour toutes, quand aucune matière ne se dégage. */
+const SUBJECT_SPECIFICS: Record<SubjectFamily, string> = {
   mathematiques: `<subject_specifics matiere="Mathématiques">
 **NOTATION**: Utilise KaTeX ($...$) adapté au niveau. Prix en euros: "5 euros" pas "$5".
 **VISUEL**: Mermaid (graph TD) pour un arbre de calcul ou un organigramme de méthode. Géométrie et courbes → description + KaTeX (pas d'ASCII).
@@ -60,48 +51,14 @@ const SUBJECT_SPECIFICS: Record<Exclude<SubjectType, null>, string> = {
 **EMC**: Méthode du dilemme moral + valeurs républicaines.
 **VOCABULAIRE**: Précis (Révolution ≠ Révolte ≠ Coup d'État). Pas d'anachronismes.
 **VISUEL**: Mermaid frise chronologique (graph LR) et schéma cause→conséquence.
-</subject_specifics>`
+</subject_specifics>`,
+
+  general: `<subject_specifics matiere="multi">
+Adapte ta méthode à la matière abordée : analyse textuelle en français, démarche d'investigation en sciences, analyse de sources en histoire-géo.
+</subject_specifics>`,
 };
 
-/**
- * Normalise le nom de matière
- */
-function normalizeSubject(subject: string): SubjectType {
-  const s = subject.toLowerCase().trim();
-
-  if (s.includes('math')) return 'mathematiques';
-  if (s === 'français' || s === 'francais') return 'francais';
-  if (['anglais', 'espagnol', 'allemand', 'italien', 'english', 'spanish'].includes(s)) {
-    return 'langues';
-  }
-  if (['svt', 'sciences', 'biologie', 'physique', 'chimie', 'physique-chimie'].includes(s)) {
-    return 'sciences';
-  }
-  if (['histoire', 'géographie', 'geographie', 'histoire-geo', 'emc', 'hggsp'].includes(s)) {
-    return 'histoire-geo';
-  }
-
-  return null;
+/** Bloc de la matière, dans le message du tour ; sans matière, celui de `general`. */
+export function generateSubjectBlock(family: SubjectFamily = 'general'): string {
+  return SUBJECT_SPECIFICS[family];
 }
-
-/**
- * Génère les spécificités pour UNE matière
- */
-function generateSubjectSpecifics(subject: string): string | null {
-  const normalized = normalizeSubject(subject);
-  if (!normalized) return null;
-  return SUBJECT_SPECIFICS[normalized];
-}
-
-/**
- * Bloc de la matière, dans le message du tour : les spécificités de la matière reconnue, sinon
- * un bloc court qui vaut pour toutes (aucune matière, « general », une matière inconnue).
- */
-export function generateSubjectBlock(subject?: string): string {
-  const specifics = subject ? generateSubjectSpecifics(subject) : null;
-  if (specifics) return specifics;
-  return `<subject_specifics matiere="multi">
-Adapte ta méthode à la matière abordée : analyse textuelle en français, démarche d'investigation en sciences, analyse de sources en histoire-géo.
-</subject_specifics>`;
-}
-

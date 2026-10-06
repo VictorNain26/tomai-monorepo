@@ -59,20 +59,3 @@ export function getUserLevel(
   }
   return schoolLevel as EducationLevelType;
 }
-
-/**
- * Subject labels for French UI
- * Aligned with the server subject slugs and frontend SUBJECT_METADATA
- */
-export const subjectLabels: Record<string, string> = {
-  mathematiques: 'Mathématiques',
-  francais: 'Français',
-  physique_chimie: 'Physique-Chimie',
-  svt: 'SVT',
-  histoire_geo: 'Histoire-Géographie',
-  anglais: 'Anglais',
-  espagnol: 'Espagnol',
-  allemand: 'Allemand',
-  italien: 'Italien',
-  technologie: 'Technologie',
-};

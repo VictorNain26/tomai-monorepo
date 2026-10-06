@@ -1,18 +1,20 @@
 import { describe, it, expect } from 'bun:test';
-import { EDUCATION_LEVELS, isEducationLevel } from '../lib/education-levels';
+import { EDUCATION_LEVELS, isEducationLevel, levelLabel } from '../lib/education-levels';
 
 describe('education-levels', () => {
-  it('contains all 12 French levels from CP to terminale', () => {
-    expect(EDUCATION_LEVELS).toEqual([
-      'cp', 'ce1', 'ce2', 'cm1', 'cm2',
-      'sixieme', 'cinquieme', 'quatrieme', 'troisieme',
-      'seconde', 'premiere', 'terminale',
-    ]);
+  it('contains the four collège levels, in order', () => {
+    expect(EDUCATION_LEVELS).toEqual(['sixieme', 'cinquieme', 'quatrieme', 'troisieme']);
   });
 
-  it('isEducationLevel accepts a valid level', () => {
-    expect(isEducationLevel('terminale')).toBe(true);
-    expect(isEducationLevel('cp')).toBe(true);
+  it('isEducationLevel accepts a collège level and refuses the others', () => {
+    expect(isEducationLevel('sixieme')).toBe(true);
+    expect(isEducationLevel('troisieme')).toBe(true);
+    expect(isEducationLevel('cm2')).toBe(false);
+    expect(isEducationLevel('seconde')).toBe(false);
+  });
+
+  it('labels each level', () => {
+    expect(EDUCATION_LEVELS.map(levelLabel)).toEqual(['6ème (11 ans)', '5ème (12 ans)', '4ème (13 ans)', '3ème (14 ans)']);
   });
 
   it('isEducationLevel rejects an unknown string', () => {

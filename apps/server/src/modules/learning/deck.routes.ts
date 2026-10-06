@@ -2,16 +2,17 @@ import { Hono } from 'hono';
 import { z } from 'zod';
 import { validate, type AuthEnv } from '../../platform/http/context.js';
 import { educationLevelSchema } from '../../lib/education-levels.js';
+import { SUBJECT_SLUGS } from '../../lib/subjects.js';
 import { logger } from '../../platform/observability/logger';
 import { learningService } from './learning.service.js';
 import { handleDeckDomainError, idParam } from './routes.helpers.js';
-
+import { deckSourceEnum } from './decks.schema.js';
 
 const createDeckBody = z.object({
   title: z.string().min(1).max(200),
   description: z.string().optional(),
-  subject: z.string().min(1).max(100),
-  source: z.enum(['prompt', 'conversation', 'document', 'rag_program']),
+  subject: z.enum(SUBJECT_SLUGS),
+  source: z.enum(deckSourceEnum.enumValues),
   sourceId: z.string().optional(),
   sourcePrompt: z.string().optional(),
   schoolLevel: educationLevelSchema.optional(),
@@ -20,7 +21,7 @@ const createDeckBody = z.object({
 const updateDeckBody = z.object({
   title: z.string().min(1).max(200).optional(),
   description: z.string().optional(),
-  subject: z.string().min(1).max(100).optional(),
+  subject: z.enum(SUBJECT_SLUGS).optional(),
 });
 
 export const deckRoutes = new Hono<AuthEnv>()

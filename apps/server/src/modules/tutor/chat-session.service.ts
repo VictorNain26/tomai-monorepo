@@ -1,6 +1,7 @@
 import { usersRepository } from '../auth/index.js';
 import { studySessionsRepository, type CreateStudySessionInput } from './study-sessions.repository.js';
 import type { SchoolLevel } from '../../db/schema';
+import type { SubjectFamily } from '../../lib/subjects.js';
 import { logger } from '../../platform/observability/logger';
 import { deleteSessionCascade } from './session-cleanup';
 import type { SessionDetails, UserSession, ConversationListItem } from './chat-types';
@@ -19,7 +20,7 @@ export class ChatSessionService {
         return existingSession.id;
       }
 
-      return await this.createSession(userId, 'général');
+      return await this.createSession(userId, 'general');
     } catch (error) {
       logger.error('Failed to get or create active session', {
         err: error,
@@ -31,7 +32,7 @@ export class ChatSessionService {
     }
   }
 
-  async createSession(userId: string, subject: string, topic?: string): Promise<string> {
+  async createSession(userId: string, subject: SubjectFamily, topic?: string): Promise<string> {
     try {
       const input: CreateStudySessionInput = {
         userId,
@@ -100,7 +101,7 @@ export class ChatSessionService {
   async getSessionWithSummary(sessionId: string): Promise<{
     conversationSummary: string | null;
     summaryUpToMessageId: string | null;
-    subject: string | null;
+    subject: SubjectFamily | null;
   } | null> {
     try {
       const session = await studySessionsRepository.findById(sessionId);
