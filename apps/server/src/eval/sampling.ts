@@ -23,6 +23,7 @@ export async function sampleObject<T>(generate: Generate, request: SampleRequest
   try {
     const result = await generate({
       ...request,
+      owner: null,
       model: JUDGE.model,
       temperature: JUDGE.temperature,
       // Rate limits are waited out by the caller's throttle, not retried at once by the SDK.

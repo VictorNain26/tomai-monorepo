@@ -16,6 +16,7 @@
 import { logger } from '../../platform/observability/logger.js';
 import { env } from '../../platform/config/env.js';
 import { getMistralSdk } from '../../platform/ai/mistral-sdk.js';
+import { recordAiCost, type CostOwner } from '../../platform/ai/cost.js';
 
 const STT_MODEL = env.MISTRAL_STT_MODEL;
 
@@ -28,7 +29,7 @@ export interface VoxtralTranscribeResult {
 
 class VoxtralTranscribeService {
   /** `audio` as stored. Its bytes are copied: a Buffer can be a view into a larger pool. */
-  async transcribe(audio: Uint8Array, mimeType: string): Promise<VoxtralTranscribeResult> {
+  async transcribe(audio: Uint8Array, mimeType: string, owner: CostOwner): Promise<VoxtralTranscribeResult> {
     const startTime = Date.now();
 
     try {
@@ -41,6 +42,11 @@ class VoxtralTranscribeService {
         file: new File([Uint8Array.from(audio)], 'audio', { type: mimeType }),
         language: 'fr',
       });
+      const audioSeconds = response.usage.promptAudioSeconds;
+      if (audioSeconds == null) {
+        logger.warn('Voxtral STT reported no audio length: the call is recorded at 0', { operation: 'voxtral:stt:usage', severity: 'medium' as const });
+      }
+      void recordAiCost(owner, { model: STT_MODEL, operation: 'speech-to-text', audioSeconds: audioSeconds ?? 0 });
 
       if (!response.text) {
         logger.error('Voxtral STT returned empty text', {

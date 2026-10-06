@@ -49,6 +49,7 @@ export async function extract(input: JudgeInput, generate: Generate): Promise<{ 
     schema,
     schemaName: 'tutor_facts',
     functionId: 'eval-extract',
+    owner: null,
     model: JUDGE.model,
     temperature: 0,
     maxTokens: JUDGE.extractionMaxTokens,

@@ -65,6 +65,7 @@ describe('AI SDK telemetry', () => {
 
     await generateText({
       functionId: 'test-generate-text',
+      owner: null,
       messages: [
         { role: 'system', content: 'Élève : Léa, 14 ans' },
         { role: 'user', content: 'mon prénom est Léa' },
@@ -82,6 +83,7 @@ describe('AI SDK telemetry', () => {
 
     const result = await generateStructured({
       functionId: 'test-generate-structured',
+      owner: null,
       schemaName: 'answer',
       schema: z.object({ answer: z.string() }),
       messages: [{ role: 'user', content: 'mon prénom est Léa' }],

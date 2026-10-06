@@ -10,6 +10,7 @@
 
 import type { EducationLevelType } from '../../types/index.js';
 import type { SubjectSlug } from '../../lib/subjects.js';
+import type { CostOwner } from '../../platform/ai/cost.js';
 
 // ============================================
 // TYPES DE CARTES PAR CATÉGORIE
@@ -315,6 +316,8 @@ export interface CardGenerationParams {
   cardCount: number;
   /** Domaine parent optionnel pour contexte enrichi */
   domaine?: string;
+  /** Who the generation is billed to. */
+  owner: CostOwner;
 }
 
 /**

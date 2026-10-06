@@ -25,7 +25,7 @@ let cardGenResult: Record<string, unknown> = {
 };
 
 let cardGenThrows = false;
-const generateCards = mock(async () => {
+const generateCards = mock(async (_params: { owner: unknown }) => {
   if (cardGenThrows) throw new Error('mistral unreachable');
   return cardGenResult;
 });
@@ -117,6 +117,7 @@ describe('Tool Executor', () => {
       }, baseContext) as Record<string, unknown>;
       expect(result['generated']).toBe(true);
       expect(result['deckId']).toBeDefined();
+      expect(generateCards.mock.calls.at(-1)?.[0].owner).toEqual({ userId: 'user-001', sessionId: 'session-001' });
     });
 
     it('saves no deck when the turn was cut while the cards were written', async () => {

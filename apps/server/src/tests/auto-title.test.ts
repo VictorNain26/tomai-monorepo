@@ -7,12 +7,13 @@ const mockLogger = createMockLogger();
 mock.module('../platform/observability/logger', () => ({ logger: mockLogger }));
 
 let generated = 'Équations du premier degré';
-mock.module('../platform/ai/mistral-client', () => ({ generateText: mock(async () => generated) }));
+const generateText = mock(async (_opts: { owner: unknown }) => generated);
+mock.module('../platform/ai/mistral-client', () => ({ generateText }));
 
 let topic: string | null = null;
 const update = mock(async (_id: string, _values: { topic: string }) => {});
 mock.module('../modules/tutor/study-sessions.repository', () => ({
-  studySessionsRepository: { findById: mock(async () => ({ id: 's1', topic })), update },
+  studySessionsRepository: { findById: mock(async () => ({ id: 's1', userId: 'u1', topic })), update },
 }));
 
 let moderation: string[] | Error = [];
@@ -42,6 +43,7 @@ describe('autoTitleService.generateTitleIfNeeded', () => {
   it('stores a title that passes the check, and never logs it: it comes from the conversation', async () => {
     await autoTitleService.generateTitleIfNeeded('s1', 'Résous 3x + 5 = 20.', 'Que fais-tu du + 5 ?', noExercise);
     expect(update).toHaveBeenCalledWith('s1', { topic: 'Équations du premier degré' });
+    expect(generateText.mock.calls.at(-1)?.[0].owner).toEqual({ userId: 'u1', sessionId: 's1' });
     expect(JSON.stringify(Object.values(mockLogger).map((level) => level.mock.calls))).not.toContain('Équations');
   });
 

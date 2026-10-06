@@ -7,8 +7,6 @@
 
 import { z } from 'zod';
 import { generateStructured } from '../../platform/ai/mistral-client.js';
-import { env } from '../../platform/config/env.js';
-import { costTrackingService } from '../billing/index.js';
 import { logger } from '../../platform/observability/logger.js';
 import { sameMath } from './exercise-math.js';
 import type { ExerciseSheet } from './exercise-sheet.js';
@@ -101,8 +99,9 @@ export async function diagnose(
 ): Promise<Diagnosis> {
   const startTime = Date.now();
   try {
-    const { object, usage } = await generateStructured({
+    const { object } = await generateStructured({
       functionId: 'exercise-diagnosis',
+      owner: { userId: turn.userId, sessionId: turn.sessionId },
       messages: [
         { role: 'system', content: INSTRUCTIONS },
         {
@@ -116,15 +115,6 @@ export async function diagnose(
       schemaName: 'exercise_diagnosis',
       promptCacheKey: `exercise-diagnosis-${DIAGNOSIS_PROMPT_VERSION}`,
       timeoutMs: 8_000,
-    });
-    void costTrackingService.record({
-      userId: turn.userId,
-      sessionId: turn.sessionId,
-      aiModel: env.MISTRAL_MODEL,
-      operation: 'exercise-diagnosis',
-      tokensInput: usage.inputTokens,
-      tokensOutput: usage.outputTokens,
-      cachedTokens: usage.cachedInputTokens,
     });
     const diagnosis = settle(object, sheet);
     logger.info('Proposal diagnosed', {

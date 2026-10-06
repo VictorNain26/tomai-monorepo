@@ -89,18 +89,18 @@ describe('Mistral Small 4 on the EU endpoint (real API)', () => {
   }, 60_000);
 
   it('analyses a turn under the strict schema: a statement with its attempt, the current one restated, a new one, an agreement to cards', async () => {
-    const attempt = await analyseTurn("Résous 3x + 5 = 20. J'ai trouvé x = 20/3 mais c'est faux.", null, null);
+    const attempt = await analyseTurn("Résous 3x + 5 = 20. J'ai trouvé x = 20/3 mais c'est faux.", null, null, null);
     expect(attempt.error).toBeUndefined();
     expect(attempt.subject).toBe('mathematiques');
     expect(attempt).toMatchObject({ bringsExercise: true, proposesAnswer: true });
 
-    const restated = await analyseTurn('3x + 5 = 20 donc 3x = 15 donc x = 5', 'Que fais-tu du + 5 pour isoler 3x ?', 'Résous 3x + 5 = 20.');
+    const restated = await analyseTurn('3x + 5 = 20 donc 3x = 15 donc x = 5', 'Que fais-tu du + 5 pour isoler 3x ?', 'Résous 3x + 5 = 20.', null);
     expect(restated).toMatchObject({ bringsExercise: false, proposesAnswer: true });
 
-    const next = await analyseTurn('Autre exercice : résous 2x - 3 = 7.', 'Bravo, x = 5 est juste !', 'Résous 3x + 5 = 20.');
+    const next = await analyseTurn('Autre exercice : résous 2x - 3 = 7.', 'Bravo, x = 5 est juste !', 'Résous 3x + 5 = 20.', null);
     expect(next.bringsExercise).toBe(true);
 
-    const agreement = await analyseTurn('Oui, je veux bien !', 'Veux-tu que je te crée des cartes de révision sur les équations ?', 'Résous 3x + 5 = 20.');
+    const agreement = await analyseTurn('Oui, je veux bien !', 'Veux-tu que je te crée des cartes de révision sur les équations ?', 'Résous 3x + 5 = 20.', null);
     expect(agreement.wantsFlashcards).toBe(true);
   }, 60_000);
 
@@ -115,6 +115,7 @@ describe('Mistral Small 4 on the EU endpoint (real API)', () => {
     const notions = notionsFor('quatrieme', 'mathematiques', 2026);
     const { object } = await generateStructured({
       functionId: 'live-mistral-eu',
+      owner: null,
       messages: sheetMessages('quatrieme', notions, "Résous l'équation 3x + 5 = 20. J'ai trouvé x = 20/3.", null),
       schema: ExerciseSheetSchema,
       schemaName: 'exercise_sheet',
@@ -157,17 +158,16 @@ describe('Mistral Small 4 on the EU endpoint (real API)', () => {
   }, 30_000);
 
   it('reads the text of an image once, for the sheet and the tutor', async () => {
-    const result = await readImageWithMistralVision(Uint8Array.from(Buffer.from(EQUATION_PNG, 'base64')).buffer, 'image/png');
+    const result = await readImageWithMistralVision(Uint8Array.from(Buffer.from(EQUATION_PNG, 'base64')).buffer, 'image/png', null);
 
     expect(result.text.replace(/\s/g, '').toLowerCase()).toContain('3x+5=20');
-    expect(result.usage?.inputTokens).toBeGreaterThan(0);
   }, 60_000);
 
   it('synthesises then transcribes French speech', async () => {
-    const tts = await getVoxtralTTSService().synthesize('Bonjour, je suis Tom.');
+    const tts = await getVoxtralTTSService().synthesize('Bonjour, je suis Tom.', null);
     expect(tts.success).toBe(true);
 
-    const stt = await getVoxtralTranscribeService().transcribe(Buffer.from(tts.audioData ?? '', 'base64'), 'audio/mpeg');
+    const stt = await getVoxtralTranscribeService().transcribe(Buffer.from(tts.audioData ?? '', 'base64'), 'audio/mpeg', null);
 
     expect(stt.transcription?.toLowerCase()).toContain('bonjour');
   }, 60_000);

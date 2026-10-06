@@ -2,8 +2,6 @@ import { filesRepository } from './files.repository.js';
 import { sessionFilesRepository } from './session-files.repository.js';
 import * as storage from './storage.js';
 import { documentExtractionService } from './document-extraction.service.js';
-import { costTrackingService } from '../billing/index.js';
-import { env } from '../../platform/config/env.js';
 import { logger } from '../../platform/observability/logger.js';
 import type { AttachedFileInfo, AttachedFileForPrompt } from './file-context-types.js';
 
@@ -54,18 +52,8 @@ class FileContextService {
     const extraction = await documentExtractionService.extractText(
       bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer,
       file.mimeType,
+      owner,
     );
-    const { usage } = extraction.metadata;
-    if (usage) {
-      void costTrackingService.record({
-        ...owner,
-        aiModel: env.MISTRAL_MODEL,
-        operation: 'document-extraction',
-        tokensInput: usage.inputTokens,
-        tokensOutput: usage.outputTokens,
-        cachedTokens: usage.cachedInputTokens,
-      });
-    }
     if (!extraction.success) {
       logger.warn('File text not extracted', { fileId: file.id, method: extraction.metadata.extractionMethod, operation: 'file-extraction' });
     }

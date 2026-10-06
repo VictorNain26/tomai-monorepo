@@ -11,6 +11,7 @@
  */
 
 import { generateText } from '../../platform/ai/mistral-client.js';
+import type { CostOwner } from '../../platform/ai/cost.js';
 import { studySessionsRepository } from './study-sessions.repository.js';
 import { messagesRepository } from './messages.repository.js';
 import { logger } from '../../platform/observability/logger.js';
@@ -90,7 +91,7 @@ class SummarizationService {
       if (!lastSummarizedMessage) return;
 
       const messagesText = messagesToSummarize.map(m => `[${m.role}]: ${m.content}`).join('\n\n');
-      const summary = await this.generateSummary(messagesText, session.conversationSummary);
+      const summary = await this.generateSummary(messagesText, session.conversationSummary, { userId: session.userId, sessionId });
       if (!summary) return;
 
       // Two runs started by turns close together: the one that read an older cutoff writes nothing.
@@ -121,7 +122,8 @@ class SummarizationService {
    */
   private async generateSummary(
     messagesText: string,
-    previousSummary?: string | null
+    previousSummary: string | null,
+    owner: CostOwner,
   ): Promise<string | null> {
     const userContent = previousSummary
       ? `## RÉSUMÉ PRÉCÉDENT\n${previousSummary}\n\n## NOUVEAUX ÉCHANGES\n${messagesText}`
@@ -129,6 +131,7 @@ class SummarizationService {
 
     const text = await generateText({
       functionId: 'summarization',
+      owner,
       messages: [
         { role: 'system', content: SUMMARIZATION_PROMPT },
         { role: 'user', content: userContent },

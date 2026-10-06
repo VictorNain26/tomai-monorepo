@@ -11,6 +11,7 @@
 import { logger } from '../../platform/observability/logger.js';
 import { env } from '../../platform/config/env.js';
 import { getMistralSdk } from '../../platform/ai/mistral-sdk.js';
+import { recordAiCost, type CostOwner } from '../../platform/ai/cost.js';
 import { MistralError } from '@mistralai/mistralai/models/errors';
 import type { EducationLevelType } from '../../types/index.js';
 
@@ -46,7 +47,7 @@ const MAX_INPUT_CHARS = 5_000;
 class VoxtralTTSService {
   private readonly model = env.MISTRAL_TTS_MODEL;
 
-  async synthesize(text: string, options: VoxtralTTSOptions = {}): Promise<VoxtralTTSResult> {
+  async synthesize(text: string, owner: CostOwner, options: VoxtralTTSOptions = {}): Promise<VoxtralTTSResult> {
     const startTime = Date.now();
 
     if (!text || text.trim().length === 0) {
@@ -74,6 +75,8 @@ class VoxtralTTSService {
         voiceId: voice,
         responseFormat: outputFormat,
       });
+      // Billed on the characters of the text read (https://mistral.ai/news/voxtral-tts/); the response gives no usage.
+      void recordAiCost(owner, { model: this.model, operation: 'text-to-speech', characters: text.length });
 
       logger.info('Voxtral TTS synthesis completed', {
         operation: 'voxtral:tts:complete',

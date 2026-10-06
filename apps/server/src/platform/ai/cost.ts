@@ -1,0 +1,118 @@
+/**
+ * The cost of each AI call, in micro-euros, written to `cost_tracking` (table of `billing`).
+ *
+ * Pricing is expressed in USD as published by Mistral — per million tokens, per minute of
+ * audio, per million characters — keyed by dated model id (no aliases: an alias can silently
+ * change price). Cached tokens are billed at 10 % of the input rate; the EU regional endpoint
+ * adds 10 % to everything (docs.mistral.ai/inference/regional-inference). Moderation is free
+ * (docs.mistral.ai/models/mistral-moderation-26-03) and not recorded.
+ *
+ * Unknown models: a row with cost_micro_eur=0 and a billingMetadata.unknownModel flag rather
+ * than silently dropping the call. Monitoring can alert on these.
+ */
+
+import { db } from '../../db/connection.js';
+import { costTracking } from '../../db/schema.js';
+import { logger } from '../observability/logger.js';
+import { env } from '../config/env.js';
+
+/** Who an AI call is billed to: a student and their session, or null outside a student (eval, live tests). */
+export type CostOwner = { userId: string; sessionId?: string | undefined } | null;
+
+interface CallUsage {
+  tokensInput?: number;
+  tokensOutput?: number;
+  /** Tokens served from the prompt cache (billed at 10% of input rate). */
+  cachedTokens?: number;
+  /** Speech-to-text: the audio's length, as the API reports it (`usage.promptAudioSeconds`). */
+  audioSeconds?: number;
+  /** Text-to-speech: the characters of the text read. */
+  characters?: number;
+}
+
+interface AiCall extends CallUsage {
+  model: string;
+  /** The call's `functionId`, or the voice operation. */
+  operation: string;
+}
+
+/** USD list prices of the dated models, read on their pages on 2026-10-06. */
+const MODEL_PRICING_USD: Record<string, { inputPerMTokens?: number; outputPerMTokens?: number; perMinute?: number; perMChars?: number }> = {
+  'mistral-small-2603': { inputPerMTokens: 0.15, outputPerMTokens: 0.60 },
+  // https://docs.mistral.ai/models/voxtral-mini-transcribe-26-02
+  'voxtral-mini-2602': { perMinute: 0.003 },
+  // https://mistral.ai/news/voxtral-tts/ : « $0.016 per 1k characters »
+  'voxtral-mini-tts-2603': { perMChars: 16 },
+};
+
+const CACHE_DISCOUNT = 0.10;
+
+const EU_REGIONAL_UPCHARGE = 1.1;
+
+const USD_TO_EUR = env.USD_TO_EUR_RATE;
+
+export function regionalUpcharge(serverUrl: string): number {
+  return new URL(serverUrl).host === 'api.eu.mistral.ai' ? EU_REGIONAL_UPCHARGE : 1;
+}
+
+/** The call's cost in micro-euros (1 µ€ = 0.0001 c): a text turn costs a few hundred. */
+export function computeCostMicroEur(model: string, usage: CallUsage, upcharge: number): { costMicroEur: number; unknownModel: boolean } {
+  const pricing = MODEL_PRICING_USD[model];
+  if (!pricing) {
+    return { costMicroEur: 0, unknownModel: true };
+  }
+
+  const tokensInput = usage.tokensInput ?? 0;
+  const cached = Math.min(Math.max(usage.cachedTokens ?? 0, 0), tokensInput);
+  const inputRate = pricing.inputPerMTokens ?? 0;
+  const usd =
+    ((tokensInput - cached) / 1_000_000) * inputRate +
+    (cached / 1_000_000) * inputRate * CACHE_DISCOUNT +
+    ((usage.tokensOutput ?? 0) / 1_000_000) * (pricing.outputPerMTokens ?? 0) +
+    ((usage.audioSeconds ?? 0) / 60) * (pricing.perMinute ?? 0) +
+    ((usage.characters ?? 0) / 1_000_000) * (pricing.perMChars ?? 0);
+
+  return { costMicroEur: Math.round(usd * upcharge * USD_TO_EUR * 1_000_000), unknownModel: false };
+}
+
+/** Writes the call's cost for its owner; nothing without one. A failed write is logged, never thrown. */
+export async function recordAiCost(owner: CostOwner, call: AiCall): Promise<void> {
+  if (!owner) return;
+  const upcharge = regionalUpcharge(env.MISTRAL_SERVER_URL);
+  const { costMicroEur, unknownModel } = computeCostMicroEur(call.model, call, upcharge);
+
+  if (unknownModel) {
+    logger.warn('Cost tracking: unknown model pricing', {
+      operation: 'cost-tracking:unknown-model',
+      aiModel: call.model,
+      severity: 'medium' as const,
+    });
+  }
+
+  try {
+    await db.insert(costTracking).values({
+      userId: owner.userId,
+      sessionId: owner.sessionId ?? null,
+      aiModel: call.model,
+      operation: call.operation,
+      tokensInput: call.tokensInput ?? 0,
+      tokensOutput: call.tokensOutput ?? 0,
+      costMicroEur,
+      billingMetadata: {
+        cachedTokens: call.cachedTokens ?? 0,
+        ...(call.audioSeconds !== undefined && { audioSeconds: call.audioSeconds }),
+        ...(call.characters !== undefined && { characters: call.characters }),
+        unknownModel,
+        usdToEur: USD_TO_EUR,
+        regionalUpcharge: upcharge,
+      },
+    });
+  } catch (err) {
+    logger.error('Cost tracking insert failed', {
+      operation: 'cost-tracking:insert-failed',
+      aiModel: call.model,
+      err: err,
+      severity: 'high' as const,
+    });
+  }
+}

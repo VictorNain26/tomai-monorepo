@@ -8,6 +8,13 @@
       "when": 1791279577020,
       "tag": "0000_baseline",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1791281425860,
+      "tag": "0001_cost_micro_eur",
+      "breakpoints": true
     }
   ]
 }

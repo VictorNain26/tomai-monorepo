@@ -60,6 +60,7 @@ class AutoTitleService {
 
       const raw = await generateText({
         functionId: 'auto-title',
+        owner: { userId: session.userId, sessionId },
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.3,
         maxTokens: 64,

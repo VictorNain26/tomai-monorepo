@@ -9,7 +9,7 @@
  *
  * Both go through `mistralProvider` (`platform/ai/provider.ts`, EU endpoint).
  * They run with `reasoningEffort: 'none'`, except a structured call that asks
- * for `'high'` (the exercise sheet).
+ * for `'high'` (the exercise sheet). Each records its cost for its owner (`cost.ts`).
  */
 
 import { generateText as aiGenerateText, Output, NoObjectGeneratedError, TypeValidationError, type ModelMessage, type TextPart, type FilePart } from 'ai';
@@ -17,6 +17,7 @@ import type { z } from 'zod';
 import type { MistralLanguageModelChatOptions } from '@ai-sdk/mistral';
 import { mistralProvider } from './provider.js';
 import { structuredUsage, type StructuredUsage } from './usage.js';
+import { recordAiCost, type CostOwner } from './cost.js';
 import { env } from '../config/env.js';
 
 // ── Types domain ────────────────────────────────────────────────────────────
@@ -45,6 +46,8 @@ export type MistralMessage =
 interface GenerateTextOptions {
   messages: MistralMessage[];
   functionId: string;
+  /** Who the call is billed to; `null` outside a student (eval, live tests). */
+  owner: CostOwner;
   model?: string;
   temperature?: number;
   maxTokens?: number;
@@ -106,6 +109,10 @@ function toModelMessages(messages: MistralMessage[]): ModelMessage[] {
 }
 
 
+function usageOf(usage: StructuredUsage) {
+  return { tokensInput: usage.inputTokens, tokensOutput: usage.outputTokens, cachedTokens: usage.cachedInputTokens };
+}
+
 // ── API publique ────────────────────────────────────────────────────────────
 
 /**
@@ -134,6 +141,11 @@ export async function generateText(opts: GenerateTextOptions): Promise<string> {
         promptCacheKey: opts.promptCacheKey,
       } satisfies MistralLanguageModelChatOptions,
     },
+  });
+  void recordAiCost(opts.owner, {
+    model,
+    operation: opts.functionId,
+    ...usageOf(structuredUsage(result.usage)),
   });
   return result.text;
 }
@@ -176,12 +188,26 @@ export async function generateStructured<T>(opts: GenerateStructuredOptions<T>):
     return { object: result.output, usage: structuredUsage(result.usage) };
   };
 
+  // Each call is recorded, an answer outside the schema too: it was billed all the same.
+  const attempt = async (messages: ModelMessage[]) => {
+    try {
+      const result = await call(messages);
+      void recordAiCost(opts.owner, { model, operation: opts.functionId, ...usageOf(result.usage) });
+      return result;
+    } catch (error) {
+      if (NoObjectGeneratedError.isInstance(error)) {
+        void recordAiCost(opts.owner, { model, operation: opts.functionId, ...usageOf(structuredUsage(error.usage)) });
+      }
+      throw error;
+    }
+  };
+
   const messages = toModelMessages(opts.messages);
   try {
-    return await call(messages);
+    return await attempt(messages);
   } catch (error) {
     if (opts.repairInvalid === false || !NoObjectGeneratedError.isInstance(error) || !TypeValidationError.isInstance(error.cause)) throw error;
-    const retry = await call([
+    const retry = await attempt([
       ...messages,
       { role: 'assistant', content: error.text ?? '' },
       { role: 'user', content: `Ta réponse ne respecte pas le schéma attendu : ${error.cause.message}. Renvoie un JSON corrigé.` },

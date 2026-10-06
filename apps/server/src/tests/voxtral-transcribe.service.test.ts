@@ -22,6 +22,10 @@ mock.module('../platform/config/env', () => ({
   },
 }));
 
+const recordAiCost = mock(async (_owner: unknown, _call: unknown) => {});
+mock.module('../platform/ai/cost', () => ({ recordAiCost }));
+const owner = { userId: 'u1' };
+
 // ============================================
 // Import après mocks
 // ============================================
@@ -40,7 +44,7 @@ function makeAudioBuffer(size = 8): Uint8Array {
 
 function mockFetchSuccess(text: string, model = 'voxtral-mini-2602') {
   return spyOn(globalThis, 'fetch').mockResolvedValueOnce(
-    new Response(JSON.stringify({ model, text, language: null, usage: {} }), {
+    new Response(JSON.stringify({ model, text, language: null, usage: { prompt_audio_seconds: 3 } }), {
       status: 200,
       headers: { 'content-type': 'application/json' },
     }),
@@ -80,7 +84,7 @@ describe('VoxtralTranscribeService', () => {
       fetchSpy = mockFetchSuccess('Bonjour le monde');
       const service = getVoxtralTranscribeService();
 
-      await service.transcribe(makeAudioBuffer(), 'audio/webm');
+      await service.transcribe(makeAudioBuffer(), 'audio/webm', owner);
 
       expect(fetchSpy).toHaveBeenCalledTimes(1);
       const [request] = fetchSpy.mock.calls[0] as [Request];
@@ -91,7 +95,7 @@ describe('VoxtralTranscribeService', () => {
       fetchSpy = mockFetchSuccess('test');
       const service = getVoxtralTranscribeService();
 
-      await service.transcribe(makeAudioBuffer(), 'audio/webm');
+      await service.transcribe(makeAudioBuffer(), 'audio/webm', owner);
 
       const [request] = fetchSpy.mock.calls[0] as [Request];
       expect(request.headers.get('authorization')).toBe('Bearer test-mistral-key');
@@ -101,7 +105,7 @@ describe('VoxtralTranscribeService', () => {
       fetchSpy = mockFetchSuccess('test');
       const service = getVoxtralTranscribeService();
 
-      await service.transcribe(makeAudioBuffer(), 'audio/mp4');
+      await service.transcribe(makeAudioBuffer(), 'audio/mp4', owner);
 
       const [request] = fetchSpy.mock.calls[0] as [Request];
       const body = await request.formData();
@@ -112,7 +116,7 @@ describe('VoxtralTranscribeService', () => {
       fetchSpy = mockFetchSuccess('test');
       const service = getVoxtralTranscribeService();
 
-      await service.transcribe(makeAudioBuffer(), 'audio/webm');
+      await service.transcribe(makeAudioBuffer(), 'audio/webm', owner);
 
       const [request] = fetchSpy.mock.calls[0] as [Request];
       // Bun's Request#formData() doesn't reconstruct the per-part Content-Type
@@ -127,7 +131,7 @@ describe('VoxtralTranscribeService', () => {
       fetchSpy = mockFetchSuccess('test');
       const service = getVoxtralTranscribeService();
 
-      await service.transcribe(makeAudioBuffer(), 'audio/mp4');
+      await service.transcribe(makeAudioBuffer(), 'audio/mp4', owner);
 
       const [request] = fetchSpy.mock.calls[0] as [Request];
       const body = await request.formData();
@@ -139,7 +143,7 @@ describe('VoxtralTranscribeService', () => {
       const pool = new Uint8Array(64).fill(9);
       pool.set([1, 2, 3, 4], 10);
 
-      await getVoxtralTranscribeService().transcribe(pool.subarray(10, 14), 'audio/webm');
+      await getVoxtralTranscribeService().transcribe(pool.subarray(10, 14), 'audio/webm', owner);
 
       const [request] = fetchSpy.mock.calls[0] as [Request];
       const file = (await request.formData()).get('file') as File;
@@ -150,10 +154,19 @@ describe('VoxtralTranscribeService', () => {
       fetchSpy = mockFetchSuccess('Bonjour le monde');
       const service = getVoxtralTranscribeService();
 
-      const result = await service.transcribe(makeAudioBuffer(), 'audio/webm');
+      const result = await service.transcribe(makeAudioBuffer(), 'audio/webm', owner);
 
       expect(result.success).toBe(true);
       expect(result.transcription).toBe('Bonjour le monde');
+    });
+
+    it('bills the audio length the API reports to the owner', async () => {
+      recordAiCost.mockClear();
+      fetchSpy = mockFetchSuccess('Bonjour');
+
+      await getVoxtralTranscribeService().transcribe(makeAudioBuffer(), 'audio/webm', owner);
+
+      expect(recordAiCost.mock.calls).toEqual([[owner, { model: 'voxtral-mini-2602', operation: 'speech-to-text', audioSeconds: 3 }]]);
     });
 
   });
@@ -163,7 +176,7 @@ describe('VoxtralTranscribeService', () => {
       fetchSpy = mockFetchError(400, 'Bad Request');
       const service = getVoxtralTranscribeService();
 
-      const result = await service.transcribe(makeAudioBuffer(), 'audio/webm');
+      const result = await service.transcribe(makeAudioBuffer(), 'audio/webm', owner);
 
       expect(result.success).toBe(false);
       expect(result.error).toContain('400');
@@ -173,7 +186,7 @@ describe('VoxtralTranscribeService', () => {
       fetchSpy = mockFetchError(401, 'Unauthorized');
       const service = getVoxtralTranscribeService();
 
-      const result = await service.transcribe(makeAudioBuffer(), 'audio/webm');
+      const result = await service.transcribe(makeAudioBuffer(), 'audio/webm', owner);
 
       expect(result.success).toBe(false);
       expect(result.error).toContain('401');
@@ -183,7 +196,7 @@ describe('VoxtralTranscribeService', () => {
       fetchSpy = mockFetchSuccess('');
       const service = getVoxtralTranscribeService();
 
-      const result = await service.transcribe(makeAudioBuffer(), 'audio/webm');
+      const result = await service.transcribe(makeAudioBuffer(), 'audio/webm', owner);
 
       expect(result.success).toBe(false);
       expect(result.error).toBeDefined();
@@ -193,7 +206,7 @@ describe('VoxtralTranscribeService', () => {
       fetchSpy = mockFetchThrow('Network failure');
       const service = getVoxtralTranscribeService();
 
-      const result = await service.transcribe(makeAudioBuffer(), 'audio/webm');
+      const result = await service.transcribe(makeAudioBuffer(), 'audio/webm', owner);
 
       expect(result.success).toBe(false);
       expect(result.error).toContain('Network failure');
@@ -207,7 +220,7 @@ describe('VoxtralTranscribeService', () => {
         );
       }) as unknown as typeof fetch);
 
-      const result = await getVoxtralTranscribeService().transcribe(makeAudioBuffer(), 'audio/webm');
+      const result = await getVoxtralTranscribeService().transcribe(makeAudioBuffer(), 'audio/webm', owner);
 
       expect(result.success).toBe(false);
       expect(captured?.aborted).toBe(true);

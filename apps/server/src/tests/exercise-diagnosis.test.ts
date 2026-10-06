@@ -7,7 +7,7 @@ import type { Diagnosis } from '../modules/tutor/exercise-diagnosis.service';
 const mockLogger = createMockLogger();
 mock.module('../platform/observability/logger', () => ({ logger: mockLogger }));
 
-interface Call { messages: { role: string; content: string }[]; temperature: number; schemaName: string }
+interface Call { messages: { role: string; content: string }[]; temperature: number; schemaName: string; owner: unknown }
 const calls: Call[] = [];
 let reply: unknown;
 let fails = false;
@@ -19,9 +19,6 @@ mock.module('../platform/ai/mistral-client', () => ({
   }),
 }));
 
-const record = mock(async (_input: unknown) => {});
-const actualBilling = await import('../modules/billing/index');
-mock.module('../modules/billing/index', () => ({ ...actualBilling, costTrackingService: { record } }));
 
 const { diagnose, settle } = await import('../modules/tutor/exercise-diagnosis.service');
 
@@ -36,12 +33,11 @@ const model = (verdict: Diagnosis['verdict'], proposalMath: string | null, first
 beforeEach(() => {
   calls.length = 0;
   fails = false;
-  record.mockClear();
   mockLogger.error.mockClear();
 });
 
 describe('diagnose', () => {
-  it('reads the proposal against the sheet, the student and the tutor fenced as data, at temperature 0, and counts the call', async () => {
+  it('reads the proposal against the sheet, the student and the tutor fenced as data, at temperature 0, and bills the call to the student', async () => {
     reply = model('incorrect', 'x = 20/3', 'Il divise 20 par 3');
 
     const diagnosis = await diagnose(sheet, turn);
@@ -55,7 +51,7 @@ describe('diagnose', () => {
     expect(data.match(/<\/student_message>/g)).toHaveLength(1);
     expect(call?.messages[0]?.content).toContain("Ne cherche pas d'erreur derrière une\nréponse juste");
     expect(call?.messages[0]?.content).toContain("une partie juste d'un exercice à plusieurs questions,\nou un résultat intermédiaire juste, est une étape juste");
-    expect(record.mock.calls[0]?.[0]).toMatchObject({ operation: 'exercise-diagnosis', tokensInput: 700, userId: 'u1', sessionId: 's1' });
+    expect(call?.owner).toEqual({ userId: 'u1', sessionId: 's1' });
   });
 
   it('gives an unclear verdict when the call fails, and logs it', async () => {

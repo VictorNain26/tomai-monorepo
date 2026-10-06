@@ -8,7 +8,7 @@ mock.module('../platform/auth/session', () => {
   const ok = () => Promise.resolve({ success: true as const, user: { id: 'u1', role: 'student' }, session: { id: 's1' } });
   return { requireAuth: ok, requireParentRole: ok };
 });
-const synthesize = mock((_text: string, _options: unknown) =>
+const synthesize = mock((_text: string, _owner: unknown, _options: unknown) =>
   Promise.resolve({ success: true, audioData: 'AAA', mimeType: 'audio/mpeg' }),
 );
 mock.module('../modules/voice/text-to-speech.service', () => ({ textToSpeechService: { synthesize } }));
@@ -40,6 +40,6 @@ describe('voice routes', () => {
   it('synthesises French text for a known level', async () => {
     const res = await post({ text: 'Bonjour', schoolLevel: 'cinquieme' });
     expect(res.status).toBe(200);
-    expect(synthesize.mock.calls[0]?.[1]).toEqual({ language: 'fr', schoolLevel: 'cinquieme' });
+    expect(synthesize.mock.calls[0]?.slice(1)).toEqual([{ userId: 'u1' }, { language: 'fr', schoolLevel: 'cinquieme' }]);
   });
 });

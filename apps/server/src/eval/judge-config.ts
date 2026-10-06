@@ -28,6 +28,8 @@ export type Generate = <T>(opts: {
   schema: z.ZodType<T>;
   schemaName: string;
   functionId: string;
+  /** The judge bills no student. */
+  owner: null;
   model: string;
   temperature: number;
   maxTokens: number;

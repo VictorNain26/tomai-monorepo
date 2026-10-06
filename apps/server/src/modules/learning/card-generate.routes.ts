@@ -93,6 +93,7 @@ export const cardGenerateRoutes = new Hono<AuthEnv>()
         const generationResult = await generateCards({
           topic: searchQuery, subject, level,
           cardCount, domaine,
+          owner: { userId: user.id },
         });
 
         if (isGenerationError(generationResult)) {
