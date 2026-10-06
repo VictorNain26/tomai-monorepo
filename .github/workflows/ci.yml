@@ -167,21 +167,22 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-      - name: Check if server DB schema changed
+      # drizzle/ counts too: a snapshot or journal changed without the schema desyncs them as well.
+      - name: Check if server DB schema or migrations changed
         id: check
         run: |
           if [ -n "$GITHUB_BASE_REF" ]; then
-            DIFF=$(git diff --name-only "origin/$GITHUB_BASE_REF"...HEAD -- 'apps/server/src/db/' ':(glob)apps/server/src/**/*.schema.ts' 'apps/server/drizzle.config.ts')
+            DIFF=$(git diff --name-only "origin/$GITHUB_BASE_REF"...HEAD -- 'apps/server/src/db/' ':(glob)apps/server/src/**/*.schema.ts' 'apps/server/drizzle.config.ts' 'apps/server/drizzle/')
           else
-            DIFF=$(git diff --name-only "${{ github.event.before }}" "${{ github.sha }}" -- 'apps/server/src/db/' ':(glob)apps/server/src/**/*.schema.ts' 'apps/server/drizzle.config.ts')
+            DIFF=$(git diff --name-only "${{ github.event.before }}" "${{ github.sha }}" -- 'apps/server/src/db/' ':(glob)apps/server/src/**/*.schema.ts' 'apps/server/drizzle.config.ts' 'apps/server/drizzle/')
           fi
           if [ -n "$DIFF" ]; then
             echo "changed=true" >> "$GITHUB_OUTPUT"
-            echo "Schema files changed:"
+            echo "Schema or migration files changed:"
             echo "$DIFF"
           else
             echo "changed=false" >> "$GITHUB_OUTPUT"
-            echo "No schema changes detected"
+            echo "No schema or migration changes detected"
           fi
       - uses: ./.github/actions/setup-monorepo
         if: steps.check.outputs.changed == 'true'
