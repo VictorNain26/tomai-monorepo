@@ -54,6 +54,18 @@ describe('loadConfig', () => {
   });
 });
 
+describe('loadConfig — every fault at once', () => {
+  it('names every invalid or missing variable of a production environment in one error', () => {
+    expect(() => loadConfig({ NODE_ENV: 'production', BETTER_AUTH_SECRET: 'x'.repeat(32) })).toThrow(
+      /DATABASE_URL[\s\S]*BETTER_AUTH_URL[\s\S]*WEB_DIST_DIR/,
+    );
+  });
+
+  it('treats an empty variable as unset, so that its default applies', () => {
+    expect(loadConfig({ ...BASE, PORT: '', LOG_LEVEL: '' })).toMatchObject({ port: 3000, logLevel: 'info' });
+  });
+});
+
 describe('loadDatabaseConfig', () => {
   it('needs the database only, not the server secrets', () => {
     expect(loadDatabaseConfig({ DATABASE_URL: BASE.DATABASE_URL, NODE_ENV: 'production' })).toEqual({

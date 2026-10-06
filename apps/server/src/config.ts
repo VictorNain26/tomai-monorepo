@@ -26,20 +26,23 @@ const fields = z.object({
   WEB_DIST_DIR: webDistDir.optional(),
 });
 
-const schema = fields.superRefine((env, ctx) => {
-  if (env.NODE_ENV !== 'production') return;
-  if (!env.BETTER_AUTH_URL) ctx.addIssue({ code: 'custom', path: ['BETTER_AUTH_URL'], message: 'requis en production' });
-  if (!env.WEB_DIST_DIR) ctx.addIssue({ code: 'custom', path: ['WEB_DIST_DIR'], message: 'requis en production' });
-});
+const databaseFields = fields.pick({ NODE_ENV: true, DATABASE_URL: true });
 
-const databaseSchema = fields.pick({ NODE_ENV: true, DATABASE_URL: true });
+// Zod skips a refinement once a field has failed: these checks run apart, so that one error
+// names every variable at fault.
+const REQUIRED_IN_PRODUCTION = ['BETTER_AUTH_URL', 'WEB_DIST_DIR'] as const;
 
-function parse<T extends z.ZodType>(target: T, environment: Record<string, string | undefined>): z.infer<T> {
+type Environment = Record<string, string | undefined>;
+
+function parse<T extends z.ZodType>(target: T, raw: Environment, required: readonly string[] = []): z.infer<T> {
+  // An empty variable counts as unset: `PORT=` falls back to its default instead of failing.
+  const environment = Object.fromEntries(Object.entries(raw).filter(([, value]) => value !== undefined && value !== ''));
   const result = target.safeParse(environment);
-  if (!result.success) {
-    const issues = result.error.issues.map((issue) => `${issue.path.join('.')}: ${issue.message}`);
-    throw new Error(`Invalid environment:\n  ${issues.join('\n  ')}`);
+  const issues = result.success ? [] : result.error.issues.map((issue) => `${issue.path.join('.')}: ${issue.message}`);
+  if (environment['NODE_ENV'] === 'production') {
+    for (const key of required) if (!(key in environment)) issues.push(`${key}: requis en production`);
   }
+  if (!result.success || issues.length > 0) throw new Error(`Invalid environment:\n  ${issues.join('\n  ')}`);
   return result.data;
 }
 
@@ -56,8 +59,8 @@ export interface Config {
 }
 
 /** Parses the environment, or throws with every invalid variable named. */
-export function loadConfig(environment: Record<string, string | undefined>): Config {
-  const env = parse(schema, environment);
+export function loadConfig(environment: Environment): Config {
+  const env = parse(fields, environment, REQUIRED_IN_PRODUCTION);
   return Object.freeze({
     production: env.NODE_ENV === 'production',
     port: env.PORT,
@@ -70,7 +73,7 @@ export function loadConfig(environment: Record<string, string | undefined>): Con
 }
 
 /** What the migration script needs: it runs before the server, without the server's secrets. */
-export function loadDatabaseConfig(environment: Record<string, string | undefined>): Pick<Config, 'production' | 'databaseUrl'> {
-  const env = parse(databaseSchema, environment);
+export function loadDatabaseConfig(environment: Environment): Pick<Config, 'production' | 'databaseUrl'> {
+  const env = parse(databaseFields, environment);
   return Object.freeze({ production: env.NODE_ENV === 'production', databaseUrl: env.DATABASE_URL });
 }
