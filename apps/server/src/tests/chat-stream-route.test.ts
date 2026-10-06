@@ -228,11 +228,23 @@ describe('POST /api/chat/stream', () => {
   });
 
   it('refuses a level outside the collège, which the prompt does not serve', async () => {
-    currentUser = { id: 'user-001', role: 'student', schoolLevel: 'terminale', firstName: 'Léo' };
-    const res = await app.fetch(makeRequest());
+    currentUser = { id: 'user-001', role: 'student', schoolLevel: 'sixieme', firstName: 'Léo' };
+    const res = await app.fetch(makeRequest({
+      message: { id: 'm1', role: 'user', parts: [{ type: 'text', text: 'Bonjour Tom' }] },
+      schoolLevel: 'terminale',
+    }));
     expect(res.status).toBe(400);
     const json = (await res.json()) as { error: { code: string } };
     expect(json.error.code).toBe('VALIDATION_ERROR');
+  });
+
+  it('refuses a subject outside the collège taxonomy', async () => {
+    currentUser = { id: 'user-001', role: 'student', schoolLevel: 'sixieme', firstName: 'Léo' };
+    const res = await app.fetch(makeRequest({
+      message: { id: 'm1', role: 'user', parts: [{ type: 'text', text: 'Bonjour Tom' }] },
+      subject: 'philosophie',
+    }));
+    expect(res.status).toBe(400);
   });
 
   it('returns a 200 UI Message Stream response with the expected headers', async () => {

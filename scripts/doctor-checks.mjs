@@ -128,9 +128,10 @@ function checkContainers(ctx) {
 import { existsSync } from 'node:fs';
 
 /** Nombre de migrations attendues = entrées du journal Drizzle. */
-export function countJournalEntries(path = new URL('../apps/server/drizzle/meta/_journal.json', import.meta.url).pathname) {
-  if (!existsSync(path)) return 0;
-  try { return (JSON.parse(readFileSync(path, 'utf8')).entries ?? []).length; } catch { return 0; }
+/** The `when` of each journal entry: Drizzle stores it as `created_at` of the applied migration. */
+export function journalWhens(path = new URL('../apps/server/drizzle/meta/_journal.json', import.meta.url).pathname) {
+  if (!existsSync(path)) return [];
+  try { return (JSON.parse(readFileSync(path, 'utf8')).entries ?? []).map((entry) => String(entry.when)); } catch { return []; }
 }
 
 function psqlScalar(ctx, sql) {
@@ -141,12 +142,15 @@ function psqlScalar(ctx, sql) {
 }
 
 function checkMigrations(ctx) {
-  return { name: 'postgres: extension vector + migrations Drizzle à jour', run: async () => {
-    const hasVector = psqlScalar(ctx, "SELECT count(*) FROM pg_extension WHERE extname='vector';");
-    if (hasVector === '0') throw new Error("extension 'vector' absente — lance 'bun run db:migrate' dans apps/server (le migrateur la crée)");
-    const applied = Number(psqlScalar(ctx, 'SELECT count(*) FROM drizzle.__drizzle_migrations;'));
-    const expected = ctx.journalEntries ?? countJournalEntries();
-    if (applied < expected) throw new Error(`migrations en retard: ${applied}/${expected} appliquées — lance 'bun run db:migrate' dans apps/server`);
+  return { name: 'postgres: migrations Drizzle à jour', run: async () => {
+    const applied = psqlScalar(ctx, "SELECT string_agg(created_at::text, ',' ORDER BY created_at) FROM drizzle.__drizzle_migrations;")
+      .split(',').filter(Boolean);
+    const expected = ctx.journalWhens ?? journalWhens();
+    // Drizzle applies only the migrations newer than the last applied one: a history the journal
+    // does not know, such as the one before the base migration, would never be replayed.
+    const unknown = applied.filter((when) => !expected.includes(when));
+    if (unknown.length > 0) throw new Error(`${unknown.length} migration(s) appliquée(s) absente(s) du journal — base d'un autre historique : recrée-la ('docker compose rm -sf postgres', 'docker volume rm tomai_postgres_dev_data', puis 'bun run setup')`);
+    if (applied.length < expected.length) throw new Error(`migrations en retard: ${applied.length}/${expected.length} appliquées — lance 'bun run db:migrate' dans apps/server`);
   }};
 }
 

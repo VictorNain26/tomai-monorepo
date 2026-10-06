@@ -38,7 +38,7 @@ function makeUser(overrides?: Partial<AuthenticatedUser>): AuthenticatedUser {
     email: 'student@example.com',
     name: 'Jane Student',
     role: 'student',
-    schoolLevel: 'seconde',
+    schoolLevel: 'quatrieme',
     firstName: 'Jane',
     ...overrides,
   };

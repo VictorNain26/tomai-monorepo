@@ -8,7 +8,7 @@ import { requestId } from 'hono/request-id';
 import { secureHeaders } from 'hono/secure-headers';
 
 import { auth } from './platform/auth/auth.js';
-import { env, isDevelopment, getCorsOrigins } from './platform/config/env.js';
+import { isDevelopment, getCorsOrigins } from './platform/config/env.js';
 import type { AppEnv } from './platform/http/context.js';
 import { sentryMiddleware } from './platform/observability/sentry.js';
 
@@ -19,7 +19,6 @@ import { uploadRoutes, filesRoutes } from './modules/documents/index.js';
 import { voiceRoutes } from './modules/voice/index.js';
 import { learningRoutes } from './modules/learning/index.js';
 
-import { logger } from './platform/observability/logger.js';
 import { handleError, handleNotFound } from './platform/http/error-handler.js';
 import { createRateLimitMiddleware, RateLimitPresets } from './platform/http/rate-limit.js';
 
@@ -77,77 +76,6 @@ const app = base
   // GET /health is mounted via apiRoutes (routes/api/health.routes.ts) — the
   // single canonical health endpoint (Dockerfile HEALTHCHECK target).
 
-  // Diagnostic AI endpoint - probes the actual Mistral API with a tiny call.
-  // Separated from /health so the main health response stays cheap and
-  // immune to upstream rate-limit blips.
-  .get('/health/ai', async (c) => {
-    const startTime = Date.now();
-    const model = env.MISTRAL_MODEL;
-
-    if (!env.MISTRAL_API_KEY) {
-      return c.json({
-        status: 'unhealthy',
-        error: 'MISTRAL_API_KEY not configured',
-        model,
-        timestamp: new Date().toISOString(),
-      }, 503);
-    }
-
-    try {
-      const { generateText } = await import('./platform/ai/mistral-client.js');
-      const response = await generateText({
-        functionId: 'health-check',
-        messages: [{ role: 'user', content: 'Réponds uniquement "OK" sans rien ajouter.' }],
-        maxTokens: 10,
-        temperature: 0,
-        timeoutMs: 8_000,
-      });
-
-      const latencyMs = Date.now() - startTime;
-
-      logger.info('AI health check passed', {
-        operation: 'health:ai:success',
-        model,
-        latencyMs,
-        responsePreview: response.substring(0, 20),
-      });
-
-      return c.json({
-        status: 'healthy',
-        model,
-        latencyMs,
-        timestamp: new Date().toISOString(),
-      });
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      const latencyMs = Date.now() - startTime;
-
-      let errorType = 'unknown';
-      if (errorMessage.includes('429')) errorType = 'rate_limit';
-      else if (errorMessage.includes('401') || errorMessage.toLowerCase().includes('api key')) errorType = 'api_key_invalid';
-      else if (errorMessage.includes('404')) errorType = 'model_not_found';
-      else if (errorMessage.toLowerCase().includes('quota')) errorType = 'quota_exceeded';
-      else if (errorMessage.includes('503') || errorMessage.toLowerCase().includes('unavailable')) errorType = 'service_unavailable';
-
-      logger.error('AI health check failed', {
-        operation: 'health:ai:failed',
-        model,
-        err: error,
-        errorType,
-        latencyMs,
-        severity: 'high' as const,
-      });
-
-      return c.json({
-        status: 'unhealthy',
-        model,
-        error: errorMessage,
-        errorType,
-        latencyMs,
-        timestamp: new Date().toISOString(),
-      }, 503);
-    }
-  })
 
   .route('/', apiRoutes)
   .route('/api/chat', chatMessageRoutes)

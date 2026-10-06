@@ -2,6 +2,7 @@ import { describe, expect, it } from 'bun:test';
 import { buildSystemPrompt } from '../modules/tutor/prompts/system-prompt.js';
 import { generateLevelAdaptation } from '../modules/tutor/prompts/adaptation/by-level.js';
 import { generateSubjectBlock } from '../modules/tutor/prompts/adaptation/by-subject.js';
+import { SUBJECT_FAMILIES } from '../lib/subjects.js';
 import { turnInstruction } from '../modules/tutor/turn-analysis.service.js';
 import { analysis } from './_helpers/turn-analysis';
 import { exerciseBlock, notionsFor, sheetMessages } from '../modules/tutor/exercise-sheet.js';
@@ -46,11 +47,6 @@ describe('level adaptation', () => {
       expect(block).not.toMatch(/max|\d+ mots|éléments/i);
     }
   });
-
-  it('gives no block to a level outside the collège', () => {
-    for (const level of ['cp', 'cm2', 'seconde', 'terminale'] as const) expect(generateLevelAdaptation(level)).toBeNull();
-    expect(buildSystemPrompt({ level: 'cm2', levelText: 'CM2' })).not.toContain('<level_adaptation');
-  });
 });
 
 describe('tutor prompt, consistent from method to subject blocks', () => {
@@ -60,7 +56,7 @@ describe('tutor prompt, consistent from method to subject blocks', () => {
   });
 
   it('keeps the subject blocks from writing the correction the method forbids', () => {
-    for (const subject of ['mathematiques', 'francais', 'anglais', undefined]) {
+    for (const subject of SUBJECT_FAMILIES) {
       const block = generateSubjectBlock(subject);
       expect(block).toContain('<subject_specifics');
       for (const contradiction of ['Corriger APRÈS', 'Un anglophone dirait', 'exemple DIFFÉRENT', 'Fais vérifier le résultat', 'Chain-of-Thought']) {
@@ -73,7 +69,7 @@ describe('tutor prompt, consistent from method to subject blocks', () => {
     const rendered = [
       buildSystemPrompt({ level: 'sixieme', levelText: '6e' }),
       buildSystemPrompt({ level: 'troisieme', levelText: '3e' }),
-      ...['mathematiques', 'francais', 'anglais', 'sciences', 'histoire', undefined].map((subject) => generateSubjectBlock(subject)),
+      ...SUBJECT_FAMILIES.map((family) => generateSubjectBlock(family)),
       turnInstruction(analysis({ asksSolution: true })) ?? '',
       exerciseBlock({
         statement: 'x', kind: 'short', answer: null, answerForms: [], mathEquation: null, mathAnswer: null, steps: [], commonErrors: [],

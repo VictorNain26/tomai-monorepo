@@ -93,21 +93,4 @@ export const voiceRoutes = new Hono<AppEnv>()
           error: 'Erreur interne lors de la synthèse vocale',
         }, 500);
       }
-    })
-
-    // GET /api/tts/voices - Métadonnées Voxtral (MVP : voix par défaut unique)
-    .get('/voices', requireUser, (c) => {
-      // MVP : voix par défaut Voxtral. Voice cloning + mapping par niveau
-      // scolaire viendront dans une itération suivante (POST /v1/audio/voices
-      // côté Mistral, samples 3s par profil).
-      return c.json({
-        success: true,
-        provider: 'voxtral',
-        autoSelect: false,
-        voices: [],
-        languages: ['fr'],
-        limits: {
-          maxTextLength: 5000,
-        },
-      });
     });

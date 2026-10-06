@@ -157,13 +157,17 @@ export const auth = betterAuth({
         type: "string",
         required: false,
       },
+      // Written by the server only (createStudentAccount): a client could otherwise make itself
+      // a parent through update-user, or store a level the enum refuses.
       role: {
         type: "string",
         defaultValue: "parent",
+        input: false,
       },
       schoolLevel: {
         type: "string",
         required: false,
+        input: false,
       },
       dateOfBirth: {
         type: "string",

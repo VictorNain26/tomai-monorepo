@@ -9,6 +9,7 @@
  */
 
 import type { EducationLevelType } from '../../types/index.js';
+import type { SubjectSlug } from '../../lib/subjects.js';
 
 // ============================================
 // TYPES DE CARTES PAR CATÉGORIE
@@ -289,28 +290,13 @@ export type CardContent =
   | ReformulationContent;
 
 // ============================================
-// CATÉGORIES DE MATIÈRES
-// ============================================
-
-/**
- * Catégories de matières pour adaptation du prompt
- */
-export type SubjectCategory =
-  | 'mathematiques'      // KaTeX, formules, calculs
-  | 'sciences'           // KaTeX + expériences, SVT, physique-chimie
-  | 'francais'           // Textes, grammaire, vocabulaire, littérature
-  | 'langues'            // Vocabulaire, conjugaison, expressions (LV1, LV2)
-  | 'histoire-geo'       // Dates, événements, cartes mentales
-  | 'autre';             // Générique (arts, musique, etc.)
-
-// ============================================
 // CYCLE SCOLAIRE
 // ============================================
 
 /**
  * Cycle scolaire pour adaptation du niveau
  */
-export type EducationCycle = 'cycle2' | 'cycle3' | 'cycle4' | 'lycee';
+export type EducationCycle = 'cycle3' | 'cycle4';
 
 // ============================================
 // CONFIGURATION ET PARAMÈTRES
@@ -322,8 +308,7 @@ export type EducationCycle = 'cycle2' | 'cycle3' | 'cycle4' | 'lycee';
 export interface CardGenerationParams {
   /** Thème/sous-chapitre du programme (sousdomaine) */
   topic: string;
-  /** Matière (mathematiques, francais, etc.) */
-  subject: string;
+  subject: SubjectSlug;
   /** Niveau scolaire de l'élève */
   level: EducationLevelType;
   /** Nombre de cartes à générer */

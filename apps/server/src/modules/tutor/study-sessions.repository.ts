@@ -7,6 +7,7 @@ import { and, eq, desc, count, sql } from 'drizzle-orm';
 import { getTableColumns } from 'drizzle-orm';
 import { db } from '../../db/connection';
 import { studySessions, messages, type StudySession } from './session.schema.js';
+import type { SubjectFamily } from '../../lib/subjects.js';
 
 /**
  * Input type pour création session
@@ -14,7 +15,7 @@ import { studySessions, messages, type StudySession } from './session.schema.js'
  */
 export interface CreateStudySessionInput {
   userId: string;
-  subject: string;
+  subject: SubjectFamily;
   topic?: string; // Optionnel mais pas de default
 }
 
@@ -170,7 +171,7 @@ class StudySessionsRepository {
     return session;
   }
 
-  async updateSubject(id: string, subject: string): Promise<StudySession | undefined> {
+  async updateSubject(id: string, subject: SubjectFamily): Promise<StudySession | undefined> {
     const [session] = await db
       .update(studySessions)
       .set({ subject, updatedAt: sql`NOW()` })

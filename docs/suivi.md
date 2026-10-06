@@ -27,27 +27,10 @@ bloquant levé).
   Premier passage fait le 2026-10-05 : il a trouvé l'analyse du tour qui ratait les énoncés,
   corrigée (#391). Appels du SDK Mistral retentés, modération comprise sur un appel bloqué (#392).
   S4 repassé : aucune fuite sur 6. Point 7 terminé : appels annexes (#393), logs sans contenu
-  d'élève (#394), mémoire (#395). Nettoyage demandé par Victor le 2026-10-06, en trois PR : la
-  mémoire entre séances (#396) et colonnes et tables jamais lues (#397), faites. Prochaine : la
-  troisième, les restes hors vision (niveaux du lycée et du primaire, matières lycée, routes
-  sans client, `/health/ai` sans authentification, migrations en double de `drizzle/2025*`),
-  puis une migration de base unique, qui emporte pgvector et les valeurs d'enum sans usage
-  (`admin`, `rag_program`) ; elle recrée la base locale : demander l'accord de Victor avant.
-  Puis le point 8, quotas et coûts, et le passage de fin.
-  - Inventaire de la troisième PR (lecture du code serveur, 2026-10-06), chemins relatifs à
-    `apps/server/src/` : matières `ses`, `philosophie`, `nsi` (`lib/subjects.ts`) et trois listes
-    de matières au lieu d'une (`lib/subjects.ts`, `prompts/adaptation/subjects.ts`,
-    `COLLEGE_SUBJECTS` de `services/education.service.ts`) ; niveaux de seconde à terminale
-    dans `modules/tutor/mistral-reasoning.ts`, cycle 2 et lycée dans
-    `modules/learning/learning-config.ts` (`encourageBreaks`) et
-    `modules/learning/prompts/by-subject.ts`, repli `'seconde'` de
-    `modules/documents/upload.helpers.ts`, `EducationCycle 'lycee'` ; `GET /api/tts/voices`
-    (toujours vide), `GET /learning/config` (indications d'interface sans client), `GET
-    /health/ai` (sans authentification, un appel Mistral réel à chaque requête) ;
-    `currentMessageMaxTokens` jamais lu (`token-budget.service.ts`) ; `LEARNING_CONFIG` cite
-    `docs/AUDIT_LEARNING_FLASHCARDS.md`, qui n'existe pas ; dossiers `drizzle/2025*` non
-    référencés par le journal ; rôle `admin` de `packages/api/src/types.ts`. Laissés au lot 3 :
-    niveaux de l'inscription (`education-mapping.ts`), routes de séance qui se recouvrent.
+  d'élève (#394), mémoire (#395). Nettoyage demandé par Victor le 2026-10-06, en trois PR :
+  mémoire entre séances (#396), colonnes et tables jamais lues (#397), restes hors vision et
+  migration de base unique (#399) : les trois faites. Prochaine : le point 8, quotas et coûts,
+  et le passage de fin.
   - Point 8 en pause sur la branche `feat/cost-tracking-every-call` (plan commité, travail en
     cours dans `git stash` de cette branche) : chaque appel IA tracé en micro-euros, tarifs
     vérifiés le 2026-10-06 sur les pages Mistral. À reprendre sans les embeddings, supprimés.
@@ -220,9 +203,9 @@ contraire.
   ensuite, et qui le lève ; une photo seule n'est pas jugée (seul le texte de l'élève l'est,
   un document de cours parlant de mort fermerait la séance à tort).
 
-- **Niveaux** : l'inscription accepte encore les niveaux de la primaire et du lycée
-  (`lib/education-levels.ts`), que le chat refuse depuis #380. Les retirer avec les comptes
-  du client web.
+- **Routes de séance qui se recouvrent** (`modules/tutor/chat-session.routes.ts`) :
+  `/chat/sessions/latest` et `POST /chat/session` (séance active, créée au besoin),
+  `/chat/session/new` et `/chat/session/:id/reset`. Garder celles qu'appelle le client web.
 
 - **Conformité** (même étude, c) : mention « vous parlez à une IA » dès la première
   interaction (AI Act, art. 50, applicable depuis le 2 août 2026) ; consentement conjoint
@@ -616,3 +599,13 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
   elles `/progress/dashboard` et les champs toujours nuls du tableau de bord parent (durée,
   frustration).
 
+  Restes hors vision supprimés (#399) : les niveaux du primaire et du lycée, dont l'enum
+  `school_level` ne garde que la 6e à la 3e, et les matières du lycée ; une seule taxonomie des
+  matières (`lib/subjects.ts`) au lieu de quatre listes qui ne s'accordaient pas, le slug validé
+  aux routes ; `GET /api/tts/voices`, `GET /learning/config` et `GET /health/ai`, appel Mistral
+  réel sans authentification. L'historique des migrations repart d'une base unique, sans
+  pgvector ni les valeurs d'enum `admin` et `rag_program` ; Docker et la CI passent sur l'image
+  officielle `postgres:18.6`, sur un volume renommé (`tomai_postgres_dev_data`) : un clone existant
+  repart d'une base vide, et `bun run doctor` signale une base d'un autre historique. Après revue,
+  `role` et `schoolLevel` ne s'écrivent plus que par le serveur : un élève pouvait se donner le
+  rôle de parent par `update-user` de Better Auth.

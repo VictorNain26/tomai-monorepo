@@ -1,4 +1,5 @@
 import type { MistralMessage } from '../platform/ai/mistral-client.js';
+import { LEVEL_SHORT_LABELS } from '../lib/education-levels.js';
 import { programmes, type Entry } from '../referential/index.js';
 import type { Exercise, Scenario } from './index.js';
 import { lookup, type ItemInput } from './items.js';
@@ -50,13 +51,6 @@ export function sections({ exercise, scenario }: Pick<JudgeInput, 'exercise' | '
   };
 }
 export type Sections = ReturnType<typeof sections>;
-
-const LEVEL_LABELS: Record<Exercise['level'], string> = {
-  sixieme: '6e',
-  cinquieme: '5e',
-  quatrieme: '4e',
-  troisieme: '3e',
-};
 
 function clip(text: string): string {
   return text.length > MAX_CHANNEL_CHARS ? `${text.slice(0, MAX_CHANNEL_CHARS)} […]` : text;
@@ -114,7 +108,7 @@ export function briefing(input: Omit<JudgeInput, 'transcript'>): string {
       ].join('\n')
     : 'Aucune entrée du programme fournie.';
   return [
-    `Classe de l'élève : ${LEVEL_LABELS[exercise.level]}. Matière : ${exercise.subject}.`,
+    `Classe de l'élève : ${LEVEL_SHORT_LABELS[exercise.level]}. Matière : ${exercise.subject}.`,
     `Énoncé : ${exercise.statement}`,
     answer,
     ...(exercise.studentError ? [`Erreur de l'élève dans l'énoncé : il ${exercise.studentError}`] : []),

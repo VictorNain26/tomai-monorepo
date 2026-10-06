@@ -8,7 +8,7 @@ import { chatSessionService } from './chat-session.service.js';
 import { chatMessageService } from './chat-message.service.js';
 import { studySessionsRepository } from './study-sessions.repository.js';
 import { resolveEffectiveSubject, shouldPersistDetectedSubject } from './subject-resolution.js';
-import { STUDENT_SUBJECTS } from './prompts/adaptation/subjects.js';
+import { SUBJECTS } from '../../lib/subjects.js';
 import { fileContextService, sessionFilesRepository } from '../documents/index.js';
 import { wrapAttachedFiles } from './mistral-helpers.js';
 import { SUMMARY_BACKLOG, summarizationService } from './summarization.service.js';
@@ -141,14 +141,10 @@ class ChatOrchestrationService {
     // session's stored subject then the client hint. Persist on the first
     // confident detection (anti-thrash) so the conversation gets a real subject.
     const detectedSubject = turnAnalysis.subject;
-    const requestedSubject =
-      request.requestedSubject && (STUDENT_SUBJECTS as readonly string[]).includes(request.requestedSubject)
-        ? request.requestedSubject
-        : undefined;
     const effectiveSubject = resolveEffectiveSubject({
       detected: detectedSubject,
       sessionSubject: sessionSummary?.subject ?? null,
-      requested: requestedSubject,
+      requested: request.requestedSubject && SUBJECTS[request.requestedSubject].family,
     });
     if (shouldPersistDetectedSubject({ detected: detectedSubject, sessionSubject: sessionSummary?.subject ?? null })) {
       void studySessionsRepository

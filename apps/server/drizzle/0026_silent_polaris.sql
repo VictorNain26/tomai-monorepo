@@ -1,1 +1,0 @@
-DROP TABLE "retrieval_audit" CASCADE;

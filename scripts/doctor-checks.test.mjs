@@ -86,51 +86,35 @@ test('check conteneurs: PASS si postgres healthy', async () => {
   await byName(checks, 'conteneurs').run(); // ne lève pas
 });
 
-test('check migrations: FAIL si extension vector absente', async () => {
-  const exec = (cmd, args) => {
-    const sql = args.join(' ');
-    if (sql.includes('pg_extension')) return { ok: true, stdout: '0' };      // vector absent
-    return { ok: true, stdout: '0' };
-  };
-  const ctx = { ...ctxWith({ exec }), journalEntries: 1 };
-  const checks = buildChecks(ctx, { full: true });
-  await assert.rejects(byName(checks, 'migrations').run(), /vector/i);
+const migrationsCtx = (applied, extra = {}) => ({
+  ...ctxWith({ exec: (cmd, args) => ({ ok: true, stdout: args.join(' ').includes('__drizzle_migrations') ? applied : '' }) }),
+  journalWhens: ['100', '200', '300'],
+  ...extra,
 });
 
 test('check migrations: FAIL si migrations en retard', async () => {
-  const exec = (cmd, args) => {
-    const sql = args.join(' ');
-    if (sql.includes('pg_extension')) return { ok: true, stdout: '1' };       // vector présent
-    if (sql.includes('__drizzle_migrations')) return { ok: true, stdout: '2' }; // 2 appliquées
-    return { ok: true, stdout: '0' };
-  };
-  const ctx = { ...ctxWith({ exec }), journalEntries: 5 };                      // 5 attendues
-  const checks = buildChecks(ctx, { full: true });
-  await assert.rejects(byName(checks, 'migrations').run(), /migration/i);
-  await assert.rejects(byName(checks, 'migrations').run(), /bun run db:migrate/, "le message doit pointer vers le migrateur");
+  const check = byName(buildChecks(migrationsCtx('100,200'), { full: true }), 'migrations');
+  await assert.rejects(check.run(), /en retard: 2\/3/);
+  await assert.rejects(check.run(), /bun run db:migrate/, "le message doit pointer vers le migrateur");
 });
 
-test('check migrations: PASS si vector présent et migrations à jour', async () => {
-  const exec = (cmd, args) => {
-    const sql = args.join(' ');
-    if (sql.includes('pg_extension')) return { ok: true, stdout: '1' };
-    if (sql.includes('__drizzle_migrations')) return { ok: true, stdout: '5' };
-    return { ok: true, stdout: '0' };
-  };
-  const ctx = { ...ctxWith({ exec }), journalEntries: 5 };
-  const checks = buildChecks(ctx, { full: true });
-  await byName(checks, 'migrations').run();
+test('check migrations: FAIL sur un historique que le journal ne connaît pas, même plus long', async () => {
+  const check = byName(buildChecks(migrationsCtx('10,20,30,40,50'), { full: true }), 'migrations');
+  await assert.rejects(check.run(), /absente\(s\) du journal/);
+  await assert.rejects(check.run(), /docker volume rm tomai_postgres_dev_data/, 'le message doit dire comment recréer la base');
+});
+
+test('check migrations: PASS si migrations à jour', async () => {
+  await byName(buildChecks(migrationsCtx('100,200,300'), { full: true }), 'migrations').run();
 });
 
 test('check migrations: psql vise le conteneur PG_CONTAINER configuré', async () => {
   const containers = [];
   const exec = (cmd, args) => {
     if (args[0] === 'exec') containers.push(args[1]);
-    const sql = args.join(' ');
-    if (sql.includes('pg_extension')) return { ok: true, stdout: '1' };
-    return { ok: true, stdout: '5' };
+    return { ok: true, stdout: '100,200,300' };
   };
-  const ctx = { ...ctxWith({ exec }), config: { ...CFG, pgContainer: 'pg-custom' }, journalEntries: 5 };
+  const ctx = { ...ctxWith({ exec }), config: { ...CFG, pgContainer: 'pg-custom' }, journalWhens: ['100', '200', '300'] };
   await byName(buildChecks(ctx, { full: true }), 'migrations').run();
   assert.deepEqual([...new Set(containers)], ['pg-custom']);
 });

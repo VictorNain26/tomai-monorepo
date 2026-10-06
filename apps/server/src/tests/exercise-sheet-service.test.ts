@@ -36,7 +36,7 @@ const draft = (answer: string): ExerciseSheet => ({
   steps: [], commonErrors: [], rule: null, facts: [], expectedElements: [], entries: ['invented-id'], laterEntries: [],
 });
 
-const params = { userId: 'user-1', sessionId: 'session-1', level: 'quatrieme' as const, subject: 'mathematiques', studentText: 'Résous 3x + 5 = 20.', attachedFilesBlock: null };
+const params = { userId: 'user-1', sessionId: 'session-1', level: 'quatrieme' as const, subject: 'mathematiques' as const, studentText: 'Résous 3x + 5 = 20.', attachedFilesBlock: null };
 
 beforeEach(() => {
   calls.length = 0;

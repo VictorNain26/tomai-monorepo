@@ -42,9 +42,4 @@ describe('voice routes', () => {
     expect(res.status).toBe(200);
     expect(synthesize.mock.calls[0]?.[1]).toEqual({ language: 'fr', schoolLevel: 'cinquieme' });
   });
-
-  it('advertises only the languages it can read', async () => {
-    const res = await app.request('/api/tts/voices');
-    expect(((await res.json()) as { languages: string[] }).languages).toEqual(['fr']);
-  });
 });

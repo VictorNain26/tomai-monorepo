@@ -1,5 +1,5 @@
 /**
- * Tool Executor - Dispatch des appels d'outils Mistral
+ * Tool Executor - exécution des outils du chat
  *
  * Chaque outil retourne un objet JSON sérialisable avec un type structuré
  * (ToolResult<T> = success | error). Les erreurs sont catégorisées pour
@@ -12,6 +12,14 @@ import { cardTextPasses, titlePasses, type OutputCheckContext } from './output-c
 import { makeToolError, type ToolResult } from './tool-errors.js';
 import { logger } from '../../platform/observability/logger.js';
 import type { EducationLevelType } from '../../types/index.js';
+import type { SubjectSlug } from '../../lib/subjects.js';
+
+/** The input of `generate_flashcards`, already validated by its schema (`chat-tools.ts`). */
+interface GenerateFlashcardsInput {
+  topic: string;
+  subject: SubjectSlug;
+  cardCount?: number | undefined;
+}
 
 interface ToolExecutionContext {
   userId: string;
@@ -49,8 +57,8 @@ export function isDeckCreatedResult(value: unknown): value is DeckCreatedToolRes
  * Ne throw jamais — les erreurs sont encapsulées dans ToolResult.
  */
 export async function executeTool(
-  toolName: string,
-  args: Record<string, unknown>,
+  toolName: 'generate_flashcards',
+  args: GenerateFlashcardsInput,
   context: ToolExecutionContext,
   signal?: AbortSignal,
 ): Promise<ToolResult | object> {
@@ -63,7 +71,7 @@ export async function executeTool(
   });
 
   try {
-    return await executeToolOnce(toolName, args, context, signal);
+    return await executeGenerateFlashcards(args, context, signal);
   } catch (error) {
     logger.error('Tool execution failed', {
       operation: 'tool-executor:error',
@@ -80,38 +88,19 @@ export async function executeTool(
   }
 }
 
-/** Single execution attempt for a tool */
-async function executeToolOnce(
-  toolName: string,
-  args: Record<string, unknown>,
-  context: ToolExecutionContext,
-  signal?: AbortSignal,
-): Promise<object> {
-  switch (toolName) {
-    case 'generate_flashcards':
-      return await executeGenerateFlashcards(args, context, signal);
-
-    default:
-      return makeToolError('validation', `Outil inconnu: ${toolName}`);
-  }
-}
-
 // ═══════════════════════════════════════════════════════════════════════════
 // TOOL IMPLEMENTATIONS
 // ═══════════════════════════════════════════════════════════════════════════
 
 async function executeGenerateFlashcards(
-  args: Record<string, unknown>,
+  { topic, subject, cardCount: requestedCount = 5 }: GenerateFlashcardsInput,
   context: ToolExecutionContext,
   signal?: AbortSignal,
 ): Promise<object> {
-  const topic = typeof args['topic'] === 'string' ? args['topic'] : '';
-  const subject = typeof args['subject'] === 'string' ? args['subject'] : '';
 
   // Adapt card count to school level (half of cardsPerSession, capped at 10 for chat)
   const levelConfig = getLevelConfig(context.schoolLevel);
   const maxChatCards = Math.min(Math.floor(levelConfig.cardsPerSession / 2), 10);
-  const requestedCount = typeof args['cardCount'] === 'number' ? args['cardCount'] : 5;
   const cardCount = Math.min(Math.max(requestedCount, 3), maxChatCards);
 
   const result = await generateCards({

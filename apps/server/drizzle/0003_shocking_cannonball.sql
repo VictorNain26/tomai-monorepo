@@ -1,1 +1,0 @@
-ALTER TYPE "public"."card_type" ADD VALUE 'reformulation';

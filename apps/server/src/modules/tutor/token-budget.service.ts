@@ -47,8 +47,6 @@ interface TokenBudget {
   summaryMaxTokens: number;
   /** Budget alloué à l'historique récent (55%) */
   historyMaxTokens: number;
-  /** Budget alloué au message courant (10%) */
-  currentMessageMaxTokens: number;
 }
 
 interface TokenEstimate {
@@ -114,6 +112,5 @@ export function calculateBudget(): TokenBudget {
     availableTokens,
     summaryMaxTokens: Math.floor(availableTokens * 0.15),
     historyMaxTokens: Math.floor(availableTokens * 0.55),
-    currentMessageMaxTokens: Math.floor(availableTokens * 0.10),
   };
 }

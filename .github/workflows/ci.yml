@@ -90,11 +90,11 @@ jobs:
     name: Test
     needs: validate-tasks
     runs-on: ubuntu-latest
-    # Ephemeral pgvector service so DB-backed integration tests actually RUN
+    # Ephemeral Postgres service so DB-backed integration tests actually RUN
     # in CI instead of skipping on an unreachable DB. Deterministic + isolated.
     services:
       postgres:
-        image: pgvector/pgvector:0.8.6-pg18
+        image: postgres:18.6
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
@@ -123,8 +123,7 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test
           BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET || 'ci-test-secret-not-for-production' }}
-      # The runner starts steps once the postgres service is healthy, and the
-      # migrator creates the vector extension under its advisory lock.
+      # The runner starts steps once the postgres service is healthy.
       - name: Prepare integration DB (migrations)
         run: cd apps/server && bun run db:migrate
         env:

@@ -4,12 +4,9 @@ import { SUBJECT_SLUGS } from '../lib/subjects.js';
 
 const text = z.string().trim().min(1);
 
-const collegeLevelSchema = educationLevelSchema.extract(['sixieme', 'cinquieme', 'quatrieme', 'troisieme']);
-export type CollegeLevel = z.infer<typeof collegeLevelSchema>;
-
 const entrySchema = z.strictObject({
   id: text,
-  level: collegeLevelSchema,
+  level: educationLevelSchema,
   subject: z.enum(SUBJECT_SLUGS),
   domain: text,
   /** In a text for one class: the end-of-cycle expectation the entry belongs to. */

@@ -1,5 +1,5 @@
 {
-  "id": "30e2ad97-303d-4019-baac-32a514a1f786",
+  "id": "0fd840ab-b002-4c16-9c23-4f38de95b988",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -179,8 +179,7 @@
         },
         "ai_model": {
           "name": "ai_model",
-          "type": "ai_model",
-          "typeSchema": "public",
+          "type": "text",
           "primaryKey": false,
           "notNull": true
         },
@@ -293,239 +292,40 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.establishments": {
-      "name": "establishments",
+    "public.distress_events": {
+      "name": "distress_events",
       "schema": "",
       "columns": {
-        "rne": {
-          "name": "rne",
-          "type": "varchar(8)",
+        "id": {
+          "name": "id",
+          "type": "uuid",
           "primaryKey": true,
-          "notNull": true
-        },
-        "name": {
-          "name": "name",
-          "type": "varchar(300)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "normalized_name": {
-          "name": "normalized_name",
-          "type": "varchar(300)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "type": {
-          "name": "type",
-          "type": "establishment_type",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "status": {
-          "name": "status",
-          "type": "establishment_status",
-          "typeSchema": "public",
-          "primaryKey": false,
           "notNull": true,
-          "default": "'ouvert'"
+          "default": "gen_random_uuid()"
         },
-        "address1": {
-          "name": "address1",
-          "type": "varchar(200)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "address2": {
-          "name": "address2",
-          "type": "varchar(200)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "address3": {
-          "name": "address3",
-          "type": "varchar(200)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "full_address": {
-          "name": "full_address",
-          "type": "varchar(600)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "city": {
-          "name": "city",
-          "type": "varchar(100)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "postal_code": {
-          "name": "postal_code",
-          "type": "varchar(5)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "department": {
-          "name": "department",
-          "type": "varchar(100)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "department_code": {
-          "name": "department_code",
-          "type": "varchar(3)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "academy": {
-          "name": "academy",
-          "type": "varchar(100)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "latitude": {
-          "name": "latitude",
-          "type": "real",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "longitude": {
-          "name": "longitude",
-          "type": "real",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "public_private": {
-          "name": "public_private",
-          "type": "varchar(20)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "ministerial_code": {
-          "name": "ministerial_code",
-          "type": "varchar(20)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "siret": {
-          "name": "siret",
-          "type": "varchar(14)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "pronote_url": {
-          "name": "pronote_url",
-          "type": "varchar(400)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "has_pronote": {
-          "name": "has_pronote",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": true
-        },
-        "pronote_checked_at": {
-          "name": "pronote_checked_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "voie_generale": {
-          "name": "voie_generale",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": false,
-          "default": false
-        },
-        "voie_technologique": {
-          "name": "voie_technologique",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": false,
-          "default": false
-        },
-        "voie_professionnelle": {
-          "name": "voie_professionnelle",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": false,
-          "default": false
-        },
-        "search_terms": {
-          "name": "search_terms",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "data_quality": {
-          "name": "data_quality",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "default": 100
-        },
-        "is_validated": {
-          "name": "is_validated",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": false,
-          "default": false
-        },
-        "validated_at": {
-          "name": "validated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "validated_by": {
-          "name": "validated_by",
+        "user_id": {
+          "name": "user_id",
           "type": "varchar(255)",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
-        "source_api": {
-          "name": "source_api",
-          "type": "varchar(50)",
+        "session_id": {
+          "name": "session_id",
+          "type": "uuid",
           "primaryKey": false,
-          "notNull": true,
-          "default": "'education_nationale'"
+          "notNull": true
         },
-        "last_sync_at": {
-          "name": "last_sync_at",
-          "type": "timestamp with time zone",
+        "detected_by": {
+          "name": "detected_by",
+          "type": "varchar(16)",
           "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
+          "notNull": true
         },
-        "sync_version": {
-          "name": "sync_version",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 1
-        },
-        "data_hash": {
-          "name": "data_hash",
-          "type": "varchar(64)",
+        "selfharm_score": {
+          "name": "selfharm_score",
+          "type": "real",
           "primaryKey": false,
           "notNull": false
-        },
-        "metadata": {
-          "name": "metadata",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": false,
-          "default": "'{}'::jsonb"
-        },
-        "sync_metadata": {
-          "name": "sync_metadata",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": false,
-          "default": "'{}'::jsonb"
         },
         "created_at": {
           "name": "created_at",
@@ -533,9 +333,150 @@
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
+        }
+      },
+      "indexes": {
+        "uq_distress_events_session": {
+          "name": "uq_distress_events_session",
+          "columns": [
+            {
+              "expression": "session_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         },
-        "updated_at": {
-          "name": "updated_at",
+        "idx_distress_events_user_created": {
+          "name": "idx_distress_events_user_created",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "distress_events_user_id_fkey": {
+          "name": "distress_events_user_id_fkey",
+          "tableFrom": "distress_events",
+          "tableTo": "user",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "distress_events_session_id_fkey": {
+          "name": "distress_events_session_id_fkey",
+          "tableFrom": "distress_events",
+          "tableTo": "study_sessions",
+          "columnsFrom": [
+            "session_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.exercise_sheets": {
+      "name": "exercise_sheets",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "session_id": {
+          "name": "session_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "sheet": {
+          "name": "sheet",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "uncertain": {
+          "name": "uncertain",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "math_check": {
+          "name": "math_check",
+          "type": "varchar(16)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "prompt_version": {
+          "name": "prompt_version",
+          "type": "varchar(32)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "hint_level": {
+          "name": "hint_level",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "steps_done": {
+          "name": "steps_done",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "hints": {
+          "name": "hints",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'[]'::jsonb"
+        },
+        "solved_at": {
+          "name": "solved_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": true,
@@ -543,227 +484,17 @@
         }
       },
       "indexes": {
-        "idx_establishments_location": {
-          "name": "idx_establishments_location",
+        "idx_exercise_sheets_session_created": {
+          "name": "idx_exercise_sheets_session_created",
           "columns": [
             {
-              "expression": "latitude",
+              "expression": "session_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
             },
             {
-              "expression": "longitude",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_establishments_city": {
-          "name": "idx_establishments_city",
-          "columns": [
-            {
-              "expression": "city",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_establishments_postal_code": {
-          "name": "idx_establishments_postal_code",
-          "columns": [
-            {
-              "expression": "postal_code",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_establishments_department": {
-          "name": "idx_establishments_department",
-          "columns": [
-            {
-              "expression": "department_code",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_establishments_academy": {
-          "name": "idx_establishments_academy",
-          "columns": [
-            {
-              "expression": "academy",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_establishments_type_status": {
-          "name": "idx_establishments_type_status",
-          "columns": [
-            {
-              "expression": "type",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "status",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_establishments_name": {
-          "name": "idx_establishments_name",
-          "columns": [
-            {
-              "expression": "normalized_name",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_establishments_has_pronote": {
-          "name": "idx_establishments_has_pronote",
-          "columns": [
-            {
-              "expression": "has_pronote",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_establishments_last_sync": {
-          "name": "idx_establishments_last_sync",
-          "columns": [
-            {
-              "expression": "last_sync_at",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_establishments_data_quality": {
-          "name": "idx_establishments_data_quality",
-          "columns": [
-            {
-              "expression": "data_quality",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_establishments_is_validated": {
-          "name": "idx_establishments_is_validated",
-          "columns": [
-            {
-              "expression": "is_validated",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_establishments_search_composite": {
-          "name": "idx_establishments_search_composite",
-          "columns": [
-            {
-              "expression": "type",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "status",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "has_pronote",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_establishments_location_composite": {
-          "name": "idx_establishments_location_composite",
-          "columns": [
-            {
-              "expression": "department_code",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "city",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "type",
+              "expression": "created_at",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -775,7 +506,21 @@
           "with": {}
         }
       },
-      "foreignKeys": {},
+      "foreignKeys": {
+        "exercise_sheets_session_id_fkey": {
+          "name": "exercise_sheets_session_id_fkey",
+          "tableFrom": "exercise_sheets",
+          "tableTo": "study_sessions",
+          "columnsFrom": [
+            "session_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
@@ -799,21 +544,22 @@
           "primaryKey": false,
           "notNull": true
         },
-        "stripe_customer_id": {
-          "name": "stripe_customer_id",
+        "revenuecat_customer_id": {
+          "name": "revenuecat_customer_id",
           "type": "varchar(255)",
           "primaryKey": false,
           "notNull": false
         },
-        "stripe_subscription_id": {
-          "name": "stripe_subscription_id",
+        "revenuecat_subscription_id": {
+          "name": "revenuecat_subscription_id",
           "type": "varchar(255)",
           "primaryKey": false,
           "notNull": false
         },
         "billing_status": {
           "name": "billing_status",
-          "type": "varchar(50)",
+          "type": "billing_status",
+          "typeSchema": "public",
           "primaryKey": false,
           "notNull": true,
           "default": "'active'"
@@ -856,13 +602,6 @@
           "notNull": true,
           "default": 0
         },
-        "stripe_metadata": {
-          "name": "stripe_metadata",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": false,
-          "default": "'{}'::jsonb"
-        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp with time zone",
@@ -879,26 +618,11 @@
         }
       },
       "indexes": {
-        "idx_family_billing_stripe_customer": {
-          "name": "idx_family_billing_stripe_customer",
+        "idx_family_billing_revenuecat_customer": {
+          "name": "idx_family_billing_revenuecat_customer",
           "columns": [
             {
-              "expression": "stripe_customer_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_family_billing_stripe_subscription": {
-          "name": "idx_family_billing_stripe_subscription",
-          "columns": [
-            {
-              "expression": "stripe_subscription_id",
+              "expression": "revenuecat_customer_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -948,22 +672,169 @@
           "columns": [
             "parent_id"
           ]
-        },
-        "family_billing_stripe_customer_id_unique": {
-          "name": "family_billing_stripe_customer_id_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "stripe_customer_id"
-          ]
-        },
-        "family_billing_stripe_subscription_id_unique": {
-          "name": "family_billing_stripe_subscription_id_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "stripe_subscription_id"
-          ]
         }
       },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.files": {
+      "name": "files",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "file_name": {
+          "name": "file_name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "mime_type": {
+          "name": "mime_type",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "size_bytes": {
+          "name": "size_bytes",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "storage_key": {
+          "name": "storage_key",
+          "type": "varchar(500)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "educational_context": {
+          "name": "educational_context",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'{}'::jsonb"
+        },
+        "status": {
+          "name": "status",
+          "type": "file_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'pending'"
+        },
+        "metadata": {
+          "name": "metadata",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'{}'::jsonb"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "idx_files_user_id": {
+          "name": "idx_files_user_id",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_files_status": {
+          "name": "idx_files_status",
+          "columns": [
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_files_storage_key": {
+          "name": "idx_files_storage_key",
+          "columns": [
+            {
+              "expression": "storage_key",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_files_created_at": {
+          "name": "idx_files_created_at",
+          "columns": [
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "files_user_id_fkey": {
+          "name": "files_user_id_fkey",
+          "tableFrom": "files",
+          "tableTo": "user",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
@@ -1117,7 +988,8 @@
         },
         "subject": {
           "name": "subject",
-          "type": "varchar(100)",
+          "type": "subject",
+          "typeSchema": "public",
           "primaryKey": false,
           "notNull": true
         },
@@ -1264,40 +1136,9 @@
           "primaryKey": false,
           "notNull": true
         },
-        "content_hash": {
-          "name": "content_hash",
-          "type": "varchar(64)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "frustration_level": {
-          "name": "frustration_level",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "question_level": {
-          "name": "question_level",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "socratic_level": {
-          "name": "socratic_level",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "message_category": {
-          "name": "message_category",
-          "type": "varchar(50)",
-          "primaryKey": false,
-          "notNull": false
-        },
         "ai_model": {
           "name": "ai_model",
-          "type": "ai_model",
-          "typeSchema": "public",
+          "type": "text",
           "primaryKey": false,
           "notNull": false
         },
@@ -1307,38 +1148,6 @@
           "primaryKey": false,
           "notNull": false,
           "default": 0
-        },
-        "response_time_ms": {
-          "name": "response_time_ms",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "message_quality_score": {
-          "name": "message_quality_score",
-          "type": "numeric(3, 2)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "is_helpful": {
-          "name": "is_helpful",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "contains_pii": {
-          "name": "contains_pii",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": false,
-          "default": false
-        },
-        "is_flagged": {
-          "name": "is_flagged",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": false,
-          "default": false
         },
         "attached_file": {
           "name": "attached_file",
@@ -1352,6 +1161,12 @@
           "primaryKey": false,
           "notNull": false,
           "default": "'{}'::jsonb"
+        },
+        "model_messages": {
+          "name": "model_messages",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
         },
         "created_at": {
           "name": "created_at",
@@ -1373,21 +1188,6 @@
             },
             {
               "expression": "created_at",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_messages_quality": {
-          "name": "idx_messages_quality",
-          "columns": [
-            {
-              "expression": "message_quality_score",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -1420,8 +1220,8 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.progress": {
-      "name": "progress",
+    "public.parent_child": {
+      "name": "parent_child",
       "schema": "",
       "columns": {
         "id": {
@@ -1431,76 +1231,17 @@
           "notNull": true,
           "default": "gen_random_uuid()"
         },
-        "user_id": {
-          "name": "user_id",
+        "parent_user_id": {
+          "name": "parent_user_id",
           "type": "varchar(255)",
           "primaryKey": false,
           "notNull": true
         },
-        "subject": {
-          "name": "subject",
-          "type": "varchar(100)",
+        "child_user_id": {
+          "name": "child_user_id",
+          "type": "varchar(255)",
           "primaryKey": false,
           "notNull": true
-        },
-        "concept": {
-          "name": "concept",
-          "type": "varchar(200)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "competency_domain": {
-          "name": "competency_domain",
-          "type": "varchar(10)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "mastery_level": {
-          "name": "mastery_level",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "total_practice_time": {
-          "name": "total_practice_time",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 0
-        },
-        "success_rate": {
-          "name": "success_rate",
-          "type": "numeric(5, 2)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "progress_history": {
-          "name": "progress_history",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": false,
-          "default": "'[]'::jsonb"
-        },
-        "first_practiced": {
-          "name": "first_practiced",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "last_practiced": {
-          "name": "last_practiced",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "progress_metadata": {
-          "name": "progress_metadata",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": false,
-          "default": "'{}'::jsonb"
         },
         "created_at": {
           "name": "created_at",
@@ -1508,21 +1249,14 @@
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
         }
       },
       "indexes": {
-        "idx_progress_user_id": {
-          "name": "idx_progress_user_id",
+        "idx_parent_child_parent": {
+          "name": "idx_parent_child_parent",
           "columns": [
             {
-              "expression": "user_id",
+              "expression": "parent_user_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -1533,26 +1267,11 @@
           "method": "btree",
           "with": {}
         },
-        "idx_progress_subject": {
-          "name": "idx_progress_subject",
+        "idx_parent_child_child": {
+          "name": "idx_parent_child_child",
           "columns": [
             {
-              "expression": "subject",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_progress_mastery_level": {
-          "name": "idx_progress_mastery_level",
-          "columns": [
-            {
-              "expression": "mastery_level",
+              "expression": "child_user_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -1565,12 +1284,25 @@
         }
       },
       "foreignKeys": {
-        "progress_user_id_fkey": {
-          "name": "progress_user_id_fkey",
-          "tableFrom": "progress",
+        "parent_child_parent_user_id_fkey": {
+          "name": "parent_child_parent_user_id_fkey",
+          "tableFrom": "parent_child",
           "tableTo": "user",
           "columnsFrom": [
-            "user_id"
+            "parent_user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "parent_child_child_user_id_fkey": {
+          "name": "parent_child_child_user_id_fkey",
+          "tableFrom": "parent_child",
+          "tableTo": "user",
+          "columnsFrom": [
+            "child_user_id"
           ],
           "columnsTo": [
             "id"
@@ -1581,13 +1313,12 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
-        "progress_user_id_subject_concept_key": {
-          "name": "progress_user_id_subject_concept_key",
+        "parent_child_pair_unique": {
+          "name": "parent_child_pair_unique",
           "nullsNotDistinct": false,
           "columns": [
-            "user_id",
-            "subject",
-            "concept"
+            "parent_user_id",
+            "child_user_id"
           ]
         }
       },
@@ -1726,6 +1457,112 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.session_files": {
+      "name": "session_files",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "session_id": {
+          "name": "session_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "file_id": {
+          "name": "file_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "attached_at": {
+          "name": "attached_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "idx_session_files_session": {
+          "name": "idx_session_files_session",
+          "columns": [
+            {
+              "expression": "session_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_session_files_file": {
+          "name": "idx_session_files_file",
+          "columns": [
+            {
+              "expression": "file_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "session_files_session_id_fkey": {
+          "name": "session_files_session_id_fkey",
+          "tableFrom": "session_files",
+          "tableTo": "study_sessions",
+          "columnsFrom": [
+            "session_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "session_files_file_id_fkey": {
+          "name": "session_files_file_id_fkey",
+          "tableFrom": "session_files",
+          "tableTo": "files",
+          "columnsFrom": [
+            "file_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "session_files_session_file_unique": {
+          "name": "session_files_session_file_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "session_id",
+            "file_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.study_sessions": {
       "name": "study_sessions",
       "schema": "",
@@ -1745,9 +1582,11 @@
         },
         "subject": {
           "name": "subject",
-          "type": "varchar(100)",
+          "type": "subject_family",
+          "typeSchema": "public",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "default": "'general'"
         },
         "topic": {
           "name": "topic",
@@ -1776,134 +1615,17 @@
           "primaryKey": false,
           "notNull": false
         },
-        "duration_minutes": {
-          "name": "duration_minutes",
-          "type": "integer",
+        "conversation_summary": {
+          "name": "conversation_summary",
+          "type": "text",
           "primaryKey": false,
           "notNull": false
         },
-        "frustration_avg": {
-          "name": "frustration_avg",
-          "type": "numeric(3, 2)",
-          "primaryKey": false,
-          "notNull": false,
-          "default": "'0'"
-        },
-        "frustration_min": {
-          "name": "frustration_min",
-          "type": "numeric(3, 2)",
-          "primaryKey": false,
-          "notNull": false,
-          "default": "'0'"
-        },
-        "frustration_max": {
-          "name": "frustration_max",
-          "type": "numeric(3, 2)",
-          "primaryKey": false,
-          "notNull": false,
-          "default": "'0'"
-        },
-        "question_levels_avg": {
-          "name": "question_levels_avg",
-          "type": "numeric(3, 2)",
-          "primaryKey": false,
-          "notNull": false,
-          "default": "'0'"
-        },
-        "concepts_covered": {
-          "name": "concepts_covered",
-          "type": "text[]",
-          "primaryKey": false,
-          "notNull": false,
-          "default": "'{}'::text[]"
-        },
-        "socratic_effectiveness": {
-          "name": "socratic_effectiveness",
-          "type": "numeric(3, 2)",
-          "primaryKey": false,
-          "notNull": false,
-          "default": "'0'"
-        },
-        "student_engagement": {
-          "name": "student_engagement",
-          "type": "numeric(3, 2)",
-          "primaryKey": false,
-          "notNull": false,
-          "default": "'0'"
-        },
-        "questions_asked": {
-          "name": "questions_asked",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "default": 0
-        },
-        "questions_answered": {
-          "name": "questions_answered",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "default": 0
-        },
-        "hints_given": {
-          "name": "hints_given",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "default": 0
-        },
-        "ai_model_used": {
-          "name": "ai_model_used",
-          "type": "ai_model",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'gemini_2_5_flash'"
-        },
-        "total_tokens_used": {
-          "name": "total_tokens_used",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "default": 0
-        },
-        "api_cost_cents": {
-          "name": "api_cost_cents",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "default": 0
-        },
-        "average_response_time_ms": {
-          "name": "average_response_time_ms",
-          "type": "integer",
+        "summary_up_to_message_id": {
+          "name": "summary_up_to_message_id",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": false
-        },
-        "device_type": {
-          "name": "device_type",
-          "type": "varchar(20)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "user_satisfaction": {
-          "name": "user_satisfaction",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "session_rating": {
-          "name": "session_rating",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "session_metadata": {
-          "name": "session_metadata",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": false,
-          "default": "'{}'::jsonb"
         },
         "created_at": {
           "name": "created_at",
@@ -2070,24 +1792,6 @@
           "notNull": true,
           "default": "'EUR'"
         },
-        "stripe_product_id": {
-          "name": "stripe_product_id",
-          "type": "varchar(255)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "stripe_price_id_first_child": {
-          "name": "stripe_price_id_first_child",
-          "type": "varchar(255)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "stripe_price_id_additional_child": {
-          "name": "stripe_price_id_additional_child",
-          "type": "varchar(255)",
-          "primaryKey": false,
-          "notNull": false
-        },
         "features": {
           "name": "features",
           "type": "jsonb",
@@ -2221,21 +1925,9 @@
           "primaryKey": false,
           "notNull": false
         },
-        "selected_lv2": {
-          "name": "selected_lv2",
-          "type": "varchar(50)",
-          "primaryKey": false,
-          "notNull": false
-        },
         "date_of_birth": {
           "name": "date_of_birth",
           "type": "varchar(10)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "parent_id": {
-          "name": "parent_id",
-          "type": "varchar(255)",
           "primaryKey": false,
           "notNull": false
         },
@@ -2245,73 +1937,6 @@
           "primaryKey": false,
           "notNull": true,
           "default": true
-        },
-        "login_count": {
-          "name": "login_count",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "default": 0
-        },
-        "preferences": {
-          "name": "preferences",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": false,
-          "default": "'{\"theme\": \"light\", \"language\": \"fr\", \"notifications\": true, \"adaptive_difficulty\": true}'::jsonb"
-        },
-        "metadata": {
-          "name": "metadata",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": false,
-          "default": "'{}'::jsonb"
-        },
-        "stripe_customer_id": {
-          "name": "stripe_customer_id",
-          "type": "varchar(255)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "stripe_subscription_id": {
-          "name": "stripe_subscription_id",
-          "type": "varchar(255)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "subscription_status": {
-          "name": "subscription_status",
-          "type": "varchar(50)",
-          "primaryKey": false,
-          "notNull": false,
-          "default": "'inactive'"
-        },
-        "subscription_plan": {
-          "name": "subscription_plan",
-          "type": "varchar(50)",
-          "primaryKey": false,
-          "notNull": false,
-          "default": "'free'"
-        },
-        "country_code": {
-          "name": "country_code",
-          "type": "varchar(2)",
-          "primaryKey": false,
-          "notNull": false,
-          "default": "'FR'"
-        },
-        "timezone": {
-          "name": "timezone",
-          "type": "varchar(50)",
-          "primaryKey": false,
-          "notNull": false,
-          "default": "'Europe/Paris'"
-        },
-        "last_login_at": {
-          "name": "last_login_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
         }
       },
       "indexes": {
@@ -2335,21 +1960,6 @@
           "columns": [
             {
               "expression": "username",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_user_parent_id": {
-          "name": "idx_user_parent_id",
-          "columns": [
-            {
-              "expression": "parent_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -2389,38 +1999,9 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
-        },
-        "idx_user_stripe_customer_id": {
-          "name": "idx_user_stripe_customer_id",
-          "columns": [
-            {
-              "expression": "stripe_customer_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
         }
       },
-      "foreignKeys": {
-        "user_parent_id_fkey": {
-          "name": "user_parent_id_fkey",
-          "tableFrom": "user",
-          "tableTo": "user",
-          "columnsFrom": [
-            "parent_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        }
-      },
+      "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
         "user_email_unique": {
@@ -2697,7 +2278,7 @@
         },
         "value": {
           "name": "value",
-          "type": "varchar(255)",
+          "type": "text",
           "primaryKey": false,
           "notNull": true
         },
@@ -2737,21 +2318,6 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
-        },
-        "idx_verification_value": {
-          "name": "idx_verification_value",
-          "columns": [
-            {
-              "expression": "value",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
         }
       },
       "foreignKeys": {},
@@ -2763,17 +2329,21 @@
     }
   },
   "enums": {
-    "public.ai_model": {
-      "name": "ai_model",
+    "public.billing_status": {
+      "name": "billing_status",
       "schema": "public",
       "values": [
-        "gemini_2_5_flash"
+        "active",
+        "past_due",
+        "canceled",
+        "expired"
       ]
     },
     "public.card_type": {
       "name": "card_type",
       "schema": "public",
       "values": [
+        "concept",
         "flashcard",
         "qcm",
         "vrai_faux",
@@ -2786,7 +2356,8 @@
         "cause_effect",
         "classification",
         "process_order",
-        "grammar_transform"
+        "grammar_transform",
+        "reformulation"
       ]
     },
     "public.deck_source": {
@@ -2795,32 +2366,19 @@
       "values": [
         "prompt",
         "conversation",
-        "document",
-        "rag_program"
+        "document"
       ]
     },
-    "public.establishment_status": {
-      "name": "establishment_status",
+    "public.file_status": {
+      "name": "file_status",
       "schema": "public",
       "values": [
-        "ouvert",
-        "ferme",
-        "a_ouvrir"
-      ]
-    },
-    "public.establishment_type": {
-      "name": "establishment_type",
-      "schema": "public",
-      "values": [
-        "college",
-        "lycee",
-        "lycee_general_technologique",
-        "lycee_professionnel",
-        "lycee_polyvalent",
-        "lycee_agricole",
-        "etablissement_regional_enseignement_adapte",
-        "cite_scolaire",
-        "autre"
+        "pending",
+        "uploaded",
+        "processing",
+        "ready",
+        "expired",
+        "deleted"
       ]
     },
     "public.message_role": {
@@ -2836,18 +2394,10 @@
       "name": "school_level",
       "schema": "public",
       "values": [
-        "cp",
-        "ce1",
-        "ce2",
-        "cm1",
-        "cm2",
         "sixieme",
         "cinquieme",
         "quatrieme",
-        "troisieme",
-        "seconde",
-        "premiere",
-        "terminale"
+        "troisieme"
       ]
     },
     "public.session_status": {
@@ -2861,6 +2411,34 @@
         "abandoned",
         "timeout",
         "error"
+      ]
+    },
+    "public.subject": {
+      "name": "subject",
+      "schema": "public",
+      "values": [
+        "mathematiques",
+        "francais",
+        "anglais",
+        "espagnol",
+        "allemand",
+        "italien",
+        "histoire-geo",
+        "physique-chimie",
+        "svt",
+        "technologie"
+      ]
+    },
+    "public.subject_family": {
+      "name": "subject_family",
+      "schema": "public",
+      "values": [
+        "mathematiques",
+        "francais",
+        "langues",
+        "sciences",
+        "histoire-geo",
+        "general"
       ]
     },
     "public.subscription_plan_type": {
@@ -2886,8 +2464,7 @@
       "schema": "public",
       "values": [
         "student",
-        "parent",
-        "admin"
+        "parent"
       ]
     }
   },

@@ -144,15 +144,17 @@ modèle sans prévenir et invalide l'évaluation. Chaque prompt porte une versio
   `modules/tutor/prompts/adaptation/by-subject.ts`) et de la règle contradictoire de
   l'ancien classifieur d'intention (« révéler une étape intermédiaire » après deux ou trois
   échanges) : faites (#380), le classifieur remplacé par l'analyse du tour.
-- **Périmètre V1 : collège (6e → 3e)**, comme `SUBJECTS_BY_LEVEL`
-  (`services/education.service.ts`). Le prompt cesse d'annoncer « CP → Terminale »
+- **Périmètre V1 : collège (6e → 3e)** : les seuls niveaux du serveur
+  (`EDUCATION_LEVELS`, `lib/education-levels.ts`, d'où dérive l'enum `school_level`).
+  Le prompt cesse d'annoncer « CP → Terminale »
   (`modules/tutor/prompts/core/identity.ts`, `modules/tutor/prompts/core/safety.ts`).
-- **Une seule taxonomie** `config/subjects.ts` : familles pour l'analyse du tour,
-  slugs fins pour les outils ; `histoire-geo` fusionné, `italien` ajouté. Elle
-  remplace `STUDENT_SUBJECTS`, `SUBJECT_SLUGS`, `COLLEGE_SUBJECTS`,
-  `normalizeSubject`, `SUBJECT_MAPPING`, `STEM_SUBJECTS` et le `'général'`
-  accentué. Un bloc matière existe pour chaque famille, `langues` et `general`
-  compris.
+- **Une seule taxonomie** `lib/subjects.ts` : familles pour l'analyse du tour et les
+  consignes du tuteur, slugs du collège pour les outils, les paquets de cartes, le
+  référentiel et le jeu ; `histoire-geo` fusionné, `italien` ajouté. Faite (#399) :
+  elle remplace `STUDENT_SUBJECTS`, `COLLEGE_SUBJECTS`, les libellés de `learning`,
+  `normalizeSubject`, `SUBJECT_MAPPING` et le `'général'` accentué ; le slug se valide
+  aux routes, la séance garde une famille. Un bloc matière existe pour chaque famille,
+  `langues` et `general` compris.
 - Ce que l'agent promet en public, la landing ne le dit qu'une fois mesuré par le
   harnais (vision, « Ce qu'on promet, ce qu'on prouve ») ; la landing est refaite au
   lot 4.

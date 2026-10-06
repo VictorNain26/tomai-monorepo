@@ -205,11 +205,6 @@ mock.module('../modules/documents/session-files.repository', () => ({
   },
 }));
 
-// Mistral client mock for /health/ai (dynamic import in app.ts)
-mock.module('../platform/ai/mistral-client', () => ({
-  generateText: mock(async () => 'OK'),
-}));
-
 interface ApiBody {
   status?: string;
   timestamp?: string;

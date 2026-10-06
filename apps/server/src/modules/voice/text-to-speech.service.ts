@@ -9,7 +9,7 @@
 
 import { logger } from '../../platform/observability/logger.js';
 import { normalizeForSpeech } from './speech-normalize.js';
-import type { EducationLevelType } from '../../types/education.types.js';
+import type { EducationLevelType } from '../../types/index.js';
 import { getVoxtralTTSService, isVoxtralTTSConfigured } from './voxtral-tts.service.js';
 
 interface TTSResult {

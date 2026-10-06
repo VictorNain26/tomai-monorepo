@@ -1,4 +1,4 @@
-import type { CollegeLevel } from './schema.js';
+import type { EducationLevelType } from '../types/index.js';
 import type { SUBJECT_SLUGS } from '../lib/subjects.js';
 
 export interface ProgrammeSource {
@@ -11,9 +11,9 @@ export interface ProgrammeSource {
   /** Fingerprint of the PDF the entries were extracted from; a new BO changes it. */
   sha256: string;
   /** First school year (its September) in which the text applies, per class. */
-  appliesFrom: Partial<Record<CollegeLevel, number>>;
+  appliesFrom: Partial<Record<EducationLevelType, number>>;
   /** For a text that covers one class only: its headings carry domains, not classes. */
-  level?: CollegeLevel;
+  level?: EducationLevelType;
 }
 
 const BO_16_2025 = 'Arrêté du 10-4-2025, NOR MENE2504620A, BO n° 16 du 17 avril 2025';

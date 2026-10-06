@@ -6,8 +6,9 @@
  */
 
 import { z } from 'zod';
-import { programmeFor, programmes, type CollegeLevel, type Entry } from '../../referential/index.js';
-import { isCollegeLevel } from '../../lib/education-levels.js';
+import { programmeFor, programmes, type Entry } from '../../referential/index.js';
+import { EDUCATION_LEVELS, LEVEL_SHORT_LABELS } from '../../lib/education-levels.js';
+import type { SubjectFamily } from '../../lib/subjects.js';
 import type { EducationLevelType } from '../../types/index.js';
 import { checkAnswer, sameMath, type MathCheck } from './exercise-math.js';
 import { stripPromptTags, wrapUserMessage } from './mistral-helpers.js';
@@ -33,8 +34,6 @@ export const ExerciseSheetSchema = z.object({
 
 export type ExerciseSheet = z.infer<typeof ExerciseSheetSchema>;
 
-const LEVELS: readonly CollegeLevel[] = ['sixieme', 'cinquieme', 'quatrieme', 'troisieme'];
-const LEVEL_TEXT: Record<CollegeLevel, string> = { sixieme: '6e', cinquieme: '5e', quatrieme: '4e', troisieme: '3e' };
 
 /** The school year a date belongs to, named after the September that opens it. */
 export function schoolYearOf(date: Date): number {
@@ -48,13 +47,13 @@ export interface Notions {
 
 /**
  * The programme of the class and of the later college classes for a subject, or null without a
- * referential: a subject other than mathematics and French, or a class outside college.
+ * referential: a subject other than mathematics and French.
  */
-export function notionsFor(level: EducationLevelType, subject: string | undefined, schoolYear: number): Notions | null {
-  if (!isCollegeLevel(level) || (subject !== 'mathematiques' && subject !== 'francais')) return null;
+export function notionsFor(level: EducationLevelType, subject: SubjectFamily | undefined, schoolYear: number): Notions | null {
+  if (subject !== 'mathematiques' && subject !== 'francais') return null;
   const entries = programmeFor(level, subject, schoolYear)?.entries ?? [];
   if (entries.length === 0) return null;
-  const later = LEVELS.slice(LEVELS.indexOf(level) + 1)
+  const later = EDUCATION_LEVELS.slice(EDUCATION_LEVELS.indexOf(level) + 1)
     .flatMap((next) => programmeFor(next, subject, schoolYear)?.entries ?? []);
   return { entries, later };
 }
@@ -71,7 +70,7 @@ export function sheetMessages(
   studentText: string,
   attachedFilesBlock: string | null,
 ): { role: 'system' | 'user'; content: string }[] {
-  const levelText = isCollegeLevel(level) ? LEVEL_TEXT[level] : level;
+  const levelText = LEVEL_SHORT_LABELS[level];
   const programme = notions
     ? `<programme>\n${listing(notions.entries)}\n</programme>\n\n<later_programme>\n${listing(notions.later)}\n</later_programme>`
     : 'Aucun programme fourni : entries et laterEntries restent vides.';

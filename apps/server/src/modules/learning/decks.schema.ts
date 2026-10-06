@@ -1,6 +1,7 @@
 import { pgTable, uuid, varchar, text, timestamp, integer, jsonb, pgEnum, index, foreignKey } from 'drizzle-orm/pg-core';
 import { relations, sql } from 'drizzle-orm';
 import { user, schoolLevelEnum } from '../auth/auth.schema';
+import { SUBJECT_SLUGS } from '../../lib/subjects.js';
 
 // =============================================
 // ENUMS
@@ -24,7 +25,8 @@ export const cardTypeEnum = pgEnum('card_type', [
   // Cognitive Science - Elaboration (2025)
   'reformulation'
 ]);
-export const deckSourceEnum = pgEnum('deck_source', ['prompt', 'conversation', 'document', 'rag_program']);
+export const deckSourceEnum = pgEnum('deck_source', ['prompt', 'conversation', 'document']);
+export const subjectEnum = pgEnum('subject', SUBJECT_SLUGS);
 
 // =============================================
 // TABLES
@@ -43,11 +45,11 @@ export const learningDecks = pgTable('learning_decks', {
   // Contenu
   title: varchar('title', { length: 200 }).notNull(),
   description: text('description'),
-  subject: varchar('subject', { length: 100 }).notNull(),
+  subject: subjectEnum('subject').notNull(),
 
   // Source de création
   source: deckSourceEnum('source').notNull(),
-  sourceId: varchar('source_id', { length: 255 }), // sessionId, documentId, ou programId
+  sourceId: varchar('source_id', { length: 255 }), // sessionId ou documentId
   sourcePrompt: text('source_prompt'), // Prompt original si source='prompt'
 
   // Contexte éducatif

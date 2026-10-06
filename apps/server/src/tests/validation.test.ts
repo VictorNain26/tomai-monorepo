@@ -4,9 +4,9 @@ import { createChildSchema, updateChildSchema } from '../modules/family/parent.v
 const validChild = {
   firstName: 'Lucas',
   lastName: 'Martin',
-  username: 'lucas_ce2',
+  username: 'lucas_6e',
   password: 'ChildPass123',
-  schoolLevel: 'ce2' as const,
+  schoolLevel: 'sixieme' as const,
   dateOfBirth: '2015-03-15',
 };
 
@@ -22,8 +22,8 @@ describe('createChildSchema', () => {
   });
 
   it('normalizes the username to lowercase', () => {
-    const result = createChildSchema.safeParse({ ...validChild, username: 'LUCAS_CE2' });
-    expect(result.data?.username).toBe('lucas_ce2');
+    const result = createChildSchema.safeParse({ ...validChild, username: 'LUCAS_6E' });
+    expect(result.data?.username).toBe('lucas_6e');
   });
 
   it('rejects a username with other characters', () => {
@@ -41,15 +41,16 @@ describe('createChildSchema', () => {
     expect(issues(result)).toContain('minuscule, majuscule, chiffre');
   });
 
-  it('accepts every French school level', () => {
-    for (const schoolLevel of ['cp', 'ce1', 'ce2', 'cm1', 'cm2', 'sixieme', 'cinquieme', 'quatrieme', 'troisieme', 'seconde', 'premiere', 'terminale']) {
+  it('accepts every collège level', () => {
+    for (const schoolLevel of ['sixieme', 'cinquieme', 'quatrieme', 'troisieme']) {
       expect(createChildSchema.safeParse({ ...validChild, schoolLevel }).success).toBe(true);
     }
   });
 
-  it('rejects an unknown school level', () => {
-    const result = createChildSchema.safeParse({ ...validChild, schoolLevel: 'CM3' });
-    expect(issues(result)).toContain('Niveau scolaire invalide');
+  it('rejects a level outside the collège, and an unknown one', () => {
+    for (const schoolLevel of ['cm2', 'seconde', 'CM3']) {
+      expect(issues(createChildSchema.safeParse({ ...validChild, schoolLevel }))).toContain('Niveau scolaire invalide');
+    }
   });
 
   it('rejects a child younger than 5 or older than 19', () => {

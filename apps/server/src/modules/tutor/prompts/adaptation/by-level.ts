@@ -4,7 +4,6 @@
  * (`docs/etudes/2026-10-04/refonte-agent.md`).
  */
 
-import { isCollegeLevel } from '../../../../lib/education-levels.js';
 import type { EducationLevelType } from '../../../../types/index.js';
 
 const SIXIEME = `<level_adaptation niveau="6e">
@@ -15,8 +14,6 @@ const CYCLE_4 = `<level_adaptation niveau="5e à 3e">
 Vocabulaire scolaire et termes du programme de la classe. Maths : KaTeX (équations, $\\sqrt{}$, $\\pi$).
 </level_adaptation>`;
 
-/** The block of a collège level; the chat route serves no other level. */
-export function generateLevelAdaptation(level: EducationLevelType): string | null {
-  if (!isCollegeLevel(level)) return null;
+export function generateLevelAdaptation(level: EducationLevelType): string {
   return level === 'sixieme' ? SIXIEME : CYCLE_4;
 }

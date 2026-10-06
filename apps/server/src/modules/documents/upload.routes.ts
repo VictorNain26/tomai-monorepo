@@ -10,7 +10,6 @@ import {
   MAX_FILE_SIZE,
   detectFileType,
   sanitizeFileName,
-  buildEducationalContext,
 } from './upload.helpers.js';
 
 const presignBody = z.object({
@@ -79,14 +78,12 @@ export const uploadRoutes = new Hono<AppEnv>()
       });
 
       // Create file record in DB (status: pending)
-      const educationalContext = buildEducationalContext(user, context);
       const fileRecord = await filesRepository.create({
         userId: user.id,
         fileName: sanitizedName,
         mimeType,
         sizeBytes,
         storageKey: presignedResult.storageKey,
-        educationalContext,
         status: 'pending',
         metadata: {
           originalFileName: fileName,

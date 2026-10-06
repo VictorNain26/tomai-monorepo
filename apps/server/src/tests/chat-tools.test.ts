@@ -65,13 +65,6 @@ describe('buildChatTools', () => {
       for (const name of Object.keys(tools)) expect(tools[name]?.strict).toBe(true);
     });
 
-    it('exports 13 non-empty subject slugs', () => {
-      expect(SUBJECT_SLUGS.length).toBe(13);
-      for (const slug of SUBJECT_SLUGS) {
-        expect(slug.length).toBeGreaterThan(0);
-      }
-    });
-
     it('generate_flashcards.subject is the SUBJECT_SLUGS enum', async () => {
       const props = await propertiesOf('generate_flashcards');
       expect(props['subject']?.['enum']).toEqual([...SUBJECT_SLUGS]);

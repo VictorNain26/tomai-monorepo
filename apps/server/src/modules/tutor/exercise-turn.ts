@@ -7,6 +7,7 @@
  */
 
 import type { EducationLevelType } from '../../types/index.js';
+import type { SubjectFamily } from '../../lib/subjects.js';
 import { diagnose, type Diagnosis } from './exercise-diagnosis.service.js';
 import { prepareExerciseSheet, type ExerciseState } from './exercise-sheet.service.js';
 import { applyChange, levelChange, topLevel, turnContract } from './hint-ladder.js';
@@ -34,7 +35,7 @@ interface ExerciseTurnParams {
   userId: string;
   sessionId: string;
   level: EducationLevelType;
-  subject: string | undefined;
+  subject: SubjectFamily | undefined;
   analysis: TurnAnalysis;
   /** The session's exercise before this turn, read once with the turn's context. */
   current: ExerciseState | null;

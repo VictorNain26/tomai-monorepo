@@ -110,15 +110,6 @@ beforeEach(() => {
 });
 
 describe('Tool Executor', () => {
-  describe('unknown tool', () => {
-    it('should return error for unknown tool name', async () => {
-      const result = await executeTool('get_student_homework', {}, baseContext) as Record<string, unknown>;
-      expect(result['isError']).toBe(true);
-      expect(result['message']).toContain('Outil inconnu');
-      expect(result['errorCategory']).toBe('validation');
-    });
-  });
-
   describe('generate_flashcards', () => {
     it('should create deck and cards in transaction', async () => {
       const result = await executeTool('generate_flashcards', {
@@ -186,15 +177,6 @@ describe('Tool Executor', () => {
         topic: 'Fractions', subject: 'mathematiques',
       }, baseContext) as Record<string, unknown>;
       expect(result['generated']).toBe(true);
-    });
-  });
-
-  describe('Unknown tool', () => {
-    it('should return error message for unknown tool', async () => {
-      const result = await executeTool('unknown_tool', {}, baseContext) as Record<string, unknown>;
-      expect(result['isError']).toBe(true);
-      expect(result['message']).toContain('Outil inconnu');
-      expect(result['errorCategory']).toBe('validation');
     });
   });
 

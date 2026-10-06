@@ -52,7 +52,7 @@ describe('buildSystemPrompt — intégration du bloc visualisation', () => {
 
 describe('by-subject — déclinaison visuelle par matière', () => {
   it('maths : remplace l\'ASCII mort, interdit explicitement l\'ASCII et oriente vers Mermaid + KaTeX', () => {
-    const maths = generateSubjectBlock('Mathématiques');
+    const maths = generateSubjectBlock('mathematiques');
     expect(maths).not.toBeNull();
     expect(maths).not.toContain('ASCII optionnel');
     expect(maths).toContain('VISUEL');
@@ -60,17 +60,17 @@ describe('by-subject — déclinaison visuelle par matière', () => {
   });
 
   it('histoire-géo : propose une frise chronologique Mermaid', () => {
-    const hg = generateSubjectBlock('Histoire');
+    const hg = generateSubjectBlock('histoire-geo');
     expect(hg).toMatch(/frise chronologique/i);
   });
 
   it('sciences : propose Mermaid pour les cycles', () => {
-    const sciences = generateSubjectBlock('SVT');
+    const sciences = generateSubjectBlock('sciences');
     expect(sciences).toContain('cycles');
   });
 
   it('français : propose un schéma actanciel / arbre grammatical', () => {
-    const fr = generateSubjectBlock('Français');
+    const fr = generateSubjectBlock('francais');
     expect(fr).toMatch(/actanciel|grammatical/i);
   });
 });

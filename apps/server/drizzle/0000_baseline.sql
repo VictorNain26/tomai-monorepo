@@ -1,14 +1,15 @@
-CREATE TYPE "public"."ai_model" AS ENUM('gemini_2_5_flash');--> statement-breakpoint
-CREATE TYPE "public"."card_type" AS ENUM('flashcard', 'qcm', 'vrai_faux', 'matching', 'fill_blank', 'word_order', 'calculation', 'timeline', 'matching_era', 'cause_effect', 'classification', 'process_order', 'grammar_transform');--> statement-breakpoint
-CREATE TYPE "public"."deck_source" AS ENUM('prompt', 'conversation', 'document', 'rag_program');--> statement-breakpoint
-CREATE TYPE "public"."establishment_status" AS ENUM('ouvert', 'ferme', 'a_ouvrir');--> statement-breakpoint
-CREATE TYPE "public"."establishment_type" AS ENUM('college', 'lycee', 'lycee_general_technologique', 'lycee_professionnel', 'lycee_polyvalent', 'lycee_agricole', 'etablissement_regional_enseignement_adapte', 'cite_scolaire', 'autre');--> statement-breakpoint
+CREATE TYPE "public"."billing_status" AS ENUM('active', 'past_due', 'canceled', 'expired');--> statement-breakpoint
+CREATE TYPE "public"."card_type" AS ENUM('concept', 'flashcard', 'qcm', 'vrai_faux', 'matching', 'fill_blank', 'word_order', 'calculation', 'timeline', 'matching_era', 'cause_effect', 'classification', 'process_order', 'grammar_transform', 'reformulation');--> statement-breakpoint
+CREATE TYPE "public"."deck_source" AS ENUM('prompt', 'conversation', 'document');--> statement-breakpoint
+CREATE TYPE "public"."file_status" AS ENUM('pending', 'uploaded', 'processing', 'ready', 'expired', 'deleted');--> statement-breakpoint
 CREATE TYPE "public"."message_role" AS ENUM('user', 'assistant', 'system');--> statement-breakpoint
-CREATE TYPE "public"."school_level" AS ENUM('cp', 'ce1', 'ce2', 'cm1', 'cm2', 'sixieme', 'cinquieme', 'quatrieme', 'troisieme', 'seconde', 'premiere', 'terminale');--> statement-breakpoint
+CREATE TYPE "public"."school_level" AS ENUM('sixieme', 'cinquieme', 'quatrieme', 'troisieme');--> statement-breakpoint
 CREATE TYPE "public"."session_status" AS ENUM('draft', 'active', 'paused', 'completed', 'abandoned', 'timeout', 'error');--> statement-breakpoint
+CREATE TYPE "public"."subject" AS ENUM('mathematiques', 'francais', 'anglais', 'espagnol', 'allemand', 'italien', 'histoire-geo', 'physique-chimie', 'svt', 'technologie');--> statement-breakpoint
+CREATE TYPE "public"."subject_family" AS ENUM('mathematiques', 'francais', 'langues', 'sciences', 'histoire-geo', 'general');--> statement-breakpoint
 CREATE TYPE "public"."subscription_plan_type" AS ENUM('free', 'premium');--> statement-breakpoint
 CREATE TYPE "public"."subscription_status" AS ENUM('active', 'paused', 'cancelled', 'expired');--> statement-breakpoint
-CREATE TYPE "public"."user_role" AS ENUM('student', 'parent', 'admin');--> statement-breakpoint
+CREATE TYPE "public"."user_role" AS ENUM('student', 'parent');--> statement-breakpoint
 CREATE TABLE "account" (
 	"id" varchar(255) PRIMARY KEY NOT NULL,
 	"user_id" varchar(255) NOT NULL,
@@ -30,7 +31,7 @@ CREATE TABLE "cost_tracking" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"user_id" varchar(255),
 	"session_id" uuid,
-	"ai_model" "ai_model" NOT NULL,
+	"ai_model" text NOT NULL,
 	"operation" varchar(50) DEFAULT 'chat' NOT NULL,
 	"tokens_input" integer DEFAULT 0 NOT NULL,
 	"tokens_output" integer DEFAULT 0 NOT NULL,
@@ -39,65 +40,58 @@ CREATE TABLE "cost_tracking" (
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "establishments" (
-	"rne" varchar(8) PRIMARY KEY NOT NULL,
-	"name" varchar(300) NOT NULL,
-	"normalized_name" varchar(300) NOT NULL,
-	"type" "establishment_type" NOT NULL,
-	"status" "establishment_status" DEFAULT 'ouvert' NOT NULL,
-	"address1" varchar(200),
-	"address2" varchar(200),
-	"address3" varchar(200),
-	"full_address" varchar(600) NOT NULL,
-	"city" varchar(100) NOT NULL,
-	"postal_code" varchar(5) NOT NULL,
-	"department" varchar(100) NOT NULL,
-	"department_code" varchar(3) NOT NULL,
-	"academy" varchar(100) NOT NULL,
-	"latitude" real,
-	"longitude" real,
-	"public_private" varchar(20),
-	"ministerial_code" varchar(20),
-	"siret" varchar(14),
-	"pronote_url" varchar(400) NOT NULL,
-	"has_pronote" boolean DEFAULT true NOT NULL,
-	"pronote_checked_at" timestamp with time zone,
-	"voie_generale" boolean DEFAULT false,
-	"voie_technologique" boolean DEFAULT false,
-	"voie_professionnelle" boolean DEFAULT false,
-	"search_terms" text NOT NULL,
-	"data_quality" integer DEFAULT 100,
-	"is_validated" boolean DEFAULT false,
-	"validated_at" timestamp with time zone,
-	"validated_by" varchar(255),
-	"source_api" varchar(50) DEFAULT 'education_nationale' NOT NULL,
-	"last_sync_at" timestamp with time zone DEFAULT now() NOT NULL,
-	"sync_version" integer DEFAULT 1 NOT NULL,
-	"data_hash" varchar(64),
-	"metadata" jsonb DEFAULT '{}'::jsonb,
-	"sync_metadata" jsonb DEFAULT '{}'::jsonb,
-	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
-	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
+CREATE TABLE "distress_events" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"user_id" varchar(255) NOT NULL,
+	"session_id" uuid NOT NULL,
+	"detected_by" varchar(16) NOT NULL,
+	"selfharm_score" real,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "exercise_sheets" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"session_id" uuid NOT NULL,
+	"sheet" jsonb,
+	"uncertain" boolean NOT NULL,
+	"math_check" varchar(16) NOT NULL,
+	"prompt_version" varchar(32) NOT NULL,
+	"hint_level" integer DEFAULT 0 NOT NULL,
+	"steps_done" integer DEFAULT 0 NOT NULL,
+	"hints" jsonb DEFAULT '[]'::jsonb NOT NULL,
+	"solved_at" timestamp with time zone,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "family_billing" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"parent_id" varchar(255) NOT NULL,
-	"stripe_customer_id" varchar(255),
-	"stripe_subscription_id" varchar(255),
-	"billing_status" varchar(50) DEFAULT 'active' NOT NULL,
+	"revenuecat_customer_id" varchar(255),
+	"revenuecat_subscription_id" varchar(255),
+	"billing_status" "billing_status" DEFAULT 'active' NOT NULL,
 	"current_period_start" timestamp with time zone,
 	"current_period_end" timestamp with time zone,
 	"monthly_amount_cents" integer DEFAULT 0 NOT NULL,
 	"last_payment_amount_cents" integer,
 	"last_payment_at" timestamp with time zone,
 	"premium_children_count" integer DEFAULT 0 NOT NULL,
-	"stripe_metadata" jsonb DEFAULT '{}'::jsonb,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
-	CONSTRAINT "family_billing_parent_id_unique" UNIQUE("parent_id"),
-	CONSTRAINT "family_billing_stripe_customer_id_unique" UNIQUE("stripe_customer_id"),
-	CONSTRAINT "family_billing_stripe_subscription_id_unique" UNIQUE("stripe_subscription_id")
+	CONSTRAINT "family_billing_parent_id_unique" UNIQUE("parent_id")
+);
+--> statement-breakpoint
+CREATE TABLE "files" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"user_id" varchar(255) NOT NULL,
+	"file_name" varchar(255) NOT NULL,
+	"mime_type" varchar(100) NOT NULL,
+	"size_bytes" integer NOT NULL,
+	"storage_key" varchar(500) NOT NULL,
+	"educational_context" jsonb DEFAULT '{}'::jsonb,
+	"status" "file_status" DEFAULT 'pending' NOT NULL,
+	"metadata" jsonb DEFAULT '{}'::jsonb,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "learning_cards" (
@@ -116,7 +110,7 @@ CREATE TABLE "learning_decks" (
 	"user_id" varchar(255) NOT NULL,
 	"title" varchar(200) NOT NULL,
 	"description" text,
-	"subject" varchar(100) NOT NULL,
+	"subject" "subject" NOT NULL,
 	"source" "deck_source" NOT NULL,
 	"source_id" varchar(255),
 	"source_prompt" text,
@@ -131,39 +125,20 @@ CREATE TABLE "messages" (
 	"session_id" uuid NOT NULL,
 	"role" "message_role" NOT NULL,
 	"content" text NOT NULL,
-	"content_hash" varchar(64),
-	"frustration_level" integer,
-	"question_level" integer,
-	"socratic_level" integer,
-	"message_category" varchar(50),
-	"ai_model" "ai_model",
+	"ai_model" text,
 	"tokens_used" integer DEFAULT 0,
-	"response_time_ms" integer,
-	"message_quality_score" numeric(3, 2),
-	"is_helpful" boolean,
-	"contains_pii" boolean DEFAULT false,
-	"is_flagged" boolean DEFAULT false,
 	"attached_file" jsonb,
 	"message_metadata" jsonb DEFAULT '{}'::jsonb,
+	"model_messages" jsonb,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "progress" (
+CREATE TABLE "parent_child" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"user_id" varchar(255) NOT NULL,
-	"subject" varchar(100) NOT NULL,
-	"concept" varchar(200) NOT NULL,
-	"competency_domain" varchar(10),
-	"mastery_level" integer NOT NULL,
-	"total_practice_time" integer DEFAULT 0 NOT NULL,
-	"success_rate" numeric(5, 2),
-	"progress_history" jsonb DEFAULT '[]'::jsonb,
-	"first_practiced" timestamp with time zone DEFAULT now() NOT NULL,
-	"last_practiced" timestamp with time zone DEFAULT now() NOT NULL,
-	"progress_metadata" jsonb DEFAULT '{}'::jsonb,
+	"parent_user_id" varchar(255) NOT NULL,
+	"child_user_id" varchar(255) NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
-	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
-	CONSTRAINT "progress_user_id_subject_concept_key" UNIQUE("user_id","subject","concept")
+	CONSTRAINT "parent_child_pair_unique" UNIQUE("parent_user_id","child_user_id")
 );
 --> statement-breakpoint
 CREATE TABLE "session" (
@@ -178,33 +153,24 @@ CREATE TABLE "session" (
 	CONSTRAINT "session_token_unique" UNIQUE("token")
 );
 --> statement-breakpoint
+CREATE TABLE "session_files" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"session_id" uuid NOT NULL,
+	"file_id" uuid NOT NULL,
+	"attached_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "session_files_session_file_unique" UNIQUE("session_id","file_id")
+);
+--> statement-breakpoint
 CREATE TABLE "study_sessions" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"user_id" varchar(255) NOT NULL,
-	"subject" varchar(100) NOT NULL,
+	"subject" "subject_family" DEFAULT 'general' NOT NULL,
 	"topic" varchar(200),
 	"status" "session_status" DEFAULT 'active' NOT NULL,
 	"started_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"ended_at" timestamp with time zone,
-	"duration_minutes" integer,
-	"frustration_avg" numeric(3, 2) DEFAULT '0',
-	"frustration_min" numeric(3, 2) DEFAULT '0',
-	"frustration_max" numeric(3, 2) DEFAULT '0',
-	"question_levels_avg" numeric(3, 2) DEFAULT '0',
-	"concepts_covered" text[] DEFAULT '{}'::text[],
-	"socratic_effectiveness" numeric(3, 2) DEFAULT '0',
-	"student_engagement" numeric(3, 2) DEFAULT '0',
-	"questions_asked" integer DEFAULT 0,
-	"questions_answered" integer DEFAULT 0,
-	"hints_given" integer DEFAULT 0,
-	"ai_model_used" "ai_model" DEFAULT 'gemini_2_5_flash' NOT NULL,
-	"total_tokens_used" integer DEFAULT 0,
-	"api_cost_cents" integer DEFAULT 0,
-	"average_response_time_ms" integer,
-	"device_type" varchar(20),
-	"user_satisfaction" integer,
-	"session_rating" integer,
-	"session_metadata" jsonb DEFAULT '{}'::jsonb,
+	"conversation_summary" text,
+	"summary_up_to_message_id" uuid,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
 );
@@ -219,9 +185,6 @@ CREATE TABLE "subscription_plans" (
 	"price_first_child_cents" integer DEFAULT 0 NOT NULL,
 	"price_additional_child_cents" integer DEFAULT 0 NOT NULL,
 	"currency" varchar(3) DEFAULT 'EUR' NOT NULL,
-	"stripe_product_id" varchar(255),
-	"stripe_price_id_first_child" varchar(255),
-	"stripe_price_id_additional_child" varchar(255),
 	"features" jsonb DEFAULT '[]'::jsonb,
 	"is_active" boolean DEFAULT true NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
@@ -243,20 +206,8 @@ CREATE TABLE "user" (
 	"last_name" varchar(100),
 	"role" "user_role" DEFAULT 'parent' NOT NULL,
 	"school_level" "school_level",
-	"selected_lv2" varchar(50),
 	"date_of_birth" varchar(10),
-	"parent_id" varchar(255),
 	"is_active" boolean DEFAULT true NOT NULL,
-	"login_count" integer DEFAULT 0,
-	"preferences" jsonb DEFAULT '{"theme": "light", "language": "fr", "notifications": true, "adaptive_difficulty": true}'::jsonb,
-	"metadata" jsonb DEFAULT '{}'::jsonb,
-	"stripe_customer_id" varchar(255),
-	"stripe_subscription_id" varchar(255),
-	"subscription_status" varchar(50) DEFAULT 'inactive',
-	"subscription_plan" varchar(50) DEFAULT 'free',
-	"country_code" varchar(2) DEFAULT 'FR',
-	"timezone" varchar(50) DEFAULT 'Europe/Paris',
-	"last_login_at" timestamp with time zone,
 	CONSTRAINT "user_email_unique" UNIQUE("email"),
 	CONSTRAINT "user_username_unique" UNIQUE("username"),
 	CONSTRAINT "user_display_username_unique" UNIQUE("display_username")
@@ -291,7 +242,7 @@ CREATE TABLE "user_subscriptions" (
 CREATE TABLE "verification" (
 	"id" varchar(255) PRIMARY KEY NOT NULL,
 	"identifier" varchar(255) NOT NULL,
-	"value" varchar(255) NOT NULL,
+	"value" text NOT NULL,
 	"expires_at" timestamp with time zone NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
@@ -300,58 +251,54 @@ CREATE TABLE "verification" (
 ALTER TABLE "account" ADD CONSTRAINT "account_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "cost_tracking" ADD CONSTRAINT "cost_tracking_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "cost_tracking" ADD CONSTRAINT "cost_tracking_session_id_fkey" FOREIGN KEY ("session_id") REFERENCES "public"."study_sessions"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "distress_events" ADD CONSTRAINT "distress_events_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "distress_events" ADD CONSTRAINT "distress_events_session_id_fkey" FOREIGN KEY ("session_id") REFERENCES "public"."study_sessions"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "exercise_sheets" ADD CONSTRAINT "exercise_sheets_session_id_fkey" FOREIGN KEY ("session_id") REFERENCES "public"."study_sessions"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "family_billing" ADD CONSTRAINT "family_billing_parent_id_fkey" FOREIGN KEY ("parent_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "files" ADD CONSTRAINT "files_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "learning_cards" ADD CONSTRAINT "learning_cards_deck_id_fkey" FOREIGN KEY ("deck_id") REFERENCES "public"."learning_decks"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "learning_decks" ADD CONSTRAINT "learning_decks_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "messages" ADD CONSTRAINT "messages_session_id_fkey" FOREIGN KEY ("session_id") REFERENCES "public"."study_sessions"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "progress" ADD CONSTRAINT "progress_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "parent_child" ADD CONSTRAINT "parent_child_parent_user_id_fkey" FOREIGN KEY ("parent_user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "parent_child" ADD CONSTRAINT "parent_child_child_user_id_fkey" FOREIGN KEY ("child_user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "session" ADD CONSTRAINT "session_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "session_files" ADD CONSTRAINT "session_files_session_id_fkey" FOREIGN KEY ("session_id") REFERENCES "public"."study_sessions"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "session_files" ADD CONSTRAINT "session_files_file_id_fkey" FOREIGN KEY ("file_id") REFERENCES "public"."files"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "study_sessions" ADD CONSTRAINT "study_sessions_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "user" ADD CONSTRAINT "user_parent_id_fkey" FOREIGN KEY ("parent_id") REFERENCES "public"."user"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "user_subscriptions" ADD CONSTRAINT "user_subscriptions_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "user_subscriptions" ADD CONSTRAINT "user_subscriptions_plan_id_fkey" FOREIGN KEY ("plan_id") REFERENCES "public"."subscription_plans"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "idx_account_user_id" ON "account" USING btree ("user_id");--> statement-breakpoint
 CREATE INDEX "idx_account_provider_account" ON "account" USING btree ("provider_id","account_id");--> statement-breakpoint
 CREATE INDEX "idx_cost_tracking_user_id" ON "cost_tracking" USING btree ("user_id");--> statement-breakpoint
 CREATE INDEX "idx_cost_tracking_created_at" ON "cost_tracking" USING btree ("created_at");--> statement-breakpoint
-CREATE INDEX "idx_establishments_location" ON "establishments" USING btree ("latitude","longitude");--> statement-breakpoint
-CREATE INDEX "idx_establishments_city" ON "establishments" USING btree ("city");--> statement-breakpoint
-CREATE INDEX "idx_establishments_postal_code" ON "establishments" USING btree ("postal_code");--> statement-breakpoint
-CREATE INDEX "idx_establishments_department" ON "establishments" USING btree ("department_code");--> statement-breakpoint
-CREATE INDEX "idx_establishments_academy" ON "establishments" USING btree ("academy");--> statement-breakpoint
-CREATE INDEX "idx_establishments_type_status" ON "establishments" USING btree ("type","status");--> statement-breakpoint
-CREATE INDEX "idx_establishments_name" ON "establishments" USING btree ("normalized_name");--> statement-breakpoint
-CREATE INDEX "idx_establishments_has_pronote" ON "establishments" USING btree ("has_pronote");--> statement-breakpoint
-CREATE INDEX "idx_establishments_last_sync" ON "establishments" USING btree ("last_sync_at");--> statement-breakpoint
-CREATE INDEX "idx_establishments_data_quality" ON "establishments" USING btree ("data_quality");--> statement-breakpoint
-CREATE INDEX "idx_establishments_is_validated" ON "establishments" USING btree ("is_validated");--> statement-breakpoint
-CREATE INDEX "idx_establishments_search_composite" ON "establishments" USING btree ("type","status","has_pronote");--> statement-breakpoint
-CREATE INDEX "idx_establishments_location_composite" ON "establishments" USING btree ("department_code","city","type");--> statement-breakpoint
-CREATE INDEX "idx_family_billing_stripe_customer" ON "family_billing" USING btree ("stripe_customer_id");--> statement-breakpoint
-CREATE INDEX "idx_family_billing_stripe_subscription" ON "family_billing" USING btree ("stripe_subscription_id");--> statement-breakpoint
+CREATE UNIQUE INDEX "uq_distress_events_session" ON "distress_events" USING btree ("session_id");--> statement-breakpoint
+CREATE INDEX "idx_distress_events_user_created" ON "distress_events" USING btree ("user_id","created_at");--> statement-breakpoint
+CREATE INDEX "idx_exercise_sheets_session_created" ON "exercise_sheets" USING btree ("session_id","created_at");--> statement-breakpoint
+CREATE INDEX "idx_family_billing_revenuecat_customer" ON "family_billing" USING btree ("revenuecat_customer_id");--> statement-breakpoint
 CREATE INDEX "idx_family_billing_status" ON "family_billing" USING btree ("billing_status");--> statement-breakpoint
+CREATE INDEX "idx_files_user_id" ON "files" USING btree ("user_id");--> statement-breakpoint
+CREATE INDEX "idx_files_status" ON "files" USING btree ("status");--> statement-breakpoint
+CREATE INDEX "idx_files_storage_key" ON "files" USING btree ("storage_key");--> statement-breakpoint
+CREATE INDEX "idx_files_created_at" ON "files" USING btree ("created_at");--> statement-breakpoint
 CREATE INDEX "idx_learning_cards_deck_position" ON "learning_cards" USING btree ("deck_id","position");--> statement-breakpoint
 CREATE INDEX "idx_learning_cards_type" ON "learning_cards" USING btree ("card_type");--> statement-breakpoint
 CREATE INDEX "idx_learning_decks_user_subject" ON "learning_decks" USING btree ("user_id","subject");--> statement-breakpoint
 CREATE INDEX "idx_learning_decks_user_created" ON "learning_decks" USING btree ("user_id","created_at");--> statement-breakpoint
 CREATE INDEX "idx_messages_session_created" ON "messages" USING btree ("session_id","created_at");--> statement-breakpoint
-CREATE INDEX "idx_messages_quality" ON "messages" USING btree ("message_quality_score");--> statement-breakpoint
-CREATE INDEX "idx_progress_user_id" ON "progress" USING btree ("user_id");--> statement-breakpoint
-CREATE INDEX "idx_progress_subject" ON "progress" USING btree ("subject");--> statement-breakpoint
-CREATE INDEX "idx_progress_mastery_level" ON "progress" USING btree ("mastery_level");--> statement-breakpoint
+CREATE INDEX "idx_parent_child_parent" ON "parent_child" USING btree ("parent_user_id");--> statement-breakpoint
+CREATE INDEX "idx_parent_child_child" ON "parent_child" USING btree ("child_user_id");--> statement-breakpoint
 CREATE INDEX "idx_session_token" ON "session" USING btree ("token");--> statement-breakpoint
 CREATE INDEX "idx_session_user_id" ON "session" USING btree ("user_id");--> statement-breakpoint
 CREATE INDEX "idx_session_expires_at" ON "session" USING btree ("expires_at");--> statement-breakpoint
+CREATE INDEX "idx_session_files_session" ON "session_files" USING btree ("session_id");--> statement-breakpoint
+CREATE INDEX "idx_session_files_file" ON "session_files" USING btree ("file_id");--> statement-breakpoint
 CREATE INDEX "idx_sessions_user_status" ON "study_sessions" USING btree ("user_id","status");--> statement-breakpoint
 CREATE INDEX "idx_sessions_user_subject_date" ON "study_sessions" USING btree ("user_id","subject","started_at");--> statement-breakpoint
 CREATE INDEX "idx_sessions_active" ON "study_sessions" USING btree ("started_at");--> statement-breakpoint
 CREATE INDEX "idx_user_email" ON "user" USING btree ("email");--> statement-breakpoint
 CREATE INDEX "idx_user_username" ON "user" USING btree ("username");--> statement-breakpoint
-CREATE INDEX "idx_user_parent_id" ON "user" USING btree ("parent_id");--> statement-breakpoint
 CREATE INDEX "idx_user_role" ON "user" USING btree ("role");--> statement-breakpoint
 CREATE INDEX "idx_user_school_level" ON "user" USING btree ("school_level");--> statement-breakpoint
-CREATE INDEX "idx_user_stripe_customer_id" ON "user" USING btree ("stripe_customer_id");--> statement-breakpoint
 CREATE INDEX "idx_user_subscriptions_status" ON "user_subscriptions" USING btree ("status");--> statement-breakpoint
 CREATE INDEX "idx_user_subscriptions_last_reset" ON "user_subscriptions" USING btree ("last_reset_at");--> statement-breakpoint
-CREATE INDEX "idx_verification_identifier" ON "verification" USING btree ("identifier");--> statement-breakpoint
-CREATE INDEX "idx_verification_value" ON "verification" USING btree ("value");
+CREATE INDEX "idx_verification_identifier" ON "verification" USING btree ("identifier");

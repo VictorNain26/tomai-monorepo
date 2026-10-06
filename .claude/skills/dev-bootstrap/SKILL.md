@@ -29,7 +29,7 @@ racine, `bun run` depuis `apps/server`) :
 
 ```bash
 docker compose up -d --wait postgres
-bun run db:migrate    # crée l'extension vector, __drizzle_migrations, puis applique le SQL
+bun run db:migrate    # crée __drizzle_migrations, puis applique le SQL
 bun run dev
 ```
 
@@ -51,8 +51,8 @@ DATABASE_URL=postgresql://tomai_dev:tomai_dev_password@localhost:5432/tomai_dev
 DATABASE_URL_EXTERNAL=postgresql://tomai_dev:tomai_dev_password@localhost:5432/tomai_dev
 ```
 
-Sans `MISTRAL_API_KEY`, `/health` reste `healthy` (il ne sonde que la base) ;
-c'est `/health/ai` qui répond 503.
+Sans `MISTRAL_API_KEY`, le serveur démarre et `/health` reste `healthy` (il ne
+sonde que la base) ; le chat et la génération de cartes échouent à l'usage.
 
 ## Ce que `bun run dev` attend réellement
 

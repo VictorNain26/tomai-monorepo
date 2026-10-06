@@ -27,9 +27,9 @@ const app = new Hono<AppEnv>().route('/', parentRoutes).onError(handleError);
 const validChild = {
   firstName: 'Lucas',
   lastName: 'Martin',
-  username: 'lucas_ce2',
+  username: 'lucas_5e',
   password: 'ChildPass123',
-  schoolLevel: 'ce2',
+  schoolLevel: 'cinquieme',
   dateOfBirth: '2015-03-15',
 };
 
@@ -62,12 +62,12 @@ describe('parent child routes validate their body once, with the Zod schemas', (
   it('POST hands the normalized body to the service', async () => {
     const res = await send('POST', '/parent/children', {
       ...validChild,
-      username: 'LUCAS_CE2',
+      username: 'LUCAS_5E',
       firstName: 'Lucas ',
     });
     expect(res.status).toBe(200);
     expect(createChild).toHaveBeenCalledTimes(1);
-    expect(createChild.mock.calls[0]?.[1]).toMatchObject({ username: 'lucas_ce2', firstName: 'Lucas' });
+    expect(createChild.mock.calls[0]?.[1]).toMatchObject({ username: 'lucas_5e', firstName: 'Lucas' });
   });
 
   it('PATCH rejects an empty update with VALIDATION_ERROR before the service', async () => {
@@ -79,8 +79,8 @@ describe('parent child routes validate their body once, with the Zod schemas', (
   });
 
   it('PATCH hands a valid partial update to the service', async () => {
-    const res = await send('PATCH', '/parent/children/child-1', { schoolLevel: 'cm1' });
+    const res = await send('PATCH', '/parent/children/child-1', { schoolLevel: 'quatrieme' });
     expect(res.status).toBe(200);
-    expect(updateChild.mock.calls[0]?.[2]).toEqual({ schoolLevel: 'cm1' });
+    expect(updateChild.mock.calls[0]?.[2]).toEqual({ schoolLevel: 'quatrieme' });
   });
 });

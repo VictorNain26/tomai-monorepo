@@ -100,7 +100,7 @@ beforeEach(() => {
   const child = makeUser({ id: 'child-001' });
   childrenResult = [child];
   userByUsername = null;
-  updateResult = { ...child, schoolLevel: 'seconde' };
+  updateResult = { ...child, schoolLevel: 'troisieme' };
   deleteResult = true;
   findByIdResult = null;
   listByUserIdResult = [];
@@ -192,7 +192,7 @@ describe('Parent Service', () => {
           lastName: 'User',
           username: 'taken',
           password: 'pass',
-          schoolLevel: 'cp',
+          schoolLevel: 'sixieme',
           dateOfBirth: '2018-01-01',
         })
       ).rejects.toThrow();
@@ -269,12 +269,12 @@ describe('Parent Service', () => {
         ...makeUser({ id: 'child-001' }),
         firstName: 'Jean',
         lastName: 'Martin',
-        schoolLevel: 'seconde',
+        schoolLevel: 'troisieme',
       };
       const result = await parentService.updateChild('parent-001', 'child-001', {
         firstName: 'Jean',
         lastName: 'Martin',
-        schoolLevel: 'seconde',
+        schoolLevel: 'troisieme',
       });
       expect(result.firstName).toBe('Jean');
       expect(result.lastName).toBe('Martin');

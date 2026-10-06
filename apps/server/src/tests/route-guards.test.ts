@@ -21,7 +21,6 @@ mock.module('../platform/config/env', () => ({
   getCorsOrigins: () => [],
 }));
 mock.module('../db/connection', () => ({ db: {} }));
-mock.module('../services/education.service', () => ({ educationService: {} }));
 mock.module('../modules/billing/index', () => ({
   checkQuota: async () => ({ plan: 'premium' }),
   checkDeckQuota: async () => ({ allowed: true }),

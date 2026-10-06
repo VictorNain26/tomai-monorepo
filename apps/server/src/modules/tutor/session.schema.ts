@@ -1,12 +1,14 @@
 import { pgTable, uuid, varchar, text, timestamp, integer, jsonb, pgEnum, index, foreignKey } from 'drizzle-orm/pg-core';
 import { relations, sql } from 'drizzle-orm';
 import { user } from '../auth/auth.schema';
+import { SUBJECT_FAMILIES } from '../../lib/subjects.js';
 
 // =============================================
 // ENUMS
 // =============================================
 export const sessionStatusEnum = pgEnum('session_status', ['draft', 'active', 'paused', 'completed', 'abandoned', 'timeout', 'error']);
 export const messageRoleEnum = pgEnum('message_role', ['user', 'assistant', 'system']);
+export const subjectFamilyEnum = pgEnum('subject_family', SUBJECT_FAMILIES);
 
 // =============================================
 // TABLES
@@ -20,7 +22,7 @@ export const studySessions = pgTable('study_sessions', {
   userId: varchar('user_id', { length: 255 }).notNull(),
 
   // Détails pédagogiques
-  subject: varchar('subject', { length: 100 }).notNull().default('général'),
+  subject: subjectFamilyEnum('subject').notNull().default('general'),
   topic: varchar('topic', { length: 200 }),
   status: sessionStatusEnum('status').notNull().default('active'),
 
