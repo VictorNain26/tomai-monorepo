@@ -57,6 +57,7 @@
   "overrides": {
     "@esbuild-kit/core-utils": {
       "esbuild": ">=0.25.0"
-    }
+    },
+    "source-map-js": "^1.2.2"
   }
 }
