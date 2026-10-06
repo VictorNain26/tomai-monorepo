@@ -82,9 +82,9 @@ describe('getClient', () => {
     expect(getClient().health.$url().href).toBe('https://tom.example/health');
   });
 
-  it.each(['/', '', 'tom.example'])('refuses the base %p, which is not an absolute URL', (baseUrl) => {
+  it.each(['/', '', 'tom.example', 'localhost:3000', 'file:///app'])('refuses the base %p, which is not an absolute http(s) URL', (baseUrl) => {
     expect(() => {
       initializeApi({ baseUrl });
-    }).toThrow('[API] baseUrl must be an absolute URL');
+    }).toThrow('[API] baseUrl must be an absolute http(s) URL');
   });
 });

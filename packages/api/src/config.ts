@@ -18,13 +18,22 @@ export interface ApiConfig {
 
 let apiConfig: ApiConfig | null = null;
 
+// new URL rather than URL.canParse, which Safari only has from 17 (iOS 16 phones stay in use).
+function isHttpUrl(value: string): boolean {
+  try {
+    return ['http:', 'https:'].includes(new URL(value).protocol);
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Initialise la configuration API.
  * DOIT être appelé une fois au démarrage de l'application.
  */
 export function initializeApi(config: ApiConfig): void {
-  if (!URL.canParse(config.baseUrl)) {
-    throw new Error(`[API] baseUrl must be an absolute URL, got "${config.baseUrl}".`);
+  if (!isHttpUrl(config.baseUrl)) {
+    throw new Error(`[API] baseUrl must be an absolute http(s) URL, got "${config.baseUrl}".`);
   }
   if (apiConfig !== null) {
     console.warn('[API] Configuration already initialized, skipping.');
