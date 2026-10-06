@@ -2,7 +2,8 @@
 
 Vision : `vision.md`. Specs : `architecture.md`, `tuteur.md`. L'avancement vit dans `suivi.md`.
 
-Le fil conducteur : prouver avant de vendre. Le lot 1 mesure, le lot 2 construit ce qui nous
+Le fil conducteur : prouver avant de vendre. Le lot 0 refait la codebase sur des pratiques
+établies, le lot 1 mesure, le lot 2 construit ce qui nous
 distingue, le lot 3 le met entre les mains des familles, le lot 4 le dit, mesures à l'appui. Les
 lots avancent en parallèle quand rien ne les bloque. L'ordre et le contenu ci-dessous sont des
 repères : chaque PR précise son périmètre dans son plan, au moment où elle démarre
@@ -12,7 +13,7 @@ repères : chaque PR précise son périmètre dans son plan, au moment où elle 
 
 | Lot | Objectif | Repère de fin |
 |---|---|---|
-| 0 — Assainissement | Un serveur et un outillage propres (Hono, Bun, modules, lint et TypeScript stricts) | Fait |
+| 0 — Refonte | Une codebase de qualité production, reconstruite sur des pratiques publiées, sans rien garder de l'ancienne architecture | Les huit étapes de `etudes/2026-10-06/refonte-architecture.md` mergées, une seule version de chaque chose |
 | 1 — Mesurer et observer | Un harnais d'évaluation crédible et des signaux de production sans contenu d'élève | Des mesures avec leur marge d'erreur, un juge vérifié contre Victor, un garde-fou en CI |
 | 2 — Un agent qui ne cède pas | Guider sans donner la réponse, au bon niveau, sans se tromper, et bien réagir à la détresse | Au harnais, la réponse presque jamais donnée sous pression et une aide jugée bonne par Victor |
 | 3 — L'app entre les mains des familles | L'app web sur téléphone : chat, photo, voix, comptes et consentement, parent, paiement, hébergement UE | Les parcours marchent de bout en bout en préproduction, et Victor les utilise |
@@ -20,17 +21,25 @@ repères : chaque PR précise son périmètre dans son plan, au moment où elle 
 
 ## Repères par lot
 
-**Lot 1** — repères dans `etudes/2026-10-06/refonte-evaluation.md`. Ordre indicatif : des mesures
+**Lot 0** — l'ordre et le contenu sont dans `etudes/2026-10-06/refonte-architecture.md` : on
+supprime l'ancien serveur, puis on reconstruit par tranches, du socle au tuteur, au chat et à la
+préproduction, puis au harnais. Seul se porte ce qui a été mesuré, validé par Victor ou vérifié
+contre une source. Les lots 1 à 3 reprennent sur le nouveau socle, chacun à son étape.
+
+**Lot 1** — repères dans `etudes/2026-10-06/refonte-evaluation.md` ; le harnais se reconstruit à
+l'étape 8 de la refonte, en lisant l'enregistrement de chaque tour. Ordre indicatif : des mesures
 avec leur marge d'erreur ; une page simple pour que Victor juge, et un juge vérifié contre lui ;
 un garde-fou en CI ; puis un jeu plus riche (programmes des autres matières, exercices inspirés du
 brevet) et un élève simulé ; observabilité de production avec l'hébergeur.
 
-**Lot 2** — le cœur est fait (#380 à #404, `etudes/2026-10-06/passage-de-fin.md`). Reste à fermer
-les fuites restantes (#415) et à le prouver avec le harnais refait.
+**Lot 2** — le savoir est acquis (#380 à #404, `etudes/2026-10-06/passage-de-fin.md`) et se porte
+dans le nouveau tuteur à l'étape 5 de la refonte, avec le diagnostic de #415, un contrôle de fuite
+qui bloque au lieu de laisser passer, et un cran d'aide qui monte quand l'élève bloque. Reste à
+fermer les fuites restantes et à le prouver avec le harnais refait.
 
-**Lot 3** — ordre indicatif, pensé pour que Victor teste lui-même au plus tôt : l'app servie par
-Hono et installable ; une préproduction hébergée dans l'UE ; le chat avec une connexion simple ;
-puis comptes, consentement et mention IA ; photo et voix ; parcours parent ; paiement.
+**Lot 3** — ordre indicatif, pensé pour que Victor teste lui-même au plus tôt : le chat avec une
+connexion simple et la préproduction UE arrivent dans la refonte (étapes 6 et 7) ; puis
+consentement et mention IA, photo et voix, parcours parent, paiement, sur le modèle du foyer.
 
 **Lot 4** — nom et identité ; landing réécrite sur la vision, avec la page des mesures et l'accès
 à l'app ; pages légales alignées sur l'hébergement réel ; ouverture.

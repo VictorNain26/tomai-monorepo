@@ -1,6 +1,8 @@
 # Cible V1 — architecture et périmètre
 
-Statut : validé le 2026-09-22, aligné sur la vision produit le 2026-10-01.
+Statut : validé le 2026-09-22, aligné sur la vision produit le 2026-10-01. **En refonte depuis le
+2026-10-06** : la cible est `etudes/2026-10-06/refonte-architecture.md`, qui prime sur ce document
+là où ils divergent ; chaque étape de la refonte réécrit la partie qu'elle reconstruit.
 
 ## Produit
 

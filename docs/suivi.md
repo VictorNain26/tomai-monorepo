@@ -11,79 +11,58 @@ bloquant levé). L'historique vit dans git et les PR.
 
 ## Où on en est
 
-- **Dernière mise à jour :** 2026-10-06.
-- **Lots en cours :** 2 et 3 en parallèle (`roadmap.md`).
-  - Lot 0 terminé (Hono, Bun, refonte en modules, lint et TypeScript stricts, #343 à #356).
-  - **Lot 1 :** le harnais est jugé insuffisant par Victor et refondu sur sources
-    (`etudes/2026-10-06/refonte-evaluation.md`) ; restent aussi le référentiel des autres matières et les concurrents.
-  - **Lot 2 :** les points 1 à 8 sont faits (#380 à #404). Le passage de fin est mesuré
-    (`etudes/2026-10-06/passage-de-fin.md`, #409) : de 9 fuites à 2 sur les mêmes conversations,
-    détresse et indices en net progrès, 0,13 c par tour d'élève. Le critère zéro fuite n'est pas
-    atteint : 11 fuites sur 106, toutes sur cinq exercices qui demandent un fait, un mot ou une
-    forme.
-  - **Lot 3 :** client web choisi (`etudes/2026-10-06/client-web.md`, #406), squelette
-    `apps/web` (#408), champs en erreur dans `VALIDATION_ERROR` (#405). `@repo/ui` reste sur
-    Radix : la bascule sur Base UI (#407) est fermée, car sur iOS Base UI ne verrouille pas le
-    défilement derrière un panneau quand la barre de Safari est repliée. Hono sert `apps/web`
-    sur la même origine que l'API, sans CORS, sous CSP, et le web est une PWA installable (#414).
-  - Hors lot : environnement de travail nettoyé (#410).
-- **Prochaine action **, ordre indicatif (direction revue avec Victor le 2026-10-06 au soir) :
-  1. lot 1, refonte du harnais : mesures avec marge d'erreur, page simple pour que Victor
-     juge, messages d'erreur nettoyés avant tout export, juge vérifié contre Victor ;
-  2. lot 3 : étude des hébergeurs UE et préproduction, puis chat texte dans l'app avec une
-     connexion minimale, pour que Victor teste sur son téléphone ;
-  3. PR #415 (brouillon) : remesurer avec le harnais refait avant de la merger ;
-  4. test complet dans Chrome à la fin de chaque chantier.
-- **Décisions de Victor en attente :** budgets du quota ; offre Mistral payante pour paralléliser
-  l'évaluation (aujourd'hui une conversation à la fois, environ 10 h pour 300 conversations
-  rejouées deux fois) ; juge d'une autre famille, seulement s'il est très bon marché. Décidé le
-  2026-10-06 : Small 4 partout, pas de Medium ; Victor seul annotateur ; landing refaite au lot 4.
-- **PR ouvertes :** #415 (brouillon) ; `gh pr list`.
-- **Landing en ligne gelée** jusqu'au lot 4 : seuls des correctifs d'honnêteté ou techniques y entrent.
-  L'identité visuelle est rejetée et se refait au lot 4.
+- **Dernière mise à jour :** 2026-10-06.
+- **Lot en cours : 0, la refonte** (`roadmap.md`). Victor a demandé le 2026-10-06 de reprendre toute
+  la codebase sur des pratiques établies, sans rien garder de l'ancienne architecture. Quatre
+  audits et l'architecture cible : `etudes/2026-10-06/refonte-architecture.md` (#418), sept
+  décisions de Victor prises le même jour. Les lots 1 à 3 reprennent sur le nouveau socle, chacun
+  à son étape.
+  - Acquis avant la refonte, à porter : le savoir du lot 2 (de 9 fuites à 2 sur les mêmes
+    conversations, `etudes/2026-10-06/passage-de-fin.md` ; 11 fuites sur 106, sur cinq exercices
+    qui demandent un fait, un mot ou une forme, diagnostiquées par #415), la refonte de
+    l'évaluation (`etudes/2026-10-06/refonte-evaluation.md`), le client web (#406, #408, #414).
+- **Prochaine action** : étape 2 de la refonte, la suppression de l'ancien serveur et le socle ;
+  l'étude des hébergeurs UE avance en parallèle. L'ordre complet est dans l'étude. Test complet
+  dans Chrome à la fin de chaque étape.
+- **Décisions de Victor en attente**, au moment de l'étape qui en dépend : budgets du quota
+  (étape 5) ; offre Mistral payante pour paralléliser l'évaluation et juge d'une autre famille,
+  seulement s'il est très bon marché (étape 8) ; fournisseur d'e-mail UE (étape 4).
+- **PR ouvertes :** #418 (cette étude), #419 (Renovate sans fusion automatique) ; `gh pr list`.
+- **Landing en ligne gelée** jusqu'au lot 4, hors de la refonte : seuls des correctifs d'honnêteté
+  ou techniques y entrent. L'identité visuelle est rejetée et se refait au lot 4.
 
 ## Reporté
 
 Constats hors du périmètre de la PR qui les a trouvés, un par ligne, avec leur source. Chacun
-nomme son lot ; quand le plan de la PR s'écrit, le point y devient une tâche ou est
-explicitement renvoyé (`.claude/rules/plans-and-agents.md`). Chemins relatifs à
-`apps/server/src/` sauf mention contraire.
+nomme son étape de refonte ou son lot ; quand le plan de la PR s'écrit, le point y devient une
+tâche ou est explicitement renvoyé (`.claude/rules/plans-and-agents.md`). Ce que la refonte
+supprime ou que l'étude couvre n'y figure plus.
+
+### Refonte — préproduction (étape 7)
+
+- **Hébergement** : délai de grâce SIGTERM d'au moins un tour de chat, stockage partagé du rate limit s'il y a plusieurs instances, `trustedProxies` de better-auth derrière le proxy de l'hébergeur ; compression des fichiers du web par le build ou par le proxy, selon l'hébergeur.
+- **Client web** : `ai` aligné sur la version qu'épingle `@ai-sdk/react`, avec l'étape 6 ; mesures sur un vrai iPhone et un Android (`etudes/2026-10-06/client-web.md`).
+- **Connexion** : la page d'erreur de better-auth (`/api/auth/error`) a un `<style>` en ligne que la CSP bloque ; `onAPIError.errorURL` vers une page du web, avec l'étape 6.
 
 ### Lot 1 — harnais d'évaluation et observabilité
 
-- **Référentiel** : restent sciences, histoire-géographie et anglais, et le rattachement de leurs exercices (`referential/sources.ts`).
+- **Référentiel** : restent sciences, histoire-géographie et anglais, et le rattachement de leurs exercices.
 - **Alignement aux programmes** : ajouter des exercices inspirés des sujets du brevet 2018-2026, écrits pour le jeu (`etudes/2026-10-01/education-nationale.md`, « Conséquences pour Tom », b).
-- **Harnais et observabilité** : juge non validé (α < 0,800 sur tous les critères), mesure
-  unique sans intervalle, élève figé, débit Mistral à une conversation à la fois, messages
-  d'erreur des spans qui portent la sortie du modèle : tout est repris par
-  `etudes/2026-10-06/refonte-evaluation.md`, qui fixe l'ordre des PR. La file `tom-judge-agreement`
-  de Langfuse reste ouverte jusqu'au 2026-11-02.
-- **Niveau de langue** : ses questions sont retirées ; avant de le réintroduire, trouver une mesure
-  validée de la lisibilité d'un texte français pour collégiens (`etudes/2026-10-03/analyse-erreurs.md`).
+- **Niveau de langue** : avant de le réintroduire, trouver une mesure validée de la lisibilité d'un texte français pour collégiens (`etudes/2026-10-03/analyse-erreurs.md`).
+- La file `tom-judge-agreement` de Langfuse reste ouverte jusqu'au 2026-11-02.
 
-### Lot 2 — agent qui ne cède pas, quotas et coûts
+### Lot 3 — l'app entre les mains des familles
 
-- **TTS** : une seule voix, française (`fr_marie_*`), `/api/tts` n'accepte que `fr` ; décider s'il faut d'autres voix pour les cours de langue.
-- **Normalisation de la lecture vocale** : `modules/voice/speech-normalize.ts` à réévaluer avec la lecture vocale.
-- **Tests réels instables** : dans `live/mistral-eu.test.ts`, la fiche garde parfois zéro notion connue (`keepKnownNotions`), et le test du juge échoue par moments ; une assertion sur une sortie de modèle doit tenir à chaque tirage, ou le test mesurer un taux.
-
-### Lot 3 — client web
-
-- **Après une détresse** : une nouvelle séance rend le tuteur (`distress_events` est par séance) et une photo seule n'est pas jugée ; décider avec l'alerte au parent ce que voit l'élève ensuite, et qui le lève (`modules/tutor/distress.ts`).
-- **Routes de séance qui se recouvrent** (`modules/tutor/chat-session.routes.ts`) : `/chat/sessions/latest` et `POST /chat/session`, `/chat/session/new` et `/chat/session/:id/reset` ; garder celles qu'appelle le client web.
+- **Après une détresse** : décider avec l'alerte au parent ce que voit l'élève ensuite, et qui lève la fermeture ; une photo seule n'est pas jugée.
 - **Conformité** : mention « vous parlez à une IA » dès la première interaction, consentement conjoint sous 15 ans, AIPD, résumé parent proportionné et connu de l'enfant, aucun lien avec un établissement sans réévaluer le haut risque (`etudes/2026-10-01/education-nationale.md`, c ; `tuteur.md` §11).
-- **Facturation** : colonnes et enum RevenueCat de `modules/billing/billing.schema.ts`, restes du mobile, refaits avec le paiement web ; les routes qui ont besoin des enfants vont dans `family`, `billing` reste un module feuille (#354).
-- **Hébergement** : délai de grâce SIGTERM d'au moins un tour de chat, stockage partagé du rate limit s'il y a plusieurs instances, `advanced.ipAddress.trustedProxies` de better-auth derrière le proxy de l'hébergeur.
-- **Client web**, point 1, reste de #414 : `ai` aligné sur la version qu'épingle `@ai-sdk/react`, avec la PR qui l'installe ; mesures sur un vrai iPhone et un Android (`etudes/2026-10-06/client-web.md`).
-- **Connexion** : `onAPIError.errorURL` de better-auth vers une page du web, car sa page d'erreur (`/api/auth/error`) a un `<style>` en ligne que la CSP bloque ; en dev, l'URI de redirection Google devient `http://localhost:3002/api/auth/callback/google`, la base de better-auth étant l'origine de Vite (`apps/server/.env.example`).
-- **Voix** : la `Permissions-Policy` interdit le micro (`packages/web-host/src/security-headers.ts`) ; l'ouvrir à `self` avec l'enregistrement d'un oral dans le web.
-- **Alerte au parent** : le push web n'atteint qu'un parent qui a installé l'app (iOS) ; l'alerte de détresse demande un canal garanti, l'e-mail par exemple, à décider avec le parcours parent (point 3).
-- **Langue d'un oral** : la transcription impose le français, et un oral de langue se transcrit mal (« Yes. » bruité devient « Oui. ») ; le client déclare la langue d'un oral de langue et la route la passe à Voxtral (`modules/voice/voxtral-transcribe.service.ts`).
+- **Alerte au parent** : le push web n'atteint qu'un parent qui a installé l'app (iOS) ; l'alerte de détresse demande un canal garanti, l'e-mail par exemple, à décider avec le parcours parent.
+- **Voix** : la `Permissions-Policy` interdit le micro ; l'ouvrir à `self` avec l'enregistrement d'un oral. Une seule voix, française (`fr_marie_*`) : décider s'il en faut d'autres pour les cours de langue, et réévaluer la normalisation de la lecture vocale.
+- **Langue d'un oral** : la transcription impose le français, et un oral de langue se transcrit mal (« Yes. » bruité devient « Oui. ») ; le client déclare la langue d'un oral de langue et la route la passe à Voxtral.
 
 ### Lot 4 — marque et lancement
 
 - **CSP de la landing** (`apps/landing/vercel.json`).
-- **Tests e2e qui gardent l'identité rejetée** (`signs.spec.ts`, graisse des titres dans `type.spec.ts`, place de Tom dans `hero.spec.ts`) : à revoir avec la nouvelle identité.
+- **Tests e2e qui gardent l'identité rejetée** (`signs.spec.ts`, graisse des titres dans `type.spec.ts`, place de Tom dans `hero.spec.ts`), et ceux du web (`apps/web/tests/home.spec.ts`, nom et couleurs du manifest) : à revoir avec la nouvelle identité.
 - **`Scribble`** (`apps/landing/components/annotations/scribble.tsx`) : erreur d'hydratation sous mouvement réduit (`initial` différent entre serveur et client) ; correctif technique permis pendant le gel.
 
 ## Surveillance
@@ -92,9 +71,8 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
 
 - **TypeScript 7** : pas avant que `typescript-eslint` accepte une version au-delà de 6.0.
 - **typescript-eslint 8.71** (groupe `eslint` de Renovate) : les presets typés y activent
-  `no-unsafe-enum-assignment`, qui signale trois lignes (`modules/learning/fsrs.service.ts`,
-  `tests/learning.service.test.ts`, mesuré le 2026-10-06) ; la PR de Renovate échouera au lint
-  tant qu'elles ne sont pas corrigées. D'ici là, `@typescript-eslint/*` existe en 8.70 et en
+  `no-unsafe-enum-assignment`, qui signalait trois lignes de l'ancien serveur le 2026-10-06 ;
+  le nouveau code doit passer cette règle avant la montée. D'ici là, `@typescript-eslint/*` existe en 8.70 et en
   8.71 (la seconde tirée par `@eslint-react/eslint-plugin`, #412).
 - **Taux de Mistral** (`MISTRAL_USD_TO_EUR`, `platform/ai/cost.ts`) : 0,85, lu sur la page Coûts de
   l'organisation le 2026-10-06. Le revérifier à chaque facture : un écart change chaque coût et
@@ -103,8 +81,8 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
   trace dans `JSFinalizationRegistry::takeDeadHoldingsValue`) : bug de Bun, oven-sh/bun#44161,
   ouvert, aucun correctif, la 1.4.2 est la dernière version. Il touchait environ trois passages
   sur quatre en local, aussi le pre-push. Les tests tournent donc un processus par fichier
-  (`apps/server/scripts/run-tests.ts`) : aucun contexte retiré, le chemin qui plante ne s'exécute
-  pas. Revenir à `bun test --isolate` dès qu'une release corrige #44161.
+  (`apps/server/scripts/run-tests.ts`). La refonte supprime ce lanceur avec les `mock.module`
+  (étape 2) : vérifier alors que `bun test` simple ne touche pas le bug.
 - **Override de `source-map-js`** (`package.json`, #398) : `postcss` et `@tailwindcss/node`
   figent la 1.2.1, touchée par GHSA-68fv-2mgg-jv7q (haute) ; l'override les force en `^1.2.2`.
   Le retirer quand les deux déclarent 1.2.2 ou plus. Même audit, dépendances de
@@ -162,6 +140,6 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
 | Relecture des 32 exercices : confiée à Claude le 2026-10-02 et outillée (32 citations retrouvées mot pour mot dans leur PDF officiel, 14 sources de réponse en ligne, 14 réponses recalculées par le test) ; un regard pédagogique humain sur un échantillon reste à prévoir avant de publier les mesures | Lot 1, jeu rejouable par un tiers ; lot 4 pour la publication | fait |
 | Projet Langfuse « tomai » en région UE (`https://cloud.langfuse.com`, offre Hobby) et ses clés dans `apps/server/.env`, vérifiées par l'API (HTTP 200) le 2026-10-02 | Lot 1, point 2 | fait |
 | Espace Mistral « ci » et sa clé `github-actions`, en secret GitHub `MISTRAL_API_KEY_CI` (2026-10-02). Sans paiement à l'usage, la dépense reste bornée par les 8,50 € inclus ; la valeur du secret se vérifie au premier passage en CI | Lot 1, point 6 | fait |
-| Ajouter `E2E (Playwright)` et `Script tests` aux checks requis du ruleset `Protect main` (Settings › Rules) : ils tournent depuis #412 mais ne bloquent pas un merge | Outillage | à faire |
-| Lundi 2026-10-12 : vérifier que Renovate a ouvert les mises à jour en attente du tableau de bord (#310), fenêtre élargie à tout le lundi par #412 ; sinon cocher « Create all awaiting schedule PRs at once » | Outillage | à faire |
+| Rendre requis le check agrégé `ci-ok` dans le ruleset `Protect main` (Settings › Rules), quand l'étape 3 de la refonte le crée ; puis rétablir la fusion automatique de Renovate (#419) | Outillage | après l'étape 3 |
+| Lundi 2026-10-12 : vérifier que Renovate a ouvert les mises à jour en attente du tableau de bord (#310), fenêtre élargie à tout le lundi par #412 ; sinon cocher « Create all awaiting schedule PRs at once ». Sans fusion automatique (#419), ses PR se mergent à la main | Outillage | à faire |
 | Mettre à jour les plugins Claude Code (`claude plugin marketplace update`, puis `claude plugin update <nom>`) | Outillage | à faire |
