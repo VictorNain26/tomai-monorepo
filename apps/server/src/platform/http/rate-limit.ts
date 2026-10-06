@@ -28,7 +28,7 @@ const DEFAULT_CONFIG: RateLimitConfig<Env> = {
 /**
  * Générateur de clé par défaut basé sur IP
  *
- * Production: En derrière un unique proxy de confiance (Koyeb), l'IP client réelle
+ * Production: derrière un unique proxy de confiance, l'IP client réelle
  * est l'entrée RIGHTMOST de X-Forwarded-For (ajoutée par le proxy).
  * Les entrées leftmost sont contrôlables par le client → non fiables en prod.
  *
@@ -46,7 +46,7 @@ export function defaultKeyGenerator(context: Context): string {
 
   const ip = isProduction() && forwardedFor
     ? // Production: take the RIGHTMOST IP from X-Forwarded-For
-      // (added by Koyeb proxy), not the leftmost (client-controllable)
+      // (added by the proxy), not the leftmost (client-controllable)
       forwardedFor.split(',').map((p) => p.trim()).at(-1) ?? 'unknown'
     : // Development or fallback: use cloudflare > x-real-ip > direct connection
       cfConnectingIp ?? realIp ?? connectionAddress(context) ?? 'unknown';

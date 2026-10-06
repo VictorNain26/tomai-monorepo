@@ -4,13 +4,6 @@
 # Dependencies
 **/node_modules/
 
-# Python
-**/.venv/
-**/__pycache__/
-**/.pytest_cache/
-**/.ruff_cache/
-**/.mypy_cache/
-
 # Build outputs
 **/dist/
 **/.next/

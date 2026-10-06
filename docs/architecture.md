@@ -72,7 +72,9 @@ Rangement physique, fixé à la refonte demandée le 2026-10-01 (une PR par modu
 - Données par TanStack Query, formulaires par react-hook-form et Zod.
 - **Pensé d'abord pour le téléphone** : chaque parcours se conçoit et se prouve à largeur
   de téléphone, le bureau s'en déduit.
-- Primitives `@repo/ui` (shadcn, sur Base UI au début du lot 3) et tokens `@repo/tokens`.
+- Primitives `@repo/ui` (shadcn sur Radix) et tokens `@repo/tokens`. Base UI écarté le 2026-10-06
+  (#407) : sur iOS, il ne verrouille pas le défilement derrière un panneau quand la barre de Safari
+  est repliée (`@base-ui/utils/useScrollLock.mjs`).
 - Le chat consomme le protocole de l'AI SDK (`useChat` de `@ai-sdk/react`), déjà
   celui du serveur.
 

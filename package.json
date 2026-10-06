@@ -18,7 +18,6 @@
     "build:web": "turbo run build --filter=web",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
-    "validate": "bun run typecheck && bun run lint",
     "test": "turbo run test",
     "test:server": "turbo run test --filter=tomai-server",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",

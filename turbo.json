@@ -52,19 +52,10 @@
     },
     "lint": {
       "dependsOn": ["^build:types"],
-      "inputs": [
-        "$TURBO_DEFAULT$",
-        "eslint.config.*"
-      ],
       "outputs": []
     },
     "typecheck": {
       "dependsOn": ["^typecheck", "^build:types"],
-      "inputs": [
-        "$TURBO_DEFAULT$",
-        "tsconfig.json",
-        "tsconfig.*.json"
-      ],
       "outputs": []
     },
     "clean": {
@@ -84,12 +75,7 @@
       "outputs": []
     },
     "test": {
-      "inputs": [
-        "$TURBO_DEFAULT$",
-        "**/*.test.ts"
-      ],
       "outputs": [],
-      "env": ["NODE_ENV", "CI"],
       "passThroughEnv": ["DATABASE_URL", "BETTER_AUTH_SECRET"]
     }
   }

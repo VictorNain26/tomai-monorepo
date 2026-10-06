@@ -7,35 +7,31 @@ bloquant levé).
 - Vision : `vision.md` (pour qui, promesse, preuves, prix).
 - Roadmap : `roadmap.md`.
 - Specs techniques : `architecture.md`, `agent.md`.
-- Études du 2026-10-01 et du 2026-10-02 (alignement sur les programmes, évaluation et
-  observabilité, lycée) : `etudes/`. Ce sont des instantanés datés, jamais mis à jour.
+- Études datées : `etudes/`. Ce sont des instantanés, jamais mis à jour.
 
 ## Où on en est
 
 - **Dernière mise à jour :** 2026-10-06.
-- **Lot en cours :** 2 — Agent qui ne cède pas, refondu sur sources (`roadmap.md`).
-  - Du lot 1 restent la baseline, réduite aux 38 conversations de l'échantillon
-    (`etudes/2026-10-04/refonte-agent.md`, « Mesure »), les concurrents et la CI.
-  - Le lot 0 est terminé : serveur sur Hono et outillage sur Bun (#343 à #347), refonte du
-    serveur en modules (#348 à #354), lint strict (#355) et TypeScript strict (#356).
-- **Prochaine action :** refonte de l'agent (lot 2), demandée par Victor le 2026-10-04 ;
-  étude `etudes/2026-10-04/refonte-agent.md`, ordre des PR dans `roadmap.md`. Point 3 terminé :
-  analyse du tour (#383), fiche d'exercice (#384), analyse de document réduite à une extraction (#385). Point 4 terminé (#386,
-  diagnostic contre la fiche, palier décidé par le code et contrat du tour). Point 5 terminé : contrôle
-  avant l'élève (#387), modération de sortie, fiches de révision et titre (#389). Point 6
-  terminé (#390) : détresse et modération d'entrée, réponse fixe approuvée par Victor le 2026-10-05.
-  Premier passage fait le 2026-10-05 : il a trouvé l'analyse du tour qui ratait les énoncés,
-  corrigée (#391). Appels du SDK Mistral retentés, modération comprise sur un appel bloqué (#392).
-  S4 repassé : aucune fuite sur 6. Point 7 terminé : appels annexes (#393), logs sans contenu
-  d'élève (#394), mémoire (#395). Nettoyage demandé par Victor le 2026-10-06, en trois PR :
-  mémoire entre séances (#396), colonnes et tables jamais lues (#397), restes hors vision et
-  migration de base unique (#399) : les trois faites. Point 8 terminé : chaque appel IA tracé
-  en micro-euros par le client (#400) ; quota au coût réel de la journée (#401), budgets provisoires
-  à fixer par Victor sur le coût mesuré au passage de fin ; fiches du chat réservées au Complet et
-  outil imposé par le code (#402). Prochaine : le passage de fin.
+- **Lots en cours :** 2 et 3 en parallèle (`roadmap.md`).
+  - Lot 0 terminé (Hono, Bun, refonte en modules, lint et TypeScript stricts, #343 à #356).
+  - Du lot 1 restent les concurrents, la CI d'évaluation et les traces de production.
+  - **Lot 2 :** les points 1 à 8 sont faits (#380 à #404). Le passage de fin est mesuré
+    (`etudes/2026-10-06/passage-de-fin.md`) : de 9 fuites à 2 sur les mêmes conversations,
+    détresse et indices en net progrès, 0,13 c par tour d'élève. Le critère zéro fuite n'est pas
+    atteint : 11 fuites sur 106, toutes sur cinq questions de connaissance (un fait, un mot, une
+    forme).
+  - **Lot 3 :** client web choisi (`etudes/2026-10-06/client-web.md`, #406), squelette
+    `apps/web` (#408), champs en erreur dans `VALIDATION_ERROR` (#405). `@repo/ui` reste sur
+    Radix : la bascule sur Base UI (#407) est fermée, car sur iOS Base UI ne verrouille pas le
+    défilement derrière un panneau quand la barre de Safari est repliée.
+- **Prochaine action :**
+  - lot 2 : une PR ciblée sur les questions de connaissance, mesurée sur les cinq exercices
+    concernés seulement ;
+  - Victor fixe les budgets du quota sur le coût mesuré ;
+  - lot 3 : Hono sert `apps/web` sur la même origine, PWA, puis comptes et consentement.
   - Une relecture humaine d'une partie des conversations lues par Claude reste due avant
     toute publication (lot 4).
-- **PR ouvertes :** aucune.
+- **PR ouvertes :** voir `gh pr list`.
 - **Landing en ligne gelée** jusqu'au lot 4 : seuls des correctifs d'honnêteté ou techniques y entrent.
   L'identité visuelle est rejetée et se refait au lot 4.
 
@@ -189,7 +185,6 @@ contraire.
   `advanced.ipAddress.trustedProxies` de better-auth derrière le proxy de l'hébergeur.
 
 - **Client web** (`etudes/2026-10-06/client-web.md`), à faire au point 1 :
-  - `@repo/ui` passe de Radix à Base UI, landing gelée comprise ;
   - `@repo/api` passe d'une URL absolue en `mode: 'cors'` à une base relative ;
   - `ai` côté serveur s'aligne sur la version qu'épingle `@ai-sdk/react` ;
   - Hono sert la SPA (fallback après `/api`, cache des assets, CSP) ;
@@ -228,8 +223,7 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
   ouvert, aucun correctif, la 1.4.2 est la dernière version. Il touchait environ trois passages
   sur quatre en local, aussi le pre-push. Les tests tournent donc un processus par fichier
   (`apps/server/scripts/run-tests.ts`) : aucun contexte retiré, le chemin qui plante ne s'exécute
-  pas. Revenir à `bun test --isolate` dès qu'une release corrige #44161 ; `test:watch` y est
-  resté.
+  pas. Revenir à `bun test --isolate` dès qu'une release corrige #44161.
 - **Override de `source-map-js`** (`package.json`, #398) : `postcss` et `@tailwindcss/node`
   figent la 1.2.1, touchée par GHSA-68fv-2mgg-jv7q (haute) ; l'override les force en `^1.2.2`.
   Le retirer quand les deux déclarent 1.2.2 ou plus. Même audit, dépendances de
@@ -607,3 +601,9 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
   prix en dollars × 1,1 (endpoint UE) × 0,85, vérifié au chiffre près sur la lecture vocale et la
   transcription. Le calcul convertissait à 0,92 et surestimait chaque coût d'environ 8 % ; les budgets
   provisoires, inchangés, laissent donc environ 8 % d'usage de plus.
+
+  Environnement de travail nettoyé (`chore/clean-environment`) : tout `.env*` ignoré sauf les
+  gabarits ; l'action Claude reçoit enfin modèle, tours et outils par `claude_args` ; Docker réduit
+  à postgres et à l'image de production (port 3000) ; scripts morts, clés de `bunfig.toml`,
+  alias et options TypeScript inutiles, smoke test vers un hébergement inexistant, détection
+  Supabase et mentions Koyeb supprimés.

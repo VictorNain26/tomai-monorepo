@@ -1,6 +1,6 @@
 # ============================================================
-# TomAI Backend - Dockerfile (2026)
-# Multi-stage: Development + Production + Koyeb
+# TomAI Backend - Dockerfile
+# Multi-stage: build + production
 # Runtime and package manager: Bun 1.4
 # Security: non-root, SHA-pinned base, healthchecks
 # ============================================================
@@ -52,42 +52,14 @@ ENV NODE_ENV=production
 WORKDIR /app/apps/server
 
 # Validate + Build (server entrypoint + migrate runner)
-# Both are bundled with --packages external; their externals must resolve against
-# the same node_modules that production stage gets (= this stage's, see below).
-RUN bun run typecheck:strict && \
+# bun build bundles the dependencies; what the bundles still load at runtime
+# resolves against this stage's node_modules, which the production stage copies.
+RUN bun run typecheck && \
     bun run lint && \
     bun run build && \
     test -f dist/index.js -a -f dist/migrate.js || (echo "ERREUR: dist/index.js ou dist/migrate.js manquant" && exit 1)
 
-# Stage 3: DEVELOPMENT
-FROM base AS development
-
-WORKDIR /app
-
-COPY package.json bun.lock bunfig.toml ./
-COPY apps/server/package.json ./apps/server/
-COPY packages/eslint-config/package.json ./packages/eslint-config/
-
-RUN --mount=type=cache,target=/root/.bun/install/cache \
-    bun install --frozen-lockfile --filter tomai-server
-
-COPY --chown=tomai:tomai apps/server/src/ ./apps/server/src/
-COPY --chown=tomai:tomai apps/server/drizzle/ ./apps/server/drizzle/
-COPY --chown=tomai:tomai apps/server/tsconfig*.json apps/server/drizzle.config*.ts apps/server/eslint.config.mjs ./apps/server/
-COPY --chown=tomai:tomai tsconfig.base.json ./
-
-WORKDIR /app/apps/server
-ENV NODE_ENV=development
-ENV DOCKER_CONTAINER=true
-USER tomai
-EXPOSE 3000
-
-HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-    CMD curl -sf http://localhost:3000/health || exit 1
-
-CMD ["bun", "--watch", "src/index.ts"]
-
-# Stage 4: PRODUCTION
+# Stage 3: PRODUCTION
 FROM base AS production
 
 WORKDIR /app
@@ -122,10 +94,10 @@ RUN bun --eval "await import('./apps/server/dist/migrate.js'); console.log('smok
 WORKDIR /app/apps/server
 ENV NODE_ENV=production
 USER tomai
-EXPOSE ${PORT:-8000}
+EXPOSE 3000
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD curl -sf http://localhost:${PORT:-8000}/health || exit 1
+    CMD curl -sf http://localhost:${PORT:-3000}/health || exit 1
 
 ENTRYPOINT ["./docker-entrypoint.sh"]
 CMD ["bun", "--smol", "dist/index.js"]
