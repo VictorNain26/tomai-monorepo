@@ -599,3 +599,7 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
   l'outil au premier pas (`toolChoice`), au lieu de laisser le modèle refuser des fiches demandées et
   confirmées (S4, 2026-10-05). Les compteurs de paquets (5 par jour, 50 par mois) partent : le budget
   en euros borne déjà le coût des cartes.
+
+  Coût des appels au taux de Mistral (#403) : la page Coûts de l'organisation facture en euros, au
+  prix en dollars × 1,1 (endpoint UE) × 0,85, vérifié au chiffre près sur la lecture vocale et la
+  transcription. Le calcul convertissait à 0,92 et surestimait chaque coût d'environ 8 %.
