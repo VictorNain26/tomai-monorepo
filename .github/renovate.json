@@ -87,7 +87,7 @@
     },
     {
       "description": "ESLint toolchain.",
-      "matchPackageNames": ["@typescript-eslint/**", "typescript-eslint", "eslint", "@eslint/**"],
+      "matchPackageNames": ["@typescript-eslint/**", "typescript-eslint", "eslint", "@eslint/**", "@eslint-react/**", "eslint-plugin-react-hooks"],
       "groupName": "eslint"
     },
     { "description": "OpenTelemetry packages move in lockstep.", "matchPackageNames": ["@opentelemetry/**"], "groupName": "opentelemetry" },

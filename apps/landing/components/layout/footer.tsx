@@ -2,6 +2,9 @@ import Link from 'next/link';
 import { BRAND_NAME } from '@/lib/brand';
 import { Logo } from '../atoms/logo';
 
+// The page is prerendered: the year is the build's, as it was when read during render.
+const YEAR = new Date().getFullYear();
+
 const LINK_GROUPS = [
   {
     title: 'Produit',
@@ -66,7 +69,7 @@ export function Footer() {
         </div>
 
         <p className="mt-12 text-sm text-muted-foreground">
-          © {new Date().getFullYear()} {BRAND_NAME}. Tous droits réservés.
+          © {YEAR} {BRAND_NAME}. Tous droits réservés.
         </p>
       </div>
     </footer>
