@@ -8,7 +8,9 @@
  * - Correlation with request context
  */
 
+import type { ValidationTargets } from 'hono';
 import type { ContentfulStatusCode } from 'hono/utils/http-status';
+import type { z } from 'zod';
 
 type ErrorCode =
   // Auth (401, 403)
@@ -75,17 +77,30 @@ const USER_MESSAGES: Record<ErrorCode, string> = {
   INTERNAL_ERROR: 'Erreur interne. Réessaie ou contacte le support.',
 };
 
+/** A field the request got wrong. */
+export interface FieldError {
+  /** The part of the request that holds it: `json` for a body, `param`, `query`… */
+  location: keyof ValidationTargets;
+  /** Dotted path within that part; empty for a rule on the whole of it. */
+  path: string;
+  code: z.core.$ZodIssue['code'];
+  /** In French: the schema's own message, or Zod's French locale. Never the value received. */
+  message: string;
+}
+
 export class AppError extends Error {
   public readonly code: ErrorCode;
   public readonly statusCode: ContentfulStatusCode;
   public readonly userMessage: string;
+  public readonly fields: FieldError[] | undefined;
 
-  constructor(code: ErrorCode, internalMessage?: string) {
+  constructor(code: ErrorCode, internalMessage?: string, fields?: FieldError[]) {
     super(internalMessage ?? USER_MESSAGES[code]);
     this.name = 'AppError';
     this.code = code;
     this.statusCode = STATUS_MAP[code];
     this.userMessage = USER_MESSAGES[code];
+    this.fields = fields;
   }
 }
 
@@ -94,6 +109,7 @@ export interface ErrorResponse {
   error: {
     code: ErrorCode;
     message: string;
+    fields?: FieldError[];
   };
   requestId?: string;
 }
@@ -104,6 +120,7 @@ export function toErrorResponse(error: AppError, requestId?: string): ErrorRespo
     error: {
       code: error.code,
       message: error.userMessage,
+      ...(error.fields && { fields: error.fields }),
     },
     ...(requestId && { requestId }),
   };

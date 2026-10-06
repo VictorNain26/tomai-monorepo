@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 import type { ClientResponse } from 'hono/client';
 import { unwrap, type ApiError } from '../src/client';
+import type { FieldError } from '../src/types';
 
 function errorResponse(status: number, body: string): ClientResponse<unknown> {
   return new Response(body, { status, headers: { 'content-type': 'application/json' } }) as unknown as ClientResponse<unknown>;
@@ -20,6 +21,20 @@ describe('unwrap error handling', () => {
     expect(err.status).toBe(400);
     expect(err.message).toBe('Champ invalide');
     expect(err.code).toBe('VALIDATION_ERROR');
+    expect('fields' in err).toBe(false);
+  });
+
+  it('reads the fields of a VALIDATION_ERROR', async () => {
+    const fields: FieldError[] = [{ location: 'json', path: 'schoolLevel', code: 'invalid_value', message: 'Niveau scolaire invalide' }];
+    const err = await caught(errorResponse(400, JSON.stringify({ error: { code: 'VALIDATION_ERROR', message: 'Champ invalide', fields } })));
+
+    expect(err.fields).toEqual(fields);
+  });
+
+  it('ignores fields that are not a list', async () => {
+    const err = await caught(errorResponse(400, JSON.stringify({ error: { code: 'VALIDATION_ERROR', message: 'Champ invalide', fields: null } })));
+
+    expect('fields' in err).toBe(false);
   });
 
   it('falls back to the legacy { message, suggestions } body', async () => {

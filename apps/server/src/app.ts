@@ -98,5 +98,6 @@ export type AppType = typeof app;
 
 // UI message wire types for chat clients (AI SDK UIMessage) - type-only
 export type { TomChatMessage, TomDataParts, DeckCreatedData } from './modules/tutor/index.js';
+export type { FieldError } from './platform/http/errors.js';
 
 export { initializeServices } from './platform/lifecycle/server-lifecycle.js';
