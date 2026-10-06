@@ -78,12 +78,14 @@ mock.module('../modules/tutor/messages.repository', () => ({
 let mistralResponse: string | Error = 'Mocked summary text';
 let generateTextCalls = 0;
 let sentToModel = '';
+let sentOwner: unknown;
 
 // Mock complet du wrapper Mistral pour isolation Bun (autres tests peuvent
 // partager le même module-mock cache).
 mock.module('../platform/ai/mistral-client', () => ({
-  generateText: mock(async (opts: { messages: { content: string }[] }) => {
+  generateText: mock(async (opts: { messages: { content: string }[]; owner: unknown }) => {
     generateTextCalls += 1;
+    sentOwner = opts.owner;
     sentToModel = opts.messages.map((m) => m.content).join('\n');
     if (mistralResponse instanceof Error) throw mistralResponse;
     return mistralResponse;
@@ -151,6 +153,7 @@ describe('Summarization Service', () => {
       expect(sessionUpdateCalled).toBe(true);
       expect(sessionUpdateArgs['conversationSummary']).toBe('Mocked summary text');
       expect(sessionUpdateArgs['summaryUpToMessageId']).toBeDefined();
+      expect(sentOwner).toEqual({ userId: 'user-001', sessionId: 'session-001' });
     });
 
     it('sends the previous summary and only the messages it does not cover, past the 10 kept verbatim', async () => {

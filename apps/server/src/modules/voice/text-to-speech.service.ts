@@ -11,6 +11,7 @@ import { logger } from '../../platform/observability/logger.js';
 import { normalizeForSpeech } from './speech-normalize.js';
 import type { EducationLevelType } from '../../types/index.js';
 import { getVoxtralTTSService, isVoxtralTTSConfigured } from './voxtral-tts.service.js';
+import type { CostOwner } from '../../platform/ai/cost.js';
 
 interface TTSResult {
   success: boolean;
@@ -33,7 +34,7 @@ class TextToSpeechService {
     }
   }
 
-  async synthesize(text: string, options: TTSOptions = {}): Promise<TTSResult> {
+  async synthesize(text: string, owner: CostOwner, options: TTSOptions = {}): Promise<TTSResult> {
     const startTime = Date.now();
 
     if (!isVoxtralTTSConfigured()) {
@@ -45,7 +46,7 @@ class TextToSpeechService {
 
     try {
       const normalizedText = normalizeForSpeech(text);
-      const result = await getVoxtralTTSService().synthesize(normalizedText, {
+      const result = await getVoxtralTTSService().synthesize(normalizedText, owner, {
         schoolLevel: options.schoolLevel,
       });
 

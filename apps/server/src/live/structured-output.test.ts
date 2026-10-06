@@ -14,6 +14,7 @@ describe('Mistral structured outputs accept our schemas, strict except cards (re
 
   it('card generation (non-strict, as the card generator calls it)', async () => {
     const { object, usage } = await generateStructured({
+      owner: null,
       messages: [{ role: 'user', content: 'Génère 2 cartes de révision sur le théorème de Pythagore, niveau 4e.' }],
       schema: CardGenerationSchema,
       schemaName: 'card_generation',

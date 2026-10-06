@@ -5,9 +5,7 @@
  */
 
 import { generateStructured } from '../../platform/ai/mistral-client.js';
-import { env } from '../../platform/config/env.js';
 import { logger } from '../../platform/observability/logger.js';
-import { costTrackingService } from '../billing/index.js';
 import type { EducationLevelType } from '../../types/index.js';
 import type { SubjectFamily } from '../../lib/subjects.js';
 import { ExerciseSheetSchema, keepKnownNotions, notionsFor, schoolYearOf, sheetMessages, vote, type ExerciseSheet } from './exercise-sheet.js';
@@ -52,6 +50,7 @@ export async function prepareExerciseSheet(params: PrepareSheetParams): Promise<
 
   const draws = await Promise.allSettled(Array.from({ length: DRAWS }, () => generateStructured({
     functionId: 'exercise-sheet',
+    owner: { userId: params.userId, sessionId: params.sessionId },
     messages,
     schema: ExerciseSheetSchema,
     schemaName: 'exercise_sheet',
@@ -67,16 +66,6 @@ export async function prepareExerciseSheet(params: PrepareSheetParams): Promise<
     }
   }
   const results = draws.flatMap((draw) => (draw.status === 'fulfilled' ? [draw.value] : []));
-  // Bookkeeping stays off the turn's critical path; each write logs its own failure.
-  void Promise.all(results.map(({ usage }) => costTrackingService.record({
-    userId: params.userId,
-    sessionId: params.sessionId,
-    aiModel: env.MISTRAL_MODEL,
-    operation: 'exercise-sheet',
-    tokensInput: usage.inputTokens,
-    tokensOutput: usage.outputTokens,
-    cachedTokens: usage.cachedInputTokens,
-  })));
   const kept = results.map(({ object }) => keepKnownNotions(object, notions));
   const droppedNotions = kept.reduce((sum, { dropped }) => sum + dropped, 0);
   const outputTokens = results.reduce((sum, { usage }) => sum + usage.outputTokens, 0);

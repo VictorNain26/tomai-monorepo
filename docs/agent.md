@@ -442,5 +442,7 @@ succès). Coûts mesurés : `etudes/2026-10-01/couts.md` ; défauts du code 
 - Le résumé de conversation est incrémental : il ne se relance qu'après un nombre fixe de
   nouveaux messages, comptés hors de la fenêtre gardée en clair.
 - Chaque appel IA (chat, analyse du tour, titre, résumé, lecture d'image, cartes, STT, TTS)
-  est tracé dans `cost_tracking`, à une précision inférieure au centime.
+  est tracé dans `cost_tracking`, à une précision inférieure au centime. Fait (#400) : le
+  client IA le trace par construction, en micro-euros (`platform/ai/cost.ts`) ; la modération,
+  gratuite, ne l'est pas.
 - Le quota gratuit se fixe sur le coût mesuré, une fois ces corrections faites.

@@ -69,10 +69,10 @@ mock.module('../modules/tutor/turn-analysis.service', () => ({
   turnInstruction,
 }));
 
-const record = mock(async () => {});
+const record = mock(async (_owner: unknown, _call: unknown) => {});
+mock.module('../platform/ai/cost', () => ({ recordAiCost: record }));
 const incrementTokenUsage = mock(async () => {});
 mock.module('../modules/billing/index', () => ({
-  costTrackingService: { record },
   incrementTokenUsage,
 }));
 
@@ -325,7 +325,10 @@ describe('ChatOrchestrationService.finishTurn', () => {
     });
 
     expect(incrementTokenUsage).toHaveBeenCalledWith('user-001', 910);
-    expect(record).toHaveBeenCalledTimes(1);
+    expect(record.mock.calls).toEqual([[
+      { userId: 'user-001', sessionId: 'session-001' },
+      { model: 'mistral-small-2603', operation: 'chat', inputTokens: 10, cachedInputTokens: 0, outputTokens: 900 },
+    ]]);
     expect(saveMessage).not.toHaveBeenCalled();
     expect(summarizeIfNeeded).not.toHaveBeenCalled();
   });

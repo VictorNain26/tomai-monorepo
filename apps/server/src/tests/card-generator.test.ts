@@ -14,7 +14,7 @@ const contextsBesideErr = () => mockLogger.error.mock.calls.map((call: unknown[]
 const originalFetch = globalThis.fetch;
 afterEach(() => { globalThis.fetch = originalFetch; });
 
-const params = { topic: 'Pythagore', subject: 'mathematiques', level: 'quatrieme', cardCount: 1 } as const;
+const params = { topic: 'Pythagore', subject: 'mathematiques', level: 'quatrieme', cardCount: 1, owner: null } as const;
 
 function completion(content: string) {
   return {

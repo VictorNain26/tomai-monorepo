@@ -7,6 +7,7 @@
 
 import { z } from 'zod';
 import { generateStructured } from '../../platform/ai/mistral-client.js';
+import type { CostOwner } from '../../platform/ai/cost.js';
 import { logger } from '../../platform/observability/logger.js';
 import { stripPromptTags } from './mistral-helpers.js';
 import { SUBJECT_FAMILIES } from '../../lib/subjects.js';
@@ -58,12 +59,13 @@ const clip = (text: string) =>
  * Analyses the student's message: the statement of the exercise in progress tells a new exercise
  * from the current one restated, the tutor's last message what the student agrees to.
  */
-export async function analyseTurn(studentText: string, lastTutorText: string | null, currentStatement: string | null): Promise<TurnAnalysis> {
+export async function analyseTurn(studentText: string, lastTutorText: string | null, currentStatement: string | null, owner: CostOwner): Promise<TurnAnalysis> {
   if (studentText.trim() === '') return NOTHING;
   const startTime = Date.now();
   try {
     const { object } = await generateStructured({
       functionId: 'turn-analysis',
+      owner,
       messages: [
         { role: 'system', content: INSTRUCTIONS },
         {

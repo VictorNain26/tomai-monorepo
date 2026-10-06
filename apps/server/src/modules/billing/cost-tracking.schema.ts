@@ -16,7 +16,8 @@ export const costTracking = pgTable('cost_tracking', {
   operation: varchar('operation', { length: 50 }).notNull().default('chat'),
   tokensInput: integer('tokens_input').notNull().default(0),
   tokensOutput: integer('tokens_output').notNull().default(0),
-  costCents: integer('cost_cents').notNull().default(0),
+  /** Micro-euros (1 µ€ = 0.0001 c): a text turn costs a few hundred, rounded to 0 in cents. */
+  costMicroEur: integer('cost_micro_eur').notNull().default(0),
 
   // Métadonnées de facturation
   billingMetadata: jsonb('billing_metadata').default(sql`'{}'::jsonb`),

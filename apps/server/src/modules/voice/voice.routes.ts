@@ -44,7 +44,7 @@ export const voiceRoutes = new Hono<AppEnv>()
           schoolLevel,
         };
 
-        const result = await textToSpeechService.synthesize(text, ttsOptions);
+        const result = await textToSpeechService.synthesize(text, { userId: user.id }, ttsOptions);
 
         if (!result.success) {
           logger.error('TTS synthesis failed', {

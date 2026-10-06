@@ -22,7 +22,9 @@ import { detectDistress } from './distress.js';
 import { closedForDistress } from './distress.service.js';
 import { moderateStudentTurn, type InputModeration } from '../../platform/ai/moderation.js';
 import { exerciseSheetsRepository } from './exercise-sheets.repository.js';
-import { costTrackingService, incrementTokenUsage } from '../billing/index.js';
+import { incrementTokenUsage } from '../billing/index.js';
+import { recordAiCost } from '../../platform/ai/cost.js';
+import { structuredUsage } from '../../platform/ai/usage.js';
 import { logger } from '../../platform/observability/logger.js';
 import { replayable, type HistoryTurn, type ResponseMessage } from './chat-message-assembler.js';
 import { messagesRepository } from './messages.repository.js';
@@ -128,7 +130,7 @@ class ChatOrchestrationService {
     // analysis that fails gives an empty analysis, logged at high severity in the service.
     const [fileContext, turnAnalysis, inputModeration] = await Promise.all([
       fileContextService.prepareFileContext({ fileIds: request.fileIds, userId: request.userId, sessionId }),
-      analyseTurn(request.content, lastTutorText, current?.sheet?.statement ?? null),
+      analyseTurn(request.content, lastTutorText, current?.sheet?.statement ?? null, { userId: request.userId, sessionId }),
       moderateInput(lastTutorText, request.content),
     ]);
 
@@ -254,17 +256,10 @@ class ChatOrchestrationService {
 
     // A turn that reasoned without writing anything was billed all the same.
     if (tokensUsed > 0) {
-      await incrementTokenUsage(userId, tokensUsed);
-
-      await costTrackingService.record({
-        userId,
-        sessionId,
-        aiModel: model,
-        operation: 'chat',
-        tokensInput: usage?.inputTokens ?? 0,
-        tokensOutput: usage?.outputTokens ?? 0,
-        cachedTokens: usage?.inputTokenDetails.cacheReadTokens ?? 0,
-      });
+      await Promise.all([
+        incrementTokenUsage(userId, tokensUsed),
+        recordAiCost({ userId, sessionId }, { model, operation: 'chat', ...structuredUsage(usage) }),
+      ]);
     }
 
     if (fullContent.length === 0) {

@@ -38,7 +38,7 @@ jamais les fichiers internes d'un autre. Découpage cible, tiré du code actuel 
 | `tutor` | Agent IA : session de chat, classeur de séance, outils, résumé de séance, garde-fous, statistiques d'étude | `modules/tutor/` |
 | `learning` | Decks, cartes, révisions FSRS, génération de cartes | `modules/learning/` |
 | `documents` | Upload, liste des fichiers, extraction, analyse, stockage S3, fichiers prêts pour un tour de chat | `modules/documents/` |
-| `billing` | Formules Gratuit et Complet, quotas de tokens et de fiches, suivi des coûts IA, abonnement web. Module feuille : il n'importe aucun autre module | `modules/billing/` |
+| `billing` | Formules Gratuit et Complet, quotas de tokens et de fiches, table des coûts IA (`cost_tracking`, écrite par `platform/ai/cost.ts`), abonnement web. Module feuille : il n'importe aucun autre module | `modules/billing/` |
 | `voice` | Transcription et synthèse vocale (Voxtral) | `modules/voice/` |
 | `platform` | Config, DB, observabilité, erreurs | `platform/` (config, migrateur, auth, http, observabilité, IA, cycle de vie) |
 
@@ -47,7 +47,8 @@ Rangement physique, fixé à la refonte demandée le 2026-10-01 (une PR par modu
 - `apps/server/src/platform/` : ce que tous les modules utilisent sans règle métier, et qui
   n'importe aucun module — `config/`, `db/` (migrateur), `auth/` (instance better-auth,
   lecture de session), `http/` (contexte Hono, gardes, validation, erreurs, rate limit),
-  `observability/` (logger, OpenTelemetry, Sentry), `ai/` (client Mistral), `lifecycle/`
+  `observability/` (logger, OpenTelemetry, Sentry), `ai/` (client Mistral et coût de chaque
+  appel, écrit dans la table de `billing` par `db/schema`), `lifecycle/`
   (vérification au démarrage).
 - `apps/server/src/db/` : point de composition des données — le client Drizzle et le
   schéma qui réunit les tables de tous les modules (les requêtes relationnelles de Drizzle

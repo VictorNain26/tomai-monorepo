@@ -11,6 +11,10 @@ mock.module('../platform/config/env', () => ({
   },
 }));
 
+const recordAiCost = mock(async (_owner: unknown, _call: unknown) => {});
+mock.module('../platform/ai/cost', () => ({ recordAiCost }));
+const owner = { userId: 'u1' };
+
 const { getVoxtralTTSService } = await import('../modules/voice/voxtral-tts.service');
 
 describe('VoxtralTTSService', () => {
@@ -30,12 +34,28 @@ describe('VoxtralTTSService', () => {
       });
     }) as unknown as typeof fetch);
 
-    const result = await getVoxtralTTSService().synthesize('Bonjour');
+    const result = await getVoxtralTTSService().synthesize('Bonjour', owner);
 
     expect(result.success).toBe(true);
     expect(request?.url).toBe('https://api.eu.mistral.ai/v1/audio/speech');
     const body = (await request?.json()) as { model: string };
     expect(body.model).toBe('voxtral-mini-tts-2603');
+  });
+
+  it('bills the characters of the text read to the owner, and nothing for a failed call', async () => {
+    recordAiCost.mockClear();
+    fetchSpy = spyOn(globalThis, 'fetch').mockResolvedValueOnce(new Response(JSON.stringify({ audio_data: 'AAAA' }), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    }));
+    // Counted as graphemes: the emoji (two UTF-16 units) and the decomposed « é » (two code points) are one each.
+    await getVoxtralTTSService().synthesize('Bonjour 🙂 e\u0301', owner);
+    expect(recordAiCost.mock.calls).toEqual([[owner, { model: 'voxtral-mini-tts-2603', operation: 'text-to-speech', characters: 11 }]]);
+
+    fetchSpy.mockRestore();
+    fetchSpy = spyOn(globalThis, 'fetch').mockResolvedValueOnce(new Response('{"detail":"Internal error"}', { status: 500 }));
+    await getVoxtralTTSService().synthesize('Bonjour', owner);
+    expect(recordAiCost).toHaveBeenCalledTimes(1);
   });
 
   it('sends the chosen voice as voice_id and returns the base64 audio', async () => {
@@ -48,7 +68,7 @@ describe('VoxtralTTSService', () => {
       });
     }) as unknown as typeof fetch);
 
-    const result = await getVoxtralTTSService().synthesize('Bonjour', { voiceId: 'fr_marie_neutral' });
+    const result = await getVoxtralTTSService().synthesize('Bonjour', owner, { voiceId: 'fr_marie_neutral' });
 
     expect(body['voice_id']).toBe('fr_marie_neutral');
     expect(body['voice']).toBeUndefined();
@@ -65,7 +85,7 @@ describe('VoxtralTTSService', () => {
       });
     }) as unknown as typeof fetch);
 
-    await getVoxtralTTSService().synthesize('Bonjour');
+    await getVoxtralTTSService().synthesize('Bonjour', owner);
 
     expect(body['voice_id']).toBe('fr_marie_neutral');
     expect('language' in body).toBe(false);
@@ -79,7 +99,7 @@ describe('VoxtralTTSService', () => {
       }),
     );
 
-    const result = await getVoxtralTTSService().synthesize('Bonjour');
+    const result = await getVoxtralTTSService().synthesize('Bonjour', owner);
 
     expect(result.success).toBe(false);
     expect(result.audioData).toBeUndefined();
@@ -93,7 +113,7 @@ describe('VoxtralTTSService', () => {
       }),
     );
 
-    const result = await getVoxtralTTSService().synthesize('Bonjour');
+    const result = await getVoxtralTTSService().synthesize('Bonjour', owner);
 
     expect(result.error).toBe('Mistral TTS API error: 422');
   });
@@ -106,7 +126,7 @@ describe('VoxtralTTSService', () => {
       );
     }) as unknown as typeof fetch);
 
-    const result = await getVoxtralTTSService().synthesize('Bonjour');
+    const result = await getVoxtralTTSService().synthesize('Bonjour', owner);
 
     expect(result.success).toBe(false);
     expect(captured?.aborted).toBe(true);

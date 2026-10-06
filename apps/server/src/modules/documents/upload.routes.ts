@@ -172,7 +172,7 @@ export const uploadRoutes = new Hono<AppEnv>()
         try {
           const fileContent = await storage.getFileContent(fileRecord.storageKey);
           if (fileContent) {
-            const transcriptionResult = await getVoxtralTranscribeService().transcribe(fileContent.content, fileContent.contentType);
+            const transcriptionResult = await getVoxtralTranscribeService().transcribe(fileContent.content, fileContent.contentType, { userId: user.id });
 
             if (transcriptionResult.success && transcriptionResult.transcription) {
               transcription = transcriptionResult.transcription;

@@ -14,8 +14,9 @@ mock.module('../modules/billing/index', () => ({
 }));
 
 let cards: { cardType: string; content: Record<string, unknown> }[] = [];
+const generateCards = mock(async (_params: { owner: unknown }) => ({ cards, count: cards.length, tokensUsed: 10, provider: 'Mistral' }));
 mock.module('../modules/learning/card-generator.service', () => ({
-  generateCards: mock(async () => ({ cards, count: cards.length, tokensUsed: 10, provider: 'Mistral' })),
+  generateCards,
   isGenerationError: (result: object) => 'success' in result,
 }));
 
@@ -78,6 +79,7 @@ describe('POST /generate — the cards are checked before they are stored', () =
     const res = await generate();
     expect(res.status).toBe(200);
     expect(stored[0]).toEqual([trueFalse, flashcard]);
+    expect(generateCards.mock.calls.at(-1)?.[0].owner).toEqual({ userId: 'u1' });
   });
 
   it('stores only the cards moderation lets through, and none with a prompt tag', async () => {

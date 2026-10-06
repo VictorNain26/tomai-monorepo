@@ -35,20 +35,18 @@ const getFileContent = mock(async (_key: string): Promise<{ content: Buffer; con
 mock.module('../modules/documents/storage', () => ({ getFileContent }));
 
 const received: string[] = [];
-const read = (text: string): ExtractionResult => ({ success: true, text, metadata: { wordCount: 4, extractionMethod: 'mistral-vision', extractionTimeMs: 1, usage: { inputTokens: 900, cachedInputTokens: 0, outputTokens: 40 } } });
+const extractText = mock(async (buffer: ArrayBuffer, _mimeType: string, _owner: unknown) => {
+  received.push(Buffer.from(buffer).toString());
+  return extraction;
+});
+const read = (text: string): ExtractionResult => ({ success: true, text, metadata: { wordCount: 4, extractionMethod: 'mistral-vision', extractionTimeMs: 1 } });
 let extraction: ExtractionResult = read('Résous 3x + 5 = 20.');
 mock.module('../modules/documents/document-extraction.service', () => ({
   documentExtractionService: {
-    extractText: mock(async (buffer: ArrayBuffer) => {
-      received.push(Buffer.from(buffer).toString());
-      return extraction;
-    }),
+    extractText,
   },
 }));
 
-const record = mock(async (_input: unknown) => {});
-const actualBilling = await import('../modules/billing/index');
-mock.module('../modules/billing/index', () => ({ ...actualBilling, costTrackingService: { record } }));
 
 const { fileContextService, UNREADABLE } = await import('../modules/documents/file-context.service');
 
@@ -64,13 +62,13 @@ beforeEach(() => {
   extraction = read('Résous 3x + 5 = 20.');
   mergeEducationalContext.mockClear();
   getFileContent.mockClear();
-  record.mockClear();
+  extractText.mockClear();
   mockLogger.warn.mockClear();
   mockLogger.error.mockClear();
 });
 
 describe('fileContextService.prepareFileContext', () => {
-  it("reads a turn's file once, from its own bytes, keeps the text on the record and counts the vision call", async () => {
+  it("reads a turn's file once, from its own bytes, keeps the text on the record and bills the reading to the student", async () => {
     const { files, fileIds, attachedFileInfos } = await fileContextService.prepareFileContext({ fileIds: ['f-photo'], ...owner });
 
     expect(files).toEqual([{ fileId: 'f-photo', fileName: 'exo.png', text: 'Résous 3x + 5 = 20.' }]);
@@ -78,7 +76,7 @@ describe('fileContextService.prepareFileContext', () => {
     expect(attachedFileInfos).toEqual([{ fileName: 'exo.png', fileId: 'f-photo', mimeType: 'image/png', fileSizeBytes: 5 }]);
     expect(received).toEqual(['IMAGE']);
     expect(mergeEducationalContext).toHaveBeenCalledWith('f-photo', { extractedText: 'Résous 3x + 5 = 20.', extractionMethod: 'mistral-vision', wordCount: 4 });
-    expect(record.mock.calls[0]?.[0]).toMatchObject({ operation: 'document-extraction', tokensInput: 900, tokensOutput: 40, userId: 'u1', sessionId: 's1' });
+    expect(extractText.mock.calls[0]?.[2]).toEqual(owner);
   });
 
   it("never reads another user's file nor an unfinished upload, and leaves them out of the files to attach", async () => {
@@ -104,15 +102,15 @@ describe('fileContextService.prepareFileContext', () => {
 
     expect((await fileContextService.prepareFileContext({ fileIds: ['f-photo'], ...owner })).files[0]?.text).toBe('Déjà lu');
     expect(getFileContent).not.toHaveBeenCalled();
-    expect(record).not.toHaveBeenCalled();
+    expect(extractText).not.toHaveBeenCalled();
   });
 
   it('marks a file that cannot be read, keeps the failure and its cost, and does not try again', async () => {
-    extraction = { success: false, text: '', metadata: { wordCount: 0, extractionMethod: 'mistral-vision', extractionTimeMs: 1, usage: { inputTokens: 900, cachedInputTokens: 0, outputTokens: 0 } }, error: 'timeout' };
+    extraction = { success: false, text: '', metadata: { wordCount: 0, extractionMethod: 'mistral-vision', extractionTimeMs: 1 }, error: 'timeout' };
 
     expect((await fileContextService.prepareFileContext({ fileIds: ['f-photo'], ...owner })).files).toEqual([{ fileId: 'f-photo', fileName: 'exo.png', text: UNREADABLE }]);
     expect(mergeEducationalContext).toHaveBeenCalledWith('f-photo', { extractionFailed: true });
-    expect(record).toHaveBeenCalledTimes(1);
+    expect(extractText).toHaveBeenCalledTimes(1);
 
     rows = [{ ...photo, educationalContext: { extractionFailed: true } }];
     expect((await fileContextService.prepareFileContext({ fileIds: ['f-photo'], ...owner })).files[0]?.text).toBe(UNREADABLE);

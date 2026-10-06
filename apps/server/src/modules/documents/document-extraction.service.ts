@@ -7,7 +7,7 @@ import { extractText, getDocumentProxy } from 'unpdf';
 import mammoth from 'mammoth';
 import { logger } from '../../platform/observability/logger.js';
 import { readImageWithMistralVision } from './mistral-vision.js';
-import type { StructuredUsage } from '../../platform/ai/usage.js';
+import type { CostOwner } from '../../platform/ai/cost.js';
 
 export interface ExtractionResult {
   success: boolean;
@@ -17,8 +17,6 @@ export interface ExtractionResult {
     wordCount: number;
     extractionMethod: 'unpdf' | 'mammoth' | 'text' | 'mistral-vision';
     extractionTimeMs: number;
-    /** Tokens of the model call, for an image. */
-    usage?: StructuredUsage;
   };
   error?: string | undefined;
 }
@@ -33,6 +31,7 @@ class DocumentExtractionService {
   async extractText(
     buffer: ArrayBuffer,
     mimeType: string,
+    owner: CostOwner,
   ): Promise<ExtractionResult> {
     const startTime = Date.now();
     const cleanMimeType = mimeType.split(';')[0]?.trim() ?? '';
@@ -66,9 +65,8 @@ class DocumentExtractionService {
 
       // Images - Mistral Vision OCR/description
       if (cleanMimeType.startsWith('image/')) {
-        const { text, usage, error } = await readImageWithMistralVision(buffer, cleanMimeType);
-        const result = this.createResult(text !== '', text, 'mistral-vision', startTime, text === '' ? error ?? "Aucun contenu lu dans l'image" : undefined);
-        return usage ? { ...result, metadata: { ...result.metadata, usage } } : result;
+        const { text, error } = await readImageWithMistralVision(buffer, cleanMimeType, owner);
+        return this.createResult(text !== '', text, 'mistral-vision', startTime, text === '' ? error ?? "Aucun contenu lu dans l'image" : undefined);
       }
 
       // Type non supporté

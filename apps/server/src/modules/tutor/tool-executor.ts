@@ -108,6 +108,7 @@ async function executeGenerateFlashcards(
     subject,
     level: context.schoolLevel,
     cardCount,
+    owner: { userId: context.userId, sessionId: context.sessionId },
   });
 
   if ('success' in result) {

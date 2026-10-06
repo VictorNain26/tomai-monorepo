@@ -29,11 +29,8 @@ bloquant levé).
   S4 repassé : aucune fuite sur 6. Point 7 terminé : appels annexes (#393), logs sans contenu
   d'élève (#394), mémoire (#395). Nettoyage demandé par Victor le 2026-10-06, en trois PR :
   mémoire entre séances (#396), colonnes et tables jamais lues (#397), restes hors vision et
-  migration de base unique (#399) : les trois faites. Prochaine : le point 8, quotas et coûts,
-  et le passage de fin.
-  - Point 8 en pause sur la branche `feat/cost-tracking-every-call` (plan commité, travail en
-    cours dans `git stash` de cette branche) : chaque appel IA tracé en micro-euros, tarifs
-    vérifiés le 2026-10-06 sur les pages Mistral. À reprendre sans les embeddings, supprimés.
+  migration de base unique (#399) : les trois faites. Point 8 commencé : chaque appel IA tracé
+  en micro-euros par le client (#400). Prochaine : le quota au coût réel, puis le passage de fin.
   - Décidé le 2026-10-06, sur délégation de Victor, à porter par les PR du point 8 : le quota
     compte le coût réel (cache à 10 %, lecture vocale comprise) ; l'outil de fiches est imposé
     par le code quand l'analyse du tour relève une demande ou un accord. Plan d'abord dans `docs/plans/`.
@@ -165,11 +162,7 @@ contraire.
     fiches au Complet ;
   - le quota compte `usage.totalTokens` (`ChatOrchestrationService.finishTurn`) : les tokens
     en cache au prix plein alors qu'ils coûtent 10 %, raisonnement compris ; le préfixe fixe
-    consomme 63 % de la fenêtre gratuite ;
-  - analyse du tour, titre, résumé, cartes, STT et TTS n'écrivent rien dans
-    `cost_tracking` : seuls le chat, la fiche, le diagnostic et l'extraction y sont tracés ;
-  - `cost_tracking.cost_cents` est un entier : un tour (environ 0,05 centime) s'arrondit
-    à 0.
+    consomme 63 % de la fenêtre gratuite.
 - **TTS** : une seule voix, française (`fr_marie_*`) ; `/api/tts` n'accepte et n'annonce
   plus que `fr` (#349). Décider s'il faut d'autres voix pour les cours de langue.
 - **Cartes** en `json_schema` non strict : le mode strict de Mistral refuse `format: uri`
@@ -609,3 +602,9 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
   repart d'une base vide, et `bun run doctor` signale une base d'un autre historique. Après revue,
   `role` et `schoolLevel` ne s'écrivent plus que par le serveur : un élève pouvait se donner le
   rôle de parent par `update-user` de Better Auth.
+
+  Point 8, premier pas (#400) : chaque appel IA tracé dans `cost_tracking` en micro-euros, au lieu de
+  centimes qui arrondissaient un tour à 0. Le client (`generateText`, `generateStructured`), la
+  transcription et la lecture vocale reçoivent un propriétaire obligatoire et tracent eux-mêmes, au
+  prix daté de chaque modèle : analyse du tour, titre, résumé, cartes, STT et TTS s'ajoutent au chat,
+  à la fiche, au diagnostic et à la lecture d'image. Le calcul passe de `billing` à `platform/ai`.

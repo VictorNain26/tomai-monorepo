@@ -137,6 +137,7 @@ export async function generateCards(
 
     const { object, usage } = await generateStructured({
       functionId: 'card-generation',
+      owner: params.owner,
       messages: [{ role: 'user', content: prompt }],
       temperature: 0.7,
       maxTokens: 4096,
