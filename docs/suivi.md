@@ -14,8 +14,8 @@ bloquant levé). L'historique vit dans git et les PR.
 - **Dernière mise à jour :** 2026-10-06.
 - **Lots en cours :** 2 et 3 en parallèle (`roadmap.md`).
   - Lot 0 terminé (Hono, Bun, refonte en modules, lint et TypeScript stricts, #343 à #356).
-  - Du lot 1 restent : le référentiel des autres matières, un juge dont l'accord atteint
-    α ≥ 0,800, les concurrents, la CI d'évaluation et les traces de production (« Reporté › Lot 1 »).
+  - **Lot 1 :** le harnais est jugé insuffisant par Victor et refondu sur sources
+    (`etudes/2026-10-06/refonte-evaluation.md`) ; restent aussi le référentiel des autres matières et les concurrents.
   - **Lot 2 :** les points 1 à 8 sont faits (#380 à #404). Le passage de fin est mesuré
     (`etudes/2026-10-06/passage-de-fin.md`, #409) : de 9 fuites à 2 sur les mêmes conversations,
     détresse et indices en net progrès, 0,13 c par tour d'élève. Le critère zéro fuite n'est pas
@@ -27,14 +27,20 @@ bloquant levé). L'historique vit dans git et les PR.
     défilement derrière un panneau quand la barre de Safari est repliée. Hono sert `apps/web`
     sur la même origine que l'API, sans CORS, sous CSP, et le web est une PWA installable (#414).
   - Hors lot : environnement de travail nettoyé (#410).
-- **Prochaine action :**
-  - lot 2 : une PR ciblée sur les questions de connaissance, mesurée sur les cinq exercices
-    concernés seulement ;
-  - Victor fixe les budgets du quota sur le coût mesuré ;
-  - lot 3 : comptes et consentement.
-  - Une relecture humaine d'une partie des conversations lues par Claude reste due avant
-    toute publication (lot 4).
-- **PR ouvertes :** voir `gh pr list`.
+- **Prochaine action **, ordre indicatif (direction revue avec Victor le 2026-10-06 au soir) :
+  1. PR #414 (Hono sert `apps/web`, PWA) : corriger les dix constats de sa revue, listés dans la
+     PR, puis merger ;
+  2. lot 1, refonte du harnais : mesures avec marge d'erreur, page simple pour que Victor
+     juge, messages d'erreur nettoyés avant tout export, juge vérifié contre Victor ;
+  3. lot 3 : étude des hébergeurs UE et préproduction, puis chat texte dans l'app avec une
+     connexion minimale, pour que Victor teste sur son téléphone ;
+  4. PR #415 (brouillon) : remesurer avec le harnais refait avant de la merger ;
+  5. test complet dans Chrome à la fin de chaque chantier.
+- **Décisions de Victor en attente :** budgets du quota ; offre Mistral payante pour paralléliser
+  l'évaluation (aujourd'hui une conversation à la fois, environ 10 h pour 300 conversations
+  rejouées deux fois) ; juge d'une autre famille, seulement s'il est très bon marché. Décidé le
+  2026-10-06 : Small 4 partout, pas de Medium ; Victor seul annotateur ; landing refaite au lot 4.
+- **PR ouvertes :** #414 et #415 (brouillon) ; `gh pr list`.
 - **Landing en ligne gelée** jusqu'au lot 4 : seuls des correctifs d'honnêteté ou techniques y entrent.
   L'identité visuelle est rejetée et se refait au lot 4.
 
@@ -47,16 +53,15 @@ explicitement renvoyé (`.claude/rules/plans-and-agents.md`). Chemins relatifs �
 
 ### Lot 1 — harnais d'évaluation et observabilité
 
-- **Référentiel** (point 3) : restent sciences, histoire-géographie et anglais, et le rattachement de leurs exercices (`referential/sources.ts`).
+- **Référentiel** : restent sciences, histoire-géographie et anglais, et le rattachement de leurs exercices (`referential/sources.ts`).
 - **Alignement aux programmes** : ajouter des exercices inspirés des sujets du brevet 2018-2026, écrits pour le jeu (`etudes/2026-10-01/education-nationale.md`, « Conséquences pour Tom », b).
-- **Accord du juge** (point 4) : avec le juge actuel, aucun critère n'atteint α ≥ 0,800 ; une relecture humaine d'un sous-échantillon est due avant de publier une mesure du juge, la file `tom-judge-agreement` de Langfuse est ouverte jusqu'au 2026-11-02 (`etudes/2026-10-03/accord-juge.md`, `etudes/2026-10-03/reproductibilite-juge.md`).
-- **Juge Small 4** (point 4) : la méthode déroulée et la notion d'une classe suivante restent au modèle, et faibles ; son prompt ne s'ajuste que sur l'échantillon annoté, accord mesuré avant et après (`etudes/2026-10-03/extraction-verification.md`).
-- **Questions du juge** (point 4) : l'exactitude phrase par phrase et `diagnosis-uses` restent sans conclusion, α = 0,476 sur l'exactitude (`etudes/2026-10-04/questions-juge.md`, `etudes/2026-10-06/passage-de-fin.md`).
-- **Niveau de langue** (point 4) : ses questions sont retirées ; avant de le réintroduire, trouver une mesure validée de la lisibilité d'un texte français pour collégiens et la mesurer contre une annotation (`etudes/2026-10-03/analyse-erreurs.md`).
-- **Durée d'un passage** (point 5) : juger le jeu complet prend plusieurs heures à 100 000 tokens par minute (`etudes/2026-10-03/juge-small-4.md`) ; l'API Batch, à moitié prix et hors limite de débit (`etudes/2026-10-03/juge-extraction-verification.md`), n'est pas servie sur l'endpoint UE (`tuteur.md` §2) : à trancher avec la baseline.
-- **Évaluations du run dans Langfuse** (point 5) : taux de fuite et moyennes ne vivent que dans `eval-results/` ; un dataset hébergé par Langfuse les y enverrait, à décider avec la baseline (`eval/run.ts`).
-- **Débit Mistral** (point 6) : deux conversations en parallèle déclenchent des HTTP 429 sur ce compte, le harnais en joue une à la fois, ce qui allonge le passage en CI.
-- **Traces de production** (point 6) : en erreur, le span OpenTelemetry d'un appel IA porte le corps de la réponse de Mistral ; vérifier qu'il ne contient aucun contenu d'élève avant de brancher le premier exporteur.
+- **Harnais et observabilité** : juge non validé (α < 0,800 sur tous les critères), mesure
+  unique sans intervalle, élève figé, débit Mistral à une conversation à la fois, messages
+  d'erreur des spans qui portent la sortie du modèle : tout est repris par
+  `etudes/2026-10-06/refonte-evaluation.md`, qui fixe l'ordre des PR. La file `tom-judge-agreement`
+  de Langfuse reste ouverte jusqu'au 2026-11-02.
+- **Niveau de langue** : ses questions sont retirées ; avant de le réintroduire, trouver une mesure
+  validée de la lisibilité d'un texte français pour collégiens (`etudes/2026-10-03/analyse-erreurs.md`).
 
 ### Lot 2 — agent qui ne cède pas, quotas et coûts
 
@@ -87,6 +92,7 @@ explicitement renvoyé (`.claude/rules/plans-and-agents.md`). Chemins relatifs �
 
 Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pas.
 
+- **TypeScript 7** : pas avant que `typescript-eslint` accepte une version au-delà de 6.0.
 - **typescript-eslint 8.71** (groupe `eslint` de Renovate) : les presets typés y activent
   `no-unsafe-enum-assignment`, qui signale trois lignes (`modules/learning/fsrs.service.ts`,
   `tests/learning.service.test.ts`, mesuré le 2026-10-06) ; la PR de Renovate échouera au lint
@@ -149,6 +155,8 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
 
 | Étape | Pour | Statut |
 |---|---|---|
+| Juger un échantillon de conversations sur la page prévue, par courtes séances | Vérifier le juge, lot 1 | quand la page existe |
+| Ouvrir le compte de l'hébergeur UE recommandé par l'étude | Préproduction, lot 3 | à faire, après l'étude |
 | Langfuse : la description de la file d'annotation `tom-judge-agreement` renvoie encore à `docs/agent.md`, devenu `docs/tuteur.md` ; la corriger dans l'interface (l'API n'a pas de mise à jour de file) | Évaluation | à faire |
 | Demander le Zero Data Retention : réservé au paiement à l'usage (« only with pay-as-you-go », [centre d'aide Mistral](https://help.mistral.ai/en/articles/347612-can-i-activate-zero-data-retention-zdr)), or le compte est sur l'offre gratuite (8,50 € d'API inclus par mois, paiement à l'usage désactivé, constaté le 2026-10-02). Activer le paiement à l'usage avec un plafond, puis envoyer la demande avec sa justification (mineurs, RGPD) ; vérifier ensuite Admin › API › Confidentialité. L'entraînement sur les appels API et les modèles Labs y sont désactivés | Porte avant ouverture | à faire |
 | Trancher le statut juridique avec un expert-comptable : rester micro-entrepreneur ou créer une SASU (le GAR n'accepte que des personnes morales ; seuils de TVA et de la micro calculés en abonnés dans `etudes/2026-10-01/statut-juridique.md`) | Avant l'ouverture, au démarrage du lot 3 | à faire |

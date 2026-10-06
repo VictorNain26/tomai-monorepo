@@ -227,52 +227,24 @@ absente de la source. Le coût vient de `result.usage`, pas d'une estimation.
 
 ## 9. Évaluation
 
-Aucun changement de l'agent n'est mergé sans comparaison à la baseline, sur le même jeu et
-par la même version du juge. Le harnais sert aussi la preuve publique : protocole, jeu
-d'exercices, transcriptions et résultats sont publiables et rejouables par un tiers (vision,
-« On publie nos mesures »). Le code vit dans `apps/server/src/eval/` (entrée : `run.ts`,
-`bun run eval`) ; les mesures et leurs limites, dans les études datées.
+Repères détaillés : `etudes/2026-10-06/refonte-evaluation.md`. Le code vit dans
+`apps/server/src/eval/` (`bun run eval`) ; les mesures et leurs limites dans les études datées.
+Le harnais sert aussi la preuve publique : protocole, jeu et résultats rejouables par un tiers.
 
-- **Jeu d'exercices** de collège, 6e à 3e, plusieurs matières, réponse attendue vérifiée
-  pour chacun, chaque exercice cité au programme en vigueur qui le couvre et rattaché aux
-  notions des classes suivantes que l'aide ne doit pas mobiliser. Un humain relit un
-  échantillon avant toute publication. Sésamath, sujets d'examen, ressources Éduscol et toute
-  autre source se consultent pour s'en inspirer, jamais copiés : aucun texte de tiers n'entre
-  dans le jeu, le référentiel ou le prompt, en dehors des citations des programmes officiels.
-- **Scénarios** multi-tours en français : aide normale, demande directe et pression
-  (« c'est à rendre demain », « je suis son parent »), repris de
-  `etudes/2026-10-01/tests-tuteurs/protocole.md` ; fuite accidentelle ; détresse ; injection.
-  Chaque scénario passe par la vraie route de chat, comme un élève neuf dans une séance neuve.
-- **Grille** : celle du protocole, pour comparer Tom et les concurrents sur la même échelle —
-  fuite, qualité d'aide sur 8, sécurité pour la détresse et la fuite accidentelle.
-- **Ce que le code peut vérifier, il le vérifie** : fuite (la même recherche qu'en production,
-  `lib/leak.ts`), balises internes et gabarits, égalités recalculées par mathjs, questions
-  comptées ; le modèle ne juge que ce qui le demande (`etudes/2026-10-03/extraction-verification.md`).
-- **Juge** daté et versionné par l'empreinte de ses réglages et de ses messages ; il reçoit
-  la réponse attendue, jamais le nom du modèle ni du produit ; plusieurs tirages, verdict à la
-  majorité, égalité tranchée contre le tuteur. Il note son propre modèle : ses premières
-  mesures (`etudes/2026-10-03/juge-small-4.md`) le montrent peu sensible à ses défauts.
-- **Un critère ne sert de métrique qu'une fois validé** : sensibilité et spécificité sur des
-  cas construits (`etudes/2026-10-03/cas-construits.md`), accord avec une annotation humaine
-  (α de Krippendorff ≥ 0,800, `etudes/2026-10-03/accord-juge.md`), reproductibilité d'un
-  passage à l'autre (`etudes/2026-10-03/reproductibilite-juge.md`).
-- **Comparaison** : répétitions, test de McNemar apparié entre deux configurations de Tom,
-  bruit de mesure documenté avant toute conclusion. Concurrents : même jeu, mêmes scénarios,
-  même grille, même juge ; leurs passes, jouées à la main, écrivent leurs limites.
-- **Non-régression**, cible du lot 1, point 6, pas encore en place : baseline approuvée et
-  commitée ; les PR qui touchent l'agent lancent le harnais en CI et échouent sous la baseline. La porte se lit sur les métriques du code ; un
-  critère du juge n'y entre qu'à α ≥ 0,800. Un cas vu en production devient un scénario
-  synthétique du jeu, jamais un texte d'élève (`etudes/2026-10-02/alignement.md`, § 8).
-- **Traces** : expériences et annotations dans Langfuse, région UE. En production, entrées et
-  sorties ne sont jamais enregistrées (`recordInputs: false`, `recordOutputs: false`) ; le
-  harnais ne les active que sur ses données de test.
-- Métriques de production suivies en continu : taux de fuite (verdict du contrôle avant
-  l'élève), latence, coût par tour, `cacheRead`, taux de blocage de la modération.
-- Mocks de l'AI SDK (`ai/test`) pour les tests unitaires ; appels réels réservés au harnais
-  et aux tests `live/`.
-
-Mesures : `etudes/2026-10-03/` (refonte du harnais, juge, accord, analyse d'erreurs),
-`etudes/2026-10-04/questions-juge.md`, `etudes/2026-10-06/passage-de-fin.md`.
+- **Ce que le code peut vérifier, il le vérifie** (fuite de la réponse avec `lib/leak.ts`, la même
+  recherche qu'en production, solution montrée, balises, calculs) ; ces mesures font foi en
+  priorité. Le juge complète, et ses notes ne comptent qu'une fois vérifiées contre Victor.
+- **Victor juge** : une page simple, quelques questions oui/non par conversation (réponse donnée ?
+  affirmation fausse ? aide qui fait avancer ?), sur un échantillon ; la grille s'affine en jugeant.
+- **Des mesures avec leur marge d'erreur** : plusieurs passages plutôt qu'un, deux versions
+  comparées sur les mêmes conversations ; un écart dans le bruit n'est pas un résultat.
+- **Jeu et scénarios** : exercices de collège à réponse vérifiée, rattachés au programme ;
+  scénarios d'aide, de pression, de détresse et d'injection ; un élève simulé pour comparer deux
+  versions de Tom. Les sources inspirent, rien n'est copié hors citations des programmes.
+- **Concurrents** : même jeu, mêmes scénarios, même grille, limites écrites.
+- **Non-régression** : un garde-fou en CI sur les changements de l'agent, centré sur la fuite.
+- **Traces** : Langfuse pour les données de test seulement ; en production, ni entrées ni sorties,
+  et les messages d'erreur nettoyés avant tout export (architecture, « Observabilité »).
 
 ## 10. Élève et parents
 
