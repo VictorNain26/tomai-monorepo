@@ -7,7 +7,7 @@ type FamilyBilling = typeof familyBilling.$inferSelect;
 interface ChildSubscriptionRow {
   userId: string;
   status: string | null;
-  planName: string | null;
+  planName: (typeof userSubscriptions.$inferSelect)['plan'];
 }
 
 class SubscriptionRepository {

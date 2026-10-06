@@ -43,7 +43,7 @@ mock.module('../modules/billing/user-subscriptions.repository', () => ({
 }));
 
 // Import after env + mocks so env picks up the flag value.
-const { checkQuota } = await import('../modules/billing/quota');
+const { checkQuota, dailyUsage } = await import('../modules/billing/quota');
 const { checkDeckQuota } = await import('../modules/billing/quota-deck');
 const { lastDailyReset } = await import('../modules/billing/quota-config');
 
@@ -59,33 +59,46 @@ describe('checkQuota (enforcement ON)', () => {
     dbSelectResult = [{ plan: 'free' }];
     spent = 12_000;
     const result = await checkQuota('user-001');
-    expect(result).toMatchObject({ allowed: true, plan: 'free', spentMicroEur: 12_000, budgetMicroEur: 20_000, usagePercent: 60 });
+    expect(result).toMatchObject({ allowed: true, plan: 'free', usage: { spentMicroEur: 12_000, budgetMicroEur: 20_000, usagePercent: 60 } });
     expect(spentSince.mock.calls[0]?.[1]).toEqual(lastDailyReset(new Date()));
   });
 
   it('refuses once the budget is spent, speech included since every call is in cost_tracking', async () => {
     dbSelectResult = [{ plan: 'free' }];
     spent = 20_000;
-    expect(await checkQuota('user-001')).toMatchObject({ allowed: false, usagePercent: 100 });
+    expect(await checkQuota('user-001')).toMatchObject({ allowed: false, usage: { usagePercent: 100 } });
   });
 
-  it("gives the Complet plan its own budget", async () => {
+  it('refuses a call whose known cost would go past the budget, and allows one that fits', async () => {
+    dbSelectResult = [{ plan: 'free' }];
+    spent = 15_000;
+    expect((await checkQuota('user-001', 8_000)).allowed).toBe(false);
+    expect((await checkQuota('user-001', 5_000)).allowed).toBe(true);
+  });
+
+  it('gives the Complet plan its own budget', async () => {
     dbSelectResult = [{ plan: 'premium' }];
     spent = 20_000;
-    expect(await checkQuota('user-001')).toMatchObject({ allowed: true, plan: 'premium', budgetMicroEur: 100_000 });
+    expect(await checkQuota('user-001')).toMatchObject({ allowed: true, plan: 'premium', usage: { budgetMicroEur: 100_000 } });
   });
 
   it('treats a user without a subscription row as Gratuit', async () => {
-    spent = 0;
-    expect(await checkQuota('brand-new-user')).toMatchObject({ allowed: true, plan: 'free', spentMicroEur: 0 });
+    expect(await checkQuota('brand-new-user')).toMatchObject({ allowed: true, plan: 'free', usage: { spentMicroEur: 0 } });
   });
 
-  it('fails OPEN (allowed=true, Gratuit) when the DB read throws', async () => {
+  it('fails OPEN when the DB read throws: allowed, the plan not held against the user, no usage claimed', async () => {
     // Deliberate billing-safety choice: a DB blip must not block paying users.
     // This locks the direction of the fallback so a refactor can't silently
     // flip it to fail-closed.
     dbShouldThrow = new Error('connection terminated unexpectedly');
-    expect(await checkQuota('user-001')).toMatchObject({ allowed: true, plan: 'free', budgetMicroEur: 20_000 });
+    expect(await checkQuota('user-001')).toEqual({ allowed: true, plan: 'premium', usage: null });
+  });
+});
+
+describe('dailyUsage', () => {
+  it('throws on a failed read instead of showing a spend it could not read', async () => {
+    dbShouldThrow = new Error('connection terminated unexpectedly');
+    expect(dailyUsage('user-001')).rejects.toThrow('connection terminated');
   });
 });
 

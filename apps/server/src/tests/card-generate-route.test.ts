@@ -5,10 +5,11 @@ import type { AppEnv, AuthEnv } from '../platform/http/context';
 
 mock.module('../platform/observability/logger', () => ({ logger: createMockLogger() }));
 
+let quota = { allowed: true, plan: 'premium' as 'free' | 'premium' };
 const actualBilling = await import('../modules/billing/index');
 mock.module('../modules/billing/index', () => ({
   ...actualBilling,
-  checkQuota: mock(async () => ({ plan: 'complete' })),
+  checkQuota: mock(async () => quota),
   checkDeckQuota: mock(async () => ({ allowed: true })),
   incrementDeckUsage: mock(async () => ({ newDecksGeneratedToday: 1, newDecksGeneratedThisMonth: 1, decksRemainingToday: 2, decksRemainingThisMonth: 9 })),
 }));
@@ -62,9 +63,22 @@ const trueFalse = { cardType: 'vrai_faux', content: { statement: '3 + 4 × 2 = 1
 const flashcard = { cardType: 'flashcard', content: { front: 'Priorité', back: 'La multiplication avant l’addition' } };
 
 beforeEach(() => {
+  quota = { allowed: true, plan: 'premium' };
   cards = [trueFalse, flashcard];
   moderation = [];
   stored.length = 0;
+});
+
+describe('POST /generate — plan and budget', () => {
+  it('reserves the cards to Complet, and refuses past the day\'s budget, storing nothing', async () => {
+    quota = { allowed: true, plan: 'free' };
+    expect((await generate()).status).toBe(403);
+    quota = { allowed: false, plan: 'premium' };
+    const refused = await generate();
+    expect(refused.status).toBe(429);
+    expect(await refused.json()).toMatchObject({ error: { code: 'QUOTA_EXCEEDED' } });
+    expect(stored).toHaveLength(0);
+  });
 });
 
 describe('POST /generate — the subject is a collège slug', () => {

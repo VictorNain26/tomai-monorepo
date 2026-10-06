@@ -19,21 +19,28 @@ mock.module('../modules/voice/index', () => ({ getVoxtralTranscribeService: () =
 
 const FILE_ID = '0199a3c4-7b1e-7d2a-9f00-0000000000f1';
 let fileOwner = 'student-1';
+let fileMime = 'image/png';
 let listedFiles: Record<string, unknown>[] = [];
 const hardDelete = mock(async (_id: string) => true);
 const findByUserId = mock(async (_userId: string) => listedFiles);
 mock.module('../modules/documents/files.repository', () => ({
   filesRepository: {
-    findById: mock(async (id: string) => ({ id, userId: fileOwner, storageKey: 'uploads/k' })),
+    findById: mock(async (id: string) => ({ id, userId: fileOwner, storageKey: 'uploads/k', mimeType: fileMime, metadata: null })),
     hardDelete,
     findByUserId,
   },
 }));
 
 let storageDeleted = true;
+const getFileInfo = mock(async () => null);
 mock.module('../modules/documents/storage', () => ({
   deleteFile: mock(async () => storageDeleted),
+  getFileInfo,
 }));
+
+let quotaAllowed = true;
+const checkQuota = mock(async () => ({ allowed: quotaAllowed }));
+mock.module('../modules/billing/index', () => ({ checkQuota }));
 
 const { uploadRoutes } = await import('../modules/documents/upload.routes');
 const { filesRoutes } = await import('../modules/documents/files.routes');
@@ -46,6 +53,10 @@ const app = new Hono<AppEnv>()
 
 beforeEach(() => {
   fileOwner = 'student-1';
+  fileMime = 'image/png';
+  quotaAllowed = true;
+  checkQuota.mockClear();
+  getFileInfo.mockClear();
   listedFiles = [];
   storageDeleted = true;
   hardDelete.mockClear();
@@ -97,5 +108,23 @@ describe('GET /api/files', () => {
     });
 
     expect((await app.request('/api/files')).status).toBe(500);
+  });
+});
+
+describe('POST /api/upload/confirm/:fileId', () => {
+  it('refuses an audio file past the day\'s budget, before reading it to transcribe it', async () => {
+    fileMime = 'audio/webm';
+    quotaAllowed = false;
+    const res = await app.request(`/api/upload/confirm/${FILE_ID}`, { method: 'POST' });
+    expect(res.status).toBe(429);
+    expect(await res.json()).toMatchObject({ error: { code: 'QUOTA_EXCEEDED' } });
+    expect(getFileInfo).not.toHaveBeenCalled();
+  });
+
+  it('does not hold an image to the budget: it is read at the turn, which is checked', async () => {
+    quotaAllowed = false;
+    await app.request(`/api/upload/confirm/${FILE_ID}`, { method: 'POST' });
+    expect(checkQuota).not.toHaveBeenCalled();
+    expect(getFileInfo).toHaveBeenCalledTimes(1);
   });
 });

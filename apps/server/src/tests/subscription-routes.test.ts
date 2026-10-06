@@ -18,10 +18,10 @@ mock.module('../modules/family/parent-child.repository', () => ({ parentChildRep
 const getFamilyStatus = mock(async (_parentId: string) => ({ plan: 'free', status: 'inactive', billing: null, children: [] }));
 mock.module('../modules/family/subscription.service', () => ({ subscriptionService: { getFamilyStatus } }));
 
-const checkQuota = mock(async (_userId: string) => ({
-  allowed: true, plan: 'free' as const, spentMicroEur: 5_000, budgetMicroEur: 20_000, usagePercent: 25, resetsIn: '5h',
+const dailyUsage = mock(async (_userId: string) => ({
+  plan: 'free' as const, spentMicroEur: 5_000, budgetMicroEur: 20_000, usagePercent: 25, resetsIn: '5h',
 }));
-mock.module('../modules/billing/index', () => ({ checkQuota }));
+mock.module('../modules/billing/index', () => ({ dailyUsage }));
 
 const { subscriptionRoutes } = await import('../modules/family/subscription.routes');
 const { handleError } = await import('../platform/http/error-handler');
@@ -31,7 +31,7 @@ const app = new Hono<AppEnv>().route('/api/subscriptions', subscriptionRoutes).o
 beforeEach(() => {
   signedIn = { id: 'parent-1', role: 'parent' };
   getFamilyStatus.mockClear();
-  checkQuota.mockClear();
+  dailyUsage.mockClear();
 });
 
 describe('GET /api/subscriptions/status', () => {
@@ -70,7 +70,7 @@ describe('GET /api/subscriptions/usage', () => {
     signedIn = { id: 'child-2', role: 'student' };
 
     expect((await app.request('/api/subscriptions/usage?userId=child-1')).status).toBe(403);
-    expect(checkQuota).not.toHaveBeenCalled();
+    expect(dailyUsage).not.toHaveBeenCalled();
   });
 
   it('answers an unknown id like a forbidden one, so it does not reveal which accounts exist', async () => {

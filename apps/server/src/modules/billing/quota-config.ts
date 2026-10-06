@@ -26,15 +26,22 @@ const RESET_HOUR_PARIS = 10;
 // TYPES
 // =============================================
 
-export type Plan = keyof typeof QUOTA_CONFIG;
+type Plan = keyof typeof QUOTA_CONFIG;
 
-export interface QuotaCheckResult {
-  allowed: boolean;
+export interface DailyUsage {
   plan: Plan;
   spentMicroEur: number;
   budgetMicroEur: number;
   usagePercent: number;
   resetsIn: string;
+}
+
+export interface QuotaCheckResult {
+  allowed: boolean;
+  /** The plan to gate features on; `premium` when the quota is off or could not be read. */
+  plan: Plan;
+  /** The day's usage; null when the quota is off or could not be read. */
+  usage: DailyUsage | null;
 }
 
 export interface DeckQuotaResult {

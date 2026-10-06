@@ -21,13 +21,15 @@ describe.skipIf(!dbReachable)('checkQuota (enforcement enabled by default)', () 
 
   afterAll(async () => {
     const { db } = await import('../db/connection');
-    const { user } = await import('../db/schema');
+    const { user, costTracking } = await import('../db/schema');
+    // cost_tracking keeps its rows when the user goes (set null): remove them first.
+    await db.delete(costTracking).where(eq(costTracking.userId, studentId)).catch(() => null);
     await db.delete(user).where(eq(user.id, studentId)).catch(() => null);
   });
 
   it('gives a brand-new user the Gratuit budget at zero spend', async () => {
     expect(await checkQuota(`new_${stamp}`)).toMatchObject({
-      allowed: true, plan: 'free', spentMicroEur: 0, budgetMicroEur: QUOTA_CONFIG.free.dailyBudgetMicroEur,
+      allowed: true, plan: 'free', usage: { spentMicroEur: 0, budgetMicroEur: QUOTA_CONFIG.free.dailyBudgetMicroEur },
     });
   });
 
@@ -43,10 +45,10 @@ describe.skipIf(!dbReachable)('checkQuota (enforcement enabled by default)', () 
       // Before the reset: yesterday's spend does not count.
       { userId: studentId, aiModel: 'mistral-small-2603', operation: 'chat', costMicroEur: 50_000, createdAt: yesterday },
     ]);
-    expect(await checkQuota(studentId)).toMatchObject({ allowed: true, spentMicroEur: 17_000 });
+    expect(await checkQuota(studentId)).toMatchObject({ allowed: true, usage: { spentMicroEur: 17_000 } });
 
     await db.insert(costTracking).values({ userId: studentId, aiModel: 'voxtral-mini-tts-2603', operation: 'text-to-speech', costMicroEur: 3_000, createdAt: today });
-    expect(await checkQuota(studentId)).toMatchObject({ allowed: false, spentMicroEur: 20_000 });
+    expect(await checkQuota(studentId)).toMatchObject({ allowed: false, usage: { spentMicroEur: 20_000 } });
   });
 });
 

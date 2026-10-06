@@ -10,7 +10,7 @@
 import { Hono } from 'hono';
 import { requireParent, requireUser, type AppEnv } from '../../platform/http/context.js';
 import { subscriptionService } from './subscription.service.js';
-import { checkQuota } from '../billing/index.js';
+import { dailyUsage } from '../billing/index.js';
 import { parentChildRepository } from './parent-child.repository.js';
 
 // Mounted under /api/subscriptions by app.ts.
@@ -52,16 +52,7 @@ export const subscriptionRoutes = new Hono<AppEnv>()
       }, 403);
     }
 
-    const quota = await checkQuota(userId);
+    const { plan, ...daily } = await dailyUsage(userId);
 
-    return c.json({
-      userId,
-      plan: quota.plan,
-      daily: {
-        spentMicroEur: quota.spentMicroEur,
-        budgetMicroEur: quota.budgetMicroEur,
-        usagePercent: quota.usagePercent,
-        resetsIn: quota.resetsIn,
-      },
-    });
+    return c.json({ userId, plan, daily });
   });

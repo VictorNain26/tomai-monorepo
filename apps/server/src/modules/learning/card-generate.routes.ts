@@ -13,6 +13,7 @@ import { getUserLevel } from './routes.helpers.js';
 import { checkCards } from './card-check.js';
 import { PROMPT_TAG } from '../../lib/prompt-tags.js';
 import { SUBJECT_SLUGS } from '../../lib/subjects.js';
+import { AppError, toErrorResponse } from '../../platform/http/errors.js';
 
 const generateBody = z.object({
   subject: z.enum(SUBJECT_SLUGS),
@@ -43,10 +44,11 @@ export const cardGenerateRoutes = new Hono<AuthEnv>()
         });
         return c.json({
           error: 'Abonnement requis',
-          message: 'La génération de cartes de révision est réservée aux comptes premium. Demande à tes parents de souscrire un abonnement !',
+          message: 'La génération de cartes de révision est réservée à la formule Complet.',
           code: 'SUBSCRIPTION_REQUIRED',
         }, 403);
       }
+      if (!quota.allowed) return c.json(toErrorResponse(new AppError('QUOTA_EXCEEDED')), 429);
 
       const deckQuota = await checkDeckQuota(user.id);
       if (!deckQuota.allowed) {

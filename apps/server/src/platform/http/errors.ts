@@ -62,7 +62,7 @@ const USER_MESSAGES: Record<ErrorCode, string> = {
   VALIDATION_ERROR: 'Les données envoyées sont invalides.',
   EMPTY_MESSAGE: 'Le message ne peut pas être vide.',
   RATE_LIMITED: 'Trop de requêtes. Réessaie dans quelques secondes.',
-  QUOTA_EXCEEDED: 'Tu as atteint la limite du jour. Elle se remet à zéro demain à 10 h.',
+  QUOTA_EXCEEDED: 'Tu as atteint la limite du jour. Elle se remet à zéro à 10 h.',
   SESSION_NOT_FOUND: 'Conversation introuvable.',
   CONCURRENT_STREAM: 'Une réponse est déjà en cours. Attends qu\'elle se termine.',
   DECK_NOT_FOUND: 'Deck introuvable.',
