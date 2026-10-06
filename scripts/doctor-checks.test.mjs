@@ -86,21 +86,9 @@ test('check conteneurs: PASS si postgres healthy', async () => {
   await byName(checks, 'conteneurs').run(); // ne lève pas
 });
 
-test('check migrations: FAIL si extension vector absente', async () => {
-  const exec = (cmd, args) => {
-    const sql = args.join(' ');
-    if (sql.includes('pg_extension')) return { ok: true, stdout: '0' };      // vector absent
-    return { ok: true, stdout: '0' };
-  };
-  const ctx = { ...ctxWith({ exec }), journalEntries: 1 };
-  const checks = buildChecks(ctx, { full: true });
-  await assert.rejects(byName(checks, 'migrations').run(), /vector/i);
-});
-
 test('check migrations: FAIL si migrations en retard', async () => {
   const exec = (cmd, args) => {
     const sql = args.join(' ');
-    if (sql.includes('pg_extension')) return { ok: true, stdout: '1' };       // vector présent
     if (sql.includes('__drizzle_migrations')) return { ok: true, stdout: '2' }; // 2 appliquées
     return { ok: true, stdout: '0' };
   };
@@ -110,10 +98,9 @@ test('check migrations: FAIL si migrations en retard', async () => {
   await assert.rejects(byName(checks, 'migrations').run(), /bun run db:migrate/, "le message doit pointer vers le migrateur");
 });
 
-test('check migrations: PASS si vector présent et migrations à jour', async () => {
+test('check migrations: PASS si migrations à jour', async () => {
   const exec = (cmd, args) => {
     const sql = args.join(' ');
-    if (sql.includes('pg_extension')) return { ok: true, stdout: '1' };
     if (sql.includes('__drizzle_migrations')) return { ok: true, stdout: '5' };
     return { ok: true, stdout: '0' };
   };
@@ -127,7 +114,6 @@ test('check migrations: psql vise le conteneur PG_CONTAINER configuré', async (
   const exec = (cmd, args) => {
     if (args[0] === 'exec') containers.push(args[1]);
     const sql = args.join(' ');
-    if (sql.includes('pg_extension')) return { ok: true, stdout: '1' };
     return { ok: true, stdout: '5' };
   };
   const ctx = { ...ctxWith({ exec }), config: { ...CFG, pgContainer: 'pg-custom' }, journalEntries: 5 };

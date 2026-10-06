@@ -60,16 +60,10 @@ export async function runMigrations(): Promise<void> {
     // pg_advisory_lock is session-scoped: with `max: 1` this connection holds
     // exactly one session, so only one instance proceeds at a time — the
     // others block here until the lock holder finishes and releases it, then
-    // find nothing left to do (no double CREATE EXTENSION / migration race).
+    // find nothing left to do (no migration race).
     await db.execute(sql`SELECT pg_advisory_lock(hashtext('drizzle_migrate'))`);
 
     try {
-      // Migration 0016 still creates a vector column, its table dropped since by 0037: a new
-      // database replays it only with pgvector, until the history restarts from a base migration.
-      // Idempotent: IF NOT EXISTS means this is safe on every boot.
-      await migrationClient.unsafe('CREATE EXTENSION IF NOT EXISTS vector;');
-      console.log('Postgres extensions verified (vector)');
-
       await migrate(db, { migrationsFolder: './drizzle' });
       console.log('Migrations completed successfully');
     } finally {

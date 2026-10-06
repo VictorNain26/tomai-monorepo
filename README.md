@@ -36,7 +36,7 @@ packages/
 
 | Couche | Technologies |
 |--------|-------------|
-| Backend | Bun 1.4, Hono 4, PostgreSQL 18 + pgvector, Drizzle ORM 0.45 |
+| Backend | Bun 1.4, Hono 4, PostgreSQL 18, Drizzle ORM 0.45 |
 | Landing | Next.js 16, TailwindCSS 4, Motion 13, `@repo/ui` (shadcn) |
 | Auth | Better Auth 1.7 + Google OAuth, comptes élèves par username |
 | Chat | Vercel AI SDK 7 (`streamText` + `useChat`), un seul protocole client/serveur |

@@ -25,7 +25,7 @@ curl http://localhost:3000/health
 |-----------|-------------|
 | Runtime | Bun 1.4 |
 | Framework | Hono 4 |
-| Database | PostgreSQL 18 + pgvector |
+| Database | PostgreSQL 18 |
 | ORM | Drizzle ORM 0.45 |
 | Auth | Better Auth 1.7 + Google OAuth |
 | AI Chat | Mistral Small 4 (`mistral-small-2603`, streaming + tools + vision), endpoint UE |
@@ -61,7 +61,7 @@ docker compose --profile tools up -d    # Adminer (8080) + Drizzle Studio (4983)
 | Service | Port | Description |
 |---------|------|-------------|
 | backend | 3000 | API conteneurisee (profile: backend) |
-| postgres | 5432 | PostgreSQL 18 + pgvector |
+| postgres | 5432 | PostgreSQL 18 |
 | drizzle-studio | 4983 | UI Database (profile: tools) |
 | adminer | 8080 | Client SQL (profile: tools) |
 
