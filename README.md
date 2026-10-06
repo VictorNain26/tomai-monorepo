@@ -68,7 +68,8 @@ et merge commit — jamais de squash.
 ## Documentation
 
 `README.md` (ici) décrit la stack et le démarrage ; `CLAUDE.md` porte les
-instructions destinées aux agents.
+instructions destinées aux agents, et `.claude/rules/` celles qui ne valent que pour une
+partie du code, chargées sur ses chemins.
 
 Produit et avancement, dans `docs/` :
 [vision produit](./docs/vision.md) (pour qui,
@@ -76,6 +77,3 @@ promesse, prix, périmètre) · [roadmap](./docs/roadmap.md) ·
 [suivi](./docs/suivi.md) (où on en est) · specs techniques
 [cible V1](./docs/architecture.md) et
 [agent IA](./docs/agent.md).
-
-Chaque app a sa propre doc : [server](./apps/server/CLAUDE.md) ·
-[landing](./apps/landing/CLAUDE.md)

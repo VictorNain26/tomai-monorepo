@@ -1,38 +1,26 @@
 # Monorepo Tom
 
 Tuteur IA des devoirs pour collégiens, avec un résumé pour le parent. Pour qui, promesse
-et périmètre : `docs/vision.md`, qui prime sur tout
-autre document ; règle qui gouverne le reste : on n'affirme que ce qu'on peut prouver.
-Stack, structure et démarrage : `README.md` — pas de duplication ici.
+et périmètre : `docs/vision.md`, qui prime sur tout autre document ; règle qui gouverne le
+reste : on n'affirme que ce qu'on peut prouver. Stack, structure, commandes, démarrage et
+Git : `README.md`. Ce fichier ne porte que les règles de travail des agents ; ce qui ne vaut
+que pour une partie du code vit dans `.claude/rules/<sujet>.md`, chargé sur ses chemins.
 
-**Travaux en cours : `docs/suivi.md`** — avancement, bloquants, prochaine
-action. Le lire avant de reprendre, le mettre à jour dans la PR qui fait avancer.
+**Travaux en cours : `docs/suivi.md`** — avancement, bloquants, prochaine action. Le lire
+avant de reprendre, le mettre à jour dans la PR qui fait avancer.
 
 Lors d'une compaction, préserver : PR en cours, branche, plan en cours, dernière tâche
 terminée, décisions ouvertes.
 
-## Commandes
+Avant un commit : `bun run typecheck && bun run lint`, et `bun run test` quand du code testé
+change.
 
-```bash
-bun install                        # Bun 1.4.2+ ; Node 24+ pour la landing
-bun run dev                        # infra Docker + server:3000 + landing:3001 + web:3002
-bun run dev:down                   # arrêt de l'infra
-bun run typecheck && bun run lint  # obligatoire avant tout commit
-bun run test                       # tests serveur, aussi obligatoires si le serveur change
-bun run test:scripts               # tests de scripts/
-bun run doctor                     # diagnostic de la stack
-bun run doctor:e2e                 # diagnostic strict : un SKIP = échec
-bun run seed                       # comptes parent + élève, dev uniquement
-```
+## Frontière des apps
 
-L'infra Docker vit à la **racine** (`docker-compose.yml`, pas dans `apps/server`).
-`bun run dev` la démarre et attend que postgres soit `healthy` avant de lancer les
-apps : si l'infra est incomplète, les apps ne démarrent pas.
-
-## Git
-
-- **`main`** est la seule branche permanente. Jamais de push direct : branche courte → PR.
-- **Merge commit uniquement** : le squash est désactivé sur le dépôt GitHub.
+`apps/web` est le seul client produit : toute fonctionnalité produit lui appartient. La
+landing n'appelle **jamais** le serveur, ni par `@repo/api` ni par l'auth ; son seul lien
+vers le produit sera le bouton « Commencer gratuitement », au lot 4. C'est ce qui l'empêche
+de dériver en second produit.
 
 ## Revue avant merge
 
