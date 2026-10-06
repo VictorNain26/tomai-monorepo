@@ -9,9 +9,6 @@
       "entry": ["src/app.ts", "src/tests/**/*.test.ts", "src/integration-tests/**/*.test.ts", "src/live/**/*.test.ts"],
       "project": ["src/**/*.ts", "scripts/**/*.ts"]
     },
-    "apps/web": {
-      "ignoreDependencies": ["tomai-server"]
-    },
     "packages/api": {
       "project": ["src/**/*.ts"]
     },

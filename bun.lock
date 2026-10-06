@@ -105,7 +105,6 @@
         "@vitejs/plugin-react": "^6.1.2",
         "eslint": "^10.11.0",
         "tailwindcss": "^4.3.3",
-        "tomai-server": "workspace:*",
         "typescript": "6.0.3",
         "vite": "^8.3.2",
         "vite-plugin-pwa": "^2.0.0",

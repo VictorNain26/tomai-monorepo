@@ -61,6 +61,16 @@
       "dependsOn": ["build", "transit"],
       "outputs": []
     },
+    "web#test:e2e": {
+      "dependsOn": ["build", "transit"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/apps/server/scripts/serve-web.ts",
+        "$TURBO_ROOT$/apps/server/src/platform/http/security-headers.ts",
+        "$TURBO_ROOT$/apps/server/src/platform/http/web-client.ts"
+      ],
+      "outputs": []
+    },
     "test": {
       "outputs": [],
       "passThroughEnv": ["DATABASE_URL", "BETTER_AUTH_SECRET"]

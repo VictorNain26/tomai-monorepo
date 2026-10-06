@@ -196,6 +196,10 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" = "push" ] && [ "${{ github.ref }}" = "refs/heads/main" ]; then
             AFFECTED=""
+          # web's e2e run on the server's own serving (web#test:e2e inputs in turbo.json), files
+          # outside apps/web that --affected, package by package, never maps to web.
+          elif git diff --name-only "origin/${{ github.base_ref }}...HEAD" | grep -qE '^apps/server/(scripts/serve-web|src/platform/http/(security-headers|web-client))\.ts$'; then
+            AFFECTED=""
           else
             AFFECTED="--affected"
           fi
