@@ -48,7 +48,7 @@ test('the service worker takes the app, and never an /api navigation', async ({ 
   const route = await page.goto('/une/route/du/client');
   expect(route?.fromServiceWorker()).toBe(true);
 
-  // No API behind the preview server: the network answers in its place. page.route never sees
+  // No API behind the test server: the network answers in its place. page.route never sees
   // a request the service worker answered itself.
   await page.route('/api/**', (request) => request.fulfill({ status: 200, contentType: 'text/plain', body: 'API' }));
   const api = await page.goto('/api/auth/callback/google');

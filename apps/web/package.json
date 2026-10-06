@@ -3,9 +3,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite dev --port 3002 --strictPort",
+    "dev": "vite dev",
     "build": "vite build",
-    "preview": "vite preview --port 3002 --strictPort",
+    "preview": "bun ../server/scripts/serve-web.ts dist 3002",
     "lint": "eslint . --max-warnings 0",
     "typecheck": "tsc -b",
     "test:e2e": "playwright test",
@@ -29,6 +29,7 @@
     "@vitejs/plugin-react": "^6.1.2",
     "eslint": "^10.11.0",
     "tailwindcss": "^4.3.3",
+    "tomai-server": "workspace:*",
     "typescript": "6.0.3",
     "vite": "^8.3.2",
     "vite-plugin-pwa": "^2.0.0"

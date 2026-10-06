@@ -14,7 +14,8 @@ export default defineConfig({
     { name: 'android', use: { ...devices['Pixel 7'] } },
   ],
   webServer: {
-    command: `bunx --no-install vite preview --port ${PORT} --strictPort`,
+    // The production server's own headers and fallback, CSP included, not those of vite preview.
+    command: `bun ../server/scripts/serve-web.ts dist ${PORT}`,
     url: baseURL,
     reuseExistingServer: false,
     timeout: 120_000,
