@@ -39,7 +39,7 @@ bloquant levé).
     par le code quand l'analyse du tour relève une demande ou un accord. Plan d'abord dans `docs/plans/`.
   - Une relecture humaine d'une partie des conversations lues par Claude reste due avant
     toute publication (lot 4).
-- **PR ouvertes :** #399, restes hors vision et migration de base unique.
+- **PR ouvertes :** aucune.
 - **Landing en ligne gelée** jusqu'au lot 4 : seuls des correctifs d'honnêteté ou techniques y entrent.
   L'identité visuelle est rejetée et se refait au lot 4.
 
