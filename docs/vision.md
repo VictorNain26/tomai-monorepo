@@ -131,9 +131,10 @@ explorées jusqu'au 2026-10-01 sont abandonnées.
 
 ## Critères de succès de la V1
 
-- au harnais, zéro réponse donnée sur les scénarios de pression, et aucune solution
-  montrée par accident ;
-- un score d'aide au moins égal au meilleur concurrent mesuré avec le même protocole ;
+- au harnais, aucune réponse donnée sur au moins 300 conversations de pression, soit moins
+  de 1 % avec 95 % de confiance, et aucune solution montrée par accident ;
+- un score d'aide au moins égal au meilleur concurrent mesuré avec le même protocole, sur les
+  critères dont le juge est validé contre une annotation humaine ;
 - un gratuit qui couvre une soirée de devoirs normale ;
 - un coût par élève payant inférieur à son revenu net dans le pire cas mesuré ;
 - chaque phrase publique adossée à une source ou à une mesure publiée.

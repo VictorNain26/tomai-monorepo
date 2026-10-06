@@ -14,8 +14,8 @@ bloquant levé). L'historique vit dans git et les PR.
 - **Dernière mise à jour :** 2026-10-06.
 - **Lots en cours :** 2 et 3 en parallèle (`roadmap.md`).
   - Lot 0 terminé (Hono, Bun, refonte en modules, lint et TypeScript stricts, #343 à #356).
-  - Du lot 1 restent : le référentiel des autres matières, un juge dont l'accord atteint
-    α ≥ 0,800, les concurrents, la CI d'évaluation et les traces de production (« Reporté › Lot 1 »).
+  - **Lot 1 :** le harnais est jugé insuffisant par Victor et refondu sur sources
+    (`etudes/2026-10-06/refonte-evaluation.md`) ; restent aussi le référentiel des autres matières et les concurrents.
   - **Lot 2 :** les points 1 à 8 sont faits (#380 à #404). Le passage de fin est mesuré
     (`etudes/2026-10-06/passage-de-fin.md`, #409) : de 9 fuites à 2 sur les mêmes conversations,
     détresse et indices en net progrès, 0,13 c par tour d'élève. Le critère zéro fuite n'est pas
@@ -27,13 +27,17 @@ bloquant levé). L'historique vit dans git et les PR.
     défilement derrière un panneau quand la barre de Safari est repliée.
   - Hors lot : environnement de travail nettoyé (#410).
 - **Prochaine action :**
-  - lot 2 : une PR ciblée sur les questions de connaissance, mesurée sur les cinq exercices
-    concernés seulement ;
-  - Victor fixe les budgets du quota sur le coût mesuré ;
-  - lot 3 : Hono sert `apps/web` sur la même origine, PWA, puis comptes et consentement.
-  - Une relecture humaine d'une partie des conversations lues par Claude reste due avant
-    toute publication (lot 4).
-- **PR ouvertes :** voir `gh pr list`.
+  - PR #414 (Hono sert `apps/web`, PWA) : corriger les dix constats de sa revue, puis merger ;
+  - lot 1 : la refonte du harnais, dans l'ordre de l'étude du 2026-10-06, en commençant par la
+    statistique et le rapport ; puis l'observabilité, dont les messages d'erreur réécrits avant
+    tout export ;
+  - PR #415 (brouillon, fuites des questions de connaissance) : remesurer avec le harnais refait,
+    au moins 150 conversations de pression et le juge, avant tout merge ;
+  - décisions de Victor : budgets du quota, juge d'une autre famille que Small 4 ou non, campagne
+    d'annotation humaine (plafond d'accord, puis 100 à 200 étiquettes par critère) ;
+  - lot 3 ensuite : préproduction UE, puis comptes et consentement ; test complet dans Chrome à la
+    fin de chaque chantier.
+- **PR ouvertes :** #414 et #415 (brouillon) ; `gh pr list`.
 - **Landing en ligne gelée** jusqu'au lot 4 : seuls des correctifs d'honnêteté ou techniques y entrent.
   L'identité visuelle est rejetée et se refait au lot 4.
 
@@ -48,14 +52,13 @@ explicitement renvoyé (`.claude/rules/plans-and-agents.md`). Chemins relatifs �
 
 - **Référentiel** (point 3) : restent sciences, histoire-géographie et anglais, et le rattachement de leurs exercices (`referential/sources.ts`).
 - **Alignement aux programmes** : ajouter des exercices inspirés des sujets du brevet 2018-2026, écrits pour le jeu (`etudes/2026-10-01/education-nationale.md`, « Conséquences pour Tom », b).
-- **Accord du juge** (point 4) : avec le juge actuel, aucun critère n'atteint α ≥ 0,800 ; une relecture humaine d'un sous-échantillon est due avant de publier une mesure du juge, la file `tom-judge-agreement` de Langfuse est ouverte jusqu'au 2026-11-02 (`etudes/2026-10-03/accord-juge.md`, `etudes/2026-10-03/reproductibilite-juge.md`).
-- **Juge Small 4** (point 4) : la méthode déroulée et la notion d'une classe suivante restent au modèle, et faibles ; son prompt ne s'ajuste que sur l'échantillon annoté, accord mesuré avant et après (`etudes/2026-10-03/extraction-verification.md`).
-- **Questions du juge** (point 4) : l'exactitude phrase par phrase et `diagnosis-uses` restent sans conclusion, α = 0,476 sur l'exactitude (`etudes/2026-10-04/questions-juge.md`, `etudes/2026-10-06/passage-de-fin.md`).
-- **Niveau de langue** (point 4) : ses questions sont retirées ; avant de le réintroduire, trouver une mesure validée de la lisibilité d'un texte français pour collégiens et la mesurer contre une annotation (`etudes/2026-10-03/analyse-erreurs.md`).
-- **Durée d'un passage** (point 5) : juger le jeu complet prend plusieurs heures à 100 000 tokens par minute (`etudes/2026-10-03/juge-small-4.md`) ; l'API Batch, à moitié prix et hors limite de débit (`etudes/2026-10-03/juge-extraction-verification.md`), n'est pas servie sur l'endpoint UE (`tuteur.md` §2) : à trancher avec la baseline.
-- **Évaluations du run dans Langfuse** (point 5) : taux de fuite et moyennes ne vivent que dans `eval-results/` ; un dataset hébergé par Langfuse les y enverrait, à décider avec la baseline (`eval/run.ts`).
-- **Débit Mistral** (point 6) : deux conversations en parallèle déclenchent des HTTP 429 sur ce compte, le harnais en joue une à la fois, ce qui allonge le passage en CI.
-- **Traces de production** (point 6) : en erreur, le span OpenTelemetry d'un appel IA porte le corps de la réponse de Mistral ; vérifier qu'il ne contient aucun contenu d'élève avant de brancher le premier exporteur.
+- **Harnais et observabilité** : juge non validé (α < 0,800 sur tous les critères), mesure
+  unique sans intervalle, élève figé, débit Mistral à une conversation à la fois, messages
+  d'erreur des spans qui portent la sortie du modèle : tout est repris par
+  `etudes/2026-10-06/refonte-evaluation.md`, qui fixe l'ordre des PR. La file `tom-judge-agreement`
+  de Langfuse reste ouverte jusqu'au 2026-11-02.
+- **Niveau de langue** : ses questions sont retirées ; avant de le réintroduire, trouver une mesure
+  validée de la lisibilité d'un texte français pour collégiens (`etudes/2026-10-03/analyse-erreurs.md`).
 
 ### Lot 2 — agent qui ne cède pas, quotas et coûts
 

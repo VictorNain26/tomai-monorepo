@@ -84,6 +84,18 @@ Cible :
 - Le chat consomme le protocole de l'AI SDK (`useChat` de `@ai-sdk/react`), déjà
   celui du serveur.
 
+## Observabilité
+
+- **En place** : logs pino avec un sérialiseur en liste blanche (aucun texte d'élève), spans
+  OpenTelemetry de l'AI SDK sans entrées ni sorties (`recordInputs: false`), Sentry si un DSN est
+  fourni ; aucun exporteur de traces en production.
+- **Défaut connu** : l'AI SDK écrit le message d'erreur dans le span quel que soit `recordInputs`,
+  et une erreur de validation y met la sortie du modèle ; `beforeSend` de Sentry ne nettoie que la
+  requête. À corriger avant tout export.
+- **Cible** (`etudes/2026-10-06/refonte-evaluation.md`, « Observabilité en production ») : traces et
+  métriques sans identifiant ni texte, logs avec `trace_id`, erreurs dans un outil hébergé dans
+  l'UE, rétentions courtes, accès réservé ; la destination se tranche avec l'hébergeur.
+
 ## Décisions ouvertes
 
 Elles sont tranchées au démarrage du lot qui en dépend, doc-first, pas avant :
