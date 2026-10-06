@@ -4,7 +4,8 @@
  * Pricing is expressed in USD as published by Mistral — per million tokens, per minute of
  * audio, per million characters — keyed by dated model id (no aliases: an alias can silently
  * change price). Cached tokens are billed at 10 % of the input rate; the EU regional endpoint
- * adds 10 % to everything (docs.mistral.ai/inference/regional-inference). Moderation is free
+ * adds 10 % to everything (docs.mistral.ai/inference/regional-inference). Mistral bills in euros
+ * at its own conversion, `MISTRAL_USD_TO_EUR`. Moderation is free
  * (docs.mistral.ai/models/mistral-moderation-26-03) and not recorded.
  *
  * Unknown models: a row with cost_micro_eur=0 and a billingMetadata.unknownModel flag rather
@@ -49,7 +50,12 @@ const CACHE_DISCOUNT = 0.10;
 
 const EU_REGIONAL_UPCHARGE = 1.1;
 
-const USD_TO_EUR = env.USD_TO_EUR_RATE;
+/**
+ * The conversion Mistral bills at: on the organization's cost page (admin.mistral.ai, Usage ›
+ * Coûts, read on 2026-10-06), speech is 0,00001496 € a character = 16 $ per million × 1,1 × 0,85,
+ * and transcription 0,00004675 € a second = 0,003 $ a minute × 1,1 × 0,85 / 60.
+ */
+const MISTRAL_USD_TO_EUR = 0.85;
 
 export function regionalUpcharge(serverUrl: string): number {
   return new URL(serverUrl).host === 'api.eu.mistral.ai' ? EU_REGIONAL_UPCHARGE : 1;
@@ -74,7 +80,7 @@ export function computeCostMicroEur(model: string, usage: CallUsage, upcharge: n
     ((usage.audioSeconds ?? 0) / 60) * (pricing.perMinute ?? 0) +
     ((usage.characters ?? 0) / 1_000_000) * (pricing.perMChars ?? 0);
 
-  return { costMicroEur: Math.round(usd * upcharge * USD_TO_EUR * 1_000_000), unknownModel: false };
+  return { costMicroEur: Math.round(usd * upcharge * MISTRAL_USD_TO_EUR * 1_000_000), unknownModel: false };
 }
 
 /** What a call costs, in micro-euros, at this server's endpoint; known beforehand for speech. */
@@ -110,7 +116,7 @@ export async function recordAiCost(owner: CostOwner, call: AiCall): Promise<void
         ...(call.characters !== undefined && { characters: call.characters }),
         ...(call.usageUnknown && { usageUnknown: true }),
         unknownModel,
-        usdToEur: USD_TO_EUR,
+        usdToEur: MISTRAL_USD_TO_EUR,
         regionalUpcharge: UPCHARGE,
       },
     });

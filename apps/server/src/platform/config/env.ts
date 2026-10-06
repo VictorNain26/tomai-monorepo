@@ -97,9 +97,6 @@ const EnvSchema = z.object({
   // the AI SDK manages the tool loop as a single continuous stream.
   CHAT_STREAM_TIMEOUT_MS: z.coerce.number().int().default(120000),
 
-  // Currency conversion
-  USD_TO_EUR_RATE: z.coerce.number().positive().default(0.92),
-
   // Feature flags
   QUOTA_ENFORCEMENT_ENABLED: z.enum(['true', 'false']).default('true').transform(val => val === 'true'),
 

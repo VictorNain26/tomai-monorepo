@@ -220,6 +220,9 @@ contraire.
 
 Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pas.
 
+- **Taux de Mistral** (`MISTRAL_USD_TO_EUR`, `platform/ai/cost.ts`) : 0,85, lu sur la page Coûts de
+  l'organisation le 2026-10-06. Le revérifier à chaque facture : un écart change chaque coût et
+  chaque quota.
 - **Bun 1.4.2** plante par intermittence sous `bun test --isolate` (« Segmentation fault »,
   trace dans `JSFinalizationRegistry::takeDeadHoldingsValue`) : bug de Bun, oven-sh/bun#44161,
   ouvert, aucun correctif, la 1.4.2 est la dernière version. Il touchait environ trois passages
@@ -599,3 +602,8 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
   l'outil au premier pas (`toolChoice`), au lieu de laisser le modèle refuser des fiches demandées et
   confirmées (S4, 2026-10-05). Les compteurs de paquets (5 par jour, 50 par mois) partent : le budget
   en euros borne déjà le coût des cartes.
+
+  Coût des appels au taux de Mistral (#403) : la page Coûts de l'organisation facture en euros, au
+  prix en dollars × 1,1 (endpoint UE) × 0,85, vérifié au chiffre près sur la lecture vocale et la
+  transcription. Le calcul convertissait à 0,92 et surestimait chaque coût d'environ 8 % ; les budgets
+  provisoires, inchangés, laissent donc environ 8 % d'usage de plus.
