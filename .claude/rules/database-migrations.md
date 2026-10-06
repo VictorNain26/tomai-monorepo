@@ -47,7 +47,11 @@ Au démarrage de l'image Docker, `docker-entrypoint.sh` applique les migrations
 - `migrate()` de `drizzle-orm` applique les migrations dans une transaction
   (`drizzle-orm/pg-core/dialect.js`) : `CREATE INDEX CONCURRENTLY`, que Postgres refuse dans
   une transaction ([doc](https://www.postgresql.org/docs/current/sql-createindex.html)), ne
-  passe pas par ce chemin.
+  passe pas par ce chemin. Tant qu'aucune base ne garde de données réelles, un `CREATE INDEX`
+  simple suffit. Ensuite, sur une grosse table : créer l'index à la main avec
+  `CREATE INDEX CONCURRENTLY IF NOT EXISTS` avant le déploiement, et écrire la migration avec
+  `CREATE INDEX IF NOT EXISTS` du même nom, qui ne fait alors plus rien et ne verrouille pas les
+  écritures.
 
 ## Diagnostic
 

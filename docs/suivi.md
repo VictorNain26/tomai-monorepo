@@ -14,7 +14,8 @@ bloquant levé). L'historique vit dans git et les PR.
 - **Dernière mise à jour :** 2026-10-06.
 - **Lots en cours :** 2 et 3 en parallèle (`roadmap.md`).
   - Lot 0 terminé (Hono, Bun, refonte en modules, lint et TypeScript stricts, #343 à #356).
-  - Du lot 1 restent les concurrents, la CI d'évaluation et les traces de production.
+  - Du lot 1 restent : le référentiel des autres matières, un juge dont l'accord atteint
+    α ≥ 0,800, les concurrents, la CI d'évaluation et les traces de production (« Reporté › Lot 1 »).
   - **Lot 2 :** les points 1 à 8 sont faits (#380 à #404). Le passage de fin est mesuré
     (`etudes/2026-10-06/passage-de-fin.md`, #409) : de 9 fuites à 2 sur les mêmes conversations,
     détresse et indices en net progrès, 0,13 c par tour d'élève. Le critère zéro fuite n'est pas
@@ -145,6 +146,7 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
 
 | Étape | Pour | Statut |
 |---|---|---|
+| Langfuse : la description de la file d'annotation `tom-judge-agreement` renvoie encore à `docs/agent.md`, devenu `docs/tuteur.md` ; la corriger dans l'interface (l'API n'a pas de mise à jour de file) | Évaluation | à faire |
 | Demander le Zero Data Retention : réservé au paiement à l'usage (« only with pay-as-you-go », [centre d'aide Mistral](https://help.mistral.ai/en/articles/347612-can-i-activate-zero-data-retention-zdr)), or le compte est sur l'offre gratuite (8,50 € d'API inclus par mois, paiement à l'usage désactivé, constaté le 2026-10-02). Activer le paiement à l'usage avec un plafond, puis envoyer la demande avec sa justification (mineurs, RGPD) ; vérifier ensuite Admin › API › Confidentialité. L'entraînement sur les appels API et les modèles Labs y sont désactivés | Porte avant ouverture | à faire |
 | Trancher le statut juridique avec un expert-comptable : rester micro-entrepreneur ou créer une SASU (le GAR n'accepte que des personnes morales ; seuils de TVA et de la micro calculés en abonnés dans `etudes/2026-10-01/statut-juridique.md`) | Avant l'ouverture, au démarrage du lot 3 | à faire |
 | Vérifier Tom dans le hero sur un iPhone (Safari : salut et respiration sans fond noir) | Landing en ligne | à faire |

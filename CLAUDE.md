@@ -2,8 +2,8 @@
 
 Tuteur IA des devoirs pour collégiens, avec un résumé pour le parent. Pour qui, promesse
 et périmètre : `docs/vision.md`, qui prime sur tout autre document ; règle qui gouverne le
-reste : on n'affirme que ce qu'on peut prouver. Stack, structure, commandes, démarrage et
-Git : `README.md`. Ce fichier ne porte que les règles de travail des agents ; ce qui ne vaut
+reste : on n'affirme que ce qu'on peut prouver. Stack, structure, commandes et
+démarrage : `README.md`. Ce fichier ne porte que les règles de travail des agents ; ce qui ne vaut
 que pour une partie du code vit dans `.claude/rules/<sujet>.md`, chargé sur ses chemins.
 
 **Travaux en cours : `docs/suivi.md`** — avancement, bloquants, prochaine action. Le lire
@@ -21,6 +21,14 @@ change. Prettier formate le code (`bun run format`) ; le pre-commit et la CI le 
 landing n'appelle **jamais** le serveur, ni par `@repo/api` ni par l'auth ; son seul lien
 vers le produit sera le bouton « Commencer gratuitement », au lot 4. C'est ce qui l'empêche
 de dériver en second produit.
+
+La landing en ligne est **gelée jusqu'au lot 4** : seuls des correctifs d'honnêteté ou techniques
+y entrent (`.claude/rules/landing.md`).
+
+## Git
+
+- `main` est la seule branche permanente ; jamais de push direct, une branche courte puis une PR.
+- **Merge commit uniquement** : le squash est désactivé sur le dépôt GitHub.
 
 ## Revue avant merge
 
