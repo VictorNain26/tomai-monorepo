@@ -6,14 +6,12 @@ mock.module('../platform/observability/logger', () => ({ logger: createMockLogge
 mock.module('../platform/config/env', () => ({
   env: {
     BETTER_AUTH_SECRET: 'test-secret-for-unit-tests-min-32-chars!',
-    BETTER_AUTH_URL: 'https://api.tomia.fr',
-    FRONTEND_URL: 'http://localhost:3001',
+    BETTER_AUTH_URL: 'https://tom.example',
     NODE_ENV: 'production',
     GOOGLE_CLIENT_ID: 'test-google-client-id',
     GOOGLE_CLIENT_SECRET: 'test-google-client-secret',
     SESSION_MAX_AGE: 604800,
     SESSION_UPDATE_AGE: 86400,
-    CORS_ORIGINS: undefined,
     DATABASE_URL: 'postgresql://test:test@localhost/test',
     PORT: 3000,
     APP_VERSION: '1.0.0',
@@ -29,7 +27,7 @@ mock.module('../platform/config/env', () => ({
   isProduction: () => true,
   isDevelopment: () => false,
   getDatabaseUrl: () => 'postgresql://test:test@localhost/test',
-  getCorsOrigins: () => ['http://localhost:3000', 'http://localhost:3001'],
+  getTrustedOrigins: () => [],
 }));
 
 mock.module('../db/connection', () => ({ db: {} }));
@@ -37,7 +35,9 @@ mock.module('../db/connection', () => ({ db: {} }));
 const { auth } = await import('../platform/auth/auth');
 
 describe('Better Auth configuration in production', () => {
-  it('shares the session cookie across the parent domain of the API', () => {
-    expect(auth.options.advanced.crossSubDomainCookies).toEqual({ enabled: true, domain: '.tomia.fr' });
+  it('keeps the session cookie on the one origin of the API and the web client', () => {
+    expect(auth.options.advanced).not.toHaveProperty('crossSubDomainCookies');
+    expect(auth.options.advanced.defaultCookieAttributes).not.toHaveProperty('domain');
+    expect(auth.options.trustedOrigins).toEqual([]);
   });
 });

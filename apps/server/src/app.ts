@@ -3,13 +3,13 @@
  */
 
 import { Hono } from 'hono';
-import { cors } from 'hono/cors';
 import { requestId } from 'hono/request-id';
-import { secureHeaders } from 'hono/secure-headers';
 
 import { auth } from './platform/auth/auth.js';
-import { isDevelopment, getCorsOrigins } from './platform/config/env.js';
+import { env, isDevelopment } from './platform/config/env.js';
 import type { AppEnv } from './platform/http/context.js';
+import { securityHeaders } from './platform/http/security-headers.js';
+import { webClient } from './platform/http/web-client.js';
 import { sentryMiddleware } from './platform/observability/sentry.js';
 
 import { apiRoutes } from './routes/api/index.js';
@@ -36,46 +36,11 @@ const app = base
     await next();
   })
 
-  .use(
-    cors({
-      origin: getCorsOrigins(),
-      // credentials=true pour les cookies de session cross-origin
-      credentials: true,
-      allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-      allowHeaders: [
-        'Content-Type',
-        'Authorization',
-        'Cookie', // REQUIRED pour Better Auth sessions
-        'Cache-Control',
-        'Accept',
-        'X-Requested-With',
-      ],
-      // Set-Cookie intentionally NOT exposed: JavaScript must not be able to read
-      // session cookies cross-origin.
-      exposeHeaders: ['X-Request-Id', 'Retry-After', 'X-RateLimit-Limit', 'X-RateLimit-Remaining', 'X-RateLimit-Reset'],
-      maxAge: 86400,
-    }),
-  )
-
-  // HSTS only in production so local http://localhost keeps working. CORP and
-  // COOP stay off: the web client runs on another origin and the OAuth flow
-  // may rely on window.opener.
-  .use(
-    secureHeaders({
-      crossOriginResourcePolicy: false,
-      crossOriginOpenerPolicy: false,
-      xFrameOptions: 'DENY',
-      referrerPolicy: 'strict-origin-when-cross-origin',
-      permissionsPolicy: { geolocation: [], microphone: [], camera: [] },
-      strictTransportSecurity: isDev ? false : 'max-age=31536000; includeSubDomains',
-    }),
-  )
+  .use(securityHeaders({ hsts: !isDev }))
 
   .use(createRateLimitMiddleware(RateLimitPresets.api))
 
   .on(['GET', 'POST'], '/api/auth/*', (c) => auth.handler(c.req.raw))
-
-  .get('/', (c) => c.json({ name: 'TomAI API', status: 'operational' }))
 
   // GET /health is mounted via apiRoutes (routes/api/health.routes.ts) — the
   // single canonical health endpoint (Dockerfile HEALTHCHECK target).
@@ -93,6 +58,9 @@ const app = base
 
   .onError(handleError)
   .notFound(handleNotFound);
+
+// Outside the chain: the web client's catch-all stays out of AppType, after every API route.
+if (env.WEB_DIST_DIR) app.route('/', webClient(env.WEB_DIST_DIR));
 
 export { app };
 

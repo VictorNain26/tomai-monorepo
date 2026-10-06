@@ -6,6 +6,8 @@
  * All consumer code reads from the singleton export.
  */
 
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
 import { z } from 'zod';
 import { LOG_LEVELS } from '../observability/log-levels.js';
 import { resolveDatabaseUrl } from './database-url.js';
@@ -37,6 +39,10 @@ const mistralServerUrl = z
     error: 'MISTRAL_SERVER_URL doit être api.eu.mistral.ai en production (aucune donnée élève hors UE)',
   });
 
+const webDistDir = z.string().refine((dir) => existsSync(join(dir, 'index.html')), {
+  error: 'WEB_DIST_DIR doit être le build de apps/web, un dossier qui contient index.html',
+});
+
 const EnvSchema = z.object({
   // Application
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
@@ -44,10 +50,10 @@ const EnvSchema = z.object({
   APP_VERSION: z.string().default('1.0.0'),
   DEPLOYMENT_ID: z.string().optional(),
 
-  // URLs and Origins
+  // The one public origin: API and web client alike.
   BETTER_AUTH_URL: isProd ? z.url() : z.url().default('http://localhost:3000'),
-  FRONTEND_URL: z.url().optional(),
-  CORS_ORIGINS: z.string().optional(),
+  // Build of apps/web, served on that origin. Absent in development, where Vite serves it.
+  WEB_DIST_DIR: isProd ? webDistDir : webDistDir.optional(),
 
   // Database (resolved via resolveDatabaseUrl() which handles Docker detection)
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
@@ -133,34 +139,9 @@ export function getDatabaseUrl(): string {
 }
 
 /**
- * Build CORS origins list (HTTP/HTTPS only)
- * - Includes BETTER_AUTH_URL + FRONTEND_URL (if set)
- * - Adds CORS_ORIGINS comma-separated list
- * - Dev: adds localhost:3000
+ * Origins better-auth trusts beyond its own base URL: in development, the Vite dev server, whose
+ * proxy forwards the browser's Origin to the API.
  */
-export function getCorsOrigins(): string[] {
-  const origins = new Set<string>();
-
-  // Add explicitly configured origins
-  if (env.BETTER_AUTH_URL) {
-    origins.add(env.BETTER_AUTH_URL);
-  }
-  if (env.FRONTEND_URL) {
-    origins.add(env.FRONTEND_URL);
-  }
-
-  // Add comma-separated CORS_ORIGINS
-  if (env.CORS_ORIGINS) {
-    env.CORS_ORIGINS.split(',')
-      .map((o) => o.trim())
-      .filter(Boolean)
-      .forEach((o) => origins.add(o));
-  }
-
-  // Dev origins (HTTP localhost)
-  if (isDevelopment()) {
-    origins.add('http://localhost:3000'); // server
-  }
-
-  return Array.from(origins);
+export function getTrustedOrigins(): string[] {
+  return isDevelopment() ? ['http://localhost:3002'] : [];
 }

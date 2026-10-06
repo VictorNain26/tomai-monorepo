@@ -24,13 +24,11 @@ mock.module('../platform/config/env', () => ({
   env: {
     BETTER_AUTH_SECRET: 'test-secret-for-unit-tests-min-32-chars!',
     BETTER_AUTH_URL: 'http://localhost:3000',
-    FRONTEND_URL: 'http://localhost:3001',
     NODE_ENV: 'development',
     GOOGLE_CLIENT_ID: 'test-google-client-id',
     GOOGLE_CLIENT_SECRET: 'test-google-client-secret',
     SESSION_MAX_AGE: 604800,
     SESSION_UPDATE_AGE: 86400,
-    CORS_ORIGINS: undefined,
     DATABASE_URL: 'postgresql://test:test@localhost/test',
     PORT: 3000,
     APP_VERSION: '1.0.0',
@@ -46,7 +44,7 @@ mock.module('../platform/config/env', () => ({
   isProduction: () => false,
   isDevelopment: () => true,
   getDatabaseUrl: () => 'postgresql://test:test@localhost/test',
-  getCorsOrigins: () => ['http://localhost:3000', 'http://localhost:3001'],
+  getTrustedOrigins: () => ['http://localhost:3002'],
 }));
 
 mock.module('../db/connection', () => ({
@@ -121,9 +119,9 @@ describe('Better Auth Configuration', () => {
   });
 
   describe('Web-only client surface', () => {
-    it('trusts only the HTTP CORS origins', () => {
+    it('trusts the Vite dev origin and nothing else beyond its base URL', () => {
       const options = auth['options'] as { trustedOrigins: string[] };
-      expect(options.trustedOrigins).toEqual(['http://localhost:3000', 'http://localhost:3001']);
+      expect(options.trustedOrigins).toEqual(['http://localhost:3002']);
     });
 
     it('does not mount the Expo authorization proxy', () => {

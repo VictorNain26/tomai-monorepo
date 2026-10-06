@@ -5,6 +5,9 @@
  */
 
 import { describe, it, expect, beforeEach, mock } from 'bun:test';
+import { mkdtempSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { Hono } from 'hono';
 import { createMockLogger } from '../tests/_helpers/mock-logger';
 
@@ -58,6 +61,10 @@ mock.module('../platform/auth/auth', () => ({
   },
 }));
 
+// A web build, served by the app after its API routes.
+const WEB_DIST_DIR = mkdtempSync(join(tmpdir(), 'web-dist-'));
+writeFileSync(join(WEB_DIST_DIR, 'index.html'), '<!doctype html><title>Tom</title>');
+
 mock.module('../platform/config/env', () => ({
   env: {
     NODE_ENV: 'test',
@@ -65,11 +72,12 @@ mock.module('../platform/config/env', () => ({
     MISTRAL_SERVER_URL: 'https://api.eu.mistral.ai',
     BETTER_AUTH_SECRET: 'test-secret-for-unit-tests-min-32-chars!',
     BETTER_AUTH_URL: 'http://localhost:3000',
+    WEB_DIST_DIR,
   },
   isDevelopment: () => false,
   isProduction: () => true,
   getDatabaseUrl: () => 'postgresql://test:test@localhost/test',
-  getCorsOrigins: () => ['http://localhost:3001'],
+  getTrustedOrigins: () => [],
 }));
 
 // Infrastructure mocks
@@ -233,12 +241,25 @@ beforeEach(() => {
 // ============================================
 
 describe('API Endpoints', () => {
-  describe('GET /', () => {
-    it('should return operational status', async () => {
+  describe('web client', () => {
+    it('serves the web build at /, under the CSP', async () => {
       const res = await app.fetch(new Request('http://localhost/'));
       expect(res.status).toBe(200);
-      const data = await readBody(res);
-      expect(data.status).toBe('operational');
+      expect(res.headers.get('content-type')).toStartWith('text/html');
+      expect(res.headers.get('content-security-policy')).toContain("default-src 'self'");
+      expect(await res.text()).toContain('<title>Tom</title>');
+    });
+
+    it('hands a client route to index.html', async () => {
+      const res = await app.fetch(new Request('http://localhost/parent/enfants'));
+      expect(res.status).toBe(200);
+      expect(await res.text()).toContain('<title>Tom</title>');
+    });
+
+    it('keeps an unknown /api route a JSON 404', async () => {
+      const res = await app.fetch(new Request('http://localhost/api/nope'));
+      expect(res.status).toBe(404);
+      expect(((await readBody(res)).error as { code: string }).code).toBe('NOT_FOUND');
     });
   });
 

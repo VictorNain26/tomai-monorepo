@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'bun:test';
+import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
 const ENV_MODULE = new URL('../platform/config/env.ts', import.meta.url).pathname;
+
+// Production also requires the web build.
+const WEB_DIST_DIR = mkdtempSync(join(tmpdir(), 'web-dist-'));
+writeFileSync(join(WEB_DIST_DIR, 'index.html'), '<!doctype html>');
 
 function bootEnv(extra: Record<string, string>) {
   return Bun.spawnSync(['bun', '--no-env-file', '-e', `await import(${JSON.stringify(ENV_MODULE)})`], {
@@ -56,6 +62,7 @@ describe('env — Mistral model ids', () => {
       NODE_ENV: 'production',
       MISTRAL_SERVER_URL: 'https://api.mistral.ai',
       BETTER_AUTH_URL: 'https://tomia.fr',
+      WEB_DIST_DIR,
     });
     expect(result.exitCode).not.toBe(0);
     expect(result.stderr.toString()).toContain('MISTRAL_SERVER_URL');
@@ -66,6 +73,7 @@ describe('env — Mistral model ids', () => {
       NODE_ENV: 'production',
       MISTRAL_SERVER_URL: 'https://api.eu.mistral.ai',
       BETTER_AUTH_URL: 'https://tomia.fr',
+      WEB_DIST_DIR,
     });
     expect(result.exitCode).toBe(0);
   });
