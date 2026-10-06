@@ -1,6 +1,7 @@
 # TomAI - Docker build check (server)
 # Vérifie que l'image production du backend builde réellement — attrape les
 # références mortes (ex: package retiré du workspace mais encore COPY).
+# L'image embarque le build de apps/web, que le serveur sert sur son origine.
 
 name: Docker
 
@@ -9,6 +10,9 @@ on:
     branches: [main]
     paths:
       - 'apps/server/**'
+      - 'apps/web/**'
+      - 'packages/tokens/**'
+      - 'packages/web-host/**'
       - 'packages/eslint-config/**'
       - 'bun.lock'
       - 'bunfig.toml'
@@ -20,6 +24,9 @@ on:
     branches: [main]
     paths:
       - 'apps/server/**'
+      - 'apps/web/**'
+      - 'packages/tokens/**'
+      - 'packages/web-host/**'
       - 'packages/eslint-config/**'
       - 'bun.lock'
       - 'bunfig.toml'

@@ -45,16 +45,16 @@ l'usage tant que sa variable manque, mais le serveur démarre.
 ```
 NODE_ENV=development
 BETTER_AUTH_SECRET=<openssl rand -base64 32>
-BETTER_AUTH_URL=http://localhost:3000
+BETTER_AUTH_URL=http://localhost:3002
 DATABASE_URL=postgresql://tomai_dev:tomai_dev_password@localhost:5432/tomai_dev
 ```
 
 Sans `MISTRAL_API_KEY`, le serveur démarre et `/health` reste `healthy` (il ne
 sonde que la base) ; le chat et la génération de cartes échouent à l'usage.
 
-Le web (`apps/web`, :3002) n'appelle pas encore le serveur : aucune origine CORS à ajouter
-pour lui. La cible est qu'Hono le serve sur la même origine que l'API (`docs/architecture.md`,
-« Client web ») ; ce branchement n'existe pas encore, en dev comme ailleurs.
+Le web (`apps/web`, :3002) n'a besoin d'aucune origine CORS : en dev, le proxy de Vite envoie
+`/api/` et `/health` au serveur sur :3000 ; en production, Hono sert son build sur l'origine de
+l'API (`docs/architecture.md`, « Client web »).
 
 ## Ce que `bun run dev` attend réellement
 

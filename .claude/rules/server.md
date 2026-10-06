@@ -47,5 +47,8 @@ services) : un client qui typecheckerait `src/app.ts` directement hériterait de
 
 - **Fail-fast au boot** : `src/platform/config/env.ts` valide l'environnement au chargement
   et refuse de démarrer sur une variable requise absente ou invalide.
-- CORS, en-têtes de sécurité et rate limit global se posent dans `src/app.ts` ; le preset
-  `ai` de `platform/http/rate-limit.ts`, plus strict, garde les routes du chat.
+- Une seule origine sert l'API et le client web (`webClient` de `@repo/web-host`, monté après
+  les routes `/api`, hors de `AppType`) : pas de CORS, cookie de session limité à l'hôte.
+- En-têtes de sécurité, CSP comprise (`securityHeaders` de `@repo/web-host`), et rate limit
+  de `/api` et `/health` se posent dans `src/app.ts` ; le preset `ai` de `platform/http/rate-limit.ts`, plus
+  strict, garde les routes du chat.

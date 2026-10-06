@@ -3,9 +3,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite dev --port 3002 --strictPort",
-    "build": "vite build",
-    "preview": "vite preview --port 3002 --strictPort",
+    "dev": "vite dev",
+    "build": "vite build && find dist -type f \\( -name '*.js' -o -name '*.css' -o -name '*.html' -o -name '*.svg' -o -name '*.webmanifest' \\) -exec gzip -9 -k -n {} +",
+    "preview": "serve-web dist 3002",
     "lint": "eslint . --max-warnings 0",
     "typecheck": "tsc -b",
     "test:e2e": "playwright test",
@@ -21,6 +21,7 @@
   "devDependencies": {
     "@playwright/test": "^1.63.0",
     "@repo/eslint-config": "workspace:*",
+    "@repo/web-host": "workspace:*",
     "@tailwindcss/vite": "^4.3.3",
     "@tanstack/router-plugin": "^1.168.42",
     "@types/node": "^24.13.6",
@@ -30,6 +31,7 @@
     "eslint": "^10.11.0",
     "tailwindcss": "^4.3.3",
     "typescript": "6.0.3",
-    "vite": "^8.3.2"
+    "vite": "^8.3.2",
+    "vite-plugin-pwa": "^2.0.0"
   }
 }

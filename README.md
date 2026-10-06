@@ -28,6 +28,7 @@ apps/
 
 packages/
 ├── api/             # Client typé (hono/client) — le contrat serveur → clients
+├── web-host/        # Service du build web sur l'origine de l'API : fichiers, fallback, en-têtes
 ├── ui/              # Primitives shadcn sur Radix
 ├── tokens/          # Design tokens CSS (Tailwind v4) partagés
 └── eslint-config/   # Config ESLint partagée
@@ -47,7 +48,7 @@ packages/
 | Stockage | Scaleway S3 (fr-par), uploads par URL présignée |
 | Observabilité | Sentry initialisé sur server et landing. La région dépend du DSN, absent du dépôt. Pas d'analytics installée |
 | Monorepo | Turborepo, workspaces Bun |
-| Déploiement | Landing : Vercel (`apps/landing/vercel.json`), previews de branche déployées. Server : image `apps/server/Dockerfile`, rien de déployé ; hébergeur tranché au lot 3. Web : servi par le serveur, sur la même origine que l'API (cible du lot 3) |
+| Déploiement | Landing : Vercel (`apps/landing/vercel.json`), previews de branche déployées. Server : image `apps/server/Dockerfile`, qui embarque le build du web, rien de déployé ; hébergeur tranché au lot 3. Web : servi par le serveur, sur la même origine que l'API ; en dev, Vite (3002) envoie `/api/` au serveur par son proxy |
 
 ## Commandes
 

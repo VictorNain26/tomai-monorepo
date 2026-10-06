@@ -5,7 +5,8 @@
  */
 
 import { describe, it, expect, beforeEach, mock } from 'bun:test';
-import { Hono } from 'hono';
+import { Hono, type Context } from 'hono';
+import { fakeWebBuild } from '../tests/_helpers/boot-env';
 import { createMockLogger } from '../tests/_helpers/mock-logger';
 
 const SESSION_ID = '0199a3c4-7b1e-7d2a-9f00-123456789abc';
@@ -58,6 +59,9 @@ mock.module('../platform/auth/auth', () => ({
   },
 }));
 
+// A web build, served by the app after its API routes.
+const WEB_DIST_DIR = fakeWebBuild();
+
 mock.module('../platform/config/env', () => ({
   env: {
     NODE_ENV: 'test',
@@ -65,16 +69,19 @@ mock.module('../platform/config/env', () => ({
     MISTRAL_SERVER_URL: 'https://api.eu.mistral.ai',
     BETTER_AUTH_SECRET: 'test-secret-for-unit-tests-min-32-chars!',
     BETTER_AUTH_URL: 'http://localhost:3000',
+    WEB_DIST_DIR,
   },
   isDevelopment: () => false,
   isProduction: () => true,
   getDatabaseUrl: () => 'postgresql://test:test@localhost/test',
-  getCorsOrigins: () => ['http://localhost:3001'],
 }));
 
-// Infrastructure mocks
+// Infrastructure mocks. The limiter only marks what it counts.
 mock.module('../platform/http/rate-limit', () => ({
-  createRateLimitMiddleware: () => (_c: unknown, next: () => Promise<void>) => next(),
+  createRateLimitMiddleware: () => async (c: Context, next: () => Promise<void>) => {
+    c.header('X-RateLimit-Limit', '100');
+    await next();
+  },
   RateLimitPresets: { api: {} },
 }));
 
@@ -232,13 +239,39 @@ beforeEach(() => {
 // TESTS
 // ============================================
 
+// What a browser sends when it navigates to a page.
+const NAVIGATION = { Accept: 'text/html' };
+
 describe('API Endpoints', () => {
-  describe('GET /', () => {
-    it('should return operational status', async () => {
-      const res = await app.fetch(new Request('http://localhost/'));
+  describe('web client', () => {
+    it('serves the web build at /, under the CSP', async () => {
+      const res = await app.fetch(new Request('http://localhost/', { headers: NAVIGATION }));
       expect(res.status).toBe(200);
-      const data = await readBody(res);
-      expect(data.status).toBe('operational');
+      expect(res.headers.get('content-type')).toStartWith('text/html');
+      expect(res.headers.get('content-security-policy')).toContain("default-src 'self'");
+      expect(await res.text()).toContain('<title>Tom</title>');
+    });
+
+    it('hands a client route to index.html', async () => {
+      const res = await app.fetch(new Request('http://localhost/parent/enfants', { headers: NAVIGATION }));
+      expect(res.status).toBe(200);
+      expect(await res.text()).toContain('<title>Tom</title>');
+    });
+
+    it('keeps an unknown /api route a JSON 404', async () => {
+      const res = await app.fetch(new Request('http://localhost/api/nope'));
+      expect(res.status).toBe(404);
+      expect(((await readBody(res)).error as { code: string }).code).toBe('NOT_FOUND');
+    });
+
+    it('counts API requests against the rate limit, never the files of the web client', async () => {
+      const limited = async (path: string) =>
+        (await app.fetch(new Request(`http://localhost${path}`, { headers: NAVIGATION }))).headers.has('X-RateLimit-Limit');
+      expect(await limited('/')).toBe(false);
+      expect(await limited('/parent/enfants')).toBe(false);
+      expect(await limited('/health')).toBe(true);
+      expect(await limited('/api')).toBe(true);
+      expect(await limited('/api/nope')).toBe(true);
     });
   });
 

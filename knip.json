@@ -17,6 +17,9 @@
     },
     "packages/tokens": {
       "entry": ["*.test.mjs"]
+    },
+    "packages/web-host": {
+      "project": ["src/**/*.ts"]
     }
   }
 }

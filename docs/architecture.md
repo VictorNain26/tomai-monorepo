@@ -67,16 +67,28 @@ Choix et options comparées : `etudes/2026-10-06/client-web.md`. **Pensé d'abor
 téléphone** : chaque parcours se conçoit et se prouve à largeur de téléphone, le bureau s'en
 déduit.
 
-En place (`apps/web`) : application monopage Vite + React + TanStack Router, Tailwind sur les
-tokens `@repo/tokens`, tests Playwright à largeur de téléphone (WebKit et Chromium).
+En place (`apps/web`) :
+- Application monopage Vite + React + TanStack Router, Tailwind sur les tokens `@repo/tokens`,
+  tests Playwright à largeur de téléphone (WebKit et Chromium).
+- Servie par Hono sur la même origine que l'API (`packages/web-host`) : cookie de
+  session limité à l'hôte, sans CORS ni blocage de Safari, un seul déploiement. Le serveur lit le
+  build dans `WEB_DIST_DIR`, que l'image Docker embarque ; une navigation hors de `/api` sans
+  fichier reçoit `index.html`, un fichier absent reste un 404. Assets hachés en cache
+  `immutable`, le reste en `no-cache` revalidé par ETag ; fichiers compressés au build. CSP
+  `default-src 'self'` sur toutes les réponses ; le rate limit ne compte que `/api` et
+  `/health`. En dev, le proxy de Vite envoie `/api/` et `/health` au serveur, et l'origine de
+  Vite est la base de better-auth : une seule origine aussi. Le preview et l'e2e du web
+  tournent sur ce même code (`serve-web`).
+- Après un déploiement, un onglet ouvert qui demande un morceau disparu de son ancien build se
+  recharge une fois sur le nouveau (TanStack Router, `lazyRouteComponent`).
+- Installable (PWA, `vite-plugin-pwa`) : manifest et service worker, qui ne met en cache que le
+  build, jamais une réponse `/api`, et laisse passer les navigations `/api` (callback OAuth).
+  Photo, voix et push passeront par le web, sans application native en V1.
+- `@repo/api` prend une base absolue : `window.location.origin` pour le web.
 
-Cible :
-- Consommateur du client typé via `@repo/api` ; aujourd'hui `apps/web` n'appelle pas encore le
+Cible :
+- Consommateur du client typé via `@repo/api` ; aujourd'hui `apps/web` n'appelle pas encore le
   serveur.
-- Installable (PWA, `vite-plugin-pwa`) : photo, voix et push passent par le web, sans application
-  native en V1.
-- Servie par Hono sur la même origine que l'API : cookies sans CORS ni blocage de Safari, un seul
-  déploiement.
 - Données par TanStack Query, formulaires par react-hook-form et Zod.
 - Primitives `@repo/ui` (shadcn sur Radix). Base UI est écarté : sur iOS, il ne verrouille pas
   le défilement derrière un panneau quand la barre de Safari est repliée

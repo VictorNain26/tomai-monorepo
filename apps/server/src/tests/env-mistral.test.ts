@@ -1,20 +1,8 @@
 import { describe, expect, it } from 'bun:test';
-import { tmpdir } from 'node:os';
+import { bootEnv, fakeWebBuild } from './_helpers/boot-env';
 
-const ENV_MODULE = new URL('../platform/config/env.ts', import.meta.url).pathname;
-
-function bootEnv(extra: Record<string, string>) {
-  return Bun.spawnSync(['bun', '--no-env-file', '-e', `await import(${JSON.stringify(ENV_MODULE)})`], {
-    cwd: tmpdir(),
-    env: {
-      PATH: process.env.PATH ?? '',
-      DATABASE_URL: 'postgresql://test:test@localhost/test',
-      BETTER_AUTH_SECRET: 'x'.repeat(32),
-      ...extra,
-    },
-    stderr: 'pipe',
-  });
-}
+// Production also requires the web build.
+const WEB_DIST_DIR = fakeWebBuild();
 
 describe('env — Mistral model ids', () => {
   it('boots with the dated defaults', () => {
@@ -24,31 +12,31 @@ describe('env — Mistral model ids', () => {
   it('refuses a -latest alias for the text model', () => {
     const result = bootEnv({ MISTRAL_MODEL: 'mistral-small-latest' });
     expect(result.exitCode).not.toBe(0);
-    expect(result.stderr.toString()).toContain('MISTRAL_MODEL');
+    expect(result.stderr).toContain('MISTRAL_MODEL');
   });
 
   it('refuses a -latest alias for the speech model', () => {
     const result = bootEnv({ MISTRAL_TTS_MODEL: 'voxtral-mini-tts-latest' });
     expect(result.exitCode).not.toBe(0);
-    expect(result.stderr.toString()).toContain('MISTRAL_TTS_MODEL');
+    expect(result.stderr).toContain('MISTRAL_TTS_MODEL');
   });
 
   it('refuses a server URL that is not a URL', () => {
     const result = bootEnv({ MISTRAL_SERVER_URL: 'api.eu.mistral.ai' });
     expect(result.exitCode).not.toBe(0);
-    expect(result.stderr.toString()).toContain('MISTRAL_SERVER_URL');
+    expect(result.stderr).toContain('MISTRAL_SERVER_URL');
   });
 
   it('refuses a server URL with a path', () => {
     const result = bootEnv({ MISTRAL_SERVER_URL: 'https://api.eu.mistral.ai/v1' });
     expect(result.exitCode).not.toBe(0);
-    expect(result.stderr.toString()).toContain('MISTRAL_SERVER_URL');
+    expect(result.stderr).toContain('MISTRAL_SERVER_URL');
   });
 
   it('refuses a server URL with a trailing slash', () => {
     const result = bootEnv({ MISTRAL_SERVER_URL: 'https://api.eu.mistral.ai/' });
     expect(result.exitCode).not.toBe(0);
-    expect(result.stderr.toString()).toContain('MISTRAL_SERVER_URL');
+    expect(result.stderr).toContain('MISTRAL_SERVER_URL');
   });
 
   it('refuses a non-EU server URL in production', () => {
@@ -56,9 +44,10 @@ describe('env — Mistral model ids', () => {
       NODE_ENV: 'production',
       MISTRAL_SERVER_URL: 'https://api.mistral.ai',
       BETTER_AUTH_URL: 'https://tomia.fr',
+      WEB_DIST_DIR,
     });
     expect(result.exitCode).not.toBe(0);
-    expect(result.stderr.toString()).toContain('MISTRAL_SERVER_URL');
+    expect(result.stderr).toContain('MISTRAL_SERVER_URL');
   });
 
   it('accepts the EU server URL in production', () => {
@@ -66,6 +55,7 @@ describe('env — Mistral model ids', () => {
       NODE_ENV: 'production',
       MISTRAL_SERVER_URL: 'https://api.eu.mistral.ai',
       BETTER_AUTH_URL: 'https://tomia.fr',
+      WEB_DIST_DIR,
     });
     expect(result.exitCode).toBe(0);
   });

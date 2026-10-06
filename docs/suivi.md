@@ -24,22 +24,21 @@ bloquant levé). L'historique vit dans git et les PR.
   - **Lot 3 :** client web choisi (`etudes/2026-10-06/client-web.md`, #406), squelette
     `apps/web` (#408), champs en erreur dans `VALIDATION_ERROR` (#405). `@repo/ui` reste sur
     Radix : la bascule sur Base UI (#407) est fermée, car sur iOS Base UI ne verrouille pas le
-    défilement derrière un panneau quand la barre de Safari est repliée.
+    défilement derrière un panneau quand la barre de Safari est repliée. Hono sert `apps/web`
+    sur la même origine que l'API, sans CORS, sous CSP, et le web est une PWA installable (#414).
   - Hors lot : environnement de travail nettoyé (#410).
 - **Prochaine action **, ordre indicatif (direction revue avec Victor le 2026-10-06 au soir) :
-  1. PR #414 (Hono sert `apps/web`, PWA) : corriger les dix constats de sa revue, listés dans la
-     PR, puis merger ;
-  2. lot 1, refonte du harnais : mesures avec marge d'erreur, page simple pour que Victor
+  1. lot 1, refonte du harnais : mesures avec marge d'erreur, page simple pour que Victor
      juge, messages d'erreur nettoyés avant tout export, juge vérifié contre Victor ;
-  3. lot 3 : étude des hébergeurs UE et préproduction, puis chat texte dans l'app avec une
+  2. lot 3 : étude des hébergeurs UE et préproduction, puis chat texte dans l'app avec une
      connexion minimale, pour que Victor teste sur son téléphone ;
-  4. PR #415 (brouillon) : remesurer avec le harnais refait avant de la merger ;
-  5. test complet dans Chrome à la fin de chaque chantier.
+  3. PR #415 (brouillon) : remesurer avec le harnais refait avant de la merger ;
+  4. test complet dans Chrome à la fin de chaque chantier.
 - **Décisions de Victor en attente :** budgets du quota ; offre Mistral payante pour paralléliser
   l'évaluation (aujourd'hui une conversation à la fois, environ 10 h pour 300 conversations
   rejouées deux fois) ; juge d'une autre famille, seulement s'il est très bon marché. Décidé le
   2026-10-06 : Small 4 partout, pas de Medium ; Victor seul annotateur ; landing refaite au lot 4.
-- **PR ouvertes :** #414 et #415 (brouillon) ; `gh pr list`.
+- **PR ouvertes :** #415 (brouillon) ; `gh pr list`.
 - **Landing en ligne gelée** jusqu'au lot 4 : seuls des correctifs d'honnêteté ou techniques y entrent.
   L'identité visuelle est rejetée et se refait au lot 4.
 
@@ -75,8 +74,10 @@ explicitement renvoyé (`.claude/rules/plans-and-agents.md`). Chemins relatifs �
 - **Conformité** : mention « vous parlez à une IA » dès la première interaction, consentement conjoint sous 15 ans, AIPD, résumé parent proportionné et connu de l'enfant, aucun lien avec un établissement sans réévaluer le haut risque (`etudes/2026-10-01/education-nationale.md`, c ; `tuteur.md` §11).
 - **Facturation** : colonnes et enum RevenueCat de `modules/billing/billing.schema.ts`, restes du mobile, refaits avec le paiement web ; les routes qui ont besoin des enfants vont dans `family`, `billing` reste un module feuille (#354).
 - **Hébergement** : délai de grâce SIGTERM d'au moins un tour de chat, stockage partagé du rate limit s'il y a plusieurs instances, `advanced.ipAddress.trustedProxies` de better-auth derrière le proxy de l'hébergeur.
-- **Client web**, point 1 : `@repo/api` en base relative, `ai` aligné sur la version qu'épingle `@ai-sdk/react`, Hono qui sert la SPA (fallback après `/api`, cache des assets, CSP), mesures sur un vrai iPhone et un Android (`etudes/2026-10-06/client-web.md`).
-- **Alerte au parent** : le push web n'atteint qu'un parent qui a installé l'app (iOS) ; l'alerte de détresse demande un canal garanti, l'e-mail par exemple, à décider avec le parcours parent.
+- **Client web**, point 1, reste de #414 : `ai` aligné sur la version qu'épingle `@ai-sdk/react`, avec la PR qui l'installe ; mesures sur un vrai iPhone et un Android (`etudes/2026-10-06/client-web.md`).
+- **Connexion** : `onAPIError.errorURL` de better-auth vers une page du web, car sa page d'erreur (`/api/auth/error`) a un `<style>` en ligne que la CSP bloque ; en dev, l'URI de redirection Google devient `http://localhost:3002/api/auth/callback/google`, la base de better-auth étant l'origine de Vite (`apps/server/.env.example`).
+- **Voix** : la `Permissions-Policy` interdit le micro (`packages/web-host/src/security-headers.ts`) ; l'ouvrir à `self` avec l'enregistrement d'un oral dans le web.
+- **Alerte au parent** : le push web n'atteint qu'un parent qui a installé l'app (iOS) ; l'alerte de détresse demande un canal garanti, l'e-mail par exemple, à décider avec le parcours parent (point 3).
 - **Langue d'un oral** : la transcription impose le français, et un oral de langue se transcrit mal (« Yes. » bruité devient « Oui. ») ; le client déclare la langue d'un oral de langue et la route la passe à Voxtral (`modules/voice/voxtral-transcribe.service.ts`).
 
 ### Lot 4 — marque et lancement

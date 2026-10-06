@@ -1,6 +1,7 @@
-import { describe, expect, it } from 'bun:test';
+import { afterEach, describe, expect, it, mock, spyOn } from 'bun:test';
 import type { ClientResponse } from 'hono/client';
-import { unwrap, type ApiError } from '../src/client';
+import { getClient, resetClient, unwrap, type ApiError } from '../src/client';
+import { initializeApi, resetApiConfig } from '../src/config';
 import type { FieldError } from '../src/types';
 
 function errorResponse(status: number, body: string): ClientResponse<unknown> {
@@ -53,5 +54,37 @@ describe('unwrap error handling', () => {
     expect(err.message).toBe('HTTP 502');
     expect('code' in err).toBe(false);
     expect('suggestions' in err).toBe(false);
+  });
+});
+
+describe('getClient', () => {
+  afterEach(() => {
+    mock.restore();
+    resetClient();
+    resetApiConfig();
+  });
+
+  it('requests the server origin with the session cookie', async () => {
+    const fetchSpy = spyOn(globalThis, 'fetch').mockResolvedValue(Response.json({ status: 'healthy' }));
+    initializeApi({ baseUrl: 'https://tom.example' });
+
+    await getClient().health.$get();
+
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    const [input, init] = fetchSpy.mock.calls[0] ?? [];
+    expect(input).toBe('https://tom.example/health');
+    expect(init).toMatchObject({ credentials: 'include' });
+  });
+
+  it('builds the URL of a route', () => {
+    initializeApi({ baseUrl: 'https://tom.example' });
+
+    expect(getClient().health.$url().href).toBe('https://tom.example/health');
+  });
+
+  it.each(['/', '', 'tom.example', 'localhost:3000', 'file:///app'])('refuses the base %p, which is not an absolute http(s) URL', (baseUrl) => {
+    expect(() => {
+      initializeApi({ baseUrl });
+    }).toThrow('[API] baseUrl must be an absolute http(s) URL');
   });
 });

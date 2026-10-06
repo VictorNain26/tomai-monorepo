@@ -12,7 +12,7 @@ import { openAPI, username } from 'better-auth/plugins';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { db } from '../../db/connection';
 import { user, session, account, verification } from '../../db/schema';
-import { env, isProduction, isDevelopment, getCorsOrigins } from '../config/env';
+import { env, isProduction, isDevelopment } from '../config/env';
 import { logger } from '../observability/logger';
 
 // Validation des services requis pour l'authentification
@@ -23,66 +23,16 @@ if (!env.BETTER_AUTH_URL) {
   throw new Error('BETTER_AUTH_URL is required');
 }
 
-if (isProduction() && !env.FRONTEND_URL) {
-  throw new Error('FRONTEND_URL is required for production authentication');
-}
-
-const trustedOrigins = getCorsOrigins();
-
-/**
- * Détermine le domaine cookie pour les sous-domaines
- * En production: ".tomia.fr" pour partager entre tomia.fr et api.tomia.fr
- * En développement: undefined (localhost)
- */
-function getCookieDomain(): string | undefined {
-  if (isDevelopment()) {
-    return undefined;
-  }
-  // Extraire le domaine parent depuis BETTER_AUTH_URL ou FRONTEND_URL
-  // Ex: https://api.tomia.fr -> .tomia.fr
-  const url = env.BETTER_AUTH_URL || env.FRONTEND_URL;
-  if (url) {
-    try {
-      const hostname = new URL(url).hostname;
-      const parts = hostname.split('.');
-      if (parts.length >= 2) {
-        // Retourne .domaine.tld (ex: .tomia.fr)
-        return '.' + parts.slice(-2).join('.');
-      }
-    } catch (error) {
-      // URL invalide — fallback à undefined (localhost)
-      logger.warn('Failed to extract cookie domain from URL', {
-        operation: 'auth:cookie_domain:invalid_url',
-        url,
-        err: error,
-      });
-    }
-  }
-  return undefined;
-}
-
-const cookieDomain = getCookieDomain();
-
-// Log de configuration
 logger.info('Better Auth Configuration', {
   baseURL: env.BETTER_AUTH_URL,
-  frontendURL: env.FRONTEND_URL,
-  trustedOrigins,
   environment: env.NODE_ENV,
-  isProduction: isProduction(),
-  cookieDomain,
-  crossSubDomainCookies: isProduction(),
   operation: 'auth:config',
 });
 
-// Configuration Better Auth - Architecture sous-domaines
-// Frontend: app.tomia.fr | Backend: api.tomia.fr
+// One origin serves the API and the web client: the session cookie stays on that host.
 export const auth = betterAuth({
   secret: env.BETTER_AUTH_SECRET,
   baseURL: env.BETTER_AUTH_URL,
-
-  // Origins de confiance pour les callbacks OAuth
-  trustedOrigins,
 
   // No cookieCache: a cached session outlives a deleted account for its whole maxAge.
   session: {
@@ -90,18 +40,8 @@ export const auth = betterAuth({
     updateAge: env.SESSION_UPDATE_AGE,
   },
 
-  // Configuration des cookies pour sous-domaines
   advanced: {
-    // Cookies partagés entre sous-domaines (tomia.fr <-> api.tomia.fr)
-    crossSubDomainCookies: isProduction()
-      ? {
-          enabled: true,
-          ...(cookieDomain !== undefined && { domain: cookieDomain }), // ".tomia.fr"
-        }
-      : undefined,
-
     defaultCookieAttributes: {
-      // SameSite: "lax" suffit pour les sous-domaines du même domaine parent
       sameSite: 'lax',
       secure: isProduction(),
       httpOnly: true,

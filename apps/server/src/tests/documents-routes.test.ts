@@ -12,7 +12,6 @@ mock.module('../platform/config/env', () => ({
   env: {},
   isProduction: () => false,
   isDevelopment: () => true,
-  getCorsOrigins: () => [],
 }));
 mock.module('../db/connection', () => ({ db: {} }));
 mock.module('../modules/voice/index', () => ({ getVoxtralTranscribeService: () => ({}) }));
