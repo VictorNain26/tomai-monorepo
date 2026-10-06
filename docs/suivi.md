@@ -199,6 +199,8 @@ contraire.
   - `ai` côté serveur s'aligne sur la version qu'épingle `@ai-sdk/react` ;
   - Hono sert la SPA (fallback après `/api`, cache des assets, CSP) ;
   - mesures sur un vrai iPhone et un Android, listées dans l'étude.
+  - les tests Playwright de `apps/web` (et de la landing) ne tournent pas en CI ; le projet
+    `iphone` (WebKit) demande les bibliothèques système de WebKit (`playwright install-deps webkit`).
 - **Alerte au parent** : le push web n'atteint qu'un parent qui a installé l'app (iOS). L'alerte
   de détresse demande un canal garanti, l'e-mail par exemple, et le push en plus. À décider
   avec le parcours parent (point 3).
