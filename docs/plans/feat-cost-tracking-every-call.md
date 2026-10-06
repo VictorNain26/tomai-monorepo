@@ -55,6 +55,21 @@ attend la décision de Victor et la mesure du passage de fin. Chemins relatifs �
 - Unité et montant du quota, TTS sous quota, fiches réservées au Complet dans le chat, outil de
   fiches imposé par le code, forfaits absents de `subscription_plans` : PR suivantes du point 8.
 
+## Après revue
+
+- Transcription sans `promptAudioSeconds` : la ligne à 0 porte `usageUnknown` au lieu de passer
+  pour gratuite, testé.
+- Lecture vocale comptée en graphèmes (`Intl.Segmenter`) et non en unités UTF-16 : un emoji ou un
+  accent décomposé compte 1.
+- Usage du client et du tour de chat sous les noms de `StructuredUsage`, sans traduction en double ;
+  majoration régionale calculée une fois ; quota et coût du tour écrits en parallèle ; test du coût
+  en anglais.
+- Écarté :
+  - un enregistreur que `billing` inscrirait au démarrage, pour que `platform` n'écrive pas sa
+    table : un câblage de plus, muet s'il manque, alors que `platform/auth` lit déjà les tables
+    des modules par `db/schema`, point de composition documenté ;
+  - recopier `cost_cents` dans la migration : seulement des zéros d'arrondi, sur une base de dev.
+
 ## Validation
 
 `bun run typecheck`, `bun run lint`, `bunx knip`, `bun run test`, `db:check`,
