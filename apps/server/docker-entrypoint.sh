@@ -1,6 +1,6 @@
 #!/bin/bash
 # TomAI Backend - Docker Entrypoint
-# Best Practice 2026: Run migrations before starting server
+# Applies the migrations, then starts the server, which refuses to boot while one is missing.
 
 set -e
 
