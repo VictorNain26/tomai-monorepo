@@ -33,7 +33,7 @@ export const userRelations = relations(user, ({ many }) => ({
 export const studySessionsRelations = relations(studySessions, ({ one, many }) => ({
   user: one(user, {
     fields: [studySessions.userId],
-    references: [user.id]
+    references: [user.id],
   }),
   messages: many(messages),
   costTracking: many(costTracking),

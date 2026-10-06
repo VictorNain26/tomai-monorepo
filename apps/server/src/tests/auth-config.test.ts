@@ -71,7 +71,6 @@ beforeAll(async () => {
 // ============================================
 
 describe('Better Auth Configuration', () => {
-
   describe('Google OAuth provider', () => {
     it('should expose signInSocial API method', () => {
       expect(apiMethods).toContain('signInSocial');

@@ -2,39 +2,21 @@
   "$schema": "https://unpkg.com/knip@6/schema.json",
   "workspaces": {
     ".": {
-      "entry": [
-        "scripts/*.mjs"
-      ],
-      "project": [
-        "scripts/**/*.mjs"
-      ]
+      "entry": ["scripts/*.mjs"],
+      "project": ["scripts/**/*.mjs"]
     },
     "apps/server": {
-      "entry": [
-        "src/app.ts",
-        "src/tests/**/*.test.ts",
-        "src/integration-tests/**/*.test.ts",
-        "src/live/**/*.test.ts"
-      ],
-      "project": [
-        "src/**/*.ts",
-        "scripts/**/*.ts"
-      ]
+      "entry": ["src/app.ts", "src/tests/**/*.test.ts", "src/integration-tests/**/*.test.ts", "src/live/**/*.test.ts"],
+      "project": ["src/**/*.ts", "scripts/**/*.ts"]
     },
     "packages/api": {
-      "project": [
-        "src/**/*.ts"
-      ]
+      "project": ["src/**/*.ts"]
     },
     "packages/ui": {
-      "project": [
-        "src/**/*.{ts,tsx}"
-      ]
+      "project": ["src/**/*.{ts,tsx}"]
     },
     "packages/tokens": {
-      "entry": [
-        "*.test.mjs"
-      ]
+      "entry": ["*.test.mjs"]
     }
   }
 }

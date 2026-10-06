@@ -49,12 +49,13 @@ async function main(path: string | undefined): Promise<number> {
   }
 
   const queues = (await api.annotationQueues.listQueues({ limit: 100 })).data;
-  const queue = queues.find((q) => q.name === QUEUE)
-    ?? await api.annotationQueues.createQueue({
+  const queue =
+    queues.find((q) => q.name === QUEUE) ??
+    (await api.annotationQueues.createQueue({
       name: QUEUE,
       description: 'Conversations of the eval sample, graded blind to the judge (docs/agent.md, § 9).',
       scoreConfigIds: configIds,
-    });
+    }));
   if ([...queue.scoreConfigIds].sort().join() !== [...configIds].sort().join()) {
     console.error(`queue ${QUEUE} does not hold the current score configs: delete it in Langfuse, then run again.`);
     return 1;
@@ -82,7 +83,9 @@ async function main(path: string | undefined): Promise<number> {
     await api.annotationQueues.createQueueItem(queue.id, { objectId: traceId, objectType: 'TRACE' });
     added += 1;
   }
-  console.log(`queue ${QUEUE}: ${String(added)} conversation(s) added, ${String(queued.size)} kept, ${String(remove.length)} pending of another run removed, ${String(skipped)} skipped (error or no trace)`);
+  console.log(
+    `queue ${QUEUE}: ${String(added)} conversation(s) added, ${String(queued.size)} kept, ${String(remove.length)} pending of another run removed, ${String(skipped)} skipped (error or no trace)`,
+  );
   return 0;
 }
 

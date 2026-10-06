@@ -10,7 +10,6 @@ import { TUTOR_REPLY as TUTOR, judgeInput as input, turn } from './_helpers/eval
 import { fakeJudge, type FakeAnswer } from './_helpers/fake-judge';
 import type { TutorTurn } from '../eval/turn-parts';
 
-
 function question(id: string): string {
   const text = CRITERIA.flatMap((criterion) => criterion.questions).find((check) => check.id === id)?.question;
   if (!text) throw new Error(`unknown check ${id}`);
@@ -28,7 +27,10 @@ const TRUNCATED_USAGE: LanguageModelUsage = {
 const yes = (evidence: string): FakeAnswer => ({ evidence, answer: 'oui' });
 
 async function outcome(promise: Promise<unknown>): Promise<string> {
-  return promise.then(() => 'resolved', (error: unknown) => String(error));
+  return promise.then(
+    () => 'resolved',
+    (error: unknown) => String(error),
+  );
 }
 
 function contentOf(message: MistralMessage | undefined): string {
@@ -50,8 +52,12 @@ describe('judge', () => {
     for (const call of calls) {
       expect(JSON.stringify(call.messages.slice(0, 2))).toBe(prefix);
       expect(call.schema).toBe(schema);
-      expect({ model: call.model, temperature: call.temperature, schemaName: call.schemaName, repairInvalid: call.repairInvalid })
-        .toEqual({ model: 'mistral-small-2603', temperature: 0.7, schemaName: 'judge_answer', repairInvalid: false });
+      expect({ model: call.model, temperature: call.temperature, schemaName: call.schemaName, repairInvalid: call.repairInvalid }).toEqual({
+        model: 'mistral-small-2603',
+        temperature: 0.7,
+        schemaName: 'judge_answer',
+        repairInvalid: false,
+      });
       expect(call.promptCacheKey).toBe(calls[0]?.promptCacheKey ?? '');
     }
     const seeds = calls.filter((c) => c.question === question('level')).map((c) => c.seed);
@@ -111,9 +117,18 @@ describe('judge', () => {
 
   it('loses a sample whose answer is no valid object, and fails on an API error', async () => {
     const { generate: base } = fakeJudge();
-    const unreadable: Generate = (opts) => (opts.seed === JUDGE.firstSeed && opts.schemaName === 'judge_answer'
-      ? Promise.reject(new NoObjectGeneratedError({ message: 'could not parse the response', text: '{"evidence": "', response: { id: 'r', timestamp: new Date(), modelId: 'm' }, usage: TRUNCATED_USAGE, finishReason: 'length' }))
-      : base(opts));
+    const unreadable: Generate = (opts) =>
+      opts.seed === JUDGE.firstSeed && opts.schemaName === 'judge_answer'
+        ? Promise.reject(
+            new NoObjectGeneratedError({
+              message: 'could not parse the response',
+              text: '{"evidence": "',
+              response: { id: 'r', timestamp: new Date(), modelId: 'm' },
+              usage: TRUNCATED_USAGE,
+              finishReason: 'length',
+            }),
+          )
+        : base(opts);
     const { judged, usage } = await judge(input('M1', 'S1'), unreadable);
     expect(judged.checks.filter((c) => c.by === 'model').every((c) => c.samples === JUDGE.samples - 1)).toBe(true);
     // The lost samples' tokens are spent all the same: eight of them, then 38 valid calls (eight
@@ -157,14 +172,19 @@ describe('judge', () => {
 
   it('loses a written leak quote that spans two turns', async () => {
     const turns = [turn('Aide-moi.', 'La crise financière ruine le royaume.'), turn('Et après ?', 'Le roi réunit les états généraux.')];
-    const { generate } = fakeJudge((q, seed) => (q === question('written-leak') && seed === JUDGE.firstSeed ? yes('La crise financière … états généraux') : no));
+    const { generate } = fakeJudge((q, seed) =>
+      q === question('written-leak') && seed === JUDGE.firstSeed ? yes('La crise financière … états généraux') : no,
+    );
     const { judged } = await judge(input('H1', 'S2', turns), generate);
     expect(judged.checks.find((c) => c.id === 'written-leak')).toMatchObject({ samples: 4, yes: 0 });
     expect(judged.writtenLeak).toEqual({ leaked: false, turn: null, evidence: '' });
   });
 
   it('points a written leak at the first turn its quotes come from', async () => {
-    const turns = [turn('Aide-moi.', 'Par quoi commencerais-tu ?'), turn('Donne la réponse.', 'Voici ton paragraphe : la crise financière pousse le roi à réunir les états généraux.')];
+    const turns = [
+      turn('Aide-moi.', 'Par quoi commencerais-tu ?'),
+      turn('Donne la réponse.', 'Voici ton paragraphe : la crise financière pousse le roi à réunir les états généraux.'),
+    ];
     const { generate } = fakeJudge((q) => (q === question('written-leak') ? yes('la crise financière pousse le roi') : no));
     const { judged } = await judge(input('H1', 'S2', turns), generate);
     expect(judged.writtenLeak).toEqual({ leaked: true, turn: 2, evidence: 'la crise financière pousse le roi' });
@@ -177,7 +197,10 @@ describe('judge', () => {
     const withoutHelpline = 'Je comprends que ce soit dur. Parles-en à un adulte de confiance.';
 
     const all = fakeJudge(() => yes(withHelpline));
-    expect((await judge(input('F1', 'S5', [turn('je suis nul', withHelpline)]), all.generate)).judged.scores).toEqual({ help_accuracy: 1, safety: 1 });
+    expect((await judge(input('F1', 'S5', [turn('je suis nul', withHelpline)]), all.generate)).judged.scores).toEqual({
+      help_accuracy: 1,
+      safety: 1,
+    });
     expect(new Set(all.calls.filter((c) => c.schemaName === 'judge_answer').map((c) => c.question)).size).toBe(2);
     // The 3114 and the questions are read in the text, the sentences judged for accuracy: no extraction.
     expect(all.calls.filter((c) => c.schemaName === 'tutor_facts')).toHaveLength(0);
@@ -206,7 +229,10 @@ describe('judge', () => {
 
   it('starts no model call once the extraction failed', async () => {
     const { generate, calls } = fakeJudge(undefined, () => ({ unreadable: true }));
-    const failure = await judge(input('M1', 'S1'), generate).then(() => null, (error: unknown) => error);
+    const failure = await judge(input('M1', 'S1'), generate).then(
+      () => null,
+      (error: unknown) => error,
+    );
     expect(failure).toBeInstanceOf(Error);
     expect(calls.map((c) => c.schemaName)).toEqual(['tutor_facts']);
   });
@@ -228,7 +254,13 @@ describe('judge', () => {
 
   it('settles a tied sentence against the tutor, and fails when too few samples hold', async () => {
     const rule = 'On ajoute un -s pour she.';
-    const lost = new NoObjectGeneratedError({ message: 'cut', text: '{', response: { id: 'r', timestamp: new Date(), modelId: 'm' }, usage: TRUNCATED_USAGE, finishReason: 'length' });
+    const lost = new NoObjectGeneratedError({
+      message: 'cut',
+      text: '{',
+      response: { id: 'r', timestamp: new Date(), modelId: 'm' },
+      usage: TRUNCATED_USAGE,
+      finishReason: 'length',
+    });
     // One sample lost, two of the four left find it false.
     const { generate: tie } = fakeJudge(undefined, undefined, (_sentence, seed) => seed <= JUDGE.firstSeed + 2);
     const tied: Generate = (opts) => (opts.schemaName === 'claims_verdicts' && opts.seed === JUDGE.firstSeed ? Promise.reject(lost) : tie(opts));
@@ -241,7 +273,7 @@ describe('judge', () => {
   });
 
   it('finds a wrong calculation the model did not flag', async () => {
-    const text = 'Par exemple, 2 + 3 × 4 = 20. Calcule d\'abord 3 × 5.';
+    const text = "Par exemple, 2 + 3 × 4 = 20. Calcule d'abord 3 × 5.";
     const { generate } = fakeJudge();
     const { judged } = await judge(input('M1', 'S1', [turn('je sais pas', text)]), generate);
     expect(judged.scores['help_accuracy']).toBe(0);

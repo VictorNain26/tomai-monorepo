@@ -1,11 +1,11 @@
-import { FadeIn } from "../atoms/fade-in";
-import { HandNote } from "../annotations/hand-note";
-import { Highlight } from "../annotations/highlight";
+import { FadeIn } from '../atoms/fade-in';
+import { HandNote } from '../annotations/hand-note';
+import { Highlight } from '../annotations/highlight';
 
 const COMMITMENTS = [
-  "Une IA européenne : les modèles de Mistral AI, appelés sur leur infrastructure européenne.",
-  "Aucune publicité, aucune revente de données.",
-  "Consultation, correction et suppression des données sur simple demande.",
+  'Une IA européenne : les modèles de Mistral AI, appelés sur leur infrastructure européenne.',
+  'Aucune publicité, aucune revente de données.',
+  'Consultation, correction et suppression des données sur simple demande.',
 ];
 
 export function Trust() {

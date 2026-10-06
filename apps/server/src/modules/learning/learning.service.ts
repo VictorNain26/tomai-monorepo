@@ -9,30 +9,16 @@
  */
 
 import { db } from '../../db/connection.js';
-import {
-  learningDecksRepository,
-  type ListDecksOptions,
-} from './learning-decks.repository.js';
+import { learningDecksRepository, type ListDecksOptions } from './learning-decks.repository.js';
 import { learningCardsRepository } from './learning-cards.repository.js';
-import type {
-  LearningDeck,
-  NewLearningDeck,
-  LearningCard,
-  NewLearningCard,
-  FSRSData,
-} from './decks.schema.js';
+import type { LearningDeck, NewLearningDeck, LearningCard, NewLearningCard, FSRSData } from './decks.schema.js';
 import type { CardType } from './card-content.schema.js';
 import { logger } from '../../platform/observability/logger.js';
 import { fsrsService, Rating } from './fsrs.service.js';
 import type { ReviewResult } from './fsrs-types.js';
 import type { EducationLevelType } from '../../types/index.js';
 import type { SubjectSlug } from '../../lib/subjects.js';
-import {
-  DeckNotFoundError,
-  DeckOwnershipError,
-  CardNotFoundError,
-  CardValidationError,
-} from './learning-errors.js';
+import { DeckNotFoundError, DeckOwnershipError, CardNotFoundError, CardValidationError } from './learning-errors.js';
 import { validateCardContent } from './card-validation.js';
 
 interface CreateDeckWithCardsInput {
@@ -74,16 +60,11 @@ class LearningService {
    * the tool-executor performed the two writes separately, leaving orphan
    * decks behind whenever cards failed to persist.
    */
-  async createDeckWithCards(
-    input: CreateDeckWithCardsInput,
-  ): Promise<{ deck: LearningDeck; cards: LearningCard[] }> {
+  async createDeckWithCards(input: CreateDeckWithCardsInput): Promise<{ deck: LearningDeck; cards: LearningCard[] }> {
     const { userId, deck: deckData, cards: cardsInput } = input;
 
     return db.transaction(async (tx) => {
-      const createdDeck = await learningDecksRepository.insert(
-        { ...deckData, userId, cardCount: cardsInput.length },
-        tx,
-      );
+      const createdDeck = await learningDecksRepository.insert({ ...deckData, userId, cardCount: cardsInput.length }, tx);
 
       if (cardsInput.length === 0) {
         return { deck: createdDeck, cards: [] };
@@ -97,10 +78,7 @@ class LearningService {
         fsrsData: fsrsService.initializeCardFsrsData(),
       }));
 
-      const createdCards = await learningCardsRepository.insertMany(
-        cardsToInsert,
-        tx,
-      );
+      const createdCards = await learningCardsRepository.insertMany(cardsToInsert, tx);
 
       if (createdCards.length === 0) {
         // Drizzle + postgres-js returns [] silently on some failure modes;
@@ -117,10 +95,7 @@ class LearningService {
    * Thin pass-through to the repository; kept on the service to preserve
    * the "routes talk to services, not repositories" convention.
    */
-  async listUserDecks(
-    userId: string,
-    opts?: ListDecksOptions,
-  ): Promise<LearningDeck[]> {
+  async listUserDecks(userId: string, opts?: ListDecksOptions): Promise<LearningDeck[]> {
     return learningDecksRepository.listByUser(userId, opts);
   }
 
@@ -131,10 +106,7 @@ class LearningService {
    *   - deck missing entirely → DeckNotFoundError
    *   - deck exists but owned by another user → DeckOwnershipError
    */
-  async getDeckWithCardsOrThrow(
-    userId: string,
-    deckId: string,
-  ): Promise<{ deck: LearningDeck; cards: LearningCard[] }> {
+  async getDeckWithCardsOrThrow(userId: string, deckId: string): Promise<{ deck: LearningDeck; cards: LearningCard[] }> {
     const existing = await learningDecksRepository.findById(deckId);
     if (!existing) {
       throw new DeckNotFoundError(deckId);
@@ -153,11 +125,7 @@ class LearningService {
    * route layer can surface a consistent response shape without a second
    * ownership lookup.
    */
-  async updateDeckOrThrow(
-    userId: string,
-    deckId: string,
-    fields: UpdateDeckInput,
-  ): Promise<LearningDeck> {
+  async updateDeckOrThrow(userId: string, deckId: string, fields: UpdateDeckInput): Promise<LearningDeck> {
     const existing = await learningDecksRepository.findById(deckId);
     if (!existing) {
       throw new DeckNotFoundError(deckId);
@@ -203,11 +171,7 @@ class LearningService {
    * Throws ownership errors (DeckNotFoundError / DeckOwnershipError).
    * Single transaction ensures `cardCount` stays in sync with actual card count.
    */
-  async addCardsToDeckOrThrow(
-    userId: string,
-    deckId: string,
-    input: AddCardsInput,
-  ): Promise<LearningCard[]> {
+  async addCardsToDeckOrThrow(userId: string, deckId: string, input: AddCardsInput): Promise<LearningCard[]> {
     const existing = await learningDecksRepository.findById(deckId);
     if (!existing) {
       throw new DeckNotFoundError(deckId);
@@ -217,10 +181,7 @@ class LearningService {
     }
 
     const contents = input.cards.map((card, index) => {
-      const validation = validateCardContent(
-        card.cardType,
-        card.content as Record<string, unknown>,
-      );
+      const validation = validateCardContent(card.cardType, card.content as Record<string, unknown>);
       if (!validation.valid) {
         throw new CardValidationError(`Card ${index}: ${validation.error}`);
       }
@@ -241,10 +202,7 @@ class LearningService {
         fsrsData: fsrsService.initializeCardFsrsData(),
       }));
 
-      const insertedCards = await learningCardsRepository.insertMany(
-        cardsToInsert,
-        tx,
-      );
+      const insertedCards = await learningCardsRepository.insertMany(cardsToInsert, tx);
 
       if (insertedCards.length === 0) {
         throw new Error('Failed to insert cards');
@@ -262,11 +220,7 @@ class LearningService {
    * Throws CardNotFoundError (missing or not owned) or CardValidationError
    * (content invalid for its type).
    */
-  async updateCardOrThrow(
-    userId: string,
-    cardId: string,
-    patch: UpdateCardInput,
-  ): Promise<LearningCard> {
+  async updateCardOrThrow(userId: string, cardId: string, patch: UpdateCardInput): Promise<LearningCard> {
     const existing = await learningCardsRepository.findByIdWithOwner(cardId, userId);
     if (!existing) {
       // Either card is missing or user doesn't own the deck.
@@ -280,10 +234,7 @@ class LearningService {
     // than relying on the ORM silently dropping `undefined` columns.
     const fields: Partial<NewLearningCard> = {};
     if (patch.content !== undefined) {
-      const validation = validateCardContent(
-        existing.card.cardType,
-        patch.content as Record<string, unknown>,
-      );
+      const validation = validateCardContent(existing.card.cardType, patch.content as Record<string, unknown>);
       if (!validation.valid) {
         throw new CardValidationError(validation.error);
       }
@@ -312,12 +263,7 @@ class LearningService {
    * Verify card ownership, then record a FSRS review.
    * Throws CardNotFoundError when the card is absent or not owned by `userId`.
    */
-  async reviewCardOrThrow(
-    userId: string,
-    cardId: string,
-    rating: Rating,
-    level: EducationLevelType,
-  ): Promise<ReviewResult> {
+  async reviewCardOrThrow(userId: string, cardId: string, rating: Rating, level: EducationLevelType): Promise<ReviewResult> {
     const existing = await learningCardsRepository.findByIdWithOwner(cardId, userId);
     if (!existing) {
       throw new CardNotFoundError(cardId);
@@ -329,11 +275,7 @@ class LearningService {
    * Verify card ownership, then preview what each rating would schedule.
    * Throws CardNotFoundError when the card is absent or not owned by `userId`.
    */
-  async previewCardOrThrow(
-    userId: string,
-    cardId: string,
-    level: EducationLevelType,
-  ): Promise<ReturnType<typeof fsrsService.previewScheduling>> {
+  async previewCardOrThrow(userId: string, cardId: string, level: EducationLevelType): Promise<ReturnType<typeof fsrsService.previewScheduling>> {
     const existing = await learningCardsRepository.findByIdWithOwner(cardId, userId);
     if (!existing) {
       throw new CardNotFoundError(cardId);
@@ -363,11 +305,7 @@ class LearningService {
       // Recount cards in the deck and update `cardCount`
       const newCount = await learningCardsRepository.countByDeckId(deckId, tx);
 
-      await learningDecksRepository.updateById(
-        deckId,
-        { cardCount: newCount },
-        tx,
-      );
+      await learningDecksRepository.updateById(deckId, { cardCount: newCount }, tx);
 
       logger.info('Card deleted', {
         operation: 'learning:service:delete-card',

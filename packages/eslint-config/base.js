@@ -1,7 +1,7 @@
-import js from "@eslint/js";
-import eslintConfigPrettier from "eslint-config-prettier";
-import turboPlugin from "eslint-plugin-turbo";
-import tseslint from "typescript-eslint";
+import js from '@eslint/js';
+import eslintConfigPrettier from 'eslint-config-prettier';
+import turboPlugin from 'eslint-plugin-turbo';
+import tseslint from 'typescript-eslint';
 
 /**
  * A shared ESLint configuration for the repository: type-checked strict and
@@ -22,17 +22,17 @@ export const config = [
     },
     linterOptions: {
       noInlineConfig: true,
-      reportUnusedDisableDirectives: "error",
+      reportUnusedDisableDirectives: 'error',
     },
     plugins: {
       turbo: turboPlugin,
     },
     rules: {
-      "turbo/no-undeclared-env-vars": "error",
+      'turbo/no-undeclared-env-vars': 'error',
       // A number renders the same way everywhere; the rule stays on to catch
       // objects, arrays and nullish values interpolated by mistake.
-      "@typescript-eslint/restrict-template-expressions": [
-        "error",
+      '@typescript-eslint/restrict-template-expressions': [
+        'error',
         {
           allowAny: false,
           allowBoolean: false,
@@ -43,14 +43,14 @@ export const config = [
         },
       ],
       // A leading underscore marks a parameter kept for its position or type.
-      "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_" }],
+      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
     },
   },
   {
-    files: ["**/*.{js,mjs,cjs}"],
+    files: ['**/*.{js,mjs,cjs}'],
     ...tseslint.configs.disableTypeChecked,
   },
   {
-    ignores: ["dist/**"],
+    ignores: ['dist/**'],
   },
 ];

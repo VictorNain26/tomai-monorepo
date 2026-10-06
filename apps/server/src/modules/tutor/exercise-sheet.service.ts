@@ -48,21 +48,30 @@ export async function prepareExerciseSheet(params: PrepareSheetParams): Promise<
   const notions = notionsFor(params.level, params.subject, schoolYearOf(new Date()));
   const messages = sheetMessages(params.level, notions, params.studentText, params.attachedFilesBlock);
 
-  const draws = await Promise.allSettled(Array.from({ length: DRAWS }, () => generateStructured({
-    functionId: 'exercise-sheet',
-    owner: { userId: params.userId, sessionId: params.sessionId },
-    messages,
-    schema: ExerciseSheetSchema,
-    schemaName: 'exercise_sheet',
-    reasoningEffort: 'high',
-    temperature: REASONING_TEMPERATURE,
-    promptCacheKey: `exercise-sheet-${EXERCISE_SHEET_PROMPT_VERSION}`,
-    timeoutMs: SHEET_TIMEOUT_MS,
-  })));
+  const draws = await Promise.allSettled(
+    Array.from({ length: DRAWS }, () =>
+      generateStructured({
+        functionId: 'exercise-sheet',
+        owner: { userId: params.userId, sessionId: params.sessionId },
+        messages,
+        schema: ExerciseSheetSchema,
+        schemaName: 'exercise_sheet',
+        reasoningEffort: 'high',
+        temperature: REASONING_TEMPERATURE,
+        promptCacheKey: `exercise-sheet-${EXERCISE_SHEET_PROMPT_VERSION}`,
+        timeoutMs: SHEET_TIMEOUT_MS,
+      }),
+    ),
+  );
 
   for (const draw of draws) {
     if (draw.status === 'rejected') {
-      logger.error('Exercise sheet draw failed', { operation: 'exercise-sheet:draw-error', sessionId: params.sessionId, err: draw.reason, severity: 'medium' as const });
+      logger.error('Exercise sheet draw failed', {
+        operation: 'exercise-sheet:draw-error',
+        sessionId: params.sessionId,
+        err: draw.reason,
+        severity: 'medium' as const,
+      });
     }
   }
   const results = draws.flatMap((draw) => (draw.status === 'fulfilled' ? [draw.value] : []));
@@ -83,7 +92,11 @@ export async function prepareExerciseSheet(params: PrepareSheetParams): Promise<
     durationMs: Date.now() - startTime,
   });
   if (!voted) {
-    logger.error('Exercise sheet failed: no draw succeeded', { operation: 'exercise-sheet:error', sessionId: params.sessionId, severity: 'high' as const });
+    logger.error('Exercise sheet failed: no draw succeeded', {
+      operation: 'exercise-sheet:error',
+      sessionId: params.sessionId,
+      severity: 'high' as const,
+    });
   }
   // Awaited: the turn needs the row to keep the exercise's progress. A failure leaves the turn
   // with its sheet and no progress kept.
@@ -96,7 +109,12 @@ export async function prepareExerciseSheet(params: PrepareSheetParams): Promise<
       promptVersion: EXERCISE_SHEET_PROMPT_VERSION,
     })
     .catch((err: unknown) => {
-      logger.error('Exercise sheet not stored', { operation: 'exercise-sheet:store-error', sessionId: params.sessionId, err, severity: 'high' as const });
+      logger.error('Exercise sheet not stored', {
+        operation: 'exercise-sheet:store-error',
+        sessionId: params.sessionId,
+        err,
+        severity: 'high' as const,
+      });
       return null;
     });
   return { id, sheet: voted?.sheet ?? null, uncertain: voted?.uncertain ?? true, hintLevel: 0, stepsDone: 0, hints: [], solved: false };

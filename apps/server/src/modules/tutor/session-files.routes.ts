@@ -28,7 +28,7 @@ export const sessionFilesRoutes = new Hono<AppEnv>()
 
       return c.json({
         success: true,
-        files: attachedFiles.map(f => ({
+        files: attachedFiles.map((f) => ({
           id: f.fileId,
           fileName: f.fileName,
           mimeType: f.mimeType,
@@ -41,7 +41,7 @@ export const sessionFilesRoutes = new Hono<AppEnv>()
         operation: 'api:chat:session:files:list',
         userId: user.id,
         err: _error,
-        severity: 'medium' as const
+        severity: 'medium' as const,
       });
       return c.json({ error: 'Failed to list session files' }, 500);
     }
@@ -75,7 +75,7 @@ export const sessionFilesRoutes = new Hono<AppEnv>()
         operation: 'api:chat:session:files:attach',
         userId: user.id,
         err: _error,
-        severity: 'medium' as const
+        severity: 'medium' as const,
       });
       return c.json({ error: 'Failed to attach file' }, 500);
     }
@@ -97,7 +97,7 @@ export const sessionFilesRoutes = new Hono<AppEnv>()
         operation: 'api:chat:session:files:detach',
         userId: user.id,
         err: _error,
-        severity: 'medium' as const
+        severity: 'medium' as const,
       });
       return c.json({ error: 'Failed to detach file' }, 500);
     }

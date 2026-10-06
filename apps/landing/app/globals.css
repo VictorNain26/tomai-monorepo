@@ -1,6 +1,6 @@
-@import "tailwindcss";
-@import "@repo/tokens/theme.css";
-@import "@repo/tokens/base.css";
+@import 'tailwindcss';
+@import '@repo/tokens/theme.css';
+@import '@repo/tokens/base.css';
 @source "../../../packages/ui/src";
 
 @utility container {
@@ -71,7 +71,9 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
+  *,
+  *::before,
+  *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;

@@ -38,9 +38,7 @@ let moderationClient: Mistral | null = null;
 
 /** Voice: 429 and 5xx retried, not a timeout, its calls lasting up to MISTRAL_TIMEOUT. */
 export function getMistralSdk(): Mistral {
-  client ??= create(retrying()
-    ? { strategy: 'backoff', backoff: backoff(3_000), retryConnectionErrors: false }
-    : { strategy: 'none' });
+  client ??= create(retrying() ? { strategy: 'backoff', backoff: backoff(3_000), retryConnectionErrors: false } : { strategy: 'none' });
   return client;
 }
 
@@ -51,7 +49,10 @@ export function getMistralSdk(): Mistral {
  */
 export function getModerationSdk(): Mistral {
   moderationClient ??= retrying()
-    ? create({ strategy: 'backoff', backoff: backoff(MODERATION_RETRY_WINDOW_MS), retryConnectionErrors: true }, attemptTimeout(MODERATION_ATTEMPT_MS))
+    ? create(
+        { strategy: 'backoff', backoff: backoff(MODERATION_RETRY_WINDOW_MS), retryConnectionErrors: true },
+        attemptTimeout(MODERATION_ATTEMPT_MS),
+      )
     : create({ strategy: 'none' });
   return moderationClient;
 }

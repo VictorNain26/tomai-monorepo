@@ -85,7 +85,10 @@ const EnvSchema = z.object({
   CHAT_STREAM_TIMEOUT_MS: z.coerce.number().int().default(120000),
 
   // Feature flags
-  QUOTA_ENFORCEMENT_ENABLED: z.enum(['true', 'false']).default('true').transform(val => val === 'true'),
+  QUOTA_ENFORCEMENT_ENABLED: z
+    .enum(['true', 'false'])
+    .default('true')
+    .transform((val) => val === 'true'),
 
   // Observability
   GIT_COMMIT_SHA: z.string().default('unknown'),
@@ -105,9 +108,7 @@ function parseEnv(): EnvType {
   const result = EnvSchema.safeParse(Bun.env);
 
   if (!result.success) {
-    const errorMessages = result.error.issues
-      .map(issue => `${issue.path.join('.')}: ${issue.message}`)
-      .join('\n  ');
+    const errorMessages = result.error.issues.map((issue) => `${issue.path.join('.')}: ${issue.message}`).join('\n  ');
     throw new Error(`Invalid environment configuration:\n  ${errorMessages}`);
   }
 
@@ -151,9 +152,9 @@ export function getCorsOrigins(): string[] {
   // Add comma-separated CORS_ORIGINS
   if (env.CORS_ORIGINS) {
     env.CORS_ORIGINS.split(',')
-      .map(o => o.trim())
+      .map((o) => o.trim())
       .filter(Boolean)
-      .forEach(o => origins.add(o));
+      .forEach((o) => origins.add(o));
   }
 
   // Dev origins (HTTP localhost)

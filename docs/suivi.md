@@ -189,8 +189,6 @@ contraire.
   - `ai` côté serveur s'aligne sur la version qu'épingle `@ai-sdk/react` ;
   - Hono sert la SPA (fallback après `/api`, cache des assets, CSP) ;
   - mesures sur un vrai iPhone et un Android, listées dans l'étude.
-  - les tests Playwright de `apps/web` (et de la landing) ne tournent pas en CI ; le projet
-    `iphone` (WebKit) demande les bibliothèques système de WebKit (`playwright install-deps webkit`).
 - **Alerte au parent** : le push web n'atteint qu'un parent qui a installé l'app (iOS). L'alerte
   de détresse demande un canal garanti, l'e-mail par exemple, et le push en plus. À décider
   avec le parcours parent (point 3).
@@ -217,6 +215,11 @@ contraire.
 
 Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pas.
 
+- **typescript-eslint 8.71** (groupe `eslint` de Renovate) : les presets typés y activent
+  `no-unsafe-enum-assignment`, qui signale trois lignes (`modules/learning/fsrs.service.ts`,
+  `tests/learning.service.test.ts`, mesuré le 2026-10-06) ; la PR de Renovate échouera au lint
+  tant qu'elles ne sont pas corrigées. D'ici là, `@typescript-eslint/*` existe en 8.70 et en
+  8.71 (la seconde tirée par `@eslint-react/eslint-plugin`, #412).
 - **Taux de Mistral** (`MISTRAL_USD_TO_EUR`, `platform/ai/cost.ts`) : 0,85, lu sur la page Coûts de
   l'organisation le 2026-10-06. Le revérifier à chaque facture : un écart change chaque coût et
   chaque quota.
@@ -230,7 +233,7 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
   figent la 1.2.1, touchée par GHSA-68fv-2mgg-jv7q (haute) ; l'override les force en `^1.2.2`.
   Le retirer quand les deux déclarent 1.2.2 ou plus. Même audit, dépendances de
   développement seulement : `braces` 3.0.3 (GHSA-vfj7-8cjw-p6xm), par
-  `@next/eslint-plugin-next` et `lcov-result-merger` ; la porte d'audit de la CI ne regarde
+  `@next/eslint-plugin-next` ; la porte d'audit de la CI ne regarde
   que la production.
 - **Sentry v11** : `apps/landing/next.config.*` importe `withSentryConfig` depuis
   `@sentry/nextjs`, déprécié (avertissement de `next typegen`) ; passer à
@@ -284,6 +287,8 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
 | Relecture des 32 exercices : confiée à Claude le 2026-10-02 et outillée (32 citations retrouvées mot pour mot dans leur PDF officiel, 14 sources de réponse en ligne, 14 réponses recalculées par le test) ; un regard pédagogique humain sur un échantillon reste à prévoir avant de publier les mesures | Lot 1, jeu rejouable par un tiers ; lot 4 pour la publication | fait |
 | Projet Langfuse « tomai » en région UE (`https://cloud.langfuse.com`, offre Hobby) et ses clés dans `apps/server/.env`, vérifiées par l'API (HTTP 200) le 2026-10-02 | Lot 1, point 2 | fait |
 | Espace Mistral « ci » et sa clé `github-actions`, en secret GitHub `MISTRAL_API_KEY_CI` (2026-10-02). Sans paiement à l'usage, la dépense reste bornée par les 8,50 € inclus ; la valeur du secret se vérifie au premier passage en CI | Lot 1, point 6 | fait |
+| Ajouter `E2E (Playwright)` et `Script tests` aux checks requis du ruleset `Protect main` (Settings › Rules) : ils tournent depuis #412 mais ne bloquent pas un merge | Outillage | à faire |
+| Lundi 2026-10-12 : vérifier que Renovate a ouvert les mises à jour en attente du tableau de bord (#310), fenêtre élargie à tout le lundi par #412 ; sinon cocher « Create all awaiting schedule PRs at once » | Outillage | à faire |
 | Mettre à jour les plugins Claude Code (`claude plugin marketplace update`, puis `claude plugin update <nom>`) | Outillage | à faire |
 
 ## Historique

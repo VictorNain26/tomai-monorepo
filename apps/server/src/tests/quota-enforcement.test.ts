@@ -29,15 +29,11 @@ mock.module('../platform/config/env', () => ({
 let dbSelectResult: Record<string, unknown>[] = [];
 let dbShouldThrow: Error | null = null;
 let spent = 0;
-const spentSince = mock((_userId: string, _since: Date) =>
-  dbShouldThrow ? Promise.reject(dbShouldThrow) : Promise.resolve(spent),
-);
+const spentSince = mock((_userId: string, _since: Date) => (dbShouldThrow ? Promise.reject(dbShouldThrow) : Promise.resolve(spent)));
 
 mock.module('../modules/billing/user-subscriptions.repository', () => ({
   userSubscriptionsRepository: {
-    findByUserId: mock(() =>
-      dbShouldThrow ? Promise.reject(dbShouldThrow) : Promise.resolve(dbSelectResult[0]),
-    ),
+    findByUserId: mock(() => (dbShouldThrow ? Promise.reject(dbShouldThrow) : Promise.resolve(dbSelectResult[0]))),
     spentSince,
   },
 }));
@@ -58,7 +54,11 @@ describe('checkQuota (enforcement ON)', () => {
     dbSelectResult = [{ plan: 'free' }];
     spent = 12_000;
     const result = await checkQuota('user-001');
-    expect(result).toMatchObject({ allowed: true, flashcards: false, usage: { plan: 'free', spentMicroEur: 12_000, budgetMicroEur: 20_000, usagePercent: 60 } });
+    expect(result).toMatchObject({
+      allowed: true,
+      flashcards: false,
+      usage: { plan: 'free', spentMicroEur: 12_000, budgetMicroEur: 20_000, usagePercent: 60 },
+    });
     expect(spentSince.mock.calls[0]?.[1]).toEqual(lastDailyReset(new Date()));
   });
 

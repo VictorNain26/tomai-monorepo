@@ -24,7 +24,7 @@ export const chatSessionRoutes = new Hono<AppEnv>()
 
       return c.json({
         success: true,
-        conversations: conversations.map(conv => ({
+        conversations: conversations.map((conv) => ({
           id: conv.id,
           title: conv.title,
           subject: conv.subject,
@@ -55,13 +55,15 @@ export const chatSessionRoutes = new Hono<AppEnv>()
 
       return c.json({
         success: true,
-        session: latestSession ? {
-          id: latestSession.id,
-          subject: latestSession.subject,
-          startedAt: latestSession.startedAt.toISOString(),
-          endedAt: latestSession.endedAt?.toISOString() ?? null,
-          messagesCount: latestSession.messagesCount
-        } : null
+        session: latestSession
+          ? {
+              id: latestSession.id,
+              subject: latestSession.subject,
+              startedAt: latestSession.startedAt.toISOString(),
+              endedAt: latestSession.endedAt?.toISOString() ?? null,
+              messagesCount: latestSession.messagesCount,
+            }
+          : null,
       });
     } catch (_error) {
       logger.error('Latest session retrieval failed', {
@@ -163,21 +165,21 @@ export const chatSessionRoutes = new Hono<AppEnv>()
       return c.json({
         success: true,
         hasOrphanMessage,
-        messages: messages.map(m => ({
+        messages: messages.map((m) => ({
           id: m.id,
           role: m.role,
           content: m.content,
           timestamp: m.createdAt.toISOString(),
           aiModel: m.aiModel ?? null,
-          attachedFile: m.attachedFile ?? null
-        }))
+          attachedFile: m.attachedFile ?? null,
+        })),
       });
     } catch (_error) {
       logger.error('Session history retrieval failed', {
         operation: 'api:chat:session:history',
         userId: user.id,
         err: _error,
-        severity: 'medium' as const
+        severity: 'medium' as const,
       });
       return c.json({ error: 'Session history retrieval failed' }, 500);
     }
@@ -201,7 +203,7 @@ export const chatSessionRoutes = new Hono<AppEnv>()
         timestamp: message.timestamp.toISOString(),
         sessionId: message.sessionId,
         aiModel: message.aiModel ?? null,
-        attachedFile: message.attachedFile ?? null
+        attachedFile: message.attachedFile ?? null,
       });
     } catch (_error) {
       if (_error instanceof AppError) throw _error;

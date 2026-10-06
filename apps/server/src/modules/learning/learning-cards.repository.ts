@@ -8,24 +8,14 @@
 
 import { asc, eq, and, sql } from 'drizzle-orm';
 import { db } from '../../db/connection.js';
-import {
-  learningCards,
-  learningDecks,
-  type LearningCard,
-  type NewLearningCard,
-  type FSRSData,
-} from './decks.schema.js';
+import { learningCards, learningDecks, type LearningCard, type NewLearningCard, type FSRSData } from './decks.schema.js';
 
 type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 type DbOrTx = typeof db | Transaction;
 
 class LearningCardsRepository {
   async findById(cardId: string): Promise<LearningCard | null> {
-    const [card] = await db
-      .select()
-      .from(learningCards)
-      .where(eq(learningCards.id, cardId))
-      .limit(1);
+    const [card] = await db.select().from(learningCards).where(eq(learningCards.id, cardId)).limit(1);
     return card ?? null;
   }
 
@@ -34,10 +24,7 @@ class LearningCardsRepository {
    * Returns the card and deck user id on match; null if card missing or
    * user does not own the deck.
    */
-  async findByIdWithOwner(
-    cardId: string,
-    userId: string,
-  ): Promise<{ card: LearningCard; deckUserId: string } | null> {
+  async findByIdWithOwner(cardId: string, userId: string): Promise<{ card: LearningCard; deckUserId: string } | null> {
     const [result] = await db
       .select({
         card: learningCards,
@@ -45,12 +32,7 @@ class LearningCardsRepository {
       })
       .from(learningCards)
       .innerJoin(learningDecks, eq(learningCards.deckId, learningDecks.id))
-      .where(
-        and(
-          eq(learningCards.id, cardId),
-          eq(learningDecks.userId, userId),
-        ),
-      )
+      .where(and(eq(learningCards.id, cardId), eq(learningDecks.userId, userId)))
       .limit(1);
 
     return result ?? null;
@@ -60,21 +42,14 @@ class LearningCardsRepository {
    * List all cards attached to a deck, ordered by `position`.
    */
   async listByDeck(deckId: string): Promise<LearningCard[]> {
-    return db
-      .select()
-      .from(learningCards)
-      .where(eq(learningCards.deckId, deckId))
-      .orderBy(asc(learningCards.position));
+    return db.select().from(learningCards).where(eq(learningCards.deckId, deckId)).orderBy(asc(learningCards.position));
   }
 
   /**
    * Bulk-insert cards. Returns [] when `cards` is empty (no-op, avoids the
    * Drizzle "empty VALUES ()" SQL error).
    */
-  async insertMany(
-    cards: NewLearningCard[],
-    executor: DbOrTx = db,
-  ): Promise<LearningCard[]> {
+  async insertMany(cards: NewLearningCard[], executor: DbOrTx = db): Promise<LearningCard[]> {
     if (cards.length === 0) return [];
 
     return executor.insert(learningCards).values(cards).returning();
@@ -83,11 +58,7 @@ class LearningCardsRepository {
   /**
    * Update a card by id. Returns null if no row matched.
    */
-  async updateById(
-    cardId: string,
-    patch: Partial<NewLearningCard>,
-    executor: DbOrTx = db,
-  ): Promise<LearningCard | null> {
+  async updateById(cardId: string, patch: Partial<NewLearningCard>, executor: DbOrTx = db): Promise<LearningCard | null> {
     const [updated] = await executor
       .update(learningCards)
       .set({ ...patch, updatedAt: new Date() })
@@ -100,23 +71,14 @@ class LearningCardsRepository {
   /**
    * Delete a card by id. Returns the deleted card or null if no row matched.
    */
-  async deleteById(
-    cardId: string,
-    executor: DbOrTx = db,
-  ): Promise<LearningCard | null> {
-    const [deleted] = await executor
-      .delete(learningCards)
-      .where(eq(learningCards.id, cardId))
-      .returning();
+  async deleteById(cardId: string, executor: DbOrTx = db): Promise<LearningCard | null> {
+    const [deleted] = await executor.delete(learningCards).where(eq(learningCards.id, cardId)).returning();
 
     return deleted ?? null;
   }
 
   async resetFsrsDataByDeckId(deckId: string, emptyFsrsData: FSRSData): Promise<void> {
-    await db
-      .update(learningCards)
-      .set({ fsrsData: emptyFsrsData, updatedAt: new Date() })
-      .where(eq(learningCards.deckId, deckId));
+    await db.update(learningCards).set({ fsrsData: emptyFsrsData, updatedAt: new Date() }).where(eq(learningCards.deckId, deckId));
   }
 
   /**
@@ -140,12 +102,7 @@ class LearningCardsRepository {
       .select({ count: sql<number>`count(*)::int` })
       .from(learningCards)
       .innerJoin(learningDecks, eq(learningCards.deckId, learningDecks.id))
-      .where(
-        and(
-          eq(learningDecks.userId, userId),
-          sql`(${learningCards.fsrsData}->>'due')::timestamptz <= NOW()`,
-        ),
-      );
+      .where(and(eq(learningDecks.userId, userId), sql`(${learningCards.fsrsData}->>'due')::timestamptz <= NOW()`));
 
     return result?.count ?? 0;
   }

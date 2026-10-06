@@ -42,21 +42,14 @@ class AutoTitleService {
    * Generate and store a title for a session after first exchange.
    * Fire-and-forget: never throws, logs errors.
    */
-  async generateTitleIfNeeded(
-    sessionId: string,
-    userMessage: string,
-    assistantResponse: string,
-    check: OutputCheckContext,
-  ): Promise<void> {
+  async generateTitleIfNeeded(sessionId: string, userMessage: string, assistantResponse: string, check: OutputCheckContext): Promise<void> {
     try {
       const session = await studySessionsRepository.findById(sessionId);
       if (!session) return;
       if (session.topic) return; // Skip si déjà titré
 
       const assistantPreview = assistantResponse.slice(0, 300);
-      const prompt = TITLE_PROMPT
-        .replace('{userMessage}', userMessage.slice(0, 500))
-        .replace('{assistantPreview}', assistantPreview);
+      const prompt = TITLE_PROMPT.replace('{userMessage}', userMessage.slice(0, 500)).replace('{assistantPreview}', assistantPreview);
 
       const raw = await generateText({
         functionId: 'auto-title',
@@ -80,7 +73,9 @@ class AutoTitleService {
       // Rejeter titres trop courts (génération incomplète)
       if (title.length < 8) {
         logger.warn('Auto-title too short, skipping', {
-          sessionId, titleLength: title.length, operation: 'auto-title:rejected',
+          sessionId,
+          titleLength: title.length,
+          operation: 'auto-title:rejected',
         });
         return;
       }

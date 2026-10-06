@@ -2,20 +2,20 @@
 // Bootstrap one-time idempotent du dev local :
 // .env depuis .env.example, génération du secret, postgres + migrations.
 // Relançable sans effet de bord.
-import { spawnSync } from "node:child_process";
-import { existsSync, copyFileSync, readFileSync, writeFileSync } from "node:fs";
-import { randomBytes } from "node:crypto";
+import { spawnSync } from 'node:child_process';
+import { existsSync, copyFileSync, readFileSync, writeFileSync } from 'node:fs';
+import { randomBytes } from 'node:crypto';
 
 function run(cmd, args, opts = {}) {
-  const r = spawnSync(cmd, args, { stdio: "inherit", ...opts });
+  const r = spawnSync(cmd, args, { stdio: 'inherit', ...opts });
   if (r.status !== 0) {
-    console.error(`[setup] échec: ${cmd} ${args.join(" ")}`);
+    console.error(`[setup] échec: ${cmd} ${args.join(' ')}`);
     process.exit(r.status ?? 1);
   }
 }
 
 // 1. .env depuis .env.example (idempotent)
-for (const app of ["apps/server"]) {
+for (const app of ['apps/server']) {
   const env = `${app}/.env`;
   const example = `${app}/.env.example`;
   if (!existsSync(env) && existsSync(example)) {
@@ -25,25 +25,23 @@ for (const app of ["apps/server"]) {
 }
 
 // 2. BETTER_AUTH_SECRET dans apps/server/.env (génère si absent/placeholder vide)
-const serverEnvPath = "apps/server/.env";
+const serverEnvPath = 'apps/server/.env';
 if (existsSync(serverEnvPath)) {
-  let content = readFileSync(serverEnvPath, "utf8");
+  let content = readFileSync(serverEnvPath, 'utf8');
   const isEmpty = /^BETTER_AUTH_SECRET=\s*$/m.test(content);
   const isMissing = !/^BETTER_AUTH_SECRET=/m.test(content);
   if (isEmpty || isMissing) {
-    const secret = randomBytes(32).toString("base64");
-    content = isMissing
-      ? `${content}\nBETTER_AUTH_SECRET=${secret}\n`
-      : content.replace(/^BETTER_AUTH_SECRET=.*$/m, `BETTER_AUTH_SECRET=${secret}`);
+    const secret = randomBytes(32).toString('base64');
+    content = isMissing ? `${content}\nBETTER_AUTH_SECRET=${secret}\n` : content.replace(/^BETTER_AUTH_SECRET=.*$/m, `BETTER_AUTH_SECRET=${secret}`);
     writeFileSync(serverEnvPath, content);
-    console.log("[setup] BETTER_AUTH_SECRET généré");
+    console.log('[setup] BETTER_AUTH_SECRET généré');
   }
 }
 
 // 3. Postgres up + migrations
-console.log("[setup] postgres…");
-run("docker", ["compose", "up", "-d", "--wait", "--wait-timeout", "60", "postgres"]);
-console.log("[setup] migrations Drizzle…");
-run("bun", ["run", "db:migrate"], { cwd: "apps/server" });
+console.log('[setup] postgres…');
+run('docker', ['compose', 'up', '-d', '--wait', '--wait-timeout', '60', 'postgres']);
+console.log('[setup] migrations Drizzle…');
+run('bun', ['run', 'db:migrate'], { cwd: 'apps/server' });
 
-console.log("\n[setup] terminé. Lance `bun run dev`.");
+console.log('\n[setup] terminé. Lance `bun run dev`.');

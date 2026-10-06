@@ -24,7 +24,9 @@ async function main(): Promise<number> {
     const { clean, faulty } = versions(c);
     const flags = async (transcript: typeof clean, label: string) => {
       try {
-        const { results: [result] } = await answerQuestions({ ...context, transcript }, [check], generate);
+        const {
+          results: [result],
+        } = await answerQuestions({ ...context, transcript }, [check], generate);
         return result ? faultFlagged(result) : null;
       } catch (error) {
         failures.push(`${c.id} (${label}): ${errorMessage(error)}`);
@@ -39,7 +41,9 @@ async function main(): Promise<number> {
   const lines = detection(outcomes);
   console.log('\n| Fault | Faulty flagged | Clean left alone | Missed | False alarms | Failed |\n|---|---|---|---|---|---|');
   for (const l of lines) {
-    console.log(`| ${l.fault} | ${String(l.detected)}/${String(l.faultyJudged)} | ${String(l.cleanKept)}/${String(l.cleanJudged)} | ${l.missed.join(', ') || '—'} | ${l.falseAlarms.join(', ') || '—'} | ${l.failed.join(', ') || '—'} |`);
+    console.log(
+      `| ${l.fault} | ${String(l.detected)}/${String(l.faultyJudged)} | ${String(l.cleanKept)}/${String(l.cleanJudged)} | ${l.missed.join(', ') || '—'} | ${l.falseAlarms.join(', ') || '—'} | ${l.failed.join(', ') || '—'} |`,
+    );
   }
   console.log(`\n${await writeResult(`constructed-cases-${stamp()}`, { judge: judgeIdentity(commit()), lines, outcomes, failures })}`);
   if (failures.length > 0) {

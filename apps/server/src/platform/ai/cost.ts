@@ -39,14 +39,14 @@ interface AiCall extends CallUsage {
 
 /** USD list prices of the dated models, read on their pages on 2026-10-06. */
 const MODEL_PRICING_USD: Record<string, { inputPerMTokens?: number; outputPerMTokens?: number; perMinute?: number; perMChars?: number }> = {
-  'mistral-small-2603': { inputPerMTokens: 0.15, outputPerMTokens: 0.60 },
+  'mistral-small-2603': { inputPerMTokens: 0.15, outputPerMTokens: 0.6 },
   // https://docs.mistral.ai/models/voxtral-mini-transcribe-26-02
   'voxtral-mini-2602': { perMinute: 0.003 },
   // https://mistral.ai/news/voxtral-tts/ : « $0.016 per 1k characters »
   'voxtral-mini-tts-2603': { perMChars: 16 },
 };
 
-const CACHE_DISCOUNT = 0.10;
+const CACHE_DISCOUNT = 0.1;
 
 const EU_REGIONAL_UPCHARGE = 1.1;
 

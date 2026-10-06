@@ -54,7 +54,11 @@ async function moderateInput(lastTutorText: string | null, studentText: string):
   try {
     return await moderateStudentTurn(lastTutorText, studentText);
   } catch (err) {
-    logger.error('Input moderation unavailable, distress judged by the rules alone', { operation: 'moderation:input-error', err, severity: 'high' as const });
+    logger.error('Input moderation unavailable, distress judged by the rules alone', {
+      operation: 'moderation:input-error',
+      err,
+      severity: 'high' as const,
+    });
     return null;
   }
 }
@@ -86,7 +90,7 @@ class ChatOrchestrationService {
     const sessionId = await resolveSession(request);
     if (await closedForDistress(sessionId)) return closedTurn(sessionId);
     const history = await chatMessageService.getSessionHistory(sessionId, { limit: 20 });
-    const lastTutorText = history.findLast(msg => msg.role === 'assistant')?.content ?? null;
+    const lastTutorText = history.findLast((msg) => msg.role === 'assistant')?.content ?? null;
     return distressIn(sessionId, request.content, await moderateInput(lastTutorText, request.content));
   }
 
@@ -110,9 +114,13 @@ class ChatOrchestrationService {
       afterMessageId: sessionSummary?.summaryUpToMessageId ?? undefined,
     });
 
-    const window = sessionHistory.filter(msg => msg.role === 'user' || msg.role === 'assistant');
-    const stored = new Map((await messagesRepository.findModelMessages(window.filter(msg => msg.role === 'assistant').map(msg => msg.id)))
-      .map(row => [row.id, row.modelMessages]));
+    const window = sessionHistory.filter((msg) => msg.role === 'user' || msg.role === 'assistant');
+    const stored = new Map(
+      (await messagesRepository.findModelMessages(window.filter((msg) => msg.role === 'assistant').map((msg) => msg.id))).map((row) => [
+        row.id,
+        row.modelMessages,
+      ]),
+    );
     const conversationHistory = window.map((msg): HistoryTurn => {
       const modelMessages = readStoredResponseMessages(stored.get(msg.id), msg.id);
       return {
@@ -123,7 +131,7 @@ class ChatOrchestrationService {
       };
     });
 
-    const lastTutorText = conversationHistory.findLast(turn => turn.role === 'assistant')?.content ?? null;
+    const lastTutorText = conversationHistory.findLast((turn) => turn.role === 'assistant')?.content ?? null;
 
     // Files, the turn analysis and the moderation run alongside, none adding to the wait. An
     // analysis that fails gives an empty analysis, logged at high severity in the service.
@@ -148,13 +156,13 @@ class ChatOrchestrationService {
       requested: request.requestedSubject && SUBJECTS[request.requestedSubject].family,
     });
     if (shouldPersistDetectedSubject({ detected: detectedSubject, sessionSubject: sessionSummary?.subject ?? null })) {
-      void studySessionsRepository
-        .updateSubject(sessionId, detectedSubject)
-        .catch((err: unknown) => { logger.warn('Subject persist failed', {
+      void studySessionsRepository.updateSubject(sessionId, detectedSubject).catch((err: unknown) => {
+        logger.warn('Subject persist failed', {
           operation: 'chat-orchestration:subject-persist',
           sessionId,
           err: err,
-        }); });
+        });
+      });
     }
 
     const { attachedFileInfos, files } = fileContext;
@@ -172,7 +180,9 @@ class ChatOrchestrationService {
       lastTutorText,
       attachedFilesBlock: files.length > 0 ? wrapAttachedFiles(files) : null,
     });
-    const notices = [contract ?? instructionFor(turnAnalysis), request.flashcards === false ? flashcardsUnavailable(turnAnalysis) : null].filter((notice) => notice !== null);
+    const notices = [contract ?? instructionFor(turnAnalysis), request.flashcards === false ? flashcardsUnavailable(turnAnalysis) : null].filter(
+      (notice) => notice !== null,
+    );
     const turnInstruction = notices.length > 0 ? notices.join('\n\n') : null;
 
     logger.info('Chat context assembled', {
@@ -235,9 +245,7 @@ class ChatOrchestrationService {
     );
 
     if (params.fileIds.length > 0) {
-      await Promise.all(
-        params.fileIds.map(fId => sessionFilesRepository.attach(params.sessionId, fId)),
-      );
+      await Promise.all(params.fileIds.map((fId) => sessionFilesRepository.attach(params.sessionId, fId)));
     }
   }
 
@@ -251,7 +259,23 @@ class ChatOrchestrationService {
    * persiste, mais les tokens factures sont comptes.
    */
   async finishTurn(params: FinishTurnParams): Promise<void> {
-    const { sessionId, userId, userContent, text: fullContent, modelMessages, aborted, model, usage, startTime, attachedFileInfo, attachedFileInfos, turnAnalysis, exerciseProgress, outputCheck, check } = params;
+    const {
+      sessionId,
+      userId,
+      userContent,
+      text: fullContent,
+      modelMessages,
+      aborted,
+      model,
+      usage,
+      startTime,
+      attachedFileInfo,
+      attachedFileInfos,
+      turnAnalysis,
+      exerciseProgress,
+      outputCheck,
+      check,
+    } = params;
     const tokensUsed = usage?.totalTokens ?? 0;
 
     // A turn that reasoned without writing anything was billed all the same.
@@ -269,26 +293,34 @@ class ChatOrchestrationService {
       return;
     }
 
-    await chatMessageService.saveMessage(sessionId, 'assistant', fullContent, {
-      aiModel: model,
-      tokensUsed,
-      ...(attachedFileInfo && { attachedFile: attachedFileInfo }),
-      ...(attachedFileInfos && { attachedFiles: attachedFileInfos }),
-      turnAnalysis,
-      ...(exerciseProgress && { exerciseTurn: { diagnosis: exerciseProgress.diagnosis, hintLevel: exerciseProgress.hintLevel } }),
-      ...(outputCheck && { outputCheck }),
-      // Kept only when they can be replayed as they are: a cut turn, or one that ended on a tool
-      // result at the step limit, replays as its text.
-      modelMessages: aborted ? undefined : replayable(modelMessages),
-      cut: aborted,
-    }, { verifySessionExists: false });
+    await chatMessageService.saveMessage(
+      sessionId,
+      'assistant',
+      fullContent,
+      {
+        aiModel: model,
+        tokensUsed,
+        ...(attachedFileInfo && { attachedFile: attachedFileInfo }),
+        ...(attachedFileInfos && { attachedFiles: attachedFileInfos }),
+        turnAnalysis,
+        ...(exerciseProgress && { exerciseTurn: { diagnosis: exerciseProgress.diagnosis, hintLevel: exerciseProgress.hintLevel } }),
+        ...(outputCheck && { outputCheck }),
+        // Kept only when they can be replayed as they are: a cut turn, or one that ended on a tool
+        // result at the step limit, replays as its text.
+        modelMessages: aborted ? undefined : replayable(modelMessages),
+        cut: aborted,
+      },
+      { verifySessionExists: false },
+    );
 
     // The turn's change on the exercise counts once the student has seen the answer: a cut or
     // empty turn moves nothing.
     if (exerciseProgress?.id && !aborted) {
       void exerciseSheetsRepository
         .recordTurn(exerciseProgress.id, { ...exerciseProgress.change, hint: hintOf(exerciseProgress.hintLevel, fullContent) })
-        .catch((err: unknown) => { logger.error('Exercise turn not stored', { sessionId, err, operation: 'chat-orchestration:exercise', severity: 'medium' as const }); });
+        .catch((err: unknown) => {
+          logger.error('Exercise turn not stored', { sessionId, err, operation: 'chat-orchestration:exercise', severity: 'medium' as const });
+        });
     }
 
     logger.info('Streaming message saved', {

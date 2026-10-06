@@ -11,12 +11,12 @@ import { studySessions } from '../tutor/session.schema';
  * Enum pour le statut des fichiers
  */
 export const fileStatusEnum = pgEnum('file_status', [
-  'pending',    // Upload en cours (presigned URL généré)
-  'uploaded',   // Fichier uploadé dans Scaleway
+  'pending', // Upload en cours (presigned URL généré)
+  'uploaded', // Fichier uploadé dans Scaleway
   'processing', // Analyse en cours
-  'ready',      // Prêt à utiliser
-  'expired',    // Référence expirée
-  'deleted'     // Supprimé
+  'ready', // Prêt à utiliser
+  'expired', // Référence expirée
+  'deleted', // Supprimé
 ]);
 
 // Type inféré de l'enum pour TypeScript
@@ -31,40 +31,44 @@ export type FileStatus = (typeof fileStatusEnum.enumValues)[number];
  * Stockage: Scaleway Object Storage (RGPD France)
  * Lecture : le texte extrait une fois, gardé dans educational_context
  */
-export const files = pgTable('files', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  userId: varchar('user_id', { length: 255 }).notNull(),
+export const files = pgTable(
+  'files',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: varchar('user_id', { length: 255 }).notNull(),
 
-  // Infos fichier original
-  fileName: varchar('file_name', { length: 255 }).notNull(),
-  mimeType: varchar('mime_type', { length: 100 }).notNull(),
-  sizeBytes: integer('size_bytes').notNull(),
+    // Infos fichier original
+    fileName: varchar('file_name', { length: 255 }).notNull(),
+    mimeType: varchar('mime_type', { length: 100 }).notNull(),
+    sizeBytes: integer('size_bytes').notNull(),
 
-  // Stockage Scaleway S3
-  storageKey: varchar('storage_key', { length: 500 }).notNull(), // Clé S3 dans le bucket
+    // Stockage Scaleway S3
+    storageKey: varchar('storage_key', { length: 500 }).notNull(), // Clé S3 dans le bucket
 
-  // { subject, level, userId } from the upload, then { extractedText, extractionMethod, wordCount } once read.
-  educationalContext: jsonb('educational_context').default(sql`'{}'::jsonb`),
+    // { subject, level, userId } from the upload, then { extractedText, extractionMethod, wordCount } once read.
+    educationalContext: jsonb('educational_context').default(sql`'{}'::jsonb`),
 
-  // Statut et métadonnées
-  status: fileStatusEnum('status').notNull().default('pending'),
-  metadata: jsonb('metadata').default(sql`'{}'::jsonb`),
+    // Statut et métadonnées
+    status: fileStatusEnum('status').notNull().default('pending'),
+    metadata: jsonb('metadata').default(sql`'{}'::jsonb`),
 
-  // Audit
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
-}, (table) => [
-  foreignKey({
-    columns: [table.userId],
-    foreignColumns: [user.id],
-    name: 'files_user_id_fkey'
-  }).onDelete('cascade'), // Supprimer fichiers si user supprimé
+    // Audit
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.userId],
+      foreignColumns: [user.id],
+      name: 'files_user_id_fkey',
+    }).onDelete('cascade'), // Supprimer fichiers si user supprimé
 
-  index('idx_files_user_id').on(table.userId),
-  index('idx_files_status').on(table.status),
-  index('idx_files_storage_key').on(table.storageKey),
-  index('idx_files_created_at').on(table.createdAt),
-]);
+    index('idx_files_user_id').on(table.userId),
+    index('idx_files_status').on(table.status),
+    index('idx_files_storage_key').on(table.storageKey),
+    index('idx_files_created_at').on(table.createdAt),
+  ],
+);
 
 /**
  * Table session_files - Fichiers attachés à une session de chat
@@ -72,30 +76,33 @@ export const files = pgTable('files', {
  * Permet aux élèves de gérer quels fichiers du classeur sont
  * injectés dans le contexte AI d'une session donnée.
  */
-export const sessionFiles = pgTable('session_files', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  sessionId: uuid('session_id').notNull(),
-  fileId: uuid('file_id').notNull(),
-  attachedAt: timestamp('attached_at', { withTimezone: true }).notNull().defaultNow(),
-}, (table) => [
-  foreignKey({
-    columns: [table.sessionId],
-    foreignColumns: [studySessions.id],
-    name: 'session_files_session_id_fkey'
-  }).onDelete('cascade'),
+export const sessionFiles = pgTable(
+  'session_files',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    sessionId: uuid('session_id').notNull(),
+    fileId: uuid('file_id').notNull(),
+    attachedAt: timestamp('attached_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.sessionId],
+      foreignColumns: [studySessions.id],
+      name: 'session_files_session_id_fkey',
+    }).onDelete('cascade'),
 
-  foreignKey({
-    columns: [table.fileId],
-    foreignColumns: [files.id],
-    name: 'session_files_file_id_fkey'
-  }).onDelete('cascade'),
+    foreignKey({
+      columns: [table.fileId],
+      foreignColumns: [files.id],
+      name: 'session_files_file_id_fkey',
+    }).onDelete('cascade'),
 
-  unique('session_files_session_file_unique')
-    .on(table.sessionId, table.fileId),
+    unique('session_files_session_file_unique').on(table.sessionId, table.fileId),
 
-  index('idx_session_files_session').on(table.sessionId),
-  index('idx_session_files_file').on(table.fileId),
-]);
+    index('idx_session_files_session').on(table.sessionId),
+    index('idx_session_files_file').on(table.fileId),
+  ],
+);
 
 // =============================================
 // RELATIONS
@@ -104,7 +111,7 @@ export const sessionFiles = pgTable('session_files', {
 export const filesRelations = relations(files, ({ one, many }) => ({
   user: one(user, {
     fields: [files.userId],
-    references: [user.id]
+    references: [user.id],
   }),
   sessionFiles: many(sessionFiles),
 }));
@@ -112,11 +119,11 @@ export const filesRelations = relations(files, ({ one, many }) => ({
 export const sessionFilesRelations = relations(sessionFiles, ({ one }) => ({
   session: one(studySessions, {
     fields: [sessionFiles.sessionId],
-    references: [studySessions.id]
+    references: [studySessions.id],
   }),
   file: one(files, {
     fields: [sessionFiles.fileId],
-    references: [files.id]
+    references: [files.id],
   }),
 }));
 

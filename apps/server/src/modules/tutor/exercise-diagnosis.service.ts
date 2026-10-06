@@ -15,14 +15,26 @@ import { stripPromptTags, wrapUserMessage } from './mistral-helpers.js';
 const DIAGNOSIS_PROMPT_VERSION = '2026-10-05.2';
 
 const DiagnosisSchema = z.object({
-  verdict: z.enum(['correct', 'right-step', 'incorrect', 'unclear']).describe(
-    "correct : la réponse finale de l'élève est juste ; right-step : une étape juste, l'exercice n'est pas fini ; incorrect : fausse ; unclear : rien à juger ou impossible à juger.",
-  ),
-  firstWrongStep: z.string().nullable().describe("La première étape fausse de l'élève, citée ou décrite, sans la correction ; null si rien n'est faux."),
-  errorType: z.enum(['guess', 'misinterpret', 'careless', 'right-idea', 'imprecise', 'not-sure', 'n/a']).describe(
-    "guess : il ne semble pas comprendre ou a deviné ; misinterpret : il a mal compris la question ; careless : une erreur d'inattention ; right-idea : la bonne idée, pas encore abouti ; imprecise : pas assez précis ; not-sure : impossible de le dire ; n/a : aucune erreur.",
-  ),
-  proposalMath: z.string().nullable().describe("La proposition de l'élève en syntaxe mathjs (« x = 5 », « 3*x = 15 »), si c'est un nombre, une expression ou une équation ; sinon null."),
+  verdict: z
+    .enum(['correct', 'right-step', 'incorrect', 'unclear'])
+    .describe(
+      "correct : la réponse finale de l'élève est juste ; right-step : une étape juste, l'exercice n'est pas fini ; incorrect : fausse ; unclear : rien à juger ou impossible à juger.",
+    ),
+  firstWrongStep: z
+    .string()
+    .nullable()
+    .describe("La première étape fausse de l'élève, citée ou décrite, sans la correction ; null si rien n'est faux."),
+  errorType: z
+    .enum(['guess', 'misinterpret', 'careless', 'right-idea', 'imprecise', 'not-sure', 'n/a'])
+    .describe(
+      "guess : il ne semble pas comprendre ou a deviné ; misinterpret : il a mal compris la question ; careless : une erreur d'inattention ; right-idea : la bonne idée, pas encore abouti ; imprecise : pas assez précis ; not-sure : impossible de le dire ; n/a : aucune erreur.",
+    ),
+  proposalMath: z
+    .string()
+    .nullable()
+    .describe(
+      "La proposition de l'élève en syntaxe mathjs (« x = 5 », « 3*x = 15 »), si c'est un nombre, une expression ou une équation ; sinon null.",
+    ),
 });
 
 export type Diagnosis = z.infer<typeof DiagnosisSchema> & {
@@ -59,7 +71,9 @@ function sheetBlock(sheet: ExerciseSheet): string {
     `Erreurs fréquentes :\n${list(sheet.commonErrors)}`,
     sheet.rule ? `Règle : ${clean(sheet.rule)}` : null,
     '</fiche>',
-  ].filter((line): line is string => line !== null).join('\n');
+  ]
+    .filter((line): line is string => line !== null)
+    .join('\n');
 }
 
 // « x = 5 », « 5 », « -3/4 »: the answer itself, not a step towards it.
@@ -77,8 +91,19 @@ export function settle(diagnosis: Omit<Diagnosis, 'decidedBy'>, sheet: ExerciseS
   const proposal = diagnosis.proposalMath;
   const byModel: Diagnosis = { ...diagnosis, decidedBy: 'model' };
   if (!proposal) return byModel;
-  const right = (verdict: 'correct' | 'right-step'): Diagnosis => ({ ...diagnosis, verdict, firstWrongStep: null, errorType: 'n/a', decidedBy: 'mathjs' });
-  const wrong: Diagnosis = { ...diagnosis, verdict: 'incorrect', errorType: diagnosis.errorType === 'n/a' ? 'not-sure' : diagnosis.errorType, decidedBy: 'mathjs' };
+  const right = (verdict: 'correct' | 'right-step'): Diagnosis => ({
+    ...diagnosis,
+    verdict,
+    firstWrongStep: null,
+    errorType: 'n/a',
+    decidedBy: 'mathjs',
+  });
+  const wrong: Diagnosis = {
+    ...diagnosis,
+    verdict: 'incorrect',
+    errorType: diagnosis.errorType === 'n/a' ? 'not-sure' : diagnosis.errorType,
+    decidedBy: 'mathjs',
+  };
 
   if (proposal.includes('=')) {
     const equation = sheet.mathEquation ?? (sheet.mathAnswer?.includes('=') ? sheet.mathAnswer : null);

@@ -6,7 +6,7 @@ export async function initializeServices(): Promise<void> {
   try {
     logger.info('Initializing TomAI services...', {
       operation: 'services:init',
-      environment: env.NODE_ENV
+      environment: env.NODE_ENV,
     });
 
     const dbStart = Date.now();
@@ -16,7 +16,7 @@ export async function initializeServices(): Promise<void> {
     logger.info('PostgreSQL verified successfully', {
       operation: 'services:init:database',
       latency_ms: dbLatency,
-      pool: 'ready'
+      pool: 'ready',
     });
 
     const migrations = await db.execute(sql`
@@ -26,7 +26,7 @@ export async function initializeServices(): Promise<void> {
 
     logger.info('Database migrations verified', {
       operation: 'services:init:migrations',
-      count: Number(migrations[0]?.['count'] ?? 0)
+      count: Number(migrations[0]?.['count'] ?? 0),
     });
 
     logger.info('All services initialized successfully', {
@@ -35,14 +35,13 @@ export async function initializeServices(): Promise<void> {
         database: 'ready',
         ai_stack: 'mistral',
       },
-      environment: env.NODE_ENV
+      environment: env.NODE_ENV,
     });
-
   } catch (_error) {
     logger.error('FATAL: Service initialization failed', {
       operation: 'services:init:error',
       err: _error,
-      severity: 'critical' as const
+      severity: 'critical' as const,
     });
     throw _error;
   }

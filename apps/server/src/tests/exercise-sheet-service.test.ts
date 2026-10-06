@@ -6,7 +6,13 @@ import type { ExerciseSheet } from '../modules/tutor/exercise-sheet';
 const mockLogger = createMockLogger();
 mock.module('../platform/observability/logger', () => ({ logger: mockLogger }));
 
-interface Call { reasoningEffort?: string; temperature?: number; maxTokens?: number; owner?: unknown; messages: { role: string; content: string }[] }
+interface Call {
+  reasoningEffort?: string;
+  temperature?: number;
+  maxTokens?: number;
+  owner?: unknown;
+  messages: { role: string; content: string }[];
+}
 const calls: Call[] = [];
 let replies: (ExerciseSheet | Error)[] = [];
 mock.module('../platform/ai/mistral-client', () => ({
@@ -18,9 +24,16 @@ mock.module('../platform/ai/mistral-client', () => ({
   }),
 }));
 
-
 const create = mock(async (_values: unknown): Promise<string | null> => 'ex-1');
-interface Row { id: string; sheet: ExerciseSheet | null; uncertain: boolean; hintLevel: number; stepsDone: number; hints: { level: number; text: string }[]; solvedAt: Date | null }
+interface Row {
+  id: string;
+  sheet: ExerciseSheet | null;
+  uncertain: boolean;
+  hintLevel: number;
+  stepsDone: number;
+  hints: { level: number; text: string }[];
+  solvedAt: Date | null;
+}
 let latest: Row | null = null;
 mock.module('../modules/tutor/exercise-sheets.repository', () => ({
   exerciseSheetsRepository: { create, findLatest: mock(async () => latest) },
@@ -29,11 +42,29 @@ mock.module('../modules/tutor/exercise-sheets.repository', () => ({
 const { prepareExerciseSheet, currentExercise } = await import('../modules/tutor/exercise-sheet.service');
 
 const draft = (answer: string): ExerciseSheet => ({
-  statement: 'Résous 3x + 5 = 20.', kind: 'short', answer, answerForms: [answer], mathEquation: '3*x + 5 = 20', mathAnswer: answer,
-  steps: [], commonErrors: [], rule: null, facts: [], expectedElements: [], entries: ['invented-id'], laterEntries: [],
+  statement: 'Résous 3x + 5 = 20.',
+  kind: 'short',
+  answer,
+  answerForms: [answer],
+  mathEquation: '3*x + 5 = 20',
+  mathAnswer: answer,
+  steps: [],
+  commonErrors: [],
+  rule: null,
+  facts: [],
+  expectedElements: [],
+  entries: ['invented-id'],
+  laterEntries: [],
 });
 
-const params = { userId: 'user-1', sessionId: 'session-1', level: 'quatrieme' as const, subject: 'mathematiques' as const, studentText: 'Résous 3x + 5 = 20.', attachedFilesBlock: null };
+const params = {
+  userId: 'user-1',
+  sessionId: 'session-1',
+  level: 'quatrieme' as const,
+  subject: 'mathematiques' as const,
+  studentText: 'Résous 3x + 5 = 20.',
+  attachedFilesBlock: null,
+};
 
 beforeEach(() => {
   calls.length = 0;
@@ -80,13 +111,19 @@ describe('prepareExerciseSheet', () => {
 
   it('gives the attached text to the draws', async () => {
     replies = [draft('x = 5'), draft('x = 5'), draft('x = 5')];
-    await prepareExerciseSheet({ ...params, studentText: 'Voici mon exercice', attachedFilesBlock: '<attached_file name="photo">Résous 3x + 5 = 20.</attached_file>' });
+    await prepareExerciseSheet({
+      ...params,
+      studentText: 'Voici mon exercice',
+      attachedFilesBlock: '<attached_file name="photo">Résous 3x + 5 = 20.</attached_file>',
+    });
     expect(calls[0]?.messages.at(-1)?.content).toStartWith('<attached_file name="photo">Résous 3x + 5 = 20.</attached_file>');
   });
 
   it('keeps the sheet for the turn when storing it fails, without an id to keep progress, and logs it', async () => {
     replies = [draft('x = 5'), draft('x = 5'), draft('x = 5')];
-    create.mockImplementation(async () => { throw new Error('db down'); });
+    create.mockImplementation(async () => {
+      throw new Error('db down');
+    });
 
     expect(await prepareExerciseSheet(params)).toMatchObject({ id: null, sheet: { answer: 'x = 5' } });
     expect(mockLogger.error).toHaveBeenCalledTimes(1);
@@ -97,7 +134,15 @@ describe('currentExercise', () => {
   it("gives the session's last exercise with its progress and its last four hints, solved or not", async () => {
     const hints = [1, 2, 3, 4, 5].map((n) => ({ level: 1, text: `Indice ${n}` }));
     latest = { id: 'ex-1', sheet: draft('x = 5'), uncertain: false, hintLevel: 2, stepsDone: 1, hints, solvedAt: null };
-    expect(await currentExercise('session-1')).toEqual({ id: 'ex-1', sheet: draft('x = 5'), uncertain: false, hintLevel: 2, stepsDone: 1, hints: hints.slice(1), solved: false });
+    expect(await currentExercise('session-1')).toEqual({
+      id: 'ex-1',
+      sheet: draft('x = 5'),
+      uncertain: false,
+      hintLevel: 2,
+      stepsDone: 1,
+      hints: hints.slice(1),
+      solved: false,
+    });
 
     latest = { ...latest, solvedAt: new Date() };
     expect((await currentExercise('session-1'))?.solved).toBe(true);

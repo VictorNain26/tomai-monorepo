@@ -19,4 +19,3 @@ export const KATEX_INSTRUCTIONS = `## KaTeX (formules mathématiques)
 - Inline: $formule$ — Display: $$formule$$
 - Dans JSON: double backslash (\\\\pi → \\pi)
 - Syntaxe courante: \\frac{a}{b}, \\sqrt{x}, x^2, x_1, \\times, \\leq, \\geq, \\pi, \\sum, \\int`;
-

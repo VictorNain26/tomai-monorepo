@@ -74,14 +74,16 @@ function serializeSql(sqlObj: unknown): string {
   if (sqlObj === null || typeof sqlObj !== 'object') return String(sqlObj);
   const chunks = (sqlObj as { queryChunks?: unknown[] }).queryChunks;
   if (!Array.isArray(chunks)) return JSON.stringify(sqlObj);
-  return chunks.map(c => {
-    if (c && typeof c === 'object' && 'value' in c) {
-      const v = (c).value;
-      if (Array.isArray(v)) return v.join('');
-      return String(v);
-    }
-    return String(c);
-  }).join('');
+  return chunks
+    .map((c) => {
+      if (c && typeof c === 'object' && 'value' in c) {
+        const v = c.value;
+        if (Array.isArray(v)) return v.join('');
+        return String(v);
+      }
+      return String(c);
+    })
+    .join('');
 }
 
 beforeEach(() => {
@@ -151,9 +153,7 @@ describe('FilesRepository.mergeEducationalContext', () => {
   });
 
   it('should resolve without error on empty patch', async () => {
-    expect(
-      filesRepository.mergeEducationalContext('file-1', {}),
-    ).resolves.toBe(true);
+    expect(filesRepository.mergeEducationalContext('file-1', {})).resolves.toBe(true);
     const setArg = setArgOrThrow();
     const rendered = serializeSql(setArg['educationalContext']);
     expect(rendered).toContain('{}');

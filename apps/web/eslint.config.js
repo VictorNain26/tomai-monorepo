@@ -1,8 +1,8 @@
-import { config } from "@repo/eslint-config/react-internal";
+import { config } from '@repo/eslint-config/react-internal';
 
 /** @type {import("eslint").Linter.Config[]} */
 export default [
-  { ignores: ["dist/", "src/routeTree.gen.ts"] },
+  { ignores: ['dist/', 'src/routeTree.gen.ts'] },
   ...config,
   {
     languageOptions: {

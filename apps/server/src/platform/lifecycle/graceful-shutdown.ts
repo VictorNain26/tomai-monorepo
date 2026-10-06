@@ -5,10 +5,7 @@ export interface ShutdownStep {
   run: () => unknown;
 }
 
-export function createGracefulShutdown(
-  steps: ShutdownStep[],
-  exit: (code: number) => void,
-): (signal: string) => Promise<void> {
+export function createGracefulShutdown(steps: ShutdownStep[], exit: (code: number) => void): (signal: string) => Promise<void> {
   let shuttingDown = false;
 
   return async (signal) => {

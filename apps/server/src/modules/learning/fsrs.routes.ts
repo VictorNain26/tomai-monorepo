@@ -15,7 +15,6 @@ import { fsrsService, Rating } from './fsrs.service.js';
 import { getLevelConfig } from './learning-config.js';
 import { getUserLevel, idParam } from './routes.helpers.js';
 
-
 const reviewBody = z.object({
   cardId: z.uuid(),
   rating: z.union([z.literal(Rating.Again), z.literal(Rating.Hard), z.literal(Rating.Good), z.literal(Rating.Easy)]),
@@ -58,56 +57,52 @@ export const fsrsRoutes = new Hono<AuthEnv>()
    * - 3 (Good): Correct / Good answer with effort
    * - 4 (Easy): Easy / Immediate answer
    */
-  .post(
-    '/review',
-    validate('json', reviewBody),
-    async (c) => {
-      const user = c.var.user;
-      const body = c.req.valid('json');
-      const { cardId, rating } = body;
-      const level = getUserLevel(user.id, user.schoolLevel);
+  .post('/review', validate('json', reviewBody), async (c) => {
+    const user = c.var.user;
+    const body = c.req.valid('json');
+    const { cardId, rating } = body;
+    const level = getUserLevel(user.id, user.schoolLevel);
 
-      try {
-        const result = await learningService.reviewCardOrThrow(user.id, cardId, rating, level);
+    try {
+      const result = await learningService.reviewCardOrThrow(user.id, cardId, rating, level);
 
-        logger.info('Card reviewed via API', {
-          operation: 'learning:review',
-          userId: user.id,
-          cardId,
-          rating,
+      logger.info('Card reviewed via API', {
+        operation: 'learning:review',
+        userId: user.id,
+        cardId,
+        rating,
+        newState: result.newState,
+        nextDue: result.nextDue.toISOString(),
+      });
+
+      return c.json({
+        success: true,
+        result: {
+          cardId: result.cardId,
+          rating: result.rating,
+          previousState: result.previousState,
           newState: result.newState,
           nextDue: result.nextDue.toISOString(),
-        });
-
-        return c.json({
-          success: true,
-          result: {
-            cardId: result.cardId,
-            rating: result.rating,
-            previousState: result.previousState,
-            newState: result.newState,
-            nextDue: result.nextDue.toISOString(),
-            stability: Math.round(result.stability * 100) / 100,
-            difficulty: Math.round(result.difficulty * 100) / 100,
-            reps: result.reps,
-            lapses: result.lapses,
-          },
-        });
-      } catch (error) {
-        if (error instanceof CardNotFoundError) {
-          return c.json({ error: 'Carte non trouvée' }, 404);
-        }
-        logger.error('Failed to review card', {
-          operation: 'learning:review:error',
-          userId: user.id,
-          cardId,
-          err: error,
-          severity: 'medium' as const,
-        });
-        return c.json({ error: 'Échec de l\'enregistrement de la révision' }, 500);
+          stability: Math.round(result.stability * 100) / 100,
+          difficulty: Math.round(result.difficulty * 100) / 100,
+          reps: result.reps,
+          lapses: result.lapses,
+        },
+      });
+    } catch (error) {
+      if (error instanceof CardNotFoundError) {
+        return c.json({ error: 'Carte non trouvée' }, 404);
       }
-    },
-  )
+      logger.error('Failed to review card', {
+        operation: 'learning:review:error',
+        userId: user.id,
+        cardId,
+        err: error,
+        severity: 'medium' as const,
+      });
+      return c.json({ error: "Échec de l'enregistrement de la révision" }, 500);
+    }
+  })
 
   /**
    * Get due cards for review
@@ -119,66 +114,61 @@ export const fsrsRoutes = new Hono<AuthEnv>()
    * 3. Review cards
    * 4. New cards (if includeNew=true)
    */
-  .get(
-    '/decks/:id/due',
-    validate('param', idParam),
-    validate('query', dueQuery),
-    async (c) => {
-      const user = c.var.user;
-      const params = c.req.valid('param');
-      const query = c.req.valid('query');
-      const { id: deckId } = params;
-      const level = getUserLevel(user.id, user.schoolLevel);
+  .get('/decks/:id/due', validate('param', idParam), validate('query', dueQuery), async (c) => {
+    const user = c.var.user;
+    const params = c.req.valid('param');
+    const query = c.req.valid('query');
+    const { id: deckId } = params;
+    const level = getUserLevel(user.id, user.schoolLevel);
 
-      // Parameters with level-adapted defaults
-      const config = getLevelConfig(level);
-      const limit = query.limit ? parseInt(query.limit, 10) : config.cardsPerSession;
-      const includeNew = query.includeNew !== 'false';
+    // Parameters with level-adapted defaults
+    const config = getLevelConfig(level);
+    const limit = query.limit ? parseInt(query.limit, 10) : config.cardsPerSession;
+    const includeNew = query.includeNew !== 'false';
 
-      try {
-        const dueCards = await fsrsService.getDueCards({
-          deckId,
-          userId: user.id,
-          limit,
-          includeNew,
-        });
+    try {
+      const dueCards = await fsrsService.getDueCards({
+        deckId,
+        userId: user.id,
+        limit,
+        includeNew,
+      });
 
-        return c.json({
-          cards: dueCards.map((card) => ({
-            id: card.id,
-            deckId: card.deckId,
-            cardType: card.cardType,
-            content: card.content,
-            position: card.position,
-            overdue: card.overdue,
-            // Don't return fsrsData to frontend (invisible to student)
-          })),
-          count: dueCards.length,
-          overdueCount: dueCards.filter((card) => card.overdue).length,
-          sessionConfig: {
-            recommendedCards: config.cardsPerSession,
-            sessionMinutes: config.sessionMinutes,
-            level,
-          },
-        });
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
+      return c.json({
+        cards: dueCards.map((card) => ({
+          id: card.id,
+          deckId: card.deckId,
+          cardType: card.cardType,
+          content: card.content,
+          position: card.position,
+          overdue: card.overdue,
+          // Don't return fsrsData to frontend (invisible to student)
+        })),
+        count: dueCards.length,
+        overdueCount: dueCards.filter((card) => card.overdue).length,
+        sessionConfig: {
+          recommendedCards: config.cardsPerSession,
+          sessionMinutes: config.sessionMinutes,
+          level,
+        },
+      });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
 
-        if (errorMessage.includes('not found') || errorMessage.includes('access denied')) {
-          return c.json({ error: 'Deck non trouvé' }, 404);
-        }
-
-        logger.error('Failed to get due cards', {
-          operation: 'learning:due:error',
-          userId: user.id,
-          deckId,
-          err: error,
-          severity: 'medium' as const,
-        });
-        return c.json({ error: 'Échec de la récupération des cartes' }, 500);
+      if (errorMessage.includes('not found') || errorMessage.includes('access denied')) {
+        return c.json({ error: 'Deck non trouvé' }, 404);
       }
-    },
-  )
+
+      logger.error('Failed to get due cards', {
+        operation: 'learning:due:error',
+        userId: user.id,
+        deckId,
+        err: error,
+        severity: 'medium' as const,
+      });
+      return c.json({ error: 'Échec de la récupération des cartes' }, 500);
+    }
+  })
 
   /**
    * Get deck review statistics

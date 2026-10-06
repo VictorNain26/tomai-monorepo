@@ -53,9 +53,13 @@ export function fakeJudge(
     await Promise.resolve();
     events.push(`end ${id}`);
     return {
-      object: opts.schema.parse(opts.schemaName === 'tutor_facts'
-        ? facts()
-        : opts.schemaName === 'claims_verdicts' ? claimVerdicts(opts.messages, opts.seed) : answer(question, opts.seed, attempt)),
+      object: opts.schema.parse(
+        opts.schemaName === 'tutor_facts'
+          ? facts()
+          : opts.schemaName === 'claims_verdicts'
+            ? claimVerdicts(opts.messages, opts.seed)
+            : answer(question, opts.seed, attempt),
+      ),
       usage: { inputTokens: 100, cachedInputTokens: 80, outputTokens: 10 },
     };
   };

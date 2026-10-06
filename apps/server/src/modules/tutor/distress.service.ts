@@ -16,7 +16,12 @@ export async function closedForDistress(sessionId: string): Promise<boolean> {
  * The distress turn stored as the student lived it, their message then the fixed reply; the
  * first distress of the session also records the event and closes it.
  */
-export async function answerDistress(params: { turn: DistressTurn; userId: string; content: string; inputMode?: 'text' | 'voice' | undefined }): Promise<void> {
+export async function answerDistress(params: {
+  turn: DistressTurn;
+  userId: string;
+  content: string;
+  inputMode?: 'text' | 'voice' | undefined;
+}): Promise<void> {
   const { turn } = params;
   await distressEventsRepository.recordTurn({
     sessionId: turn.sessionId,

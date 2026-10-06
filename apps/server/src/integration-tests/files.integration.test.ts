@@ -12,20 +12,37 @@ describe.skipIf(!dbReachable)('files the chat reads — from postgres', () => {
   afterAll(async () => {
     const { db } = await import('../db/connection');
     const { user } = await import('../db/schema');
-    await db.delete(user).where(inArray(user.id, [studentId, otherId])).catch(() => null);
+    await db
+      .delete(user)
+      .where(inArray(user.id, [studentId, otherId]))
+      .catch(() => null);
   });
 
   const file = (userId: string, fileName: string, status: 'ready' | 'pending') => ({
-    userId, fileName, mimeType: 'image/png', sizeBytes: 1, storageKey: `${userId}/${fileName}`, status,
+    userId,
+    fileName,
+    mimeType: 'image/png',
+    sizeBytes: 1,
+    storageKey: `${userId}/${fileName}`,
+    status,
   });
 
   it("finds the user's own uploaded files only, never another user's nor an unfinished upload", async () => {
     const { db } = await import('../db/connection');
     const { user, files } = await import('../db/schema');
     await db.insert(user).values([studentId, otherId].map((id) => ({ id, email: `${id}@internal.tomai` })));
-    const [own] = await db.insert(files).values(file(studentId, 'own.png', 'ready')).returning({ id: files.id });
-    const [pending] = await db.insert(files).values(file(studentId, 'pending.png', 'pending')).returning({ id: files.id });
-    const [other] = await db.insert(files).values(file(otherId, 'other.png', 'ready')).returning({ id: files.id });
+    const [own] = await db
+      .insert(files)
+      .values(file(studentId, 'own.png', 'ready'))
+      .returning({ id: files.id });
+    const [pending] = await db
+      .insert(files)
+      .values(file(studentId, 'pending.png', 'pending'))
+      .returning({ id: files.id });
+    const [other] = await db
+      .insert(files)
+      .values(file(otherId, 'other.png', 'ready'))
+      .returning({ id: files.id });
     if (!own || !pending || !other) throw new Error('files not created');
     const { filesRepository } = await import('../modules/documents/files.repository');
 
@@ -43,7 +60,10 @@ describe.skipIf(!dbReachable)('files the chat reads — from postgres', () => {
     const names = ['third.png', 'first.png', 'second.png'];
     const ids: Record<string, string> = {};
     for (const name of names) {
-      const [row] = await db.insert(files).values(file(studentId, name, 'ready')).returning({ id: files.id });
+      const [row] = await db
+        .insert(files)
+        .values(file(studentId, name, 'ready'))
+        .returning({ id: files.id });
       if (!row) throw new Error('file not created');
       ids[name] = row.id;
     }

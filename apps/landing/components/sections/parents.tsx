@@ -1,11 +1,15 @@
-import { EyeOff, LineChart } from "lucide-react";
-import { FadeIn } from "../atoms/fade-in";
-import { SectionHeader } from "../atoms/section-header";
-import { Highlight } from "../annotations/highlight";
+import { EyeOff, LineChart } from 'lucide-react';
+import { FadeIn } from '../atoms/fade-in';
+import { SectionHeader } from '../atoms/section-header';
+import { Highlight } from '../annotations/highlight';
 
 const POINTS = [
-  { icon: LineChart, title: "Un résumé", body: "Matières travaillées, temps passé, notions qui résistent." },
-  { icon: EyeOff, title: "Pas les conversations", body: "L'espace parent montrera un résumé, pas les conversations : votre enfant gardera un espace à lui." },
+  { icon: LineChart, title: 'Un résumé', body: 'Matières travaillées, temps passé, notions qui résistent.' },
+  {
+    icon: EyeOff,
+    title: 'Pas les conversations',
+    body: "L'espace parent montrera un résumé, pas les conversations : votre enfant gardera un espace à lui.",
+  },
 ];
 
 export function Parents() {

@@ -39,7 +39,9 @@ mock.module('../modules/tutor/chat-orchestration.service', () => ({
 const answerDistress = mock(async (_params: unknown) => {});
 mock.module('../modules/tutor/distress.service', () => ({ answerDistress }));
 mock.module('../modules/tutor/chat-tools', () => ({ buildChatTools: mock(() => ({})) }));
-const streamChat = mock(() => { throw new Error('the model must not be called'); });
+const streamChat = mock(() => {
+  throw new Error('the model must not be called');
+});
 mock.module('../modules/tutor/ai-chat.service', () => ({ streamChat }));
 
 const { chatMessageRoutes } = await import('../modules/tutor/chat-message.routes');
@@ -47,14 +49,18 @@ const { DISTRESS_REPLY } = await import('../modules/tutor/distress');
 
 const app = new Hono<AppEnv>().route('/api/chat', chatMessageRoutes);
 
-const send = () => app.fetch(new Request('http://localhost/api/chat/stream', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ message: { id: 'm1', role: 'user', parts: [{ type: 'text', text: 'je me fais du mal quand je rate' }] } }),
-}));
+const send = () =>
+  app.fetch(
+    new Request('http://localhost/api/chat/stream', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: { id: 'm1', role: 'user', parts: [{ type: 'text', text: 'je me fais du mal quand je rate' }] } }),
+    }),
+  );
 
 async function streamedText(res: Response): Promise<string | undefined> {
-  return (await res.text()).split('\n')
+  return (await res.text())
+    .split('\n')
     .filter((line) => line.startsWith('data: {'))
     .map((line) => JSON.parse(line.slice(6)) as { type: string; delta?: string })
     .find((part) => part.type === 'text-delta')?.delta;
@@ -87,7 +93,9 @@ describe('POST /api/chat/stream — distress', () => {
   });
 
   it('still gives the fixed reply when the turn cannot be stored', async () => {
-    answerDistress.mockImplementation(async () => { throw new Error('db down'); });
+    answerDistress.mockImplementation(async () => {
+      throw new Error('db down');
+    });
     const res = await send();
     expect(res.status).toBe(200);
     expect(await streamedText(res)).toBe(DISTRESS_REPLY);

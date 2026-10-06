@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { cn } from "@repo/ui";
-import { useState, useEffect, useCallback } from "react";
-import { Logo } from "../atoms/logo";
-import { NavLinks } from "../molecules/nav-links";
-import { MobileMenu } from "../molecules/mobile-menu";
+import { cn } from '@repo/ui';
+import { useState, useEffect, useCallback } from 'react';
+import { Logo } from '../atoms/logo';
+import { NavLinks } from '../molecules/nav-links';
+import { MobileMenu } from '../molecules/mobile-menu';
 
 export function Header() {
   const [scrolled, setScrolled] = useState(false);
@@ -14,15 +14,17 @@ export function Header() {
   }, []);
 
   useEffect(() => {
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => { window.removeEventListener("scroll", handleScroll); };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
   }, [handleScroll]);
 
   return (
     <header
       className={cn(
-        "sticky top-0 z-50 w-full border-b transition-colors duration-base",
-        scrolled ? "border-border bg-background/90 backdrop-blur-md" : "border-transparent bg-background/70 backdrop-blur",
+        'sticky top-0 z-50 w-full border-b transition-colors duration-base',
+        scrolled ? 'border-border bg-background/90 backdrop-blur-md' : 'border-transparent bg-background/70 backdrop-blur',
       )}
     >
       <nav aria-label="Principale" className="container relative flex h-16 items-center justify-between">

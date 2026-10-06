@@ -6,7 +6,4 @@
  */
 
 // Générateurs de prompts
-export {
-  generateChatbotPedagogyPrompt,
-  generateCardsPedagogyPrompt,
-} from './csen-principles.js';
+export { generateChatbotPedagogyPrompt, generateCardsPedagogyPrompt } from './csen-principles.js';

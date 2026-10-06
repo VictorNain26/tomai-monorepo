@@ -37,23 +37,24 @@ function initializeConnection(): void {
     transform: {
       undefined: null,
     },
-    onnotice: environment === 'production'
-      ? () => undefined
-      : (notice) => {
-          if (notice['message']) {
-            logger.debug('PostgreSQL notice', {
-              notice: notice['message'],
-              operation: 'db:notice'
-            });
-          }
-        },
+    onnotice:
+      environment === 'production'
+        ? () => undefined
+        : (notice) => {
+            if (notice['message']) {
+              logger.debug('PostgreSQL notice', {
+                notice: notice['message'],
+                operation: 'db:notice',
+              });
+            }
+          },
     onclose: (connectionId) => {
       logger.warn('Database connection closed', {
         operation: 'db:connection:close',
         connectionId: String(connectionId),
-        metadata: { timestamp: new Date().toISOString() }
+        metadata: { timestamp: new Date().toISOString() },
       });
-    }
+    },
   });
 
   // Create drizzle instance with full schema
@@ -68,8 +69,8 @@ function initializeConnection(): void {
     operation: 'db:init',
     metadata: {
       environment,
-      maxConnections: environment === 'production' ? 20 : 5
-    }
+      maxConnections: environment === 'production' ? 20 : 5,
+    },
   });
 }
 
@@ -81,7 +82,7 @@ export const db = new Proxy({} as PostgresJsDatabase<typeof schema>, {
   get(_target, prop) {
     initializeConnection();
     return (_db as unknown as Record<string | symbol, unknown>)[prop];
-  }
+  },
 });
 
 // ============================================================================
@@ -98,7 +99,7 @@ export const closeConnection = async (): Promise<void> => {
 
   try {
     logger.info('Closing database connection...', {
-      operation: 'db:disconnect'
+      operation: 'db:disconnect',
     });
 
     await _sql.end();
@@ -107,14 +108,13 @@ export const closeConnection = async (): Promise<void> => {
     _initialized = false;
 
     logger.info('Database connection closed', {
-      operation: 'db:disconnect:success'
+      operation: 'db:disconnect:success',
     });
   } catch (_error) {
     logger.error('Error closing database connection', {
       operation: 'db:disconnect:_error',
       err: _error,
-      severity: 'low' as const
+      severity: 'low' as const,
     });
   }
 };
-

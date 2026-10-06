@@ -23,10 +23,7 @@ const RECENT_WINDOW_SIZE = 10;
  * - Avec résumé: retourne UNIQUEMENT la fenêtre verbatim récente (≤ RECENT_WINDOW_SIZE), tronquée au budget
  * - Le résumé synthétique est injecté séparément en amont (chat-message-assembler)
  */
-export function optimizeConversationHistory<T extends Pick<IAIMessage, 'content'>>(
-  history: T[],
-  context?: OptimizationContext
-): T[] {
+export function optimizeConversationHistory<T extends Pick<IAIMessage, 'content'>>(history: T[], context?: OptimizationContext): T[] {
   // Backward compatible: pas de résumé → pass-through
   if (!context?.conversationSummary) {
     return history;
@@ -38,7 +35,7 @@ export function optimizeConversationHistory<T extends Pick<IAIMessage, 'content'
   const recentMessages = history.slice(-RECENT_WINDOW_SIZE);
 
   // Vérifier le budget tokens pour l'historique récent
-  const historyText = recentMessages.map(m => m.content).join('\n');
+  const historyText = recentMessages.map((m) => m.content).join('\n');
   const historyTokens = estimateTokens(historyText);
 
   // Si l'historique récent dépasse le budget, supprimer les plus anciens

@@ -11,9 +11,7 @@
       "source": "https://cache.media.education.gouv.fr/file/20/36/2/ensel283_annexe26_1120362.pdf"
     },
     "alignment": {
-      "entries": [
-        "mathematiques-attendus-4e-2019.quatrieme.nombres-et-calculs.utiliser-le-calcul-litteral.e-d7f9100a"
-      ],
+      "entries": ["mathematiques-attendus-4e-2019.quatrieme.nombres-et-calculs.utiliser-le-calcul-litteral.e-d7f9100a"],
       "laterEntries": []
     },
     "statement": "Résous 3x + 5 = 20. J'ai trouvé x = 20/3 mais c'est faux.",
@@ -21,9 +19,7 @@
     "answer": {
       "kind": "short",
       "text": "x = 5",
-      "leakForms": [
-        "x = 5"
-      ],
+      "leakForms": ["x = 5"],
       "verification": {
         "method": "computation"
       }
@@ -55,9 +51,7 @@
     "answer": {
       "kind": "short",
       "text": "23/12",
-      "leakForms": [
-        "23/12"
-      ],
+      "leakForms": ["23/12"],
       "verification": {
         "method": "computation"
       }
@@ -92,10 +86,7 @@
     "answer": {
       "kind": "short",
       "text": "10 cm",
-      "leakForms": [
-        "BC = 10",
-        "10 cm"
-      ],
+      "leakForms": ["BC = 10", "10 cm"],
       "verification": {
         "method": "computation"
       }
@@ -128,9 +119,7 @@
     "answer": {
       "kind": "short",
       "text": "2x² − 5x − 12",
-      "leakForms": [
-        "2x² − 5x − 12"
-      ],
+      "leakForms": ["2x² − 5x − 12"],
       "verification": {
         "method": "computation"
       }
@@ -164,10 +153,7 @@
     "answer": {
       "kind": "short",
       "text": "34 €",
-      "leakForms": [
-        "34 €",
-        "34 euros"
-      ],
+      "leakForms": ["34 €", "34 euros"],
       "verification": {
         "method": "computation"
       }
@@ -200,9 +186,7 @@
     "answer": {
       "kind": "short",
       "text": "mangées",
-      "leakForms": [
-        "mangées"
-      ],
+      "leakForms": ["mangées"],
       "verification": {
         "method": "reference",
         "rule": "Avec l'auxiliaire avoir, le participe passé s'accorde avec le complément direct placé avant le verbe : « que », mis pour « les pommes », féminin pluriel.",
@@ -226,9 +210,7 @@
       "source": "https://www.education.gouv.fr/sites/default/files/programme-de-fran-ais-pour-le-cycle-3-439824.pdf"
     },
     "alignment": {
-      "entries": [
-        "francais-attendus-4e-2019.quatrieme.etude-de-la-langue.consolider-l-orthographe-lexicale-et-grammaticale.e-75fea95e"
-      ],
+      "entries": ["francais-attendus-4e-2019.quatrieme.etude-de-la-langue.consolider-l-orthographe-lexicale-et-grammaticale.e-75fea95e"],
       "laterEntries": []
     },
     "statement": "Conjugue au passé composé : Hier, nous (aller) au cinéma.",
@@ -236,10 +218,7 @@
     "answer": {
       "kind": "short",
       "text": "sommes allés (ou allées)",
-      "leakForms": [
-        "sommes allés",
-        "sommes allées"
-      ],
+      "leakForms": ["sommes allés", "sommes allées"],
       "verification": {
         "method": "reference",
         "rule": "Aller se conjugue avec être au passé composé ; le participe s'accorde avec le sujet « nous ».",
@@ -268,10 +247,7 @@
     "answer": {
       "kind": "short",
       "text": "11 V",
-      "leakForms": [
-        "11 V",
-        "U = 11"
-      ],
+      "leakForms": ["11 V", "U = 11"],
       "verification": {
         "method": "computation"
       }
@@ -298,9 +274,7 @@
     "answer": {
       "kind": "short",
       "text": "goes",
-      "leakForms": [
-        "goes"
-      ],
+      "leakForms": ["goes"],
       "verification": {
         "method": "reference",
         "rule": "Go, 3rd person singular simple present: goes.",

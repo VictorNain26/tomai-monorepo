@@ -30,10 +30,7 @@ mock.module('../platform/auth/auth', () => ({
 }));
 
 // Import after mocks
-const {
-  requireAuth,
-  requireParentRole,
-} = await import('../platform/auth/session');
+const { requireAuth, requireParentRole } = await import('../platform/auth/session');
 
 beforeEach(() => {
   const student = makeUser();
@@ -112,5 +109,4 @@ describe('Auth Middleware', () => {
       }
     });
   });
-
 });

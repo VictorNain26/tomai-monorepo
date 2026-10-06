@@ -1,30 +1,21 @@
-import { Check } from "lucide-react";
-import { cn } from "@repo/ui";
-import { SectionHeader } from "../atoms/section-header";
+import { Check } from 'lucide-react';
+import { cn } from '@repo/ui';
+import { SectionHeader } from '../atoms/section-header';
 
 const PLANS = [
   {
-    name: "Gratuit",
-    price: "0 €",
-    tagline: "Pour découvrir",
+    name: 'Gratuit',
+    price: '0 €',
+    tagline: 'Pour découvrir',
     featured: false,
-    features: [
-      "Collège, de la 6e à la 3e",
-      "Aide aux devoirs par questions",
-      "Un volume d'échanges limité chaque jour",
-      "Espace parent",
-    ],
+    features: ['Collège, de la 6e à la 3e', 'Aide aux devoirs par questions', "Un volume d'échanges limité chaque jour", 'Espace parent'],
   },
   {
-    name: "Complet",
-    price: "Tarif annoncé au lancement",
-    tagline: "Pour aller au bout",
+    name: 'Complet',
+    price: 'Tarif annoncé au lancement',
+    tagline: 'Pour aller au bout',
     featured: true,
-    features: [
-      "Tout le plan Gratuit",
-      "Plus d'échanges par jour",
-      "Fiches de révision et répétition espacée",
-    ],
+    features: ['Tout le plan Gratuit', "Plus d'échanges par jour", 'Fiches de révision et répétition espacée'],
   },
 ];
 
@@ -41,10 +32,7 @@ export function Pricing() {
           {PLANS.map((plan) => (
             <div
               key={plan.name}
-              className={cn(
-                "flex flex-col rounded-2xl bg-card p-8 shadow-sm",
-                plan.featured ? "ring-2 ring-primary" : "ring-1 ring-border",
-              )}
+              className={cn('flex flex-col rounded-2xl bg-card p-8 shadow-sm', plan.featured ? 'ring-2 ring-primary' : 'ring-1 ring-border')}
             >
               <p className="text-sm font-bold text-muted-foreground">{plan.tagline}</p>
               <h3 className="mt-2 text-xl text-foreground">{plan.name}</h3>

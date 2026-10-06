@@ -16,7 +16,12 @@ const VISION_TIMEOUT_MS = 30_000;
 
 const VisionExtractionSchema = z.object({
   text: z.string().describe("Tout le texte visible, transcrit fidèlement, formules comprises ; vide s'il n'y en a pas."),
-  figures: z.string().nullable().describe('Les figures, schémas, graphiques ou tableaux dont le contenu compte, décrits avec leurs valeurs, légendes et codages ; null sans figure.'),
+  figures: z
+    .string()
+    .nullable()
+    .describe(
+      'Les figures, schémas, graphiques ou tableaux dont le contenu compte, décrits avec leurs valeurs, légendes et codages ; null sans figure.',
+    ),
 });
 
 const INSTRUCTIONS = `Tu lis une photo ou un scan qu'un élève de collège envoie à son tuteur. Transcris-le, rien
@@ -26,11 +31,7 @@ toi. Écris les formules en texte ou en LaTeX. Recopie aussi ce que l'élève a 
 réponses comprises, tel qu'il l'a écrit.`;
 
 /** The text read from the image, empty when there is none. */
-export async function readImageWithMistralVision(
-  buffer: ArrayBuffer,
-  mimeType: string,
-  owner: CostOwner,
-): Promise<{ text: string; error?: string }> {
+export async function readImageWithMistralVision(buffer: ArrayBuffer, mimeType: string, owner: CostOwner): Promise<{ text: string; error?: string }> {
   try {
     const { object } = await generateStructured({
       functionId: 'vision-extraction',

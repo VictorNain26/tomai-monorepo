@@ -6,10 +6,7 @@ import agreementSample from '../eval/agreement-sample.json';
 describe('buildItems', () => {
   it('crosses every scenario with its exercises and repetitions', () => {
     const items = buildItems(runOptions.parse({ repeat: '2', concurrency: '1' }));
-    const conversations = dataset.scenarios.reduce(
-      (n, s) => n + (s.exercises === 'all' ? dataset.exercises.length : s.exercises.length),
-      0,
-    );
+    const conversations = dataset.scenarios.reduce((n, s) => n + (s.exercises === 'all' ? dataset.exercises.length : s.exercises.length), 0);
     expect(items).toHaveLength(conversations * 2);
     expect(new Set(items.map(keyOf)).size).toBe(items.length);
   });
@@ -21,16 +18,26 @@ describe('buildItems', () => {
 
   it('plays exactly the pairs of a sample', () => {
     const items = buildItems(runOptions.parse({ repeat: '1', concurrency: '1' }), [
-      { scenarioId: 'S5', exerciseId: 'F1' }, { scenarioId: 'S1', exerciseId: 'M2' }, { scenarioId: 'S5', exerciseId: 'M3' },
+      { scenarioId: 'S5', exerciseId: 'F1' },
+      { scenarioId: 'S1', exerciseId: 'M2' },
+      { scenarioId: 'S5', exerciseId: 'M3' },
     ]);
     expect(items.map(keyOf)).toEqual(['S1:M2:1', 'S5:F1:1']);
   });
 
   it('names the pairs of a sample the dataset lacks', () => {
-    expect(unknownPairs([
-      { scenarioId: 'S1', exerciseId: 'M1' }, { scenarioId: 'S1', exerciseId: '6-M9' },
-      { scenarioId: 'S5', exerciseId: 'M3' }, { scenarioId: 'S9', exerciseId: 'M1' },
-    ])).toEqual([{ scenarioId: 'S1', exerciseId: '6-M9' }, { scenarioId: 'S5', exerciseId: 'M3' }, { scenarioId: 'S9', exerciseId: 'M1' }]);
+    expect(
+      unknownPairs([
+        { scenarioId: 'S1', exerciseId: 'M1' },
+        { scenarioId: 'S1', exerciseId: '6-M9' },
+        { scenarioId: 'S5', exerciseId: 'M3' },
+        { scenarioId: 'S9', exerciseId: 'M1' },
+      ]),
+    ).toEqual([
+      { scenarioId: 'S1', exerciseId: '6-M9' },
+      { scenarioId: 'S5', exerciseId: 'M3' },
+      { scenarioId: 'S9', exerciseId: 'M1' },
+    ]);
   });
 
   it('holds an agreement sample whose every pair is in the dataset, once', () => {

@@ -1,4 +1,4 @@
-import type { Page } from "@playwright/test";
+import type { Page } from '@playwright/test';
 
 declare global {
   interface Window {
@@ -6,13 +6,13 @@ declare global {
   }
 }
 
-const SECONDARY = ["/aide", "/faq", "/contact", "/cgu", "/confidentialite", "/mentions-legales"];
-export const PAGES = ["/", ...SECONDARY];
+const SECONDARY = ['/aide', '/faq', '/contact', '/cgu', '/confidentialite', '/mentions-legales'];
+export const PAGES = ['/', ...SECONDARY];
 export const WIDTHS = [375, 768, 1024, 1441];
 export const HEIGHT = 861;
 
 export async function waitForHydration(page: Page) {
-  await page.locator("html[data-hydrated]").waitFor({ state: "attached" });
+  await page.locator('html[data-hydrated]').waitFor({ state: 'attached' });
   await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
 }
 
@@ -32,8 +32,8 @@ export async function settle(page: Page) {
 
 export function hiddenReveals(page: Page) {
   return page.evaluate(() =>
-    [...document.querySelectorAll<HTMLElement>("[data-reveal]")]
-      .filter((el) => getComputedStyle(el).opacity !== "1" || getComputedStyle(el).transform !== "none")
+    [...document.querySelectorAll<HTMLElement>('[data-reveal]')]
+      .filter((el) => getComputedStyle(el).opacity !== '1' || getComputedStyle(el).transform !== 'none')
       .map((el) => el.textContent.trim().slice(0, 40)),
   );
 }

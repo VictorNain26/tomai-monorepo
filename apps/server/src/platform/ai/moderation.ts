@@ -44,7 +44,13 @@ function resultsFor(results: readonly ModerationObject[], count: number): Modera
 export async function moderateReply(studentText: string, reply: string): Promise<string[]> {
   if (!studentText.trim()) return (await moderateTexts([reply]))[0] ?? [];
   const response = await getModerationSdk().classifiers.moderateChat(
-    { model: MODERATION_MODEL, inputs: [{ role: 'user', content: studentText }, { role: 'assistant', content: reply }] },
+    {
+      model: MODERATION_MODEL,
+      inputs: [
+        { role: 'user', content: studentText },
+        { role: 'assistant', content: reply },
+      ],
+    },
     { timeoutMs: MODERATION_TIMEOUT_MS },
   );
   return resultsFor(response.results, 1).map(blocking)[0] ?? [];

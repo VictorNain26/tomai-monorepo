@@ -29,30 +29,32 @@ export const billingStatusEnum = pgEnum('billing_status', ['active', 'past_due',
 // TABLES
 // =============================================
 
-
 /**
  * Table user_subscriptions - la formule de chaque élève.
  * Pas de ligne : formule Gratuit. La consommation se lit dans `cost_tracking`.
  */
-export const userSubscriptions = pgTable('user_subscriptions', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  userId: varchar('user_id', { length: 255 }).notNull().unique(), // L'enfant
-  plan: subscriptionPlanTypeEnum('plan').notNull().default('free'),
-  status: subscriptionStatusEnum('status').notNull().default('active'),
-  startedAt: timestamp('started_at', { withTimezone: true }).notNull().defaultNow(),
-  expiresAt: timestamp('expires_at', { withTimezone: true }),
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
-}, (table) => [
-  foreignKey({
-    columns: [table.userId],
-    foreignColumns: [user.id],
-    name: 'user_subscriptions_user_id_fkey'
-  }).onDelete('cascade'),
+export const userSubscriptions = pgTable(
+  'user_subscriptions',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: varchar('user_id', { length: 255 }).notNull().unique(), // L'enfant
+    plan: subscriptionPlanTypeEnum('plan').notNull().default('free'),
+    status: subscriptionStatusEnum('status').notNull().default('active'),
+    startedAt: timestamp('started_at', { withTimezone: true }).notNull().defaultNow(),
+    expiresAt: timestamp('expires_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.userId],
+      foreignColumns: [user.id],
+      name: 'user_subscriptions_user_id_fkey',
+    }).onDelete('cascade'),
 
-
-  index('idx_user_subscriptions_status').on(table.status),
-]);
+    index('idx_user_subscriptions_status').on(table.status),
+  ],
+);
 
 /**
  * Table family_billing - Facturation centralisée par parent (RevenueCat)
@@ -62,42 +64,46 @@ export const userSubscriptions = pgTable('user_subscriptions', {
  * prix (15€ premier enfant + 5€ par enfant supplémentaire) est porté par
  * les produits RevenueCat côté mobile.
  */
-export const familyBilling = pgTable('family_billing', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  parentId: varchar('parent_id', { length: 255 }).notNull().unique(), // Le parent payeur
+export const familyBilling = pgTable(
+  'family_billing',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    parentId: varchar('parent_id', { length: 255 }).notNull().unique(), // Le parent payeur
 
-  // RevenueCat integration (mobile IAP)
-  revenuecatCustomerId: varchar('revenuecat_customer_id', { length: 255 }),
-  revenuecatSubscriptionId: varchar('revenuecat_subscription_id', { length: 255 }),
+    // RevenueCat integration (mobile IAP)
+    revenuecatCustomerId: varchar('revenuecat_customer_id', { length: 255 }),
+    revenuecatSubscriptionId: varchar('revenuecat_subscription_id', { length: 255 }),
 
-  // Status
-  billingStatus: billingStatusEnum('billing_status').notNull().default('active'),
+    // Status
+    billingStatus: billingStatusEnum('billing_status').notNull().default('active'),
 
-  // Billing period
-  currentPeriodStart: timestamp('current_period_start', { withTimezone: true }),
-  currentPeriodEnd: timestamp('current_period_end', { withTimezone: true }),
+    // Billing period
+    currentPeriodStart: timestamp('current_period_start', { withTimezone: true }),
+    currentPeriodEnd: timestamp('current_period_end', { withTimezone: true }),
 
-  // Amounts
-  monthlyAmountCents: integer('monthly_amount_cents').notNull().default(0),
-  lastPaymentAmountCents: integer('last_payment_amount_cents'),
-  lastPaymentAt: timestamp('last_payment_at', { withTimezone: true }),
+    // Amounts
+    monthlyAmountCents: integer('monthly_amount_cents').notNull().default(0),
+    lastPaymentAmountCents: integer('last_payment_amount_cents'),
+    lastPaymentAt: timestamp('last_payment_at', { withTimezone: true }),
 
-  // Children tracking
-  premiumChildrenCount: integer('premium_children_count').notNull().default(0),
+    // Children tracking
+    premiumChildrenCount: integer('premium_children_count').notNull().default(0),
 
-  // Audit
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
-}, (table) => [
-  foreignKey({
-    columns: [table.parentId],
-    foreignColumns: [user.id],
-    name: 'family_billing_parent_id_fkey'
-  }).onDelete('cascade'),
+    // Audit
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.parentId],
+      foreignColumns: [user.id],
+      name: 'family_billing_parent_id_fkey',
+    }).onDelete('cascade'),
 
-  index('idx_family_billing_revenuecat_customer').on(table.revenuecatCustomerId),
-  index('idx_family_billing_status').on(table.billingStatus),
-]);
+    index('idx_family_billing_revenuecat_customer').on(table.revenuecatCustomerId),
+    index('idx_family_billing_status').on(table.billingStatus),
+  ],
+);
 
 // =============================================
 // RELATIONS
@@ -106,22 +112,22 @@ export const familyBilling = pgTable('family_billing', {
 export const userSubscriptionsRelations = relations(userSubscriptions, ({ one }) => ({
   user: one(user, {
     fields: [userSubscriptions.userId],
-    references: [user.id]
+    references: [user.id],
   }),
 }));
 
 export const familyBillingRelations = relations(familyBilling, ({ one }) => ({
   parent: one(user, {
     fields: [familyBilling.parentId],
-    references: [user.id]
+    references: [user.id],
   }),
 }));
 
 // =============================================
 // TYPES
 // =============================================
-export type SubscriptionPlanTypeEnum = typeof subscriptionPlanTypeEnum.enumValues[number];
-export type SubscriptionStatusEnum = typeof subscriptionStatusEnum.enumValues[number];
+export type SubscriptionPlanTypeEnum = (typeof subscriptionPlanTypeEnum.enumValues)[number];
+export type SubscriptionStatusEnum = (typeof subscriptionStatusEnum.enumValues)[number];
 
 export type UserSubscription = typeof userSubscriptions.$inferSelect;
 export type NewUserSubscription = typeof userSubscriptions.$inferInsert;

@@ -22,7 +22,6 @@ mock.module('../platform/ai/moderation', () => ({
 const { runControlledTurn } = await import('../modules/tutor/controlled-turn');
 const { FALLBACK_REPLY } = await import('../modules/tutor/output-check');
 
-
 type Chunk = InferUIMessageChunk<TomChatMessage>;
 
 const usage = {
@@ -97,22 +96,48 @@ function model(...replies: Reply[]) {
 
 function writer() {
   const chunks: Chunk[] = [];
-  const write: UIMessageStreamWriter<TomChatMessage> = { write: (chunk) => { chunks.push(chunk); }, merge: () => {}, onError: undefined };
+  const write: UIMessageStreamWriter<TomChatMessage> = {
+    write: (chunk) => {
+      chunks.push(chunk);
+    },
+    merge: () => {},
+    onError: undefined,
+  };
   return { chunks, write };
 }
 
 const sheet: ExerciseSheet = {
-  statement: 'Résous 3x + 5 = 20.', kind: 'short', answer: 'x = 5', answerForms: ['x = 5'], mathEquation: null, mathAnswer: null,
-  steps: [], commonErrors: [], rule: null, facts: [], expectedElements: [], entries: [], laterEntries: [],
+  statement: 'Résous 3x + 5 = 20.',
+  kind: 'short',
+  answer: 'x = 5',
+  answerForms: ['x = 5'],
+  mathEquation: null,
+  mathAnswer: null,
+  steps: [],
+  commonErrors: [],
+  rule: null,
+  facts: [],
+  expectedElements: [],
+  entries: [],
+  laterEntries: [],
 };
 const check: OutputCheckContext = { sheet, uncertain: false, diagnosis: null, studentText: 'Je bloque', pastStudentTexts: [] };
-const base = { userId: 'u1', sessionId: 's1', content: 'Je bloque', schoolLevel: 'quatrieme' as const, conversationHistory: [], turnInstruction: '<contrat>\nPalier 1\n</contrat>' };
+const base = {
+  userId: 'u1',
+  sessionId: 's1',
+  content: 'Je bloque',
+  schoolLevel: 'quatrieme' as const,
+  conversationHistory: [],
+  turnInstruction: '<contrat>\nPalier 1\n</contrat>',
+};
 const noop = { noop_tool: tool({ description: 'noop', inputSchema: z.object({}), execute: async () => 'ok' }) };
 
 const texts = (chunks: Chunk[]) => chunks.flatMap((chunk) => (chunk.type === 'text-delta' ? [chunk.delta] : []));
 
 describe('runControlledTurn', () => {
-  beforeEach(() => { moderationReplies = []; });
+  beforeEach(() => {
+    moderationReplies = [];
+  });
 
   it('writes a text that passes the check in one block, after the other parts and before the end', async () => {
     const out = writer();
@@ -191,7 +216,11 @@ describe('runControlledTurn', () => {
     const llm = model(['Texte retenu.'], ['Que fais-tu du + 5 ?']);
     const turn = await runControlledTurn(out.write, { ...base, tools: noop, model: llm }, check);
 
-    expect(turn).toMatchObject({ outcome: 'regenerated', text: 'Que fais-tu du + 5 ?', findings: [{ kind: 'moderation', categories: ['violence_and_threats'] }] });
+    expect(turn).toMatchObject({
+      outcome: 'regenerated',
+      text: 'Que fais-tu du + 5 ?',
+      findings: [{ kind: 'moderation', categories: ['violence_and_threats'] }],
+    });
     expect(texts(out.chunks)).toEqual(['Que fais-tu du + 5 ?']);
     expect(JSON.stringify(llm.doStreamCalls[1]?.prompt.at(-1))).toContain('retenue par la modération');
   });

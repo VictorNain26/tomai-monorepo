@@ -8,9 +8,21 @@ const timeline = { instruction: 'Ordonne', events: [{ event: 'a' }, { event: 'b'
 const classification = {
   instruction: 'Classe ces êtres vivants',
   items: ['chêne', 'chat', 'rose', 'loup'],
-  categories: [{ name: 'végétal', itemIndexes: [0, 2] }, { name: 'animal', itemIndexes: [1, 3] }],
+  categories: [
+    { name: 'végétal', itemIndexes: [0, 2] },
+    { name: 'animal', itemIndexes: [1, 3] },
+  ],
 };
-const matchingEra = { instruction: 'Relie', items: ['a', 'b', 'c'], eras: ['x', 'y'], correctPairs: [[0, 1], [1, 0], [2, 1]] };
+const matchingEra = {
+  instruction: 'Relie',
+  items: ['a', 'b', 'c'],
+  eras: ['x', 'y'],
+  correctPairs: [
+    [0, 1],
+    [1, 0],
+    [2, 1],
+  ],
+};
 
 describe('card content schema', () => {
   it('has one content schema per card type, the database enum included', () => {
@@ -39,10 +51,48 @@ describe('card content schema', () => {
       { cardType: 'timeline', content: { ...timeline, correctOrder: [0, 1, 5] } },
       { cardType: 'timeline', content: { ...timeline, correctOrder: [0, 0, 1] } },
       { cardType: 'process_order', content: { instruction: 'i', processName: 'p', steps: ['a', 'b', 'c'], correctOrder: [0, 1, 1] } },
-      { cardType: 'matching_era', content: { ...matchingEra, correctPairs: [[0, 1], [1, 7], [2, 1]] } },
-      { cardType: 'matching_era', content: { ...matchingEra, correctPairs: [[0, 1], [0, 0], [2, 1]] } },
-      { cardType: 'classification', content: { ...classification, categories: [{ name: 'v', itemIndexes: [0, 2, 1] }, { name: 'a', itemIndexes: [1, 3] }] } },
-      { cardType: 'classification', content: { ...classification, categories: [{ name: 'v', itemIndexes: [0] }, { name: 'a', itemIndexes: [1, 3] }] } },
+      {
+        cardType: 'matching_era',
+        content: {
+          ...matchingEra,
+          correctPairs: [
+            [0, 1],
+            [1, 7],
+            [2, 1],
+          ],
+        },
+      },
+      {
+        cardType: 'matching_era',
+        content: {
+          ...matchingEra,
+          correctPairs: [
+            [0, 1],
+            [0, 0],
+            [2, 1],
+          ],
+        },
+      },
+      {
+        cardType: 'classification',
+        content: {
+          ...classification,
+          categories: [
+            { name: 'v', itemIndexes: [0, 2, 1] },
+            { name: 'a', itemIndexes: [1, 3] },
+          ],
+        },
+      },
+      {
+        cardType: 'classification',
+        content: {
+          ...classification,
+          categories: [
+            { name: 'v', itemIndexes: [0] },
+            { name: 'a', itemIndexes: [1, 3] },
+          ],
+        },
+      },
     ];
 
     for (const card of misplaced) expect(CardSchema.safeParse(card).success).toBe(false);

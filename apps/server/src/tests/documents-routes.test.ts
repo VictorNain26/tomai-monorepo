@@ -46,10 +46,7 @@ const { uploadRoutes } = await import('../modules/documents/upload.routes');
 const { filesRoutes } = await import('../modules/documents/files.routes');
 const { handleError } = await import('../platform/http/error-handler');
 
-const app = new Hono<AppEnv>()
-  .route('/api/upload', uploadRoutes)
-  .route('/api', filesRoutes)
-  .onError(handleError);
+const app = new Hono<AppEnv>().route('/api/upload', uploadRoutes).route('/api', filesRoutes).onError(handleError);
 
 beforeEach(() => {
   fileOwner = 'student-1';
@@ -112,7 +109,7 @@ describe('GET /api/files', () => {
 });
 
 describe('POST /api/upload/confirm/:fileId', () => {
-  it('refuses an audio file past the day\'s budget, before reading it to transcribe it', async () => {
+  it("refuses an audio file past the day's budget, before reading it to transcribe it", async () => {
     fileMime = 'audio/webm';
     quotaAllowed = false;
     const res = await app.request(`/api/upload/confirm/${FILE_ID}`, { method: 'POST' });

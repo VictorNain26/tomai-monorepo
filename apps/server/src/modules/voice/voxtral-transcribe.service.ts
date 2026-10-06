@@ -44,7 +44,10 @@ class VoxtralTranscribeService {
       });
       const audioSeconds = response.usage.promptAudioSeconds;
       if (audioSeconds == null) {
-        logger.warn('Voxtral STT reported no audio length: the call is recorded at 0, marked', { operation: 'voxtral:stt:usage', severity: 'medium' as const });
+        logger.warn('Voxtral STT reported no audio length: the call is recorded at 0, marked', {
+          operation: 'voxtral:stt:usage',
+          severity: 'medium' as const,
+        });
       }
       void recordAiCost(owner, {
         model: STT_MODEL,

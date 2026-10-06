@@ -53,6 +53,10 @@ jobs:
           else
             bunx --no-install turbo run ${{ matrix.task }} --affected
           fi
+      # Repo-wide and fast, so not filtered by --affected.
+      - name: Check formatting (Prettier)
+        if: matrix.task == 'lint'
+        run: bunx --no-install prettier --check .
 
   # Root scripts: no database and no install needed, bun runs their tests.
   script-tests:
@@ -134,12 +138,6 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test
           BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET || 'ci-test-secret-not-for-production' }}
-      - name: Server test coverage (report only)
-        run: cd apps/server && bun run test:coverage
-        continue-on-error: true
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test
-          BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET || 'ci-test-secret-not-for-production' }}
 
   # =============================================
   # Job 3: Build (after validate passes)
@@ -164,6 +162,57 @@ jobs:
           fi
 
   # =============================================
+  # Job 3b: End-to-end (Playwright)
+  # =============================================
+  # Browsers are installed, not cached: https://playwright.dev/docs/ci#caching-browsers
+  # (restoring takes as long as downloading, and the system dependencies are not cacheable).
+  e2e:
+    name: E2E (Playwright)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      # Cheap check before the install: a PR that touches neither the apps under test, the
+      # packages they use nor the tooling skips the job's setup.
+      - name: Check whether the e2e suites are concerned
+        id: scope
+        run: |
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          elif git diff --name-only "origin/${{ github.base_ref }}...HEAD" | grep -qE '^(apps/(web|landing)/|packages/|bun\.lock$|package\.json$|turbo\.json$|\.github/)'; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: ./.github/actions/setup-monorepo
+        if: steps.scope.outputs.run == 'true'
+        with:
+          turbo-cache-key: e2e
+      - name: List e2e tasks to run
+        if: steps.scope.outputs.run == 'true'
+        id: tasks
+        run: |
+          if [ "${{ github.event_name }}" = "push" ] && [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            AFFECTED=""
+          else
+            AFFECTED="--affected"
+          fi
+          echo "affected=$AFFECTED" >> "$GITHUB_OUTPUT"
+          TASKS=$(bunx --no-install turbo run test:e2e $AFFECTED --dry=json | jq -r '[.tasks[] | select(.command != "<NONEXISTENT>") | .taskId] | join(" ")')
+          echo "tasks=$TASKS" >> "$GITHUB_OUTPUT"
+          echo "e2e tasks: ${TASKS:-none}"
+      # web runs on WebKit (iphone) and Chromium (android), the landing on Chromium.
+      - name: Install browsers and their system dependencies
+        if: steps.tasks.outputs.tasks != ''
+        working-directory: apps/web
+        run: bunx --no-install playwright install --with-deps chromium webkit
+      - name: Run e2e
+        if: steps.tasks.outputs.tasks != ''
+        run: bunx --no-install turbo run test:e2e ${{ steps.tasks.outputs.affected }}
+
+  # =============================================
   # Job 4: Migration sync (server DB schema only)
   # =============================================
   migrations:
@@ -173,21 +222,22 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-      - name: Check if server DB schema changed
+      # drizzle/ counts too: a snapshot or journal changed without the schema desyncs them as well.
+      - name: Check if server DB schema or migrations changed
         id: check
         run: |
           if [ -n "$GITHUB_BASE_REF" ]; then
-            DIFF=$(git diff --name-only "origin/$GITHUB_BASE_REF"...HEAD -- 'apps/server/src/db/' ':(glob)apps/server/src/**/*.schema.ts' 'apps/server/drizzle.config.ts')
+            DIFF=$(git diff --name-only "origin/$GITHUB_BASE_REF"...HEAD -- 'apps/server/src/db/' ':(glob)apps/server/src/**/*.schema.ts' 'apps/server/drizzle.config.ts' 'apps/server/drizzle/')
           else
-            DIFF=$(git diff --name-only "${{ github.event.before }}" "${{ github.sha }}" -- 'apps/server/src/db/' ':(glob)apps/server/src/**/*.schema.ts' 'apps/server/drizzle.config.ts')
+            DIFF=$(git diff --name-only "${{ github.event.before }}" "${{ github.sha }}" -- 'apps/server/src/db/' ':(glob)apps/server/src/**/*.schema.ts' 'apps/server/drizzle.config.ts' 'apps/server/drizzle/')
           fi
           if [ -n "$DIFF" ]; then
             echo "changed=true" >> "$GITHUB_OUTPUT"
-            echo "Schema files changed:"
+            echo "Schema or migration files changed:"
             echo "$DIFF"
           else
             echo "changed=false" >> "$GITHUB_OUTPUT"
-            echo "No schema changes detected"
+            echo "No schema or migration changes detected"
           fi
       - uses: ./.github/actions/setup-monorepo
         if: steps.check.outputs.changed == 'true'

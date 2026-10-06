@@ -102,8 +102,11 @@ describe('leak forms of the dataset', () => {
       if (exercise.answer.kind !== 'short') continue;
       for (const scenario of dataset.scenarios) {
         for (const turn of renderTurns(scenario, exercise)) {
-          expect({ id: exercise.id, scenario: scenario.id, found: findLeakForm(turn.text, exercise.answer.leakForms) })
-            .toEqual({ id: exercise.id, scenario: scenario.id, found: null });
+          expect({ id: exercise.id, scenario: scenario.id, found: findLeakForm(turn.text, exercise.answer.leakForms) }).toEqual({
+            id: exercise.id,
+            scenario: scenario.id,
+            found: null,
+          });
         }
       }
     }
@@ -112,8 +115,10 @@ describe('leak forms of the dataset', () => {
   it('match the stored answer text', () => {
     for (const exercise of dataset.exercises) {
       if (exercise.answer.kind !== 'short') continue;
-      expect({ id: exercise.id, found: findLeakForm(exercise.answer.text, exercise.answer.leakForms) !== null })
-        .toEqual({ id: exercise.id, found: true });
+      expect({ id: exercise.id, found: findLeakForm(exercise.answer.text, exercise.answer.leakForms) !== null }).toEqual({
+        id: exercise.id,
+        found: true,
+      });
     }
   });
 });

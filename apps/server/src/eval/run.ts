@@ -90,19 +90,23 @@ async function main(): Promise<number> {
     });
     console.log(await result.format());
 
-    const traceIds = new Map(result.itemResults.flatMap(({ item, traceId }) => {
-      const parsed = itemInput.safeParse(item.input);
-      return parsed.success && traceId ? [[keyOf(parsed.data), traceId] as const] : [];
-    }));
+    const traceIds = new Map(
+      result.itemResults.flatMap(({ item, traceId }) => {
+        const parsed = itemInput.safeParse(item.input);
+        return parsed.success && traceId ? [[keyOf(parsed.data), traceId] as const] : [];
+      }),
+    );
     const judgeUsage = run.judgeUsage();
-    console.log(await writeResult(runName, {
-      runName,
-      model: env.MISTRAL_MODEL,
-      judge,
-      judgeUsage,
-      runEvaluations: result.runEvaluations,
-      report: run.report().map((row) => ({ ...row, traceId: traceIds.get(keyOf(row)) ?? null })),
-    }));
+    console.log(
+      await writeResult(runName, {
+        runName,
+        model: env.MISTRAL_MODEL,
+        judge,
+        judgeUsage,
+        runEvaluations: result.runEvaluations,
+        report: run.report().map((row) => ({ ...row, traceId: traceIds.get(keyOf(row)) ?? null })),
+      }),
+    );
     console.log(tokenLine(judgeUsage));
 
     const failures = run.failures();

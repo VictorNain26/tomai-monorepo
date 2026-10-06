@@ -37,11 +37,12 @@ app.onError(handleError);
 app.use(requireUser);
 app.route('/api/learning', fsrsRoutes);
 
-const review = (rating: unknown) => app.request('/api/learning/review', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ cardId: '0199a3c4-7b1e-7d2a-9f00-0000000000c1', rating }),
-});
+const review = (rating: unknown) =>
+  app.request('/api/learning/review', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ cardId: '0199a3c4-7b1e-7d2a-9f00-0000000000c1', rating }),
+  });
 
 beforeEach(() => {
   reviewCardOrThrow.mockClear();

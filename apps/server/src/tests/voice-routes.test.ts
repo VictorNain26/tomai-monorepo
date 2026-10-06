@@ -11,7 +11,9 @@ mock.module('../platform/auth/session', () => {
 const synthesize = mock((_text: string, _owner: unknown, _options: unknown) =>
   Promise.resolve({ success: true, audioData: 'AAA', mimeType: 'audio/mpeg' }),
 );
-mock.module('../modules/voice/text-to-speech.service', () => ({ textToSpeechService: { synthesize, costMicroEur: (text: string) => text.length * 18 } }));
+mock.module('../modules/voice/text-to-speech.service', () => ({
+  textToSpeechService: { synthesize, costMicroEur: (text: string) => text.length * 18 },
+}));
 let allowed = true;
 const checkQuota = mock(async (_userId: string, _plannedMicroEur?: number) => ({ allowed }));
 mock.module('../modules/billing/index', () => ({ checkQuota }));
@@ -50,7 +52,7 @@ describe('voice routes', () => {
     expect(synthesize.mock.calls[0]?.slice(1)).toEqual([{ userId: 'u1' }, { language: 'fr', schoolLevel: 'cinquieme' }]);
   });
 
-  it('refuses speech once the day\'s budget is spent, before any synthesis', async () => {
+  it("refuses speech once the day's budget is spent, before any synthesis", async () => {
     allowed = false;
     const res = await post({ text: 'Bonjour' });
     expect(res.status).toBe(429);
@@ -65,9 +67,14 @@ describe('voice routes', () => {
 
   it('reads one text at a time per student, and frees the slot once done', async () => {
     let finish = () => {};
-    synthesize.mockImplementationOnce(() => new Promise((resolve) => {
-      finish = () => { resolve({ success: true, audioData: 'AAA', mimeType: 'audio/mpeg' }); };
-    }));
+    synthesize.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finish = () => {
+            resolve({ success: true, audioData: 'AAA', mimeType: 'audio/mpeg' });
+          };
+        }),
+    );
     const first = post({ text: 'Bonjour' });
     await Bun.sleep(5);
     const second = await post({ text: 'Bonjour' });

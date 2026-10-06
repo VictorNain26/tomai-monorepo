@@ -17,11 +17,19 @@ const MAX_CHARS = 4000;
 
 const TurnAnalysisSchema = z.object({
   subject: z.enum(SUBJECT_FAMILIES),
-  bringsExercise: z.boolean().describe("Le message contient l'énoncé d'un exercice, une consigne, une question ou un problème à résoudre, même suivi d'une réponse de l'élève ou d'une demande de solution, et ce n'est pas l'exercice en cours."),
+  bringsExercise: z
+    .boolean()
+    .describe(
+      "Le message contient l'énoncé d'un exercice, une consigne, une question ou un problème à résoudre, même suivi d'une réponse de l'élève ou d'une demande de solution, et ce n'est pas l'exercice en cours.",
+    ),
   proposesAnswer: z.boolean().describe("L'élève propose une réponse ou une étape de sa résolution."),
   asksSolution: z.boolean().describe("L'élève demande la réponse, la solution ou que le tuteur fasse l'exercice."),
   asksExplanation: z.boolean().describe("L'élève demande une explication."),
-  wantsFlashcards: z.boolean().describe('L\'élève demande des cartes ou des fiches de révision, ou accepte celles que le tuteur vient de proposer. Une fiche de devoir (fiche de lecture, fiche d\'exercices) n\'en est pas une.'),
+  wantsFlashcards: z
+    .boolean()
+    .describe(
+      "L'élève demande des cartes ou des fiches de révision, ou accepte celles que le tuteur vient de proposer. Une fiche de devoir (fiche de lecture, fiche d'exercices) n'en est pas une.",
+    ),
 });
 
 export type TurnAnalysis = z.infer<typeof TurnAnalysisSchema> & {
@@ -52,14 +60,18 @@ apporte un. Le dernier message du tuteur sert à savoir si l'élève accepte ce 
 proposait.`;
 
 // Head and tail: a statement opens a message, a proposal or an offer of cards closes it.
-const clip = (text: string) =>
-  stripPromptTags(text.length > MAX_CHARS ? `${text.slice(0, MAX_CHARS / 2)}\n…\n${text.slice(-MAX_CHARS / 2)}` : text);
+const clip = (text: string) => stripPromptTags(text.length > MAX_CHARS ? `${text.slice(0, MAX_CHARS / 2)}\n…\n${text.slice(-MAX_CHARS / 2)}` : text);
 
 /**
  * Analyses the student's message: the statement of the exercise in progress tells a new exercise
  * from the current one restated, the tutor's last message what the student agrees to.
  */
-export async function analyseTurn(studentText: string, lastTutorText: string | null, currentStatement: string | null, owner: CostOwner): Promise<TurnAnalysis> {
+export async function analyseTurn(
+  studentText: string,
+  lastTutorText: string | null,
+  currentStatement: string | null,
+  owner: CostOwner,
+): Promise<TurnAnalysis> {
   if (studentText.trim() === '') return NOTHING;
   const startTime = Date.now();
   try {

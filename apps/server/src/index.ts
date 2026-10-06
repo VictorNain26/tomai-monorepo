@@ -43,13 +43,12 @@ async function startServer() {
       port: PORT,
       environment: env.NODE_ENV,
     });
-
   } catch (error) {
     logger.error('Failed to start server', {
       err: error,
       port: PORT,
       operation: 'server:start',
-      severity: 'critical' as const
+      severity: 'critical' as const,
     });
     process.exit(1);
   }
@@ -74,7 +73,7 @@ process.on('uncaughtException', (error) => {
   logger.error('Uncaught Exception', {
     operation: 'server:error',
     err: error,
-    severity: 'critical' as const
+    severity: 'critical' as const,
   });
   Sentry.captureException(error);
   void (async () => {
@@ -87,7 +86,7 @@ process.on('unhandledRejection', (reason) => {
   logger.error('Unhandled Rejection', {
     operation: 'server:error',
     err: reason,
-    severity: 'critical' as const
+    severity: 'critical' as const,
   });
   Sentry.captureException(reason);
   void (async () => {
@@ -101,7 +100,7 @@ startServer().catch((error: unknown) => {
   logger.error('Fatal error', {
     err: error,
     severity: 'critical' as const,
-    operation: 'server:start'
+    operation: 'server:start',
   });
   process.exit(1);
 });

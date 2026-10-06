@@ -49,7 +49,8 @@ mock.module('../platform/auth/auth', () => ({
       const url = new URL(req.url);
       if (url.pathname.startsWith('/api/auth')) {
         return new Response(JSON.stringify({ ok: true }), {
-          status: 200, headers: { 'Content-Type': 'application/json' },
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
         });
       }
       return new Response('', { status: 404 });
@@ -85,13 +86,13 @@ mock.module('../platform/auth/session', () => ({
       return {
         success: false as const,
         _error: 'Unauthorized',
-        status: 401
+        status: 401,
       };
     }
     return {
       success: true as const,
       user: authUser,
-      session: { id: 'session-001' }
+      session: { id: 'session-001' },
     };
   }),
   requireParentRole: mock(async () => {
@@ -99,20 +100,20 @@ mock.module('../platform/auth/session', () => ({
       return {
         success: false as const,
         _error: 'Unauthorized',
-        status: 401
+        status: 401,
       };
     }
     if (authUser['role'] !== 'parent') {
       return {
         success: false as const,
         _error: 'Parent role required',
-        status: 403
+        status: 403,
       };
     }
     return {
       success: true as const,
       user: authUser,
-      session: { id: 'session-001' }
+      session: { id: 'session-001' },
     };
   }),
 }));
@@ -139,7 +140,7 @@ mock.module('../modules/tutor/chat-session.service', () => ({
             startedAt: new Date(),
             endedAt: null,
           }
-        : null
+        : null,
     ),
     resetSession: mock(async () => 'session-new'),
   },
@@ -147,9 +148,7 @@ mock.module('../modules/tutor/chat-session.service', () => ({
 
 mock.module('../modules/tutor/chat-message.service', () => ({
   chatMessageService: {
-    getSessionHistory: mock(async () => [
-      { id: 'msg-1', role: 'user', content: 'Hello', createdAt: new Date(), aiModel: null, attachedFile: null },
-    ]),
+    getSessionHistory: mock(async () => [{ id: 'msg-1', role: 'user', content: 'Hello', createdAt: new Date(), aiModel: null, attachedFile: null }]),
     getMessageById: mock(async () => null),
   },
 }));
@@ -199,8 +198,10 @@ mock.module('../modules/documents/files.repository', () => ({
 }));
 mock.module('../modules/documents/session-files.repository', () => ({
   sessionFilesRepository: {
-    findBySession: mock(async () => []), countBySession: mock(async () => 0),
-    attach: mock(async () => {}), detach: mock(async () => {}),
+    findBySession: mock(async () => []),
+    countBySession: mock(async () => 0),
+    attach: mock(async () => {}),
+    detach: mock(async () => {}),
   },
 }));
 
@@ -277,19 +278,23 @@ describe('API Endpoints', () => {
 
   describe('POST /api/chat/session', () => {
     it('should return 401 without authentication', async () => {
-      const res = await app.fetch(new Request('http://localhost/api/chat/session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-      }));
+      const res = await app.fetch(
+        new Request('http://localhost/api/chat/session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      );
       expect(res.status).toBe(401);
     });
 
     it('should create session when authenticated', async () => {
       authUser = { id: 'user-001', firstName: 'Tom', role: 'student', schoolLevel: 'troisieme' };
-      const res = await app.fetch(new Request('http://localhost/api/chat/session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-      }));
+      const res = await app.fetch(
+        new Request('http://localhost/api/chat/session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      );
       expect(res.status).toBe(200);
       const data = await readBody(res);
       expect(data.success).toBe(true);
@@ -349,9 +354,12 @@ describe('API Endpoints', () => {
   describe('POST /api/chat/session/:id/reset', () => {
     it('should reset session when authenticated', async () => {
       authUser = { id: 'user-001', firstName: 'Tom', role: 'student' };
-      const res = await app.fetch(new Request(`http://localhost/api/chat/session/${SESSION_ID}/reset`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-      }));
+      const res = await app.fetch(
+        new Request(`http://localhost/api/chat/session/${SESSION_ID}/reset`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      );
       expect(res.status).toBe(200);
       const data = await readBody(res);
       expect(data.success).toBe(true);
@@ -362,10 +370,13 @@ describe('API Endpoints', () => {
   describe('Malformed JSON body', () => {
     it('answers 400 with the error envelope', async () => {
       authUser = { id: 'user-001', firstName: 'Tom', role: 'student' };
-      const res = await app.fetch(new Request(
-        'http://localhost/api/chat/session/0199a3c4-7b1e-7d2a-9f00-123456789abc/files',
-        { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{bad' },
-      ));
+      const res = await app.fetch(
+        new Request('http://localhost/api/chat/session/0199a3c4-7b1e-7d2a-9f00-123456789abc/files', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: '{bad',
+        }),
+      );
       expect(res.status).toBe(400);
       const data = await readBody(res);
       expect(data.error).toMatchObject({ code: 'VALIDATION_ERROR' });

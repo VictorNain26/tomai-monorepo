@@ -130,7 +130,6 @@ describe('Parent Service', () => {
       const result = await parentService.getParentChildren('parent-no-kids');
       expect(result.length).toBe(0);
     });
-
   });
 
   describe('getParentDashboardMetrics', () => {
@@ -179,7 +178,10 @@ describe('Parent Service', () => {
           schoolLevel: 'sixieme',
           dateOfBirth: '2013-05-20',
         })
-        .then(() => undefined, (err: unknown) => err);
+        .then(
+          () => undefined,
+          (err: unknown) => err,
+        );
       expect(error).toBeInstanceOf(Error);
       expect(mockDeleteById).toHaveBeenCalledWith('new-child-001');
     });
@@ -194,7 +196,7 @@ describe('Parent Service', () => {
           password: 'pass',
           schoolLevel: 'sixieme',
           dateOfBirth: '2018-01-01',
-        })
+        }),
       ).rejects.toThrow();
     });
   });
@@ -208,9 +210,7 @@ describe('Parent Service', () => {
 
     it('should throw for non-child', async () => {
       childrenResult = [];
-      expect(
-        parentService.deleteChild('parent-001', 'stranger')
-      ).rejects.toThrow();
+      expect(parentService.deleteChild('parent-001', 'stranger')).rejects.toThrow();
     });
 
     it('batch-deletes all child storage keys in a single call', async () => {
@@ -222,10 +222,7 @@ describe('Parent Service', () => {
       findByIdResult = null;
       await parentService.deleteChild('parent-001', 'child-001');
       expect(mockDeleteFiles).toHaveBeenCalledTimes(1);
-      expect(mockDeleteFiles).toHaveBeenCalledWith([
-        'uploads/child-001/a.pdf',
-        'uploads/child-001/b.png',
-      ]);
+      expect(mockDeleteFiles).toHaveBeenCalledWith(['uploads/child-001/a.pdf', 'uploads/child-001/b.png']);
     });
 
     it('does not throw when batch delete reports failures, logs and counts them', async () => {
@@ -238,12 +235,9 @@ describe('Parent Service', () => {
         expect.objectContaining({
           operation: 'parent:delete-child-s3-purge',
           failedCount: 1,
-        })
+        }),
       );
-      expect(mockLogger.info).toHaveBeenCalledWith(
-        expect.any(String),
-        expect.objectContaining({ filesPurged: 0, filesFailed: 1 })
-      );
+      expect(mockLogger.info).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({ filesPurged: 0, filesFailed: 1 }));
     });
 
     it('passes an empty list to deleteFiles when the child has zero files', async () => {
@@ -287,16 +281,12 @@ describe('Parent Service', () => {
 
     it('should throw Access denied for non-child', async () => {
       childrenResult = [];
-      expect(
-        parentService.updateChild('parent-001', 'stranger', { firstName: 'Hack' })
-      ).rejects.toThrow();
+      expect(parentService.updateChild('parent-001', 'stranger', { firstName: 'Hack' })).rejects.toThrow();
     });
 
     it('should throw when update returns null', async () => {
       updateResult = null;
-      expect(
-        parentService.updateChild('parent-001', 'child-001', { firstName: 'Test' })
-      ).rejects.toThrow();
+      expect(parentService.updateChild('parent-001', 'child-001', { firstName: 'Test' })).rejects.toThrow();
     });
   });
 

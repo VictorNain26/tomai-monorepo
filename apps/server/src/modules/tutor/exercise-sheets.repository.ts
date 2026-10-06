@@ -17,7 +17,10 @@ class ExerciseSheetsRepository {
    * same session at once each count. `solved` ends the exercise, `false` reopens it, `undefined`
    * leaves it as it is.
    */
-  async recordTurn(id: string, turn: { levelChange: number; top: number; stepDone: boolean; solved: boolean | undefined; hint: Hint }): Promise<void> {
+  async recordTurn(
+    id: string,
+    turn: { levelChange: number; top: number; stepDone: boolean; solved: boolean | undefined; hint: Hint },
+  ): Promise<void> {
     await db
       .update(exerciseSheets)
       .set({

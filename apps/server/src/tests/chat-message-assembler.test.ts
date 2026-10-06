@@ -4,7 +4,13 @@ import { assembleChatPrompt, replayable, type ResponseMessage } from '../modules
 
 const at = '2026-10-04T10:00:00Z';
 const reasoned = (thought: string, text: string): ResponseMessage[] => [
-  { role: 'assistant', content: [{ type: 'reasoning', text: thought }, { type: 'text', text }] },
+  {
+    role: 'assistant',
+    content: [
+      { type: 'reasoning', text: thought },
+      { type: 'text', text },
+    ],
+  },
 ];
 const textOf = (message: ModelMessage | undefined) => (typeof message?.content === 'string' ? message.content : '');
 
@@ -34,13 +40,18 @@ describe('assembleChatPrompt', () => {
       exerciseBlock: '<exercise>E</exercise>',
       attachedFilesBlock: '<attached_file name="a">B</attached_file>',
       conversationSummary: 'Résumé',
-      history: [{ role: 'user', content: 'Bonjour', timestamp: at }, { role: 'assistant', content: 'Salut', timestamp: at }],
+      history: [
+        { role: 'user', content: 'Bonjour', timestamp: at },
+        { role: 'assistant', content: 'Salut', timestamp: at },
+      ],
       studentText: 'Je bloque.',
     });
 
     expect(system).toBe('SYS');
     expect(messages[0]?.role).toBe('user');
-    expect(textOf(messages[0])).toStartWith('<exercise>E</exercise>\n\n<attached_file name="a">B</attached_file>\n\n<conversation_summary>\nRésumé\n</conversation_summary>');
+    expect(textOf(messages[0])).toStartWith(
+      '<exercise>E</exercise>\n\n<attached_file name="a">B</attached_file>\n\n<conversation_summary>\nRésumé\n</conversation_summary>',
+    );
     expect(textOf(messages.at(-1))).not.toContain('<exercise>');
     expect(textOf(messages.at(-1))).not.toContain('<attached_file');
   });
@@ -66,7 +77,10 @@ describe('assembleChatPrompt', () => {
   it('replays an older message without stored response messages as its text', () => {
     const { messages } = assembleChatPrompt({
       systemPrompt: 'SYS',
-      history: [{ role: 'user', content: 'q', timestamp: at }, { role: 'assistant', content: 'Regarde le +5.', timestamp: at }],
+      history: [
+        { role: 'user', content: 'q', timestamp: at },
+        { role: 'assistant', content: 'Regarde le +5.', timestamp: at },
+      ],
       studentText: 'r',
     });
     expect(messages[1]).toEqual({ role: 'assistant', content: 'Regarde le +5.' });
@@ -76,7 +90,11 @@ describe('assembleChatPrompt', () => {
     const withWindow = assembleChatPrompt({
       systemPrompt: 'SYS',
       conversationSummary: 'Il travaille les équations.',
-      history: [{ role: 'user', content: 'hist', timestamp: at }, { role: 'assistant', content: 'réponse', timestamp: at }, { role: 'user', content: 'orphelin', timestamp: at }],
+      history: [
+        { role: 'user', content: 'hist', timestamp: at },
+        { role: 'assistant', content: 'réponse', timestamp: at },
+        { role: 'user', content: 'orphelin', timestamp: at },
+      ],
       studentText: 'question',
     });
     expect(withWindow.messages.map((m) => m.role)).toEqual(['user', 'assistant', 'user']);
@@ -84,7 +102,12 @@ describe('assembleChatPrompt', () => {
     expect(textOf(withWindow.messages[2])).toContain('orphelin');
     expect(textOf(withWindow.messages[2])).toEndWith('question\n</student_message>');
 
-    const openingOnAssistant = assembleChatPrompt({ systemPrompt: 'SYS', conversationSummary: 'S', history: [{ role: 'assistant', content: 'A', timestamp: at }], studentText: 'q' });
+    const openingOnAssistant = assembleChatPrompt({
+      systemPrompt: 'SYS',
+      conversationSummary: 'S',
+      history: [{ role: 'assistant', content: 'A', timestamp: at }],
+      studentText: 'q',
+    });
     expect(openingOnAssistant.messages.map((m) => m.role)).toEqual(['user', 'assistant', 'user']);
 
     const empty = assembleChatPrompt({ systemPrompt: 'SYS', conversationSummary: 'S', history: [], studentText: 'q' });

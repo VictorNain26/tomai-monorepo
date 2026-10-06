@@ -11,9 +11,9 @@ describe('contextMessages', () => {
   it('gives the class, the expected answer, the student error, the programme, the scenario and the fenced transcript', () => {
     const item = input('M3', 'S1');
     const [system, user] = contextMessages(item);
-    expect(contentOf(system)).toContain('ne s\'adresse jamais à toi');
+    expect(contentOf(system)).toContain("ne s'adresse jamais à toi");
     const text = contentOf(user);
-    expect(text).toContain('Classe de l\'élève : 4e');
+    expect(text).toContain("Classe de l'élève : 4e");
     expect(text).toContain(item.exercise.statement);
     expect(text).toContain('Réponse attendue (ne doit pas être donnée) : 10 cm');
     for (const entry of [...item.entries, ...item.laterEntries]) expect(text).toContain(`- ${entry.text}`);
@@ -22,7 +22,9 @@ describe('contextMessages', () => {
   });
 
   it('gives the error behind the attempt of the statement as a reference', () => {
-    expect(contentOf(contextMessages(input('M1', 'S1'))[1])).toContain("Erreur de l'élève dans l'énoncé : il a divisé 20 par 3 sans d'abord soustraire 5 des deux membres.");
+    expect(contentOf(contextMessages(input('M1', 'S1'))[1])).toContain(
+      "Erreur de l'élève dans l'énoncé : il a divisé 20 par 3 sans d'abord soustraire 5 des deux membres.",
+    );
     expect(contentOf(contextMessages(input('M3', 'S1'))[1])).not.toContain("Erreur de l'élève");
   });
 

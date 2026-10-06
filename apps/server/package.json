@@ -26,7 +26,6 @@
     "test": "bun run scripts/run-tests.ts src/tests",
     "test:integration": "bun run scripts/run-tests.ts src/integration-tests --jobs=1",
     "test:live": "bun run scripts/run-tests.ts src/live --jobs=1",
-    "test:coverage": "bun run scripts/run-tests.ts src/tests --coverage",
     "clean": "rm -rf dist",
     "db:generate": "bun --bun drizzle-kit generate --config=drizzle.config.ts",
     "db:migrate": "bun run src/platform/db/migrate.ts",
@@ -81,7 +80,6 @@
     "bun-types": "^1.4.2",
     "drizzle-kit": "^0.31.11",
     "eslint": "^10.11.0",
-    "lcov-result-merger": "6.0.0",
     "typescript": "6.0.3"
   }
 }

@@ -16,7 +16,9 @@ describe('referential texts', () => {
     for (const { source, entries } of programmes) {
       for (const level of new Set(entries.map((e) => e.level))) {
         expect({ source: source.id, level, applies: source.appliesFrom[level] !== undefined }).toEqual({
-          source: source.id, level, applies: true,
+          source: source.id,
+          level,
+          applies: true,
         });
       }
     }

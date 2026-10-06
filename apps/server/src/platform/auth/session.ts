@@ -2,7 +2,9 @@ import { auth } from './auth';
 import { logger } from '../observability/logger';
 import type { AuthenticatedUser } from '../../types/index.js';
 
-export const requireAuth = async (headers: Headers): Promise<
+export const requireAuth = async (
+  headers: Headers,
+): Promise<
   | { readonly success: true; readonly user: AuthenticatedUser; readonly session: Record<string, unknown> }
   | { readonly success: false; readonly _error: string; readonly status: 401 | 503 }
 > => {
@@ -29,7 +31,9 @@ export const requireAuth = async (headers: Headers): Promise<
   }
 };
 
-export const requireParentRole = async (headers: Headers): Promise<
+export const requireParentRole = async (
+  headers: Headers,
+): Promise<
   | { readonly success: true; readonly user: AuthenticatedUser; readonly session: Record<string, unknown> }
   | { readonly success: false; readonly _error: string; readonly status: 401 | 403 | 503 }
 > => {

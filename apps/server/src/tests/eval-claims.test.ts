@@ -14,7 +14,10 @@ const LOST_USAGE: LanguageModelUsage = {
 };
 
 /** A model that gives, for each seed, the verdicts `answer(ids, seed)` returns, or loses the sample when it returns null. */
-function verdictsBy(answer: (ids: string[], seed: number) => { id: string; fausse: 'oui' | 'non' }[] | null): { generate: Generate; seeds: number[] } {
+function verdictsBy(answer: (ids: string[], seed: number) => { id: string; fausse: 'oui' | 'non' }[] | null): {
+  generate: Generate;
+  seeds: number[];
+} {
   const seeds: number[] = [];
   const generate: Generate = async (opts) => {
     seeds.push(opts.seed);
@@ -22,7 +25,13 @@ function verdictsBy(answer: (ids: string[], seed: number) => { id: string; fauss
     const ids = typeof last === 'string' ? [...last.matchAll(/^(\d+)\. /gm)].map(([, id = '']) => id) : [];
     const verdicts = answer(ids, opts.seed);
     if (!verdicts) {
-      throw new NoObjectGeneratedError({ message: 'cut', text: '{"verdicts": [', response: { id: 'r', timestamp: new Date(), modelId: 'm' }, usage: LOST_USAGE, finishReason: 'length' });
+      throw new NoObjectGeneratedError({
+        message: 'cut',
+        text: '{"verdicts": [',
+        response: { id: 'r', timestamp: new Date(), modelId: 'm' },
+        usage: LOST_USAGE,
+        finishReason: 'length',
+      });
     }
     return { object: opts.schema.parse({ verdicts }), usage: { inputTokens: 100, cachedInputTokens: 80, outputTokens: 10 } };
   };
@@ -34,7 +43,9 @@ const allTrue = (ids: string[]) => ids.map((id) => ({ id, fausse: 'non' as const
 describe('claim sentences', () => {
   it('keeps a rule with its exception and an abbreviation with its sentence', () => {
     expect(claimSentences("Le participe s'accorde… sauf avec avoir. Compris ?")).toEqual(["Le participe s'accorde… sauf avec avoir.", 'Compris ?']);
-    expect(claimSentences('On compte les pommes, les poires, etc. et on additionne.')).toEqual(['On compte les pommes, les poires, etc. et on additionne.']);
+    expect(claimSentences('On compte les pommes, les poires, etc. et on additionne.')).toEqual([
+      'On compte les pommes, les poires, etc. et on additionne.',
+    ]);
   });
 
   it('leaves out list markers and bare numbers, keeps a closing quote and a calculation', () => {
@@ -43,12 +54,17 @@ describe('claim sentences', () => {
     expect(claimSentences('4 + 15 = 19')).toEqual(['4 + 15 = 19']);
   });
 
-  it("lists what the student was shown, the cards included, each sentence once", () => {
+  it('lists what the student was shown, the cards included, each sentence once', () => {
     const transcript = input('M1', 'S1', [
       turn('a', 'Bravo ! Que fais-tu ensuite ?'),
       turn('b', 'Bravo ! On soustrait 5.', { cards: 'Pour isoler x, on divise par son coefficient.', toolOutputs: 'deck-42' }),
     ]).transcript;
-    expect(tutorSentences(transcript)).toEqual(['Bravo !', 'Que fais-tu ensuite ?', 'On soustrait 5.', 'Pour isoler x, on divise par son coefficient.']);
+    expect(tutorSentences(transcript)).toEqual([
+      'Bravo !',
+      'Que fais-tu ensuite ?',
+      'On soustrait 5.',
+      'Pour isoler x, on divise par son coefficient.',
+    ]);
   });
 });
 
@@ -60,7 +76,12 @@ describe('claims request', () => {
 
   it('leaves room for one verdict per claim', () => {
     expect(claimsRequest(input('M1', 'S1'), ['Une règle.']).maxTokens).toBe(JUDGE.answerMaxTokens);
-    expect(claimsRequest(input('M1', 'S1'), Array.from({ length: 100 }, (_, i) => `Phrase ${String(i)}.`)).maxTokens).toBe(2400);
+    expect(
+      claimsRequest(
+        input('M1', 'S1'),
+        Array.from({ length: 100 }, (_, i) => `Phrase ${String(i)}.`),
+      ).maxTokens,
+    ).toBe(2400);
   });
 });
 
@@ -74,7 +95,11 @@ describe('false claims', () => {
   it('loses a sample with a missing or a repeated verdict, and keeps the majority of the others', async () => {
     const { generate } = verdictsBy((ids, seed) => {
       if (seed === JUDGE.firstSeed) return [{ id: '1', fausse: 'oui' }];
-      if (seed === JUDGE.firstSeed + 1) return [{ id: '1', fausse: 'oui' }, { id: '1', fausse: 'oui' }];
+      if (seed === JUDGE.firstSeed + 1)
+        return [
+          { id: '1', fausse: 'oui' },
+          { id: '1', fausse: 'oui' },
+        ];
       return ids.map((id) => ({ id, fausse: id === '1' && seed !== JUDGE.firstSeed + 4 ? 'oui' : 'non' }));
     });
     // Three valid samples: two find the first sentence false.
@@ -83,16 +108,19 @@ describe('false claims', () => {
   });
 
   it('flags a sentence on a tie of the valid samples', async () => {
-    const { generate } = verdictsBy((ids, seed) => (seed === JUDGE.firstSeed
-      ? null
-      : ids.map((id) => ({ id, fausse: seed < JUDGE.firstSeed + 3 ? 'oui' : 'non' }))));
+    const { generate } = verdictsBy((ids, seed) =>
+      seed === JUDGE.firstSeed ? null : ids.map((id) => ({ id, fausse: seed < JUDGE.firstSeed + 3 ? 'oui' : 'non' })),
+    );
     const { found } = await falseClaims(input('M1', 'S1'), ['Une règle douteuse.'], generate);
     expect(found).toEqual([{ claim: 'Une règle douteuse.', votes: 2, samples: 4 }]);
   });
 
   it('fails with fewer than three valid samples, after drawing all five', async () => {
     const { generate, seeds } = verdictsBy((ids, seed) => (seed < JUDGE.firstSeed + 3 ? null : allTrue(ids)));
-    const outcome = await falseClaims(input('M1', 'S1'), ['Une règle.'], generate).then(() => 'resolved', (error: unknown) => String(error));
+    const outcome = await falseClaims(input('M1', 'S1'), ['Une règle.'], generate).then(
+      () => 'resolved',
+      (error: unknown) => String(error),
+    );
     expect(outcome).toContain('too few valid samples for the claims (2)');
     expect(seeds).toHaveLength(JUDGE.samples);
   });

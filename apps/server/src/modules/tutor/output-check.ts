@@ -51,7 +51,12 @@ function watchedForms(ctx: OutputCheckContext): string[] {
  * itself.
  */
 export function cardTextPasses(text: string, ctx: OutputCheckContext): boolean {
-  return !findLeakForm(text, watchedForms(ctx).filter((form) => form.trim().length >= 3)) && !PROMPT_TAG.test(text);
+  return (
+    !findLeakForm(
+      text,
+      watchedForms(ctx).filter((form) => form.trim().length >= 3),
+    ) && !PROMPT_TAG.test(text)
+  );
 }
 
 export function checkOutput(text: string, ctx: OutputCheckContext): Finding[] {
@@ -80,7 +85,10 @@ export async function checkReply(text: string, ctx: OutputCheckContext): Promise
 /** Whether a session title may be stored. */
 export async function titlePasses(title: string, ctx: OutputCheckContext): Promise<boolean> {
   if (checkOutput(title, ctx).length > 0) return false;
-  const moderation = await moderateTexts([title]).then(([categories]) => moderationFindings(categories ?? []), (err: unknown) => unmoderated(err, 'title'));
+  const moderation = await moderateTexts([title]).then(
+    ([categories]) => moderationFindings(categories ?? []),
+    (err: unknown) => unmoderated(err, 'title'),
+  );
   return moderation.length === 0;
 }
 
@@ -94,7 +102,8 @@ export function regenerationInstruction(findings: readonly Finding[]): string {
     if (finding.kind === 'answer') return ["Elle donnait la réponse de l'exercice, ou l'une de ses formes : ne l'écris pas, même pour vérifier."];
     if (finding.kind === 'tag') return ["Elle contenait une balise interne : n'écris que ce qui s'adresse à l'élève."];
     if (finding.kind === 'moderation') return ['Elle a été retenue par la modération : écris une réponse qui convient à un élève de collège.'];
-    if (finding.kind === 'equality') return [`Elle contenait une égalité fausse, « ${finding.quote} » : ne l'écris pas, et refais chaque calcul que tu écris.`];
+    if (finding.kind === 'equality')
+      return [`Elle contenait une égalité fausse, « ${finding.quote} » : ne l'écris pas, et refais chaque calcul que tu écris.`];
     return [];
   });
   return `<critical_instruction>\nUne première réponse à ce tour a été retenue par le serveur, l'élève ne l'a pas vue. Écris-en une nouvelle.\n${[...new Set(lines)].join('\n')}\n</critical_instruction>`;

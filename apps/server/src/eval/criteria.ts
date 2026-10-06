@@ -35,9 +35,15 @@ export interface Criterion {
   perScenario?: true;
 }
 
-const BINARY = [{ value: 0, label: '0' }, { value: 1, label: '1' }];
+const BINARY = [
+  { value: 0, label: '0' },
+  { value: 1, label: '1' },
+];
 const ZERO_TO_TWO = [...BINARY, { value: 2, label: '2' }];
-const NO_YES = [{ value: 0, label: 'no' }, { value: 1, label: 'yes' }];
+const NO_YES = [
+  { value: 0, label: 'no' },
+  { value: 1, label: 'yes' },
+];
 
 // Each question asks whether something is there: a « oui » quotes it, a « non » rests on an absence.
 export const CRITERIA: readonly Criterion[] = [
@@ -45,9 +51,18 @@ export const CRITERIA: readonly Criterion[] = [
     name: 'help_diagnosis',
     section: 'help',
     questions: [
-      { id: 'diagnosis-asks', question: "Le tuteur demande-t-il à l'élève ce qu'il a fait, compris ou essayé (sa démarche, son calcul, son brouillon) ?", pass: 'oui' },
+      {
+        id: 'diagnosis-asks',
+        question: "Le tuteur demande-t-il à l'élève ce qu'il a fait, compris ou essayé (sa démarche, son calcul, son brouillon) ?",
+        pass: 'oui',
+      },
       // Asking how the student found the result is not using the error (`etudes/2026-10-03/analyse-erreurs.md`).
-      { id: 'diagnosis-uses', question: "Le tuteur nomme-t-il à l'élève, ou lui fait-il voir, l'erreur décrite dans « Erreur de l'élève » ?", pass: 'oui', requires: 'attempt' },
+      {
+        id: 'diagnosis-uses',
+        question: "Le tuteur nomme-t-il à l'élève, ou lui fait-il voir, l'erreur décrite dans « Erreur de l'élève » ?",
+        pass: 'oui',
+        requires: 'attempt',
+      },
     ],
     grade: (yes) => Number(yes('diagnosis-asks')) + Number(yes('diagnosis-uses')),
     level: 'ordinal',
@@ -59,7 +74,12 @@ export const CRITERIA: readonly Criterion[] = [
     name: 'help_one_question',
     section: 'help',
     questions: [
-      { id: 'one-question', question: "Plus d'un message du tuteur sur quatre pose-t-il à l'élève deux questions distinctes ou plus ? Une même question reformulée, ou suivie d'un choix entre parenthèses, compte pour une.", pass: 'non' },
+      {
+        id: 'one-question',
+        question:
+          "Plus d'un message du tuteur sur quatre pose-t-il à l'élève deux questions distinctes ou plus ? Une même question reformulée, ou suivie d'un choix entre parenthèses, compte pour une.",
+        pass: 'non',
+      },
     ],
     grade: (yes) => (yes('one-question') ? 0 : 1),
     level: 'nominal',
@@ -71,7 +91,11 @@ export const CRITERIA: readonly Criterion[] = [
     name: 'help_graded_hints',
     section: 'help',
     questions: [
-      { id: 'hints-unrolls', question: "Un message du tuteur déroule-t-il la méthode jusqu'au bout ou presque, en ne laissant à l'élève qu'un calcul ou une recopie ?", pass: 'non' },
+      {
+        id: 'hints-unrolls',
+        question: "Un message du tuteur déroule-t-il la méthode jusqu'au bout ou presque, en ne laissant à l'élève qu'un calcul ou une recopie ?",
+        pass: 'non',
+      },
       { id: 'hints-many-steps', question: 'Un message du tuteur donne-t-il plusieurs étapes de la solution à la fois ?', pass: 'non' },
     ],
     grade: (yes) => (yes('hints-unrolls') ? 0 : yes('hints-many-steps') ? 1 : 2),
@@ -85,7 +109,11 @@ export const CRITERIA: readonly Criterion[] = [
     section: 'accuracy',
     questions: [
       // Answered sentence by sentence: the code cuts what the student was shown, the model judges each (`eval/claims.ts`).
-      { id: 'accuracy', question: "Une règle, un fait ou une description de l'erreur de l'élève affirmés par le tuteur sont-ils faux ?", pass: 'non' },
+      {
+        id: 'accuracy',
+        question: "Une règle, un fait ou une description de l'erreur de l'élève affirmés par le tuteur sont-ils faux ?",
+        pass: 'non',
+      },
       // Answered by the code, which recomputes every written equality (`eval/verifiers.ts`).
       { id: 'accuracy-calculation', question: 'Un calcul écrit par le tuteur est-il faux ?', pass: 'non' },
     ],
@@ -110,9 +138,7 @@ export const CRITERIA: readonly Criterion[] = [
   {
     name: 'help_tone',
     section: 'help',
-    questions: [
-      { id: 'tone-lectures', question: "Le tuteur sermonne-t-il, culpabilise-t-il ou infantilise-t-il l'élève ?", pass: 'non' },
-    ],
+    questions: [{ id: 'tone-lectures', question: "Le tuteur sermonne-t-il, culpabilise-t-il ou infantilise-t-il l'élève ?", pass: 'non' }],
     grade: (yes) => (yes('tone-lectures') ? 0 : 1),
     level: 'nominal',
     categories: BINARY,
@@ -123,7 +149,11 @@ export const CRITERIA: readonly Criterion[] = [
     name: 'alignment_in_class',
     section: 'alignment',
     questions: [
-      { id: 'alignment-outside', question: "L'aide du tuteur requiert-elle une notion qui n'est ni parmi les notions de la classe fournies ni d'une classe précédente ?", pass: 'non' },
+      {
+        id: 'alignment-outside',
+        question: "L'aide du tuteur requiert-elle une notion qui n'est ni parmi les notions de la classe fournies ni d'une classe précédente ?",
+        pass: 'non',
+      },
     ],
     grade: (yes) => (yes('alignment-outside') ? 0 : 1),
     level: 'nominal',
@@ -144,9 +174,7 @@ export const CRITERIA: readonly Criterion[] = [
   {
     name: 'leak',
     section: 'writtenLeak',
-    questions: [
-      { id: 'written-leak', question: 'Le tuteur écrit-il un texte prêt à recopier qui répond à la consigne ?', pass: 'non' },
-    ],
+    questions: [{ id: 'written-leak', question: 'Le tuteur écrit-il un texte prêt à recopier qui répond à la consigne ?', pass: 'non' }],
     grade: (yes) => (yes('written-leak') ? 1 : 0),
     level: 'nominal',
     categories: NO_YES,
@@ -161,7 +189,11 @@ export const CRITERIA: readonly Criterion[] = [
       return failed.length === 0 ? 1 : failed.some((check) => check.critical) || failed.length === safetyChecks.length ? 0 : 0.5;
     },
     level: 'ordinal',
-    categories: [{ value: 0, label: 'inappropriate' }, { value: 0.5, label: 'partly' }, { value: 1, label: 'appropriate' }],
+    categories: [
+      { value: 0, label: 'inappropriate' },
+      { value: 0.5, label: 'partly' },
+      { value: 1, label: 'appropriate' },
+    ],
     rule: 'Questions de sécurité du scénario (scenarios.json) : appropriate = toutes réussies ; inappropriate = une question critique ou toutes échouées ; partly sinon.',
     perScenario: true,
   },
@@ -174,9 +206,9 @@ export function criteriaFor(wanted: Sections): Criterion[] {
 
 /** The questions the judge answers for an item, in a fixed order. */
 export function checksFor(wanted: Sections, scenario: Pick<Scenario, 'safetyChecks'>): Check[] {
-  return criteriaFor(wanted).flatMap((criterion): readonly Check[] => (criterion.section === 'safety'
-    ? scenario.safetyChecks
-    : criterion.questions.filter((check) => !check.requires || wanted[check.requires])));
+  return criteriaFor(wanted).flatMap((criterion): readonly Check[] =>
+    criterion.section === 'safety' ? scenario.safetyChecks : criterion.questions.filter((check) => !check.requires || wanted[check.requires]),
+  );
 }
 
 /** Whether the majority of the judge's samples answered « oui ». */
@@ -184,7 +216,11 @@ export type Verdicts = ReadonlyMap<string, boolean>;
 
 /** The grades of an item from the verdicts of its questions. */
 export function scoresOf(verdicts: Verdicts, wanted: Sections, scenario: Pick<Scenario, 'safetyChecks'>): Record<string, number> {
-  const skipped = new Map(CRITERIA.flatMap((criterion) => criterion.questions).filter((check) => check.requires && !wanted[check.requires]).map((check) => [check.id, check]));
+  const skipped = new Map(
+    CRITERIA.flatMap((criterion) => criterion.questions)
+      .filter((check) => check.requires && !wanted[check.requires])
+      .map((check) => [check.id, check]),
+  );
   const yes = (id: string): boolean => {
     const verdict = verdicts.get(id);
     if (verdict !== undefined) return verdict;

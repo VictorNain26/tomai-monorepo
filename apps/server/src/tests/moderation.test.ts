@@ -4,7 +4,19 @@ import { createMockLogger } from './_helpers/mock-logger';
 const mockLogger = createMockLogger();
 mock.module('../platform/observability/logger', () => ({ logger: mockLogger }));
 
-const all = ['sexual', 'hate_and_discrimination', 'violence_and_threats', 'dangerous', 'criminal', 'selfharm', 'health', 'financial', 'law', 'pii', 'jailbreaking'];
+const all = [
+  'sexual',
+  'hate_and_discrimination',
+  'violence_and_threats',
+  'dangerous',
+  'criminal',
+  'selfharm',
+  'health',
+  'financial',
+  'law',
+  'pii',
+  'jailbreaking',
+];
 const result = (flagged: string[]) => ({
   categories: Object.fromEntries(all.map((category) => [category, flagged.includes(category)])),
   categoryScores: Object.fromEntries(all.map((category) => [category, flagged.includes(category) ? 0.9 : 0.001])),
@@ -17,8 +29,14 @@ mock.module('../platform/ai/mistral-sdk', () => ({
   MODERATION_TIMEOUT_MS: 5000,
   getModerationSdk: () => ({
     classifiers: {
-      moderateChat: mock(async (...args: unknown[]) => { chatCalls.push(args); return { id: 'm', model: 'mistral-moderation-2603', results }; }),
-      moderate: mock(async (...args: unknown[]) => { textCalls.push(args); return { id: 'm', model: 'mistral-moderation-2603', results }; }),
+      moderateChat: mock(async (...args: unknown[]) => {
+        chatCalls.push(args);
+        return { id: 'm', model: 'mistral-moderation-2603', results };
+      }),
+      moderate: mock(async (...args: unknown[]) => {
+        textCalls.push(args);
+        return { id: 'm', model: 'mistral-moderation-2603', results };
+      }),
     },
   }),
 }));
@@ -36,7 +54,13 @@ describe('moderateReply', () => {
     results = [result([])];
     expect(await moderateReply('Je bloque', 'Que fais-tu du + 5 ?')).toEqual([]);
     expect(chatCalls[0]).toEqual([
-      { model: 'mistral-moderation-2603', inputs: [{ role: 'user', content: 'Je bloque' }, { role: 'assistant', content: 'Que fais-tu du + 5 ?' }] },
+      {
+        model: 'mistral-moderation-2603',
+        inputs: [
+          { role: 'user', content: 'Je bloque' },
+          { role: 'assistant', content: 'Que fais-tu du + 5 ?' },
+        ],
+      },
       { timeoutMs: 5000 },
     ]);
   });
@@ -83,7 +107,13 @@ describe('moderateStudentTurn', () => {
       selfharmScore: 0.9,
     });
     expect(chatCalls[0]).toEqual([
-      { model: 'mistral-moderation-2603', inputs: [{ role: 'assistant', content: 'Que fais-tu du + 5 ?' }, { role: 'user', content: "j'ai envie de disparaître" }] },
+      {
+        model: 'mistral-moderation-2603',
+        inputs: [
+          { role: 'assistant', content: 'Que fais-tu du + 5 ?' },
+          { role: 'user', content: "j'ai envie de disparaître" },
+        ],
+      },
       { timeoutMs: 5000 },
     ]);
   });

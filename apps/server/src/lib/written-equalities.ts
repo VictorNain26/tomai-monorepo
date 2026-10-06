@@ -24,22 +24,24 @@ const NUMERIC_HEAD = new RegExp(`^${NUMERIC}+`);
  * result and a count.
  */
 function plainLines(text: string): string[] {
-  return text.split('\n').map((line) => plainTypography(
-    line
-      // A Markdown bullet, ASCII and at the head of the raw line: once KaTeX and typography are
-      // read past, « $- 4 + 6$ » or « − 3 » would look the same and lose their sign.
-      .replace(/^\s*[-*+]\s+/, '')
-      .replace(/\s*(?:€|euros?\b)/g, ' ')
-      .replace(/²/g, '^2')
-      .replace(/³/g, '^3')
-      .normalize('NFKC')
-      .replace(/\\[dt]?frac\s*\{([^{}]*)\}\s*\{([^{}]*)\}/g, '($1)/($2)')
-      .replace(/\^\{([^{}]*)\}/g, '^($1)'),
-  )
-    .replace(/(\d) (?=\d{3}(?!\d|\s*\p{L}))/gu, '$1')
-    .replace(/^\s*\d+[.)]\s+/, '')
-    .replace(/÷/g, '/')
-    .replace(/×/g, '*'));
+  return text.split('\n').map((line) =>
+    plainTypography(
+      line
+        // A Markdown bullet, ASCII and at the head of the raw line: once KaTeX and typography are
+        // read past, « $- 4 + 6$ » or « − 3 » would look the same and lose their sign.
+        .replace(/^\s*[-*+]\s+/, '')
+        .replace(/\s*(?:€|euros?\b)/g, ' ')
+        .replace(/²/g, '^2')
+        .replace(/³/g, '^3')
+        .normalize('NFKC')
+        .replace(/\\[dt]?frac\s*\{([^{}]*)\}\s*\{([^{}]*)\}/g, '($1)/($2)')
+        .replace(/\^\{([^{}]*)\}/g, '^($1)'),
+    )
+      .replace(/(\d) (?=\d{3}(?!\d|\s*\p{L}))/gu, '$1')
+      .replace(/^\s*\d+[.)]\s+/, '')
+      .replace(/÷/g, '/')
+      .replace(/×/g, '*'),
+  );
 }
 
 /** A tree of numbers and operators only: no letter, no function, no implicit product (« 2 3 »). */
@@ -121,9 +123,7 @@ const key = ({ left, right }: Equality) => `${left}=${right}`.replace(/\s/g, '')
  * not an error, « 3 fois 4 » of theirs standing for « 3 × 4 ».
  */
 export function wrongEqualities(text: string, studentTexts: readonly string[]): Equality[] {
-  const studentLines = studentTexts
-    .flatMap(plainLines)
-    .map((line) => line.replace(/(\d)\s*fois\s*(?=\d)/g, '$1*').replace(/\s/g, ''));
+  const studentLines = studentTexts.flatMap(plainLines).map((line) => line.replace(/(\d)\s*fois\s*(?=\d)/g, '$1*').replace(/\s/g, ''));
   return [...new Map(writtenEqualities(text).map((e) => [key(e), e]))]
     .filter(([k, e]) => !studentLines.some((line) => line.includes(k)) && isWrong(e))
     .map(([, e]) => e);

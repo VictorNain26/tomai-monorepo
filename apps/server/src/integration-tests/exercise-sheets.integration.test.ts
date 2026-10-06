@@ -10,7 +10,10 @@ describe.skipIf(!dbReachable)('exerciseSheetsRepository.recordTurn — from post
   afterAll(async () => {
     const { db } = await import('../db/connection');
     const { user } = await import('../db/schema');
-    await db.delete(user).where(eq(user.id, studentId)).catch(() => null);
+    await db
+      .delete(user)
+      .where(eq(user.id, studentId))
+      .catch(() => null);
   });
 
   it('counts two turns of the same session at once, within the ladder, and ends then reopens the exercise', async () => {
@@ -21,7 +24,13 @@ describe.skipIf(!dbReachable)('exerciseSheetsRepository.recordTurn — from post
     const [session] = await db.insert(studySessions).values({ userId: studentId }).returning({ id: studySessions.id });
     if (!session) throw new Error('session not created');
     const { exerciseSheetsRepository } = await import('../modules/tutor/exercise-sheets.repository');
-    const id = await exerciseSheetsRepository.create({ sessionId: session.id, sheet: null, uncertain: false, mathCheck: 'not-applicable', promptVersion: 'test' });
+    const id = await exerciseSheetsRepository.create({
+      sessionId: session.id,
+      sheet: null,
+      uncertain: false,
+      mathCheck: 'not-applicable',
+      promptVersion: 'test',
+    });
     if (!id) throw new Error('exercise not created');
     const wrong = (text: string) => ({ levelChange: 1, top: 4, stepDone: false, solved: false, hint: { level: 0, text } });
 

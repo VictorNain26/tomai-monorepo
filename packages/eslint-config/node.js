@@ -1,5 +1,5 @@
-import globals from "globals";
-import { config as baseConfig } from "./base.js";
+import globals from 'globals';
+import { config as baseConfig } from './base.js';
 
 /**
  * ESLint configuration for Bun services.
@@ -12,7 +12,7 @@ export const nodeConfig = [
     languageOptions: {
       globals: {
         ...globals.node,
-        Bun: "readonly",
+        Bun: 'readonly',
       },
     },
   },
@@ -22,14 +22,14 @@ export const nodeConfig = [
     // return thenables called for their side effects, and asymmetric matchers
     // (expect.any, expect.objectContaining) are typed any. Tests also assign
     // process.env to configure the code under test, which is not a task input.
-    files: ["**/*.test.ts", "**/_helpers/**/*.ts"],
+    files: ['**/*.test.ts', '**/_helpers/**/*.ts'],
     rules: {
-      "@typescript-eslint/require-await": "off",
-      "@typescript-eslint/no-floating-promises": "off",
-      "@typescript-eslint/no-empty-function": ["error", { allow: ["arrowFunctions"] }],
-      "@typescript-eslint/no-unsafe-argument": "off",
-      "@typescript-eslint/no-unsafe-call": "off",
-      "turbo/no-undeclared-env-vars": "off",
+      '@typescript-eslint/require-await': 'off',
+      '@typescript-eslint/no-floating-promises': 'off',
+      '@typescript-eslint/no-empty-function': ['error', { allow: ['arrowFunctions'] }],
+      '@typescript-eslint/no-unsafe-argument': 'off',
+      '@typescript-eslint/no-unsafe-call': 'off',
+      'turbo/no-undeclared-env-vars': 'off',
     },
   },
 ];

@@ -30,15 +30,39 @@ const items: TextContentItem[] = [
 
 const tree: StructNode = {
   role: 'Root',
-  children: [{
-    role: 'Document',
-    children: [
-      { role: 'TOC', children: [{ type: 'content', id: 'c1' }] },
-      { role: 'H1', children: [{ type: 'content', id: 'c1' }] },
-      { role: 'L', children: [{ role: 'LI', children: [{ role: 'Lbl', children: [{ type: 'content', id: 'c2' }] }, { role: 'LBody', children: [{ type: 'content', id: 'c3' }] }] }] },
-      { role: 'Table', children: [{ role: 'TR', children: [{ role: 'TD', children: [{ type: 'content', id: 'c4' }] }, { role: 'TD', children: [{ type: 'content', id: 'c5' }] }] }] },
-    ],
-  }],
+  children: [
+    {
+      role: 'Document',
+      children: [
+        { role: 'TOC', children: [{ type: 'content', id: 'c1' }] },
+        { role: 'H1', children: [{ type: 'content', id: 'c1' }] },
+        {
+          role: 'L',
+          children: [
+            {
+              role: 'LI',
+              children: [
+                { role: 'Lbl', children: [{ type: 'content', id: 'c2' }] },
+                { role: 'LBody', children: [{ type: 'content', id: 'c3' }] },
+              ],
+            },
+          ],
+        },
+        {
+          role: 'Table',
+          children: [
+            {
+              role: 'TR',
+              children: [
+                { role: 'TD', children: [{ type: 'content', id: 'c4' }] },
+                { role: 'TD', children: [{ type: 'content', id: 'c5' }] },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+  ],
 };
 
 describe('runsById', () => {
@@ -63,13 +87,38 @@ describe('pageBlocks banners', () => {
   it('reads the alternative text of a paragraph without text, and of a table before its cells', () => {
     const bannerTree: StructNode = {
       role: 'Root',
-      children: [{
-        role: 'Part',
-        children: [
-          { role: 'P', children: [{ role: 'Span', alt: 'Attendus de ', children: [] }, { role: 'Span', alt: 'fin de 4', children: [] }, { role: 'Span', alt: 'e', children: [] }] },
-          { role: 'Table', children: [{ role: 'TR', children: [{ role: 'TD', children: [{ role: 'P', children: [{ role: 'Span', alt: 'Nombres et calculs', children: [] }] }, { type: 'content', id: 'c4' }] }] }] },
-        ],
-      }],
+      children: [
+        {
+          role: 'Part',
+          children: [
+            {
+              role: 'P',
+              children: [
+                { role: 'Span', alt: 'Attendus de ', children: [] },
+                { role: 'Span', alt: 'fin de 4', children: [] },
+                { role: 'Span', alt: 'e', children: [] },
+              ],
+            },
+            {
+              role: 'Table',
+              children: [
+                {
+                  role: 'TR',
+                  children: [
+                    {
+                      role: 'TD',
+                      children: [
+                        { role: 'P', children: [{ role: 'Span', alt: 'Nombres et calculs', children: [] }] },
+                        { type: 'content', id: 'c4' },
+                      ],
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ],
     };
     expect(pageBlocks(bannerTree, runsById(items), 1).map(({ role, text }) => ({ role, text }))).toEqual([
       { role: 'BANNER', text: 'Attendus de fin de 4e' },

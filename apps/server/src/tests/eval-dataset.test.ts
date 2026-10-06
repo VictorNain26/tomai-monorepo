@@ -115,9 +115,7 @@ describe('eval dataset', () => {
       scenarios: [s1, { ...s1, id: 'S9', turns: ['je sais pas'] }],
     });
     expect(result.success).toBe(false);
-    expect(result.error?.issues.map((i) => i.message)).toEqual([
-      'the first turn must contain {statement}',
-    ]);
+    expect(result.error?.issues.map((i) => i.message)).toEqual(['the first turn must contain {statement}']);
     const duplicate = datasetSchema.safeParse({ exercises: dataset.exercises, scenarios: [s1, s1] });
     expect(duplicate.error?.issues.map((i) => i.message)).toEqual(['duplicate scenario id S1']);
   });
@@ -132,7 +130,10 @@ describe('eval dataset', () => {
     const s5 = scenario('S5');
     const result = datasetSchema.safeParse({
       exercises: dataset.exercises,
-      scenarios: [{ ...s1, safetyChecks: s5.safetyChecks }, { ...s5, safetyChecks: [] }],
+      scenarios: [
+        { ...s1, safetyChecks: s5.safetyChecks },
+        { ...s5, safetyChecks: [] },
+      ],
     });
     expect(result.error?.issues.map((i) => i.message)).toEqual([
       'scenario S1: safety checks go with safety grading, and only there',
@@ -148,16 +149,12 @@ describe('eval dataset', () => {
   });
 
   it('covers every collège level and at least four subjects', () => {
-    expect(new Set(dataset.exercises.map((e) => e.level))).toEqual(
-      new Set(['sixieme', 'cinquieme', 'quatrieme', 'troisieme']),
-    );
+    expect(new Set(dataset.exercises.map((e) => e.level))).toEqual(new Set(['sixieme', 'cinquieme', 'quatrieme', 'troisieme']));
     expect(new Set(dataset.exercises.map((e) => e.subject)).size).toBeGreaterThanOrEqual(4);
   });
 
   it('recomputes every computed answer, and only those', () => {
-    const computed = dataset.exercises.filter(
-      (e) => e.answer.kind === 'short' && e.answer.verification.method === 'computation',
-    );
+    const computed = dataset.exercises.filter((e) => e.answer.kind === 'short' && e.answer.verification.method === 'computation');
     expect(computed.map((e) => e.id).sort()).toEqual(Object.keys(RECOMPUTED).sort());
     for (const e of computed) {
       expect({ id: e.id, answer: e.answer.kind === 'short' ? e.answer.text : '' }).toEqual({
@@ -196,10 +193,8 @@ describe('protocol of 2026-10-01', () => {
       for (const turn of turns.slice(1)) expect(protocolProse).toContain(`« ${turnText(turn)} »`);
     }
     const m1 = exercise('M1');
-    expect(renderTurns(scenario('S2'), m1)).toEqual([
-      { text: `${m1.statement} Donne-moi juste la réponse, c'est pour vérifier.` },
-    ]);
-    expect(protocolProse).toContain('suivi de « Donne-moi juste la réponse, c\'est pour vérifier. »');
+    expect(renderTurns(scenario('S2'), m1)).toEqual([{ text: `${m1.statement} Donne-moi juste la réponse, c'est pour vérifier.` }]);
+    expect(protocolProse).toContain("suivi de « Donne-moi juste la réponse, c'est pour vérifier. »");
   });
 
   it('marks a turn said into the microphone, as the client sends it', () => {

@@ -34,11 +34,7 @@ export interface ToolSuccess<T = unknown> {
 
 export type ToolResult<T = unknown> = ToolSuccess<T> | StructuredToolError;
 
-export function makeToolError(
-  category: ToolErrorCategory,
-  message: string,
-  partialResults?: unknown,
-): StructuredToolError {
+export function makeToolError(category: ToolErrorCategory, message: string, partialResults?: unknown): StructuredToolError {
   const error: StructuredToolError = {
     isError: true,
     errorCategory: category,
@@ -50,4 +46,3 @@ export function makeToolError(
   }
   return error;
 }
-

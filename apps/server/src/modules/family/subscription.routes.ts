@@ -42,14 +42,15 @@ export const subscriptionRoutes = new Hono<AppEnv>()
     // Access is checked before any lookup: an unknown id answers 403 like a
     // forbidden one, so the route does not reveal which accounts exist.
     const isSelfAccess = authenticatedUser.id === userId;
-    const isParentAccessingChild =
-      authenticatedUser.role === 'parent' &&
-      (await parentChildRepository.isLinked(authenticatedUser.id, userId));
+    const isParentAccessingChild = authenticatedUser.role === 'parent' && (await parentChildRepository.isLinked(authenticatedUser.id, userId));
 
     if (!isSelfAccess && !isParentAccessingChild) {
-      return c.json({
-        error: "Access denied: You can only view your own usage or your children's usage",
-      }, 403);
+      return c.json(
+        {
+          error: "Access denied: You can only view your own usage or your children's usage",
+        },
+        403,
+      );
     }
 
     const { plan, ...daily } = await dailyUsage(userId);

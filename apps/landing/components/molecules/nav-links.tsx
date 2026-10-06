@@ -1,36 +1,28 @@
-import Link from "next/link";
-import { cn } from "@repo/ui";
+import Link from 'next/link';
+import { cn } from '@repo/ui';
 
 interface NavLinksProps {
   className?: string;
   onLinkClick?: () => void;
-  orientation?: "horizontal" | "vertical";
+  orientation?: 'horizontal' | 'vertical';
 }
 
 const LINKS = [
-  { href: "/#how-it-works", label: "Comment ça marche" },
-  { href: "/#parents", label: "Parents" },
-  { href: "/#pricing", label: "Tarifs" },
+  { href: '/#how-it-works', label: 'Comment ça marche' },
+  { href: '/#parents', label: 'Parents' },
+  { href: '/#pricing', label: 'Tarifs' },
 ];
 
-export function NavLinks({
-  className,
-  onLinkClick,
-  orientation = "horizontal"
-}: NavLinksProps) {
+export function NavLinks({ className, onLinkClick, orientation = 'horizontal' }: NavLinksProps) {
   return (
-    <div className={cn(
-      "flex",
-      orientation === "vertical" ? "flex-col space-y-4" : "items-center gap-4",
-      className
-    )}>
+    <div className={cn('flex', orientation === 'vertical' ? 'flex-col space-y-4' : 'items-center gap-4', className)}>
       {LINKS.map((link) => (
         <Link
           key={link.href}
           href={link.href}
           className={cn(
-            "min-h-11 items-center text-sm font-bold text-foreground hover:text-primary transition-colors duration-base",
-            orientation === "vertical" ? "flex" : "inline-flex px-2"
+            'min-h-11 items-center text-sm font-bold text-foreground hover:text-primary transition-colors duration-base',
+            orientation === 'vertical' ? 'flex' : 'inline-flex px-2',
           )}
           {...(onLinkClick && { onClick: onLinkClick })}
         >

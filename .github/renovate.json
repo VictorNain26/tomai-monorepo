@@ -10,21 +10,14 @@
     "helpers:pinGitHubActionDigests"
   ],
   "timezone": "Europe/Paris",
-  "schedule": ["before 9am on monday"],
+  "schedule": ["* * * * 1"],
   "labels": ["dependencies"],
   "rangeStrategy": "bump",
   "rebaseWhen": "conflicted",
-  "prHourlyLimit": 4,
+  "prHourlyLimit": 0,
   "prConcurrentLimit": 8,
   "branchConcurrentLimit": 8,
-  "ignorePaths": [
-    "**/node_modules/**",
-    "**/dist/**",
-    "**/.next/**",
-    "**/build/**",
-    "**/coverage/**",
-    "**/.turbo/**"
-  ],
+  "ignorePaths": ["**/node_modules/**", "**/dist/**", "**/.next/**", "**/build/**", "**/coverage/**", "**/.turbo/**"],
   "major": {
     "dependencyDashboardApproval": true,
     "automerge": false,
@@ -36,7 +29,7 @@
   },
   "lockFileMaintenance": {
     "enabled": true,
-    "schedule": ["before 9am on monday"],
+    "schedule": ["* * * * 1"],
     "automerge": true,
     "automergeType": "pr",
     "automergeStrategy": "merge-commit",
@@ -87,16 +80,50 @@
     { "description": "AWS SDK v3 in one bump.", "matchPackageNames": ["@aws-sdk/**"], "groupName": "aws-sdk" },
     { "description": "Better Auth packages together.", "matchPackageNames": ["better-auth", "@better-auth/**"], "groupName": "better-auth" },
     { "description": "Drizzle ORM toolchain.", "matchPackageNames": ["drizzle-orm", "drizzle-kit"], "groupName": "drizzle" },
-    { "description": "Hono and its middleware: the server and @repo/api must stay on the same hono for hc<AppType> to infer.", "matchPackageNames": ["hono", "@hono/**"], "groupName": "hono" },
-    { "description": "ESLint toolchain.", "matchPackageNames": ["@typescript-eslint/**", "typescript-eslint", "eslint", "@eslint/**"], "groupName": "eslint" },
+    {
+      "description": "Hono and its middleware: the server and @repo/api must stay on the same hono for hc<AppType> to infer.",
+      "matchPackageNames": ["hono", "@hono/**"],
+      "groupName": "hono"
+    },
+    {
+      "description": "ESLint toolchain.",
+      "matchPackageNames": ["@typescript-eslint/**", "typescript-eslint", "eslint", "@eslint/**", "@eslint-react/**", "eslint-plugin-react-hooks"],
+      "groupName": "eslint"
+    },
     { "description": "OpenTelemetry packages move in lockstep.", "matchPackageNames": ["@opentelemetry/**"], "groupName": "opentelemetry" },
-    { "description": "Vercel AI SDK core, providers and @ai-sdk/otel in one branch: they share provider-utils, and @ai-sdk/otel depends on the exact `ai` version, so bumping one alone installs a second copy of `ai`.", "matchPackageNames": ["ai", "@ai-sdk/**"], "groupName": "ai-sdk", "labels": ["dependencies", "ai-stack"] },
-    { "description": "Mistral SDK is critical (EU sovereignty): isolated and reviewed.", "matchPackageNames": ["@mistralai/mistralai"], "groupName": "mistral", "labels": ["dependencies", "ai-stack"], "reviewers": ["VictorNain26"] },
+    {
+      "description": "Vercel AI SDK core, providers and @ai-sdk/otel in one branch: they share provider-utils, and @ai-sdk/otel depends on the exact `ai` version, so bumping one alone installs a second copy of `ai`.",
+      "matchPackageNames": ["ai", "@ai-sdk/**"],
+      "groupName": "ai-sdk",
+      "labels": ["dependencies", "ai-stack"]
+    },
+    {
+      "description": "Mistral SDK is critical (EU sovereignty): isolated and reviewed.",
+      "matchPackageNames": ["@mistralai/mistralai"],
+      "groupName": "mistral",
+      "labels": ["dependencies", "ai-stack"],
+      "reviewers": ["VictorNain26"]
+    },
     { "description": "Radix UI primitives.", "matchPackageNames": ["@radix-ui/**"], "groupName": "radix-ui" },
     { "description": "Tailwind toolchain.", "matchPackageNames": ["tailwindcss", "tailwind-merge", "@tailwindcss/**"], "groupName": "tailwind" },
-    { "description": "React runtime and types together.", "matchPackageNames": ["react", "react-dom", "@types/react", "@types/react-dom"], "groupName": "react" },
+    {
+      "description": "React runtime and types together.",
+      "matchPackageNames": ["react", "react-dom", "@types/react", "@types/react-dom"],
+      "groupName": "react"
+    },
     { "description": "Sentry SDKs together.", "matchPackageNames": ["@sentry/**"], "groupName": "sentry" },
-    { "description": "GitHub Actions: pinned to digest, grouped.", "matchManagers": ["github-actions"], "groupName": "github-actions", "pinDigests": true, "commitMessagePrefix": "chore(ci)" },
-    { "description": "Docker images (server base, Postgres, tools).", "matchManagers": ["dockerfile", "docker-compose"], "groupName": "docker", "commitMessagePrefix": "chore(docker)" }
+    {
+      "description": "GitHub Actions: pinned to digest, grouped.",
+      "matchManagers": ["github-actions"],
+      "groupName": "github-actions",
+      "pinDigests": true,
+      "commitMessagePrefix": "chore(ci)"
+    },
+    {
+      "description": "Docker images (server base, Postgres, tools).",
+      "matchManagers": ["dockerfile", "docker-compose"],
+      "groupName": "docker",
+      "commitMessagePrefix": "chore(docker)"
+    }
   ]
 }

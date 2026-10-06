@@ -12,7 +12,15 @@
  * for `'high'` (the exercise sheet). Each records its cost for its owner (`cost.ts`).
  */
 
-import { generateText as aiGenerateText, Output, NoObjectGeneratedError, TypeValidationError, type ModelMessage, type TextPart, type FilePart } from 'ai';
+import {
+  generateText as aiGenerateText,
+  Output,
+  NoObjectGeneratedError,
+  TypeValidationError,
+  type ModelMessage,
+  type TextPart,
+  type FilePart,
+} from 'ai';
 import type { z } from 'zod';
 import type { MistralLanguageModelChatOptions } from '@ai-sdk/mistral';
 import { mistralProvider } from './provider.js';
@@ -27,9 +35,7 @@ import { env } from '../config/env.js';
  * inline alongside text. The `url` shape supports both `data:` URIs and
  * absolute https URLs.
  */
-type MistralContentPart =
-  | { type: 'text'; text: string }
-  | { type: 'image_url'; imageUrl: string | { url: string } };
+type MistralContentPart = { type: 'text'; text: string } | { type: 'image_url'; imageUrl: string | { url: string } };
 
 /**
  * Vendor-neutral message shape shared by every non-streaming call site.
@@ -39,9 +45,7 @@ type MistralContentPart =
  * `generateText`/`generateStructured` callers actually build.
  */
 export type MistralMessage =
-  | { role: 'system'; content: string }
-  | { role: 'user'; content: string | MistralContentPart[] }
-  | { role: 'assistant'; content: string };
+  { role: 'system'; content: string } | { role: 'user'; content: string | MistralContentPart[] } | { role: 'assistant'; content: string };
 
 interface GenerateTextOptions {
   messages: MistralMessage[];
@@ -77,7 +81,6 @@ interface GenerateStructuredOptions<T> extends GenerateTextOptions {
   reasoningEffort?: 'none' | 'high';
 }
 
-
 export interface StructuredResult<T> {
   object: T;
   usage: StructuredUsage;
@@ -106,7 +109,6 @@ function toModelMessages(messages: MistralMessage[]): ModelMessage[] {
     return { role: message.role, content: message.content };
   });
 }
-
 
 // ── API publique ────────────────────────────────────────────────────────────
 

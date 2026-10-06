@@ -20,7 +20,14 @@ function appWith(middleware: MiddlewareHandler) {
 
 function capturingKeys() {
   const keys = new Set<string>();
-  return { keys, keyGenerator: (c: Context) => { const key = defaultKeyGenerator(c); keys.add(key); return key; } };
+  return {
+    keys,
+    keyGenerator: (c: Context) => {
+      const key = defaultKeyGenerator(c);
+      keys.add(key);
+      return key;
+    },
+  };
 }
 
 beforeEach(() => {
@@ -86,11 +93,13 @@ describe('createRateLimitMiddleware', () => {
   });
 
   it('fails closed with 503 when the key cannot be computed', async () => {
-    const app = appWith(createRateLimitMiddleware({
-      keyGenerator: () => {
-        throw new Error('Key generator error');
-      },
-    }));
+    const app = appWith(
+      createRateLimitMiddleware({
+        keyGenerator: () => {
+          throw new Error('Key generator error');
+        },
+      }),
+    );
 
     const res = await app.request('/t');
 

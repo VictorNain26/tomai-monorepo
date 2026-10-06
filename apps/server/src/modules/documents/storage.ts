@@ -8,14 +8,7 @@
  * @see https://github.com/aws/aws-sdk-js-v3/blob/main/packages/s3-request-presigner/README.md
  */
 
-import {
-  S3Client,
-  PutObjectCommand,
-  GetObjectCommand,
-  DeleteObjectCommand,
-  DeleteObjectsCommand,
-  HeadObjectCommand,
-} from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand, DeleteObjectsCommand, HeadObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { env } from '../../platform/config/env.js';
 import { logger } from '../../platform/observability/logger.js';
@@ -85,15 +78,11 @@ function getS3Client(): S3Client {
 
   // Vérification configuration
   if (!env.SCALEWAY_ACCESS_KEY || !env.SCALEWAY_SECRET_KEY) {
-    throw new Error(
-      'Scaleway credentials not configured. Set SCALEWAY_ACCESS_KEY and SCALEWAY_SECRET_KEY environment variables.'
-    );
+    throw new Error('Scaleway credentials not configured. Set SCALEWAY_ACCESS_KEY and SCALEWAY_SECRET_KEY environment variables.');
   }
 
   if (!env.SCALEWAY_BUCKET) {
-    throw new Error(
-      'Scaleway bucket not configured. Set SCALEWAY_BUCKET environment variable.'
-    );
+    throw new Error('Scaleway bucket not configured. Set SCALEWAY_BUCKET environment variable.');
   }
 
   // Configuration S3Client selon documentation AWS SDK v3
@@ -139,9 +128,7 @@ export async function generatePresignedUploadUrl(params: {
 
   // Validation taille
   if (sizeBytes > SCALEWAY_CONFIG.maxFileSizeBytes) {
-    throw new Error(
-      `File too large: ${sizeBytes} bytes. Maximum: ${SCALEWAY_CONFIG.maxFileSizeBytes} bytes (10MB).`
-    );
+    throw new Error(`File too large: ${sizeBytes} bytes. Maximum: ${SCALEWAY_CONFIG.maxFileSizeBytes} bytes (10MB).`);
   }
 
   // Générer ID unique et clé de stockage
@@ -198,9 +185,7 @@ export async function generatePresignedUploadUrl(params: {
 /**
  * Génère une URL présignée pour téléchargement
  */
-export async function generatePresignedDownloadUrl(
-  storageKey: string
-): Promise<PresignedDownloadResult> {
+export async function generatePresignedDownloadUrl(storageKey: string): Promise<PresignedDownloadResult> {
   const client = getS3Client();
 
   const command = new GetObjectCommand({
@@ -300,9 +285,7 @@ export async function deleteFile(storageKey: string): Promise<boolean> {
  */
 const S3_DELETE_BATCH_MAX = 1000;
 
-export async function deleteFiles(
-  storageKeys: string[]
-): Promise<{ deleted: number; failed: string[] }> {
+export async function deleteFiles(storageKeys: string[]): Promise<{ deleted: number; failed: string[] }> {
   if (storageKeys.length === 0) {
     return { deleted: 0, failed: [] };
   }
@@ -318,7 +301,7 @@ export async function deleteFiles(
         new DeleteObjectsCommand({
           Bucket: env.SCALEWAY_BUCKET,
           Delete: { Objects: chunk.map((Key) => ({ Key })), Quiet: false },
-        })
+        }),
       );
       deleted += result.Deleted?.length ?? 0;
       for (const err of result.Errors ?? []) {
@@ -386,9 +369,5 @@ export async function getFileContent(storageKey: string): Promise<{
  * Vérifie si le service Scaleway est correctement configuré
  */
 export function isConfigured(): boolean {
-  return !!(
-    env.SCALEWAY_ACCESS_KEY &&
-    env.SCALEWAY_SECRET_KEY &&
-    env.SCALEWAY_BUCKET
-  );
+  return !!(env.SCALEWAY_ACCESS_KEY && env.SCALEWAY_SECRET_KEY && env.SCALEWAY_BUCKET);
 }

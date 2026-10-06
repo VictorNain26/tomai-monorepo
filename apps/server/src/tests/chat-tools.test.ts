@@ -99,10 +99,7 @@ describe('buildChatTools', () => {
       const tool = tools['generate_flashcards'];
       if (!tool?.execute) throw new Error('generate_flashcards must have an execute function');
 
-      await tool.execute(
-        { topic: 'Fractions', subject: 'mathematiques' },
-        { toolCallId: 'call-1', messages: [], context: undefined },
-      );
+      await tool.execute({ topic: 'Fractions', subject: 'mathematiques' }, { toolCallId: 'call-1', messages: [], context: undefined });
 
       expect(emitDeckCreated).toHaveBeenCalledTimes(1);
       expect(emitDeckCreated).toHaveBeenCalledWith({
@@ -120,10 +117,7 @@ describe('buildChatTools', () => {
       const tool = tools['generate_flashcards'];
       if (!tool?.execute) throw new Error('generate_flashcards must have an execute function');
 
-      await tool.execute(
-        { topic: 'Fractions', subject: 'mathematiques' },
-        { toolCallId: 'call-2', messages: [], context: undefined },
-      );
+      await tool.execute({ topic: 'Fractions', subject: 'mathematiques' }, { toolCallId: 'call-2', messages: [], context: undefined });
 
       expect(emitDeckCreated).not.toHaveBeenCalled();
     });

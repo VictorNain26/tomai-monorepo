@@ -49,5 +49,5 @@ export const SEEDS = Array.from({ length: JUDGE.samples }, (_, index) => JUDGE.f
 export async function drawAll<T, R>(items: readonly T[], draw: (item: T) => Promise<R>): Promise<R[]> {
   const [first, ...rest] = items;
   if (first === undefined) return [];
-  return [await draw(first), ...await pMap(rest, draw, { concurrency: CONCURRENCY })];
+  return [await draw(first), ...(await pMap(rest, draw, { concurrency: CONCURRENCY }))];
 }

@@ -6,6 +6,8 @@ paths:
   - "apps/server/src/live/**"
   - "apps/landing/tests/**"
   - "apps/landing/playwright.config.*"
+  - "apps/web/tests/**"
+  - "apps/web/playwright.config.*"
 ---
 
 # Tests — conventions monorepo
@@ -13,10 +15,14 @@ paths:
 | App | Runner | Commande | Emplacement |
 |-----|--------|----------|-------------|
 | Server | Bun | `cd apps/server && bun run test` | `src/tests/<service>.test.ts` |
+| Web | Playwright | `bun run --filter web test:e2e` | `apps/web/tests/<name>.spec.ts` |
 | Landing | Playwright | `bun run --filter landing test:e2e` | `apps/landing/tests/<name>.spec.ts` |
 
-La suite e2e de la landing est locale uniquement : ni en CI, ni dans la validation avant commit.
-Prérequis unique : `cd apps/landing && bunx playwright install chromium`. Elle construit le
+Les suites e2e tournent en CI (job `E2E (Playwright)`, tâche turbo `test:e2e`, sur les
+paquets touchés), pas dans la validation avant commit. Prérequis local : `cd apps/web &&
+bunx playwright install chromium webkit`. Celle de `apps/web` construit l'app, la sert sur
+le port 3012 et passe chaque test à largeur de téléphone, sous WebKit (`iphone`) et Chromium
+(`android`). Celle de la landing construit le
 site, le sert sur le port 3011 et couvre la mise en page (hiérarchie des titres, aucun
 défilement horizontal, cibles de 44 px, lignes légales, liens soulignés), le rendu sans
 JavaScript et sous mouvement réduit, l'absence de formulaire et de liste d'attente, le menu

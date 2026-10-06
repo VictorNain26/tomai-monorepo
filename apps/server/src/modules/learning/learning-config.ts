@@ -64,7 +64,7 @@ const LEARNING_CONFIG: Record<EducationLevelType, LearningLevelConfig> = {
   },
   troisieme: {
     cardsPerSession: 20,
-    retention: 0.90,
+    retention: 0.9,
     maxInterval: 365, // 1 an
     sessionMinutes: 40,
   },
@@ -76,4 +76,3 @@ const LEARNING_CONFIG: Record<EducationLevelType, LearningLevelConfig> = {
 export function getLevelConfig(level: EducationLevelType): LearningLevelConfig {
   return LEARNING_CONFIG[level];
 }
-

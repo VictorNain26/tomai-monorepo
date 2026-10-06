@@ -54,9 +54,7 @@ function toPattern(form: string): RegExp {
     })
     .join('');
   const [first = '', last = ''] = [chars[0], chars.at(-1)];
-  const before = first === '-'
-    ? '(?<![\\p{N})\\]]\\s*)(?<!(?:^|[^\\p{L}])\\p{L}\\s*)'
-    : WORD_CHAR.test(first) ? '(?<![\\p{L}\\p{N}]|\\p{N}\\.)' : '';
+  const before = first === '-' ? '(?<![\\p{N})\\]]\\s*)(?<!(?:^|[^\\p{L}])\\p{L}\\s*)' : WORD_CHAR.test(first) ? '(?<![\\p{L}\\p{N}]|\\p{N}\\.)' : '';
   const after = WORD_CHAR.test(last) ? '(?![\\p{L}\\p{N}]|\\.\\p{N})' : '';
   return new RegExp(`${before}${body}${after}`, 'u');
 }

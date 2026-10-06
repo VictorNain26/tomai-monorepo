@@ -5,13 +5,24 @@ import type { ExtractionResult } from '../modules/documents/document-extraction.
 const mockLogger = createMockLogger();
 mock.module('../platform/observability/logger', () => ({ logger: mockLogger }));
 
-interface FileRow { id: string; userId: string; status: string; fileName: string; mimeType: string; sizeBytes: number; storageKey: string; educationalContext: Record<string, unknown> | null }
+interface FileRow {
+  id: string;
+  userId: string;
+  status: string;
+  fileName: string;
+  mimeType: string;
+  sizeBytes: number;
+  storageKey: string;
+  educationalContext: Record<string, unknown> | null;
+}
 let rows: FileRow[] = [];
 const mergeEducationalContext = mock(async (_id: string, _patch: Record<string, unknown>) => true);
 mock.module('../modules/documents/files.repository', () => ({
   filesRepository: {
     // As the query filters: the user's own files, uploaded.
-    findReadyOwnedBy: mock(async (userId: string, ids: readonly string[]) => rows.filter((row) => ids.includes(row.id) && row.userId === userId && row.status === 'ready')),
+    findReadyOwnedBy: mock(async (userId: string, ids: readonly string[]) =>
+      rows.filter((row) => ids.includes(row.id) && row.userId === userId && row.status === 'ready'),
+    ),
     mergeEducationalContext,
   },
 }));
@@ -39,7 +50,11 @@ const extractText = mock(async (buffer: ArrayBuffer, _mimeType: string, _owner: 
   received.push(Buffer.from(buffer).toString());
   return extraction;
 });
-const read = (text: string): ExtractionResult => ({ success: true, text, metadata: { wordCount: 4, extractionMethod: 'mistral-vision', extractionTimeMs: 1 } });
+const read = (text: string): ExtractionResult => ({
+  success: true,
+  text,
+  metadata: { wordCount: 4, extractionMethod: 'mistral-vision', extractionTimeMs: 1 },
+});
 let extraction: ExtractionResult = read('Résous 3x + 5 = 20.');
 mock.module('../modules/documents/document-extraction.service', () => ({
   documentExtractionService: {
@@ -47,12 +62,26 @@ mock.module('../modules/documents/document-extraction.service', () => ({
   },
 }));
 
-
 const { fileContextService, UNREADABLE } = await import('../modules/documents/file-context.service');
 
-const photo: FileRow = { id: 'f-photo', userId: 'u1', status: 'ready', fileName: 'exo.png', mimeType: 'image/png', sizeBytes: 5, storageKey: 'k-photo', educationalContext: {} };
+const photo: FileRow = {
+  id: 'f-photo',
+  userId: 'u1',
+  status: 'ready',
+  fileName: 'exo.png',
+  mimeType: 'image/png',
+  sizeBytes: 5,
+  storageKey: 'k-photo',
+  educationalContext: {},
+};
 const owner = { userId: 'u1', sessionId: 's1' };
-const sessionFile = (fileId: string, educationalContext: Record<string, unknown>) => ({ fileId, fileName: `${fileId}.pdf`, mimeType: 'application/pdf', storageKey: `k-${fileId}`, educationalContext });
+const sessionFile = (fileId: string, educationalContext: Record<string, unknown>) => ({
+  fileId,
+  fileName: `${fileId}.pdf`,
+  mimeType: 'application/pdf',
+  storageKey: `k-${fileId}`,
+  educationalContext,
+});
 
 beforeEach(() => {
   rows = [photo];
@@ -75,7 +104,11 @@ describe('fileContextService.prepareFileContext', () => {
     expect(fileIds).toEqual(['f-photo']);
     expect(attachedFileInfos).toEqual([{ fileName: 'exo.png', fileId: 'f-photo', mimeType: 'image/png', fileSizeBytes: 5 }]);
     expect(received).toEqual(['IMAGE']);
-    expect(mergeEducationalContext).toHaveBeenCalledWith('f-photo', { extractedText: 'Résous 3x + 5 = 20.', extractionMethod: 'mistral-vision', wordCount: 4 });
+    expect(mergeEducationalContext).toHaveBeenCalledWith('f-photo', {
+      extractedText: 'Résous 3x + 5 = 20.',
+      extractionMethod: 'mistral-vision',
+      wordCount: 4,
+    });
     expect(extractText.mock.calls[0]?.[2]).toEqual(owner);
   });
 
@@ -108,7 +141,9 @@ describe('fileContextService.prepareFileContext', () => {
   it('marks a file that cannot be read, keeps the failure and its cost, and does not try again', async () => {
     extraction = { success: false, text: '', metadata: { wordCount: 0, extractionMethod: 'mistral-vision', extractionTimeMs: 1 }, error: 'timeout' };
 
-    expect((await fileContextService.prepareFileContext({ fileIds: ['f-photo'], ...owner })).files).toEqual([{ fileId: 'f-photo', fileName: 'exo.png', text: UNREADABLE }]);
+    expect((await fileContextService.prepareFileContext({ fileIds: ['f-photo'], ...owner })).files).toEqual([
+      { fileId: 'f-photo', fileName: 'exo.png', text: UNREADABLE },
+    ]);
     expect(mergeEducationalContext).toHaveBeenCalledWith('f-photo', { extractionFailed: true });
     expect(extractText).toHaveBeenCalledTimes(1);
 
@@ -128,7 +163,11 @@ describe('fileContextService.prepareFileContext', () => {
 
     const { files } = await fileContextService.prepareFileContext({ fileIds: ['f-photo'], ...owner });
 
-    expect(files.map((file) => [file.fileId, file.text])).toEqual([['cours', 'Le cours'], ['classeur', 'Le document du classeur'], ['f-photo', 'Photo']]);
+    expect(files.map((file) => [file.fileId, file.text])).toEqual([
+      ['cours', 'Le cours'],
+      ['classeur', 'Le document du classeur'],
+      ['f-photo', 'Photo'],
+    ]);
     expect(mergeEducationalContext).toHaveBeenCalledWith('classeur', expect.objectContaining({ extractedText: 'Le document du classeur' }));
   });
 
