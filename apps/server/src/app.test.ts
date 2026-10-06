@@ -108,4 +108,12 @@ describe('composition', () => {
   it('is ready on its database', async () => {
     expect((await app.request('/health/ready')).status).toBe(200);
   });
+
+  it("counts the API and the probes against the client's budget, never the web's files", async () => {
+    const pages = await Promise.all(Array.from({ length: 150 }, async () => app.request('/', { headers: { Accept: 'text/html' } })));
+    expect(pages.every((res) => res.status === 200)).toBe(true);
+
+    const probes = await Promise.all(Array.from({ length: 101 }, async () => app.request('/health/live')));
+    expect(probes.filter((res) => res.status === 429).length).toBeGreaterThan(0);
+  });
 });
