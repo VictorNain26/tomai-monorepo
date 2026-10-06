@@ -28,6 +28,7 @@ apps/
 
 packages/
 ├── api/             # Client typé (hono/client) — le contrat serveur → clients
+├── web-host/        # Service du build web sur l'origine de l'API : fichiers, fallback, en-têtes
 ├── ui/              # Primitives shadcn sur Radix
 ├── tokens/          # Design tokens CSS (Tailwind v4) partagés
 └── eslint-config/   # Config ESLint partagée

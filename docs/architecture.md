@@ -70,14 +70,15 @@ déduit.
 En place (`apps/web`) :
 - Application monopage Vite + React + TanStack Router, Tailwind sur les tokens `@repo/tokens`,
   tests Playwright à largeur de téléphone (WebKit et Chromium).
-- Servie par Hono sur la même origine que l'API (`platform/http/web-client.ts`) : cookie de
+- Servie par Hono sur la même origine que l'API (`packages/web-host`) : cookie de
   session limité à l'hôte, sans CORS ni blocage de Safari, un seul déploiement. Le serveur lit le
-  build dans `WEB_DIST_DIR`, que l'image Docker embarque ; un `GET` hors de `/api`, sans fichier
-  et sans extension, reçoit `index.html`. Assets hachés en cache `immutable`, le reste en
-  `no-cache` revalidé par ETag ; fichiers compressés. CSP `default-src 'self'` sur toutes les
-  réponses (`platform/http/security-headers.ts`) ; le rate limit ne compte que `/api` et
-  `/health`. En dev, le proxy de Vite envoie `/api/` et `/health` au serveur : une seule origine
-  aussi, le proxy donnant aux requêtes de la page l'origine de l'API.
+  build dans `WEB_DIST_DIR`, que l'image Docker embarque ; une navigation hors de `/api` sans
+  fichier reçoit `index.html`, un fichier absent reste un 404. Assets hachés en cache
+  `immutable`, le reste en `no-cache` revalidé par ETag ; fichiers compressés au build. CSP
+  `default-src 'self'` sur toutes les réponses ; le rate limit ne compte que `/api` et
+  `/health`. En dev, le proxy de Vite envoie `/api/` et `/health` au serveur, et l'origine de
+  Vite est la base de better-auth : une seule origine aussi. Le preview et l'e2e du web
+  tournent sur ce même code (`serve-web`).
 - Après un déploiement, un onglet ouvert qui demande un morceau disparu de son ancien build se
   recharge une fois sur le nouveau (TanStack Router, `lazyRouteComponent`).
 - Installable (PWA, `vite-plugin-pwa`) : manifest et service worker, qui ne met en cache que le

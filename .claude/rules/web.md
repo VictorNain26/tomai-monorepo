@@ -18,11 +18,13 @@ comparées : `docs/etudes/2026-10-06/client-web.md`.
   `@repo/ui`. Aujourd'hui `apps/web` ne dépend que de `@repo/tokens` et n'appelle pas encore le
   serveur.
 - Port 3002 en dev ; le proxy de Vite (`vite.config.ts`) envoie `/api/` et `/health` au serveur
-  sur 3000, pour une seule origine comme en production, où Hono sert le build. Il donne aux
-  requêtes de la page l'origine de l'API, la seule à laquelle better-auth fait confiance.
-- `preview` et l'e2e servent le build par le code du serveur (`apps/server/scripts/serve-web.ts`) :
-  ses en-têtes, sa CSP, son fallback, sans l'API.
-- **CSP du serveur** (`apps/server/src/platform/http/security-headers.ts`) :
+  sur 3000, pour une seule origine comme en production, où Hono sert le build. Cette origine est
+  la base de better-auth en dev (`BETTER_AUTH_URL`), pour que ses redirections reviennent au web.
+- `preview` et l'e2e servent le build par `serve-web` de `@repo/web-host`, le code même du
+  serveur : ses en-têtes, sa CSP, son fallback, sans l'API.
+- Le build pose un `.gz` à côté de chaque fichier compressible (script `build`), que le serveur
+  sert à un navigateur qui l'accepte.
+- **CSP du serveur** (`packages/web-host/src/security-headers.ts`) :
   `default-src 'self'`, vérifiée par `tests/server.spec.ts` ; le dev (Vite) tourne sans elle.
   Pas de script ni de style en ligne, pas d'asset en `data:` (`assetsInlineLimit: 0`), aucune
   origine tierce sans l'ajouter à la CSP dans la même PR.
