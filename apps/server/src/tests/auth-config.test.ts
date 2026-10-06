@@ -45,7 +45,6 @@ mock.module('../platform/config/env', () => ({
   },
   isProduction: () => false,
   isDevelopment: () => true,
-  isInDocker: () => false,
   getDatabaseUrl: () => 'postgresql://test:test@localhost/test',
   getCorsOrigins: () => ['http://localhost:3000', 'http://localhost:3001'],
 }));

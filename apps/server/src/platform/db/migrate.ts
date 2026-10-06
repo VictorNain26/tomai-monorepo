@@ -17,7 +17,7 @@ import { migrate } from 'drizzle-orm/postgres-js/migrator';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import { sql } from 'drizzle-orm';
 import postgres from 'postgres';
-import { resolveDatabaseUrl } from '../config/database-url.js';
+import { databaseSsl, resolveDatabaseUrl } from '../config/database-url.js';
 
 export async function runMigrations(): Promise<void> {
   let databaseUrl: string;
@@ -35,7 +35,7 @@ export async function runMigrations(): Promise<void> {
   const environment = Bun.env.NODE_ENV ?? 'development';
   const migrationClient = postgres(databaseUrl, {
     max: 1,
-    ssl: environment === 'production' ? 'require' : false,
+    ...databaseSsl(environment),
   });
   const db = drizzle(migrationClient);
 

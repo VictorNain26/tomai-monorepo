@@ -46,9 +46,8 @@ l'usage tant que sa variable manque, mais le serveur démarre.
 NODE_ENV=development
 BETTER_AUTH_SECRET=<openssl rand -base64 32>
 BETTER_AUTH_URL=http://localhost:3000
-CORS_ORIGINS=http://localhost:3001
+CORS_ORIGINS=http://localhost:3002
 DATABASE_URL=postgresql://tomai_dev:tomai_dev_password@localhost:5432/tomai_dev
-DATABASE_URL_EXTERNAL=postgresql://tomai_dev:tomai_dev_password@localhost:5432/tomai_dev
 ```
 
 Sans `MISTRAL_API_KEY`, le serveur démarre et `/health` reste `healthy` (il ne

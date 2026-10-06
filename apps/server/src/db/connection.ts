@@ -7,7 +7,7 @@ import { drizzle, type PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import postgres, { type Sql } from 'postgres';
 import * as schema from './schema';
 import { logger } from '../platform/observability/logger';
-import { resolveDatabaseUrl } from '../platform/config/database-url.js';
+import { databaseSsl, resolveDatabaseUrl } from '../platform/config/database-url.js';
 import { env } from '../platform/config/env.js';
 
 // ============================================================================
@@ -19,14 +19,6 @@ let _db: PostgresJsDatabase<typeof schema> | null = null;
 let _initialized = false;
 
 /**
- * Get database connection string from environment
- * Delegates to resolveDatabaseUrl() for Docker-aware resolution
- */
-function getConnectionString(): string {
-  return resolveDatabaseUrl();
-}
-
-/**
  * Initialize database connection lazily
  * Only creates connection when first accessed
  */
@@ -34,14 +26,14 @@ function initializeConnection(): void {
   if (_initialized) return;
 
   const environment = env.NODE_ENV;
-  const connectionString = getConnectionString();
+  const connectionString = resolveDatabaseUrl();
 
   // Production-optimized postgres client
   _sql = postgres(connectionString, {
     max: environment === 'production' ? 20 : 5,
     idle_timeout: 0,
     connect_timeout: 10,
-    ssl: environment === 'production' ? 'require' : false,
+    ...databaseSsl(environment),
     transform: {
       undefined: null,
     },
