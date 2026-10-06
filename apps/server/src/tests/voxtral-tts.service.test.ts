@@ -48,8 +48,9 @@ describe('VoxtralTTSService', () => {
       status: 200,
       headers: { 'content-type': 'application/json' },
     }));
-    await getVoxtralTTSService().synthesize('Bonjour', owner);
-    expect(recordAiCost.mock.calls).toEqual([[owner, { model: 'voxtral-mini-tts-2603', operation: 'text-to-speech', characters: 7 }]]);
+    // Counted as graphemes: the emoji (two UTF-16 units) and the decomposed « é » (two code points) are one each.
+    await getVoxtralTTSService().synthesize('Bonjour 🙂 e\u0301', owner);
+    expect(recordAiCost.mock.calls).toEqual([[owner, { model: 'voxtral-mini-tts-2603', operation: 'text-to-speech', characters: 11 }]]);
 
     fetchSpy.mockRestore();
     fetchSpy = spyOn(globalThis, 'fetch').mockResolvedValueOnce(new Response('{"detail":"Internal error"}', { status: 500 }));

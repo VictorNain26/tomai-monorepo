@@ -327,7 +327,7 @@ describe('ChatOrchestrationService.finishTurn', () => {
     expect(incrementTokenUsage).toHaveBeenCalledWith('user-001', 910);
     expect(record.mock.calls).toEqual([[
       { userId: 'user-001', sessionId: 'session-001' },
-      { model: 'mistral-small-2603', operation: 'chat', tokensInput: 10, tokensOutput: 900, cachedTokens: 0 },
+      { model: 'mistral-small-2603', operation: 'chat', inputTokens: 10, cachedInputTokens: 0, outputTokens: 900 },
     ]]);
     expect(saveMessage).not.toHaveBeenCalled();
     expect(summarizeIfNeeded).not.toHaveBeenCalled();

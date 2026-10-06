@@ -269,13 +269,13 @@ describe('cost of each call, recorded for its owner', () => {
   it('records a text call once, under its functionId', async () => {
     respond(['Titre']);
     await generateText({ functionId: 'auto-title', owner, messages: [{ role: 'user', content: 'x' }] });
-    expect(recordAiCost.mock.calls).toEqual([[owner, { model: 'mistral-small-2603', operation: 'auto-title', tokensInput: 10, tokensOutput: 5, cachedTokens: 0 }]]);
+    expect(recordAiCost.mock.calls).toEqual([[owner, { model: 'mistral-small-2603', operation: 'auto-title', inputTokens: 10, cachedInputTokens: 0, outputTokens: 5 }]]);
   });
 
   it('records each attempt of a structured call, the answer outside the schema too', async () => {
     respond([JSON.stringify({ intent: 'nope' }), JSON.stringify({ intent: 'chit-chat' })]);
     await generateStructured({ functionId: 'turn-analysis', owner, messages: [{ role: 'user', content: 'x' }], schema, schemaName: 'intent' });
-    expect(recordAiCost.mock.calls.map(([who, call]) => [who, call.operation, call.tokensInput])).toEqual([[owner, 'turn-analysis', 10], [owner, 'turn-analysis', 10]]);
+    expect(recordAiCost.mock.calls.map(([who, call]) => [who, call.operation, call.inputTokens])).toEqual([[owner, 'turn-analysis', 10], [owner, 'turn-analysis', 10]]);
   });
 
   it('records a failed repair too: both calls were billed', async () => {

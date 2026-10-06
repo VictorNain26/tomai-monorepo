@@ -44,9 +44,13 @@ class VoxtralTranscribeService {
       });
       const audioSeconds = response.usage.promptAudioSeconds;
       if (audioSeconds == null) {
-        logger.warn('Voxtral STT reported no audio length: the call is recorded at 0', { operation: 'voxtral:stt:usage', severity: 'medium' as const });
+        logger.warn('Voxtral STT reported no audio length: the call is recorded at 0, marked', { operation: 'voxtral:stt:usage', severity: 'medium' as const });
       }
-      void recordAiCost(owner, { model: STT_MODEL, operation: 'speech-to-text', audioSeconds: audioSeconds ?? 0 });
+      void recordAiCost(owner, {
+        model: STT_MODEL,
+        operation: 'speech-to-text',
+        ...(audioSeconds == null ? { usageUnknown: true } : { audioSeconds }),
+      });
 
       if (!response.text) {
         logger.error('Voxtral STT returned empty text', {

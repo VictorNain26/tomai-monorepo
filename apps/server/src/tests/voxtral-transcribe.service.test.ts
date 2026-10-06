@@ -42,9 +42,9 @@ function makeAudioBuffer(size = 8): Uint8Array {
   return new Uint8Array(size).fill(1);
 }
 
-function mockFetchSuccess(text: string, model = 'voxtral-mini-2602') {
+function mockFetchSuccess(text: string, model = 'voxtral-mini-2602', usage: Record<string, unknown> = { prompt_audio_seconds: 3 }) {
   return spyOn(globalThis, 'fetch').mockResolvedValueOnce(
-    new Response(JSON.stringify({ model, text, language: null, usage: { prompt_audio_seconds: 3 } }), {
+    new Response(JSON.stringify({ model, text, language: null, usage }), {
       status: 200,
       headers: { 'content-type': 'application/json' },
     }),
@@ -167,6 +167,16 @@ describe('VoxtralTranscribeService', () => {
       await getVoxtralTranscribeService().transcribe(makeAudioBuffer(), 'audio/webm', owner);
 
       expect(recordAiCost.mock.calls).toEqual([[owner, { model: 'voxtral-mini-2602', operation: 'speech-to-text', audioSeconds: 3 }]]);
+    });
+
+    it('marks a call whose audio length the API left out, rather than billing a guess', async () => {
+      recordAiCost.mockClear();
+      fetchSpy = mockFetchSuccess('Bonjour', 'voxtral-mini-2602', {});
+
+      await getVoxtralTranscribeService().transcribe(makeAudioBuffer(), 'audio/webm', owner);
+
+      expect(recordAiCost.mock.calls).toEqual([[owner, { model: 'voxtral-mini-2602', operation: 'speech-to-text', usageUnknown: true }]]);
+      expect(mockLogger.warn).toHaveBeenCalled();
     });
 
   });

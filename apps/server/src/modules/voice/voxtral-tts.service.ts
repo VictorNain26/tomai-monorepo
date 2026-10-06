@@ -44,6 +44,8 @@ const FORMAT_TO_MIME: Record<NonNullable<VoxtralTTSOptions['outputFormat']>, str
 
 const MAX_INPUT_CHARS = 5_000;
 
+const GRAPHEMES = new Intl.Segmenter('fr', { granularity: 'grapheme' });
+
 class VoxtralTTSService {
   private readonly model = env.MISTRAL_TTS_MODEL;
 
@@ -75,8 +77,9 @@ class VoxtralTTSService {
         voiceId: voice,
         responseFormat: outputFormat,
       });
-      // Billed on the characters of the text read (https://mistral.ai/news/voxtral-tts/); the response gives no usage.
-      void recordAiCost(owner, { model: this.model, operation: 'text-to-speech', characters: text.length });
+      // Billed on the characters of the text read (https://mistral.ai/news/voxtral-tts/), counted as
+      // graphemes, not UTF-16 units: an emoji or a decomposed accent is one. The response gives no usage.
+      void recordAiCost(owner, { model: this.model, operation: 'text-to-speech', characters: [...GRAPHEMES.segment(text)].length });
 
       logger.info('Voxtral TTS synthesis completed', {
         operation: 'voxtral:tts:complete',

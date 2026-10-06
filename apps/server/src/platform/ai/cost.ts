@@ -15,19 +15,19 @@ import { db } from '../../db/connection.js';
 import { costTracking } from '../../db/schema.js';
 import { logger } from '../observability/logger.js';
 import { env } from '../config/env.js';
+import type { StructuredUsage } from './usage.js';
 
 /** Who an AI call is billed to: a student and their session, or null outside a student (eval, live tests). */
 export type CostOwner = { userId: string; sessionId?: string | undefined } | null;
 
-interface CallUsage {
-  tokensInput?: number;
-  tokensOutput?: number;
-  /** Tokens served from the prompt cache (billed at 10% of input rate). */
-  cachedTokens?: number;
+/** Tokens as the client reads them (`cachedInputTokens`, part of `inputTokens`, billed at 10 %), or the voice units. */
+interface CallUsage extends Partial<StructuredUsage> {
   /** Speech-to-text: the audio's length, as the API reports it (`usage.promptAudioSeconds`). */
   audioSeconds?: number;
   /** Text-to-speech: the characters of the text read. */
   characters?: number;
+  /** The API reported no usage: the row costs 0 and says so. */
+  usageUnknown?: true;
 }
 
 interface AiCall extends CallUsage {
@@ -55,6 +55,8 @@ export function regionalUpcharge(serverUrl: string): number {
   return new URL(serverUrl).host === 'api.eu.mistral.ai' ? EU_REGIONAL_UPCHARGE : 1;
 }
 
+const UPCHARGE = regionalUpcharge(env.MISTRAL_SERVER_URL);
+
 /** The call's cost in micro-euros (1 µ€ = 0.0001 c): a text turn costs a few hundred. */
 export function computeCostMicroEur(model: string, usage: CallUsage, upcharge: number): { costMicroEur: number; unknownModel: boolean } {
   const pricing = MODEL_PRICING_USD[model];
@@ -62,13 +64,13 @@ export function computeCostMicroEur(model: string, usage: CallUsage, upcharge: n
     return { costMicroEur: 0, unknownModel: true };
   }
 
-  const tokensInput = usage.tokensInput ?? 0;
-  const cached = Math.min(Math.max(usage.cachedTokens ?? 0, 0), tokensInput);
+  const tokensInput = usage.inputTokens ?? 0;
+  const cached = Math.min(Math.max(usage.cachedInputTokens ?? 0, 0), tokensInput);
   const inputRate = pricing.inputPerMTokens ?? 0;
   const usd =
     ((tokensInput - cached) / 1_000_000) * inputRate +
     (cached / 1_000_000) * inputRate * CACHE_DISCOUNT +
-    ((usage.tokensOutput ?? 0) / 1_000_000) * (pricing.outputPerMTokens ?? 0) +
+    ((usage.outputTokens ?? 0) / 1_000_000) * (pricing.outputPerMTokens ?? 0) +
     ((usage.audioSeconds ?? 0) / 60) * (pricing.perMinute ?? 0) +
     ((usage.characters ?? 0) / 1_000_000) * (pricing.perMChars ?? 0);
 
@@ -78,8 +80,7 @@ export function computeCostMicroEur(model: string, usage: CallUsage, upcharge: n
 /** Writes the call's cost for its owner; nothing without one. A failed write is logged, never thrown. */
 export async function recordAiCost(owner: CostOwner, call: AiCall): Promise<void> {
   if (!owner) return;
-  const upcharge = regionalUpcharge(env.MISTRAL_SERVER_URL);
-  const { costMicroEur, unknownModel } = computeCostMicroEur(call.model, call, upcharge);
+  const { costMicroEur, unknownModel } = computeCostMicroEur(call.model, call, UPCHARGE);
 
   if (unknownModel) {
     logger.warn('Cost tracking: unknown model pricing', {
@@ -95,16 +96,17 @@ export async function recordAiCost(owner: CostOwner, call: AiCall): Promise<void
       sessionId: owner.sessionId ?? null,
       aiModel: call.model,
       operation: call.operation,
-      tokensInput: call.tokensInput ?? 0,
-      tokensOutput: call.tokensOutput ?? 0,
+      tokensInput: call.inputTokens ?? 0,
+      tokensOutput: call.outputTokens ?? 0,
       costMicroEur,
       billingMetadata: {
-        cachedTokens: call.cachedTokens ?? 0,
+        cachedTokens: call.cachedInputTokens ?? 0,
         ...(call.audioSeconds !== undefined && { audioSeconds: call.audioSeconds }),
         ...(call.characters !== undefined && { characters: call.characters }),
+        ...(call.usageUnknown && { usageUnknown: true }),
         unknownModel,
         usdToEur: USD_TO_EUR,
-        regionalUpcharge: upcharge,
+        regionalUpcharge: UPCHARGE,
       },
     });
   } catch (err) {

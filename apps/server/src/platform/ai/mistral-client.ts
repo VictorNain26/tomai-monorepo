@@ -109,10 +109,6 @@ function toModelMessages(messages: MistralMessage[]): ModelMessage[] {
 }
 
 
-function usageOf(usage: StructuredUsage) {
-  return { tokensInput: usage.inputTokens, tokensOutput: usage.outputTokens, cachedTokens: usage.cachedInputTokens };
-}
-
 // ── API publique ────────────────────────────────────────────────────────────
 
 /**
@@ -145,7 +141,7 @@ export async function generateText(opts: GenerateTextOptions): Promise<string> {
   void recordAiCost(opts.owner, {
     model,
     operation: opts.functionId,
-    ...usageOf(structuredUsage(result.usage)),
+    ...structuredUsage(result.usage),
   });
   return result.text;
 }
@@ -192,11 +188,11 @@ export async function generateStructured<T>(opts: GenerateStructuredOptions<T>):
   const attempt = async (messages: ModelMessage[]) => {
     try {
       const result = await call(messages);
-      void recordAiCost(opts.owner, { model, operation: opts.functionId, ...usageOf(result.usage) });
+      void recordAiCost(opts.owner, { model, operation: opts.functionId, ...result.usage });
       return result;
     } catch (error) {
       if (NoObjectGeneratedError.isInstance(error)) {
-        void recordAiCost(opts.owner, { model, operation: opts.functionId, ...usageOf(structuredUsage(error.usage)) });
+        void recordAiCost(opts.owner, { model, operation: opts.functionId, ...structuredUsage(error.usage) });
       }
       throw error;
     }
