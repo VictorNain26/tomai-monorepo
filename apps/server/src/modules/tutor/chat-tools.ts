@@ -26,16 +26,9 @@ export interface ChatToolContext {
 }
 
 const generateFlashcardsSchema = z.object({
-  topic: z
-    .string()
-    .describe('Le sujet précis des cartes. Ex: "théorème de Pythagore", "conjugaison du passé composé"'),
+  topic: z.string().describe('Le sujet précis des cartes. Ex: "théorème de Pythagore", "conjugaison du passé composé"'),
   subject: z.enum(SUBJECT_SLUGS).describe('La matière'),
-  cardCount: z
-    .number()
-    .min(3)
-    .max(10)
-    .optional()
-    .describe('Nombre de cartes à générer (5 par défaut)'),
+  cardCount: z.number().min(3).max(10).optional().describe('Nombre de cartes à générer (5 par défaut)'),
 });
 
 /** Les outils exposés à l'agent chat, au format AI SDK `ToolSet`. */

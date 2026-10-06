@@ -58,8 +58,16 @@ const CLOSING_RUBRIC = /^(?:prolongements possibles|mises en perspective)/i;
 /** In cycle 3, automatisms are paragraphs about the student; other paragraphs are teacher notes. */
 const ABOUT_STUDENT = /(?:^|\s)(?:l[’']élève|il|elle)\s/iu;
 const SUPERSCRIPT_DIGITS: Record<string, string> = {
-  '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴',
-  '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹',
+  '0': '⁰',
+  '1': '¹',
+  '2': '²',
+  '3': '³',
+  '4': '⁴',
+  '5': '⁵',
+  '6': '⁶',
+  '7': '⁷',
+  '8': '⁸',
+  '9': '⁹',
 };
 /** Mathematical italic letters (𝑥) are plain letters; other characters keep their form (²). */
 const MATH_ALPHANUMERIC = /[\u{1D400}-\u{1D7FF}]/gu;
@@ -78,8 +86,15 @@ function coalesceNumbers(runs: readonly PositionedText[]): PositionedText[] {
     const space = runs[i + 1];
     const digits = runs[i + 2];
     const sameLine = (a: PositionedText, b: PositionedText) => Math.abs(a.y - b.y) < 0.5 && b.x - (a.x + a.width) < 2;
-    const groups = last !== undefined && /^\d[\d ]*$/.test(last.str) && run.str === ' ' && space !== undefined && /^\d{3}$/.test(space.str)
-      && sameLine(last, run) && sameLine(run, space) && digits !== space;
+    const groups =
+      last !== undefined &&
+      /^\d[\d ]*$/.test(last.str) &&
+      run.str === ' ' &&
+      space !== undefined &&
+      /^\d{3}$/.test(space.str) &&
+      sameLine(last, run) &&
+      sameLine(run, space) &&
+      digits !== space;
     if (groups) {
       out[out.length - 1] = { ...last, str: `${last.str} ${space.str}`, width: space.x + space.width - last.x };
       i += 1;
@@ -107,8 +122,15 @@ export function joinRuns(raw: readonly PositionedText[]): { text: string; formul
     const run = runs[i];
     if (!run) continue;
     const next = runs[i + 1];
-    const stacked = next !== undefined && FRACTION_TERM.test(run.str) && FRACTION_TERM.test(next.str) && small(run) && small(next)
-      && Math.abs(centre(run) - centre(next)) < 3 && run.y - next.y > 3 && run.y - next.y < 15;
+    const stacked =
+      next !== undefined &&
+      FRACTION_TERM.test(run.str) &&
+      FRACTION_TERM.test(next.str) &&
+      small(run) &&
+      small(next) &&
+      Math.abs(centre(run) - centre(next)) < 3 &&
+      run.y - next.y > 3 &&
+      run.y - next.y < 15;
     if (stacked) {
       text += `${run.str}/${next.str}`;
       formula = true;
@@ -117,7 +139,11 @@ export function joinRuns(raw: readonly PositionedText[]): { text: string; formul
     }
     const exponent = /^\d+$/.test(run.str) && run.height > 0 && run.height < lineHeight * 0.75 && run.y > baseline + 1;
     if (exponent) {
-      text = text.trimEnd() + Array.from(run.str).map((digit) => SUPERSCRIPT_DIGITS[digit] ?? digit).join('');
+      text =
+        text.trimEnd() +
+        Array.from(run.str)
+          .map((digit) => SUPERSCRIPT_DIGITS[digit] ?? digit)
+          .join('');
       formula = true;
       continue;
     }
@@ -127,7 +153,13 @@ export function joinRuns(raw: readonly PositionedText[]): { text: string; formul
     }
     text += run.eol ? `${run.str} ` : run.str;
   }
-  return { text: text.replace(MATH_ALPHANUMERIC, (char) => char.normalize('NFKC')).replace(/\s+/g, ' ').trim(), formula };
+  return {
+    text: text
+      .replace(MATH_ALPHANUMERIC, (char) => char.normalize('NFKC'))
+      .replace(/\s+/g, ' ')
+      .trim(),
+    formula,
+  };
 }
 
 /** Glues a paragraph cut by a page break back to the one it continues. */
@@ -135,8 +167,13 @@ export function mergePageBreaks(blocks: readonly Block[]): Block[] {
   const merged: Block[] = [];
   for (const block of blocks) {
     const previous = merged.at(-1);
-    const continues = previous !== undefined && block.page === previous.page + 1 && block.role === previous.role
-      && (block.role === 'P' || block.role === 'LI') && !SENTENCE_END.test(previous.text) && /^\p{Ll}/u.test(block.text);
+    const continues =
+      previous !== undefined &&
+      block.page === previous.page + 1 &&
+      block.role === previous.role &&
+      (block.role === 'P' || block.role === 'LI') &&
+      !SENTENCE_END.test(previous.text) &&
+      /^\p{Ll}/u.test(block.text);
     if (continues) {
       merged[merged.length - 1] = { ...previous, text: `${previous.text} ${block.text}`, formula: previous.formula || block.formula };
     } else {
@@ -292,7 +329,13 @@ export function parseBlocks(blocks: readonly Block[], source: Pick<ProgrammeSour
       leftOut.push({ block, reason: `${subsubtheme ?? ''}, beyond the class` });
       continue;
     }
-    if (mode === 'automatism' && block.role === 'P' && !afterTable && !(open && completes(open.text, block.text)) && !ABOUT_STUDENT.test(block.text)) {
+    if (
+      mode === 'automatism' &&
+      block.role === 'P' &&
+      !afterTable &&
+      !(open && completes(open.text, block.text)) &&
+      !ABOUT_STUDENT.test(block.text)
+    ) {
       leftOut.push({ block, reason: 'teacher note' });
       continue;
     }

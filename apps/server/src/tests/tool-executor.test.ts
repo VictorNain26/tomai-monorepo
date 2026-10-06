@@ -86,8 +86,19 @@ mock.module('../modules/learning/index', () => ({
 const { executeTool } = await import('../modules/tutor/tool-executor');
 
 const sheet = {
-  statement: 'Résous 3x + 5 = 20.', kind: 'short' as const, answer: 'x = 5', answerForms: ['x = 5'], mathEquation: null, mathAnswer: null,
-  steps: [], commonErrors: [], rule: null, facts: [], expectedElements: [], entries: [], laterEntries: [],
+  statement: 'Résous 3x + 5 = 20.',
+  kind: 'short' as const,
+  answer: 'x = 5',
+  answerForms: ['x = 5'],
+  mathEquation: null,
+  mathAnswer: null,
+  steps: [],
+  commonErrors: [],
+  rule: null,
+  facts: [],
+  expectedElements: [],
+  entries: [],
+  laterEntries: [],
 };
 const baseContext = {
   userId: 'user-001',
@@ -112,9 +123,15 @@ beforeEach(() => {
 describe('Tool Executor', () => {
   describe('generate_flashcards', () => {
     it('should create deck and cards in transaction', async () => {
-      const result = await executeTool('generate_flashcards', {
-        topic: 'Fractions', subject: 'mathematiques', cardCount: 5,
-      }, baseContext) as Record<string, unknown>;
+      const result = (await executeTool(
+        'generate_flashcards',
+        {
+          topic: 'Fractions',
+          subject: 'mathematiques',
+          cardCount: 5,
+        },
+        baseContext,
+      )) as Record<string, unknown>;
       expect(result['generated']).toBe(true);
       expect(result['deckId']).toBeDefined();
       expect(generateCards.mock.calls.at(-1)?.[0].owner).toEqual({ userId: 'user-001', sessionId: 'session-001' });
@@ -124,7 +141,10 @@ describe('Tool Executor', () => {
       mockTxInsert.mockClear();
       const cut = new AbortController();
       cut.abort();
-      const result = await executeTool('generate_flashcards', { topic: 'Fractions', subject: 'mathematiques' }, baseContext, cut.signal) as Record<string, unknown>;
+      const result = (await executeTool('generate_flashcards', { topic: 'Fractions', subject: 'mathematiques' }, baseContext, cut.signal)) as Record<
+        string,
+        unknown
+      >;
       expect(result).toMatchObject({ isError: true, errorCategory: 'transient' });
       expect(mockTxInsert).not.toHaveBeenCalled();
     });
@@ -140,7 +160,10 @@ describe('Tool Executor', () => {
       };
       moderation = [[], [], ['violence_and_threats']];
 
-      const result = await executeTool('generate_flashcards', { topic: 'Équations', subject: 'mathematiques' }, baseContext) as Record<string, unknown>;
+      const result = (await executeTool('generate_flashcards', { topic: 'Équations', subject: 'mathematiques' }, baseContext)) as Record<
+        string,
+        unknown
+      >;
 
       expect(result).toMatchObject({ generated: true });
       expect(insertedValues[1]).toHaveLength(1);
@@ -148,10 +171,16 @@ describe('Tool Executor', () => {
     });
 
     it('stores no deck when no card passes, nor when moderation cannot answer, which it reports as transient', async () => {
-      for (const [failing, category] of [[[['sexual'], ['sexual']], 'business'], [new Error('moderation down'), 'transient']] as const) {
+      for (const [failing, category] of [
+        [[['sexual'], ['sexual']], 'business'],
+        [new Error('moderation down'), 'transient'],
+      ] as const) {
         moderation = failing instanceof Error ? failing : failing.map((flags) => [...flags]);
         mockTxInsert.mockClear();
-        const result = await executeTool('generate_flashcards', { topic: 'Fractions', subject: 'mathematiques' }, baseContext) as Record<string, unknown>;
+        const result = (await executeTool('generate_flashcards', { topic: 'Fractions', subject: 'mathematiques' }, baseContext)) as Record<
+          string,
+          unknown
+        >;
         expect(result).toMatchObject({ isError: true, errorCategory: category });
         expect(mockTxInsert).not.toHaveBeenCalled();
       }
@@ -166,7 +195,10 @@ describe('Tool Executor', () => {
         count: 2,
       };
 
-      const result = await executeTool('generate_flashcards', { topic: 'Équation : x = 5', subject: 'mathematiques' }, baseContext) as Record<string, unknown>;
+      const result = (await executeTool('generate_flashcards', { topic: 'Équation : x = 5', subject: 'mathematiques' }, baseContext)) as Record<
+        string,
+        unknown
+      >;
 
       expect(result).toMatchObject({ generated: true });
       expect(insertedValues[0]).toMatchObject({ title: 'Cartes de révision' });
@@ -174,9 +206,14 @@ describe('Tool Executor', () => {
     });
 
     it('should generate without a topic context', async () => {
-      const result = await executeTool('generate_flashcards', {
-        topic: 'Fractions', subject: 'mathematiques',
-      }, baseContext) as Record<string, unknown>;
+      const result = (await executeTool(
+        'generate_flashcards',
+        {
+          topic: 'Fractions',
+          subject: 'mathematiques',
+        },
+        baseContext,
+      )) as Record<string, unknown>;
       expect(result['generated']).toBe(true);
     });
   });
@@ -184,9 +221,14 @@ describe('Tool Executor', () => {
   describe('Error encapsulation', () => {
     it('should never throw - encapsulates errors in return value', async () => {
       cardGenThrows = true;
-      const result = await executeTool('generate_flashcards', {
-        topic: 'Fractions', subject: 'mathematiques',
-      }, baseContext) as Record<string, unknown>;
+      const result = (await executeTool(
+        'generate_flashcards',
+        {
+          topic: 'Fractions',
+          subject: 'mathematiques',
+        },
+        baseContext,
+      )) as Record<string, unknown>;
       expect(result['isError']).toBe(true);
       expect(result['errorCategory']).toBe('business');
     });

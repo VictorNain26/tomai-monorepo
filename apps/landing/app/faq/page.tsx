@@ -1,16 +1,16 @@
-import type { Metadata } from "next";
-import Link from "next/link";
-import { PageLayout } from "@/components/layout/page-layout";
-import { FaqList } from "@/components/sections/faq-list";
-import { BRAND_NAME } from "@/lib/brand";
+import type { Metadata } from 'next';
+import Link from 'next/link';
+import { PageLayout } from '@/components/layout/page-layout';
+import { FaqList } from '@/components/sections/faq-list';
+import { BRAND_NAME } from '@/lib/brand';
 
 const DESCRIPTION = `Retrouvez les réponses aux questions les plus fréquentes sur ${BRAND_NAME}, en préparation\u00a0: réponses aux exercices, niveau, suivi parental, données et tarifs.`;
 
 export const metadata: Metadata = {
-  title: "Questions fréquentes",
+  title: 'Questions fréquentes',
   description: DESCRIPTION,
   alternates: {
-    canonical: "/faq",
+    canonical: '/faq',
   },
 };
 
@@ -20,7 +20,7 @@ export default function FAQPage() {
       <FaqList />
 
       <p className="mt-8 text-center text-sm text-muted-foreground">
-        Vous avez une autre question ?{" "}
+        Vous avez une autre question ?{' '}
         <Link href="/contact" className="text-primary underline underline-offset-4">
           Contactez-nous
         </Link>

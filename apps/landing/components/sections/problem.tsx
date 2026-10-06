@@ -1,5 +1,5 @@
-import { FadeIn } from "../atoms/fade-in";
-import { Highlight } from "../annotations/highlight";
+import { FadeIn } from '../atoms/fade-in';
+import { Highlight } from '../annotations/highlight';
 
 export function Problem() {
   return (
@@ -9,8 +9,8 @@ export function Problem() {
           Copier une réponse prend dix secondes. <Highlight>L&apos;oublier aussi.</Highlight>
         </h2>
         <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground">
-          Les outils qui donnent la solution font gagner du temps ce soir et en font perdre le jour
-          du contrôle. Ce qu&apos;on comprend soi-même, on le garde.
+          Les outils qui donnent la solution font gagner du temps ce soir et en font perdre le jour du contrôle. Ce qu&apos;on comprend soi-même, on
+          le garde.
         </p>
       </FadeIn>
     </section>

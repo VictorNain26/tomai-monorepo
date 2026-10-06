@@ -40,7 +40,7 @@ export function claimSentences(text: string): string[] {
     const pieces: string[] = [];
     for (const { segment } of SEGMENTER.segment(line.replace(LIST_MARKER, ''))) {
       const last = pieces.at(-1);
-      const closing = last === undefined ? '' : CLOSING.exec(segment)?.[0] ?? '';
+      const closing = last === undefined ? '' : (CLOSING.exec(segment)?.[0] ?? '');
       if (last !== undefined && closing) pieces[pieces.length - 1] = last + closing;
       const rest = segment.slice(closing.length);
       if (rest.trim()) pieces.push(rest);
@@ -80,23 +80,33 @@ export function claimsRequest(input: JudgeInput, claims: readonly string[]) {
 }
 
 /** The sentences judged false by most valid samples; a tie goes against the tutor. */
-export async function falseClaims(input: JudgeInput, claims: readonly string[], generate: Generate): Promise<{ found: FalseClaim[]; usage: JudgeUsage }> {
+export async function falseClaims(
+  input: JudgeInput,
+  claims: readonly string[],
+  generate: Generate,
+): Promise<{ found: FalseClaim[]; usage: JudgeUsage }> {
   if (claims.length === 0) return { found: [], usage: NO_USAGE };
   const { ids, schema, prefix, messages, maxTokens } = claimsRequest(input, claims);
   let usage = NO_USAGE;
-  const spend = (spent: JudgeUsage) => { usage = addUsage(usage, spent); };
+  const spend = (spent: JudgeUsage) => {
+    usage = addUsage(usage, spent);
+  };
 
   // One verdict per claim, or the sample is lost.
   const answers = await drawAll(SEEDS, async (seed) => {
-    const object = await sampleObject(generate, {
-      messages,
-      schema,
-      schemaName: 'claims_verdicts',
-      functionId: 'eval-claims',
-      maxTokens,
-      seed,
-      promptCacheKey: cacheKey('eval-claims', prefix),
-    }, spend);
+    const object = await sampleObject(
+      generate,
+      {
+        messages,
+        schema,
+        schemaName: 'claims_verdicts',
+        functionId: 'eval-claims',
+        maxTokens,
+        seed,
+        promptCacheKey: cacheKey('eval-claims', prefix),
+      },
+      spend,
+    );
     if (!object) return null;
     const verdicts = new Map(object.verdicts.map((v) => [v.id, v.fausse === 'oui']));
     return verdicts.size === ids.length && object.verdicts.length === ids.length ? verdicts : null;

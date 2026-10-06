@@ -47,7 +47,10 @@ export function readTurnParts(parts: TomChatMessage['parts']): Pick<TutorTurn, '
   const toolParts = parts.filter(isToolUIPart).filter((part) => part.state !== 'output-denied');
   const dataParts = parts.filter(isDataUIPart);
   return {
-    text: parts.filter(isTextUIPart).map((part) => part.text).join(''),
+    text: parts
+      .filter(isTextUIPart)
+      .map((part) => part.text)
+      .join(''),
     tools: toolParts.map((part) => part.type.replace(/^tool-/, '')),
     toolOutputs: [...toolParts.map((part) => collectStrings(part.output)), ...dataParts.map((part) => collectStrings(part.data))]
       .filter(Boolean)
@@ -58,5 +61,8 @@ export function readTurnParts(parts: TomChatMessage['parts']): Pick<TutorTurn, '
 
 /** `Cookie` request header from the `Set-Cookie` headers of a sign-in response. */
 export function cookieHeader(setCookies: readonly string[]): string {
-  return setCookies.map((cookie) => cookie.split(';')[0]?.trim() ?? '').filter(Boolean).join('; ');
+  return setCookies
+    .map((cookie) => cookie.split(';')[0]?.trim() ?? '')
+    .filter(Boolean)
+    .join('; ');
 }

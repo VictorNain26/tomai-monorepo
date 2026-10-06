@@ -1,23 +1,23 @@
-import { defineConfig, devices } from "@playwright/test";
+import { defineConfig, devices } from '@playwright/test';
 
 const PORT = 3011;
 const baseURL = `http://localhost:${PORT}`;
 
 export default defineConfig({
-  testDir: "./tests",
+  testDir: './tests',
   forbidOnly: !!process.env['CI'],
-  reporter: "list",
+  reporter: 'list',
   use: {
     baseURL,
-    reducedMotion: "reduce",
+    reducedMotion: 'reduce',
   },
-  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
+  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: {
-    command: `bunx --no-install next build && bunx --no-install next start --port ${PORT}`,
+    command: `bunx --no-install next start --port ${PORT}`,
     url: baseURL,
     reuseExistingServer: false,
     timeout: 300_000,
-    stdout: "ignore",
-    stderr: "pipe",
+    stdout: 'ignore',
+    stderr: 'pipe',
   },
 });

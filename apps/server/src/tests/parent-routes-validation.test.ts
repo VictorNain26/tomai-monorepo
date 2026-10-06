@@ -10,12 +10,8 @@ mock.module('../platform/auth/session', () => ({
   requireParentRole: () => Promise.resolve({ success: true, user: parentUser, session: { id: 's1' } }),
 }));
 
-const createChild = mock((_parentId: string, data: Record<string, unknown>) =>
-  Promise.resolve({ id: 'child-1', ...data }),
-);
-const updateChild = mock((_parentId: string, childId: string, data: Record<string, unknown>) =>
-  Promise.resolve({ id: childId, ...data }),
-);
+const createChild = mock((_parentId: string, data: Record<string, unknown>) => Promise.resolve({ id: 'child-1', ...data }));
+const updateChild = mock((_parentId: string, childId: string, data: Record<string, unknown>) => Promise.resolve({ id: childId, ...data }));
 mock.module('../modules/family/parent.service', () => ({ parentService: { createChild, updateChild } }));
 
 const { Hono } = await import('hono');

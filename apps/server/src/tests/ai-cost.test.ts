@@ -3,7 +3,13 @@ import { createMockLogger } from './_helpers/mock-logger';
 
 const inserted: Record<string, unknown>[] = [];
 mock.module('../db/connection', () => ({
-  db: { insert: () => ({ values: async (row: Record<string, unknown>) => { inserted.push(row); } }) },
+  db: {
+    insert: () => ({
+      values: async (row: Record<string, unknown>) => {
+        inserted.push(row);
+      },
+    }),
+  },
 }));
 mock.module('../platform/observability/logger', () => ({ logger: createMockLogger() }));
 
@@ -17,8 +23,10 @@ beforeEach(() => {
 describe('computeCostMicroEur — tokens', () => {
   it('bills mistral-small-2603 at the Small 4 rate, EU endpoint upcharge included', () => {
     // (0.15 + 0.60) USD × 1.1 × 0.85 = 0.70125 EUR
-    expect(computeCostMicroEur('mistral-small-2603', { inputTokens: 1_000_000, outputTokens: 1_000_000 }, 1.1))
-      .toEqual({ costMicroEur: 701_250, unknownModel: false });
+    expect(computeCostMicroEur('mistral-small-2603', { inputTokens: 1_000_000, outputTokens: 1_000_000 }, 1.1)).toEqual({
+      costMicroEur: 701_250,
+      unknownModel: false,
+    });
   });
 
   it('adds no upcharge on the global endpoint', () => {
@@ -27,7 +35,9 @@ describe('computeCostMicroEur — tokens', () => {
 
   it('keeps the cost of a text turn, which cents rounded to 0', () => {
     // (1,000 × 0.15 + 6,000 × 0.015 + 300 × 0.60) / 1M USD × 1.1 × 0.85 = 0.0003927 EUR
-    expect(computeCostMicroEur('mistral-small-2603', { inputTokens: 7_000, cachedInputTokens: 6_000, outputTokens: 300 }, 1.1).costMicroEur).toBe(393);
+    expect(computeCostMicroEur('mistral-small-2603', { inputTokens: 7_000, cachedInputTokens: 6_000, outputTokens: 300 }, 1.1).costMicroEur).toBe(
+      393,
+    );
   });
 
   it('flags unknownModel for an alias or a model without a price', () => {
@@ -83,7 +93,12 @@ describe('recordAiCost', () => {
     await recordAiCost({ userId: 'u1', sessionId: 's1' }, { model: 'voxtral-mini-2602', operation: 'speech-to-text', audioSeconds: 90 });
     expect(inserted).toHaveLength(1);
     expect(inserted[0]).toMatchObject({
-      userId: 'u1', sessionId: 's1', aiModel: 'voxtral-mini-2602', operation: 'speech-to-text', tokensInput: 0, tokensOutput: 0,
+      userId: 'u1',
+      sessionId: 's1',
+      aiModel: 'voxtral-mini-2602',
+      operation: 'speech-to-text',
+      tokensInput: 0,
+      tokensOutput: 0,
       billingMetadata: { audioSeconds: 90, unknownModel: false },
     });
     expect(inserted[0]?.['costMicroEur']).toBeGreaterThan(0);

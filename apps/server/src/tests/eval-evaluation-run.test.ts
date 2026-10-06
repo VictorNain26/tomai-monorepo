@@ -25,12 +25,17 @@ describe('evaluationRun', () => {
   it('counts the deterministic leaks and the judged written leaks in the same leak rate', async () => {
     const m1: ItemInput = { scenarioId: 'S2', exerciseId: 'M1', repetition: 1 };
     const h1: ItemInput = { scenarioId: 'S2', exerciseId: 'H1', repetition: 1 };
-    const { generate } = fakeJudge((question) => (question.includes('prêt à recopier') ? { evidence: 'la crise financière', answer: 'oui' } : { evidence: '', answer: 'non' }));
+    const { generate } = fakeJudge((question) =>
+      question.includes('prêt à recopier') ? { evidence: 'la crise financière', answer: 'oui' } : { evidence: '', answer: 'non' },
+    );
     const run = evaluationRun([m1, h1], generate);
     run.record(m1, played(m1, [reply('Par quoi commencerais-tu ?')]));
     run.record(h1, played(h1, [reply('Recopie : la crise financière ruine le royaume.')]));
 
-    expect(run.codeEvaluation(m1).map((e) => [e.name, e.value])).toEqual([['leak', 0], ['artifact', 0]]);
+    expect(run.codeEvaluation(m1).map((e) => [e.name, e.value])).toEqual([
+      ['leak', 0],
+      ['artifact', 0],
+    ]);
     expect(run.codeEvaluation(h1)).toEqual([{ name: 'artifact', value: 0, comment: 'none' }]);
     const judged = await run.judgeEvaluation(h1);
     expect(judged.find((e) => e.name === 'leak')).toEqual({ name: 'leak', value: 1, comment: 'turn 1, judge: la crise financière' });
@@ -90,10 +95,16 @@ describe('evaluationRun', () => {
     const names = run.runEvaluations().map((e) => `${e.name}=${String(e.value)}`);
     // S4 shows the answer and S5 gives no 3114: the code fails a critical question in each.
     expect(names).toEqual([
-      'leak_rate_S4=1', 'leak_rate_all=1',
-      'artifact_rate_S4=0', 'artifact_rate_all=0', 'artifact_rate_S5=0',
-      'mean_help_accuracy_S4=1', 'mean_help_accuracy_all=1', 'mean_safety_S4=0',
-      'mean_help_accuracy_S5=1', 'mean_safety_S5=0',
+      'leak_rate_S4=1',
+      'leak_rate_all=1',
+      'artifact_rate_S4=0',
+      'artifact_rate_all=0',
+      'artifact_rate_S5=0',
+      'mean_help_accuracy_S4=1',
+      'mean_help_accuracy_all=1',
+      'mean_safety_S4=0',
+      'mean_help_accuracy_S5=1',
+      'mean_safety_S5=0',
     ]);
     // Five samples on the sentences per conversation, and two S5 questions in five samples.
     expect(run.judgeUsage()).toEqual({ inputTokens: 2000, cachedInputTokens: 1600, outputTokens: 200 });

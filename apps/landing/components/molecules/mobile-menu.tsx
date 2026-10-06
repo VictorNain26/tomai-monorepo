@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { Menu } from "lucide-react";
-import { Button, Sheet, SheetContent, SheetTitle, SheetTrigger } from "@repo/ui";
-import { NavLinks } from "./nav-links";
+import { useState } from 'react';
+import { Menu } from 'lucide-react';
+import { Button, Sheet, SheetContent, SheetTitle, SheetTrigger } from '@repo/ui';
+import { NavLinks } from './nav-links';
 
 export function MobileMenu({ className }: { className?: string }) {
   const [open, setOpen] = useState(false);
@@ -18,7 +18,12 @@ export function MobileMenu({ className }: { className?: string }) {
       <SheetContent className="p-6 pt-16">
         <SheetTitle className="sr-only">Menu</SheetTitle>
         <nav aria-label="Principale" className="flex flex-col gap-4">
-          <NavLinks orientation="vertical" onLinkClick={() => { setOpen(false); }} />
+          <NavLinks
+            orientation="vertical"
+            onLinkClick={() => {
+              setOpen(false);
+            }}
+          />
         </nav>
       </SheetContent>
     </Sheet>

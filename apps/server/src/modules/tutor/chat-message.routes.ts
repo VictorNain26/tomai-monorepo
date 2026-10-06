@@ -49,7 +49,10 @@ const streamBody = z.object({
 const aiRateLimit = createRateLimitMiddleware(RateLimitPresets.ai);
 
 /** The fixed reply streamed. A turn that could not be stored is logged, never kept from the student. */
-async function distressResponse(turn: DistressTurn, params: { userId: string; requestId: string; content: string; inputMode?: 'text' | 'voice' | undefined }): Promise<Response> {
+async function distressResponse(
+  turn: DistressTurn,
+  params: { userId: string; requestId: string; content: string; inputMode?: 'text' | 'voice' | undefined },
+): Promise<Response> {
   try {
     await answerDistress({ turn, userId: params.userId, content: params.content, inputMode: params.inputMode });
   } catch (error) {
@@ -75,133 +78,149 @@ async function distressResponse(turn: DistressTurn, params: { userId: string; re
 
 // Mounted under /api/chat by app.ts. The ai rate limit keys by user id, so it
 // runs after requireUser.
-export const chatMessageRoutes = new Hono<AppEnv>()
-  .post('/stream', requireUser, aiRateLimit, validate('json', streamBody), async (c) => {
-    const user = c.var.user;
-    const requestId = c.var.requestId;
-    const body = c.req.valid('json');
-    const { message, sessionId, subject, schoolLevel, firstName, fileIds: fileIdsBody, inputMode } = body;
+export const chatMessageRoutes = new Hono<AppEnv>().post('/stream', requireUser, aiRateLimit, validate('json', streamBody), async (c) => {
+  const user = c.var.user;
+  const requestId = c.var.requestId;
+  const body = c.req.valid('json');
+  const { message, sessionId, subject, schoolLevel, firstName, fileIds: fileIdsBody, inputMode } = body;
 
-    const fileIds = fileIdsBody ?? [];
-    const safeContent = sanitizePrompt(extractTextFromParts((message as { parts?: unknown } | null)?.parts));
-    const turnParams = { userId: user.id, requestId, content: safeContent, inputMode };
+  const fileIds = fileIdsBody ?? [];
+  const safeContent = sanitizePrompt(extractTextFromParts((message as { parts?: unknown } | null)?.parts));
+  const turnParams = { userId: user.id, requestId, content: safeContent, inputMode };
 
-    // A refused request still gets the fixed reply on a distress: it calls no model.
-    const unlessDistress = async (refusal: Response): Promise<Response> => {
-      try {
-        const turn = await chatOrchestrationService.screenDistress({ userId: user.id, sessionId, content: safeContent });
-        return turn ? await distressResponse(turn, turnParams) : refusal;
-      } catch (error) {
-        if (!(error instanceof ChatOrchestrationError)) {
-          logger.error('Distress screening failed on a refused request', { err: error, userId: user.id, requestId, operation: 'distress:screen-error', severity: 'high' as const });
-        }
-        return refusal;
-      }
-    };
-
-    // 1. Quota check
-    const quotaCheck = await checkQuota(user.id);
-    if (!quotaCheck.allowed) {
-      return unlessDistress(c.json({
-        ...toErrorResponse(new AppError('QUOTA_EXCEEDED'), requestId),
-        ...(quotaCheck.usage && { usage: { usagePercent: quotaCheck.usage.usagePercent, resetsIn: quotaCheck.usage.resetsIn, plan: quotaCheck.usage.plan } }),
-      }, 429));
-    }
-
-    // 2. Content validation
-    if (safeContent.trim().length === 0 && fileIds.length === 0) {
-      return c.json(toErrorResponse(new AppError('EMPTY_MESSAGE'), requestId), 400);
-    }
-
-    // 3. Concurrent stream limit
-    const currentStreams = activeStreams.get(user.id) ?? 0;
-    if (currentStreams >= MAX_CONCURRENT_STREAMS) {
-      return unlessDistress(c.json(toErrorResponse(new AppError('CONCURRENT_STREAM'), requestId), 409));
-    }
-    activeStreams.set(user.id, currentStreams + 1);
-
-    let released = false;
-    const releaseStream = () => {
-      if (released) return;
-      released = true;
-      const count = activeStreams.get(user.id) ?? 1;
-      if (count <= 1) activeStreams.delete(user.id);
-      else activeStreams.set(user.id, count - 1);
-    };
-
-    const resolvedSchoolLevel = schoolLevel ?? (isEducationLevel(user.schoolLevel) ? user.schoolLevel : 'sixieme');
-
-    let turnCtx: Awaited<ReturnType<typeof chatOrchestrationService.prepareTurn>>;
+  // A refused request still gets the fixed reply on a distress: it calls no model.
+  const unlessDistress = async (refusal: Response): Promise<Response> => {
     try {
-      turnCtx = await chatOrchestrationService.prepareTurn({
-        userId: user.id,
-        sessionId,
-        requestedSubject: subject,
-        content: safeContent,
-        fileIds,
-        schoolLevel: resolvedSchoolLevel,
-        flashcards: quotaCheck.flashcards,
-      });
-      if (turnCtx.kind === 'tutor') {
-        await chatOrchestrationService.persistUserTurn({
-          sessionId: turnCtx.sessionId,
-          content: safeContent,
-          inputMode,
-          fileIds: turnCtx.fileIds,
-          attachedFileInfo: turnCtx.attachedFileInfo,
-          attachedFileInfos: turnCtx.attachedFileInfos,
-          inputModeration: turnCtx.inputModeration,
-        });
-      }
+      const turn = await chatOrchestrationService.screenDistress({ userId: user.id, sessionId, content: safeContent });
+      return turn ? await distressResponse(turn, turnParams) : refusal;
     } catch (error) {
-      releaseStream();
-      if (error instanceof ChatOrchestrationError) {
-        const code = error.statusCode === 403 ? ('FORBIDDEN' as const) : ('SESSION_NOT_FOUND' as const);
-        const appError = new AppError(code, error.message);
-        return c.json(toErrorResponse(appError, requestId), appError.statusCode);
-      }
-      logger.error('Chat turn setup failed', {
-        err: error,
-        userId: user.id,
-        requestId,
-        operation: 'chat-stream:setup-error',
-        severity: 'high' as const,
-      });
-      return c.json(toErrorResponse(new AppError('INTERNAL_ERROR'), requestId), 500);
-    }
-
-    // A distress gets the fixed reply, never the model.
-    if (turnCtx.kind === 'distress') {
-      releaseStream();
-      return distressResponse(turnCtx, turnParams);
-    }
-
-    const startTime = Date.now();
-    // Set as the turn starts: when the client leaves, onEnd runs at once and must wait for the turn.
-    let controlledTurn: Promise<ControlledTurn> | undefined;
-    const turnUsage = new TurnUsage();
-
-    // What reaches the student is checked against: the message, the cards, the title.
-    const check: OutputCheckContext = {
-      sheet: turnCtx.exerciseSheet,
-      uncertain: turnCtx.exerciseUncertain,
-      diagnosis: turnCtx.exerciseProgress?.diagnosis ?? null,
-      studentText: safeContent,
-      pastStudentTexts: turnCtx.conversationHistory.filter((turn) => turn.role === 'user').map((turn) => turn.content),
-    };
-
-    const stream = createUIMessageStream<TomChatMessage>({
-      execute: async ({ writer }) => {
-        const tools = buildChatTools({
+      if (!(error instanceof ChatOrchestrationError)) {
+        logger.error('Distress screening failed on a refused request', {
+          err: error,
           userId: user.id,
-          sessionId: turnCtx.sessionId,
-          schoolLevel: resolvedSchoolLevel,
-          flashcards: quotaCheck.flashcards === true,
-          check,
-          emitDeckCreated: d => { writer.write({ type: 'data-deck-created', data: d }); },
+          requestId,
+          operation: 'distress:screen-error',
+          severity: 'high' as const,
         });
+      }
+      return refusal;
+    }
+  };
 
-        controlledTurn = runControlledTurn(writer, {
+  // 1. Quota check
+  const quotaCheck = await checkQuota(user.id);
+  if (!quotaCheck.allowed) {
+    return unlessDistress(
+      c.json(
+        {
+          ...toErrorResponse(new AppError('QUOTA_EXCEEDED'), requestId),
+          ...(quotaCheck.usage && {
+            usage: { usagePercent: quotaCheck.usage.usagePercent, resetsIn: quotaCheck.usage.resetsIn, plan: quotaCheck.usage.plan },
+          }),
+        },
+        429,
+      ),
+    );
+  }
+
+  // 2. Content validation
+  if (safeContent.trim().length === 0 && fileIds.length === 0) {
+    return c.json(toErrorResponse(new AppError('EMPTY_MESSAGE'), requestId), 400);
+  }
+
+  // 3. Concurrent stream limit
+  const currentStreams = activeStreams.get(user.id) ?? 0;
+  if (currentStreams >= MAX_CONCURRENT_STREAMS) {
+    return unlessDistress(c.json(toErrorResponse(new AppError('CONCURRENT_STREAM'), requestId), 409));
+  }
+  activeStreams.set(user.id, currentStreams + 1);
+
+  let released = false;
+  const releaseStream = () => {
+    if (released) return;
+    released = true;
+    const count = activeStreams.get(user.id) ?? 1;
+    if (count <= 1) activeStreams.delete(user.id);
+    else activeStreams.set(user.id, count - 1);
+  };
+
+  const resolvedSchoolLevel = schoolLevel ?? (isEducationLevel(user.schoolLevel) ? user.schoolLevel : 'sixieme');
+
+  let turnCtx: Awaited<ReturnType<typeof chatOrchestrationService.prepareTurn>>;
+  try {
+    turnCtx = await chatOrchestrationService.prepareTurn({
+      userId: user.id,
+      sessionId,
+      requestedSubject: subject,
+      content: safeContent,
+      fileIds,
+      schoolLevel: resolvedSchoolLevel,
+      flashcards: quotaCheck.flashcards,
+    });
+    if (turnCtx.kind === 'tutor') {
+      await chatOrchestrationService.persistUserTurn({
+        sessionId: turnCtx.sessionId,
+        content: safeContent,
+        inputMode,
+        fileIds: turnCtx.fileIds,
+        attachedFileInfo: turnCtx.attachedFileInfo,
+        attachedFileInfos: turnCtx.attachedFileInfos,
+        inputModeration: turnCtx.inputModeration,
+      });
+    }
+  } catch (error) {
+    releaseStream();
+    if (error instanceof ChatOrchestrationError) {
+      const code = error.statusCode === 403 ? ('FORBIDDEN' as const) : ('SESSION_NOT_FOUND' as const);
+      const appError = new AppError(code, error.message);
+      return c.json(toErrorResponse(appError, requestId), appError.statusCode);
+    }
+    logger.error('Chat turn setup failed', {
+      err: error,
+      userId: user.id,
+      requestId,
+      operation: 'chat-stream:setup-error',
+      severity: 'high' as const,
+    });
+    return c.json(toErrorResponse(new AppError('INTERNAL_ERROR'), requestId), 500);
+  }
+
+  // A distress gets the fixed reply, never the model.
+  if (turnCtx.kind === 'distress') {
+    releaseStream();
+    return distressResponse(turnCtx, turnParams);
+  }
+
+  const startTime = Date.now();
+  // Set as the turn starts: when the client leaves, onEnd runs at once and must wait for the turn.
+  let controlledTurn: Promise<ControlledTurn> | undefined;
+  const turnUsage = new TurnUsage();
+
+  // What reaches the student is checked against: the message, the cards, the title.
+  const check: OutputCheckContext = {
+    sheet: turnCtx.exerciseSheet,
+    uncertain: turnCtx.exerciseUncertain,
+    diagnosis: turnCtx.exerciseProgress?.diagnosis ?? null,
+    studentText: safeContent,
+    pastStudentTexts: turnCtx.conversationHistory.filter((turn) => turn.role === 'user').map((turn) => turn.content),
+  };
+
+  const stream = createUIMessageStream<TomChatMessage>({
+    execute: async ({ writer }) => {
+      const tools = buildChatTools({
+        userId: user.id,
+        sessionId: turnCtx.sessionId,
+        schoolLevel: resolvedSchoolLevel,
+        flashcards: quotaCheck.flashcards === true,
+        check,
+        emitDeckCreated: (d) => {
+          writer.write({ type: 'data-deck-created', data: d });
+        },
+      });
+
+      controlledTurn = runControlledTurn(
+        writer,
+        {
           userId: user.id,
           content: safeContent,
           subject: turnCtx.subject,
@@ -218,71 +237,81 @@ export const chatMessageRoutes = new Hono<AppEnv>()
           inputMode,
           tools,
           usage: turnUsage,
-        }, check);
-        await controlledTurn;
-      },
-      onEnd: async ({ responseMessage }) => {
-        try {
-          // Wait for the model's side to end, whatever ends it (finish, timeout, error), even
-          // when the client left first: only then is the usage complete.
-          const controlled = await controlledTurn?.catch(() => undefined);
-          await Promise.all((controlled?.results ?? []).map(result => Promise.resolve(result.steps).then(() => undefined, () => undefined)));
-          const { usage, cut } = turnUsage.read();
-          if (cut) {
-            logger.warn('Chat turn cut: the cut call is estimated', {
-              userId: user.id,
-              sessionId: turnCtx.sessionId,
-              requestId,
-              operation: 'chat-stream:cut',
-            });
-          }
-          const modelMessages = cut || !controlled ? undefined : await controlled.replay();
-          await chatOrchestrationService.finishTurn({
-            sessionId: turnCtx.sessionId,
-            userId: user.id,
-            userContent: safeContent,
-            // The checked text, even when the client left before it was written.
-            text: controlled?.text ?? extractTextFromParts(responseMessage.parts),
-            modelMessages,
-            aborted: cut,
-            model: env.MISTRAL_MODEL,
-            usage,
-            startTime,
-            attachedFileInfo: turnCtx.attachedFileInfo,
-            attachedFileInfos: turnCtx.attachedFileInfos,
-            turnAnalysis: turnCtx.turnAnalysis,
-            exerciseProgress: turnCtx.exerciseProgress,
-            check,
-            ...(controlled && controlled.outcome !== 'passed' && {
-              outputCheck: { findings: controlled.findings.map(finding => finding.kind), outcome: controlled.outcome },
-            }),
-          });
-        } catch (error) {
-          logger.error('Chat turn persistence failed', {
-            err: error,
+        },
+        check,
+      );
+      await controlledTurn;
+    },
+    onEnd: async ({ responseMessage }) => {
+      try {
+        // Wait for the model's side to end, whatever ends it (finish, timeout, error), even
+        // when the client left first: only then is the usage complete.
+        const controlled = await controlledTurn?.catch(() => undefined);
+        await Promise.all(
+          (controlled?.results ?? []).map((result) =>
+            Promise.resolve(result.steps).then(
+              () => undefined,
+              () => undefined,
+            ),
+          ),
+        );
+        const { usage, cut } = turnUsage.read();
+        if (cut) {
+          logger.warn('Chat turn cut: the cut call is estimated', {
             userId: user.id,
             sessionId: turnCtx.sessionId,
             requestId,
-            operation: 'chat-stream:onend-error',
-            severity: 'high' as const,
+            operation: 'chat-stream:cut',
           });
-        } finally {
-          releaseStream();
         }
-      },
-      onError: error => {
-        logger.error('Unexpected streaming error', {
+        const modelMessages = cut || !controlled ? undefined : await controlled.replay();
+        await chatOrchestrationService.finishTurn({
+          sessionId: turnCtx.sessionId,
+          userId: user.id,
+          userContent: safeContent,
+          // The checked text, even when the client left before it was written.
+          text: controlled?.text ?? extractTextFromParts(responseMessage.parts),
+          modelMessages,
+          aborted: cut,
+          model: env.MISTRAL_MODEL,
+          usage,
+          startTime,
+          attachedFileInfo: turnCtx.attachedFileInfo,
+          attachedFileInfos: turnCtx.attachedFileInfos,
+          turnAnalysis: turnCtx.turnAnalysis,
+          exerciseProgress: turnCtx.exerciseProgress,
+          check,
+          ...(controlled &&
+            controlled.outcome !== 'passed' && {
+              outputCheck: { findings: controlled.findings.map((finding) => finding.kind), outcome: controlled.outcome },
+            }),
+        });
+      } catch (error) {
+        logger.error('Chat turn persistence failed', {
           err: error,
           userId: user.id,
           sessionId: turnCtx.sessionId,
           requestId,
-          operation: 'chat-stream:unexpected-error',
+          operation: 'chat-stream:onend-error',
           severity: 'high' as const,
         });
+      } finally {
         releaseStream();
-        return 'Erreur inattendue. Réessaie.';
-      },
-    });
-
-    return createUIMessageStreamResponse({ stream });
+      }
+    },
+    onError: (error) => {
+      logger.error('Unexpected streaming error', {
+        err: error,
+        userId: user.id,
+        sessionId: turnCtx.sessionId,
+        requestId,
+        operation: 'chat-stream:unexpected-error',
+        severity: 'high' as const,
+      });
+      releaseStream();
+      return 'Erreur inattendue. Réessaie.';
+    },
   });
+
+  return createUIMessageStreamResponse({ stream });
+});

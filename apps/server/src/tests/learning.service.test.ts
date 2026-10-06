@@ -99,8 +99,7 @@ mock.module('../modules/learning/fsrs.service', () => ({
 }));
 
 const { learningService } = await import('../modules/learning/learning.service');
-const { DeckNotFoundError, DeckOwnershipError, CardNotFoundError, CardValidationError } =
-  await import('../modules/learning/learning-errors');
+const { DeckNotFoundError, DeckOwnershipError, CardNotFoundError, CardValidationError } = await import('../modules/learning/learning-errors');
 
 beforeEach(() => {
   transactionFailed = false;
@@ -217,7 +216,7 @@ describe('LearningService', () => {
       expect(mockDeckListByUser).toHaveBeenCalledTimes(1);
       expect((mockDeckListByUser.mock.calls[0] as unknown[])[0]).toBe('user-1');
       expect((mockDeckListByUser.mock.calls[0] as unknown[])[1]).toEqual({ limit: 10, offset: 5 });
-      expect((result as typeof decks)).toEqual(decks);
+      expect(result as typeof decks).toEqual(decks);
     });
   });
 
@@ -237,9 +236,7 @@ describe('LearningService', () => {
     it('throws DeckNotFoundError when the deck does not exist', async () => {
       mockDeckFindById.mockImplementationOnce(async () => null);
 
-      expect(
-        learningService.getDeckWithCardsOrThrow('user-1', 'missing'),
-      ).rejects.toBeInstanceOf(DeckNotFoundError);
+      expect(learningService.getDeckWithCardsOrThrow('user-1', 'missing')).rejects.toBeInstanceOf(DeckNotFoundError);
       expect(mockCardListByDeck).not.toHaveBeenCalled();
     });
 
@@ -249,9 +246,7 @@ describe('LearningService', () => {
         userId: 'other-user',
       }));
 
-      expect(
-        learningService.getDeckWithCardsOrThrow('user-1', 'deck-1'),
-      ).rejects.toBeInstanceOf(DeckOwnershipError);
+      expect(learningService.getDeckWithCardsOrThrow('user-1', 'deck-1')).rejects.toBeInstanceOf(DeckOwnershipError);
       expect(mockCardListByDeck).not.toHaveBeenCalled();
     });
   });
@@ -260,9 +255,7 @@ describe('LearningService', () => {
     it('throws DeckNotFoundError when the deck does not exist', async () => {
       mockDeckFindById.mockImplementationOnce(async () => null);
 
-      expect(
-        learningService.updateDeckOrThrow('user-1', 'missing', { title: 'new' }),
-      ).rejects.toBeInstanceOf(DeckNotFoundError);
+      expect(learningService.updateDeckOrThrow('user-1', 'missing', { title: 'new' })).rejects.toBeInstanceOf(DeckNotFoundError);
       expect(mockDeckUpdateById).not.toHaveBeenCalled();
     });
 
@@ -272,9 +265,7 @@ describe('LearningService', () => {
         userId: 'other-user',
       }));
 
-      expect(
-        learningService.updateDeckOrThrow('user-1', 'deck-1', { title: 'new' }),
-      ).rejects.toBeInstanceOf(DeckOwnershipError);
+      expect(learningService.updateDeckOrThrow('user-1', 'deck-1', { title: 'new' })).rejects.toBeInstanceOf(DeckOwnershipError);
       expect(mockDeckUpdateById).not.toHaveBeenCalled();
     });
 
@@ -303,9 +294,7 @@ describe('LearningService', () => {
       }));
       mockDeckUpdateById.mockImplementationOnce(async () => null);
 
-      expect(
-        learningService.updateDeckOrThrow('user-1', 'deck-1', { title: 'new' }),
-      ).rejects.toBeInstanceOf(DeckNotFoundError);
+      expect(learningService.updateDeckOrThrow('user-1', 'deck-1', { title: 'new' })).rejects.toBeInstanceOf(DeckNotFoundError);
     });
   });
 
@@ -313,9 +302,7 @@ describe('LearningService', () => {
     it('throws DeckNotFoundError when the deck does not exist', async () => {
       mockDeckFindById.mockImplementationOnce(async () => null);
 
-      expect(
-        learningService.deleteDeckOrThrow('user-1', 'missing'),
-      ).rejects.toBeInstanceOf(DeckNotFoundError);
+      expect(learningService.deleteDeckOrThrow('user-1', 'missing')).rejects.toBeInstanceOf(DeckNotFoundError);
       expect(mockDeckDeleteById).not.toHaveBeenCalled();
     });
 
@@ -325,9 +312,7 @@ describe('LearningService', () => {
         userId: 'other-user',
       }));
 
-      expect(
-        learningService.deleteDeckOrThrow('user-1', 'deck-1'),
-      ).rejects.toBeInstanceOf(DeckOwnershipError);
+      expect(learningService.deleteDeckOrThrow('user-1', 'deck-1')).rejects.toBeInstanceOf(DeckOwnershipError);
       expect(mockDeckDeleteById).not.toHaveBeenCalled();
     });
 
@@ -396,7 +381,7 @@ describe('LearningService', () => {
       const countTx = (mockCardCountByDeckId.mock.calls[0] as unknown[])[1];
       expect(insertTx).toBe(updateTx);
       expect(insertTx).toBe(countTx);
-      expect((result as typeof inserted)).toEqual(inserted);
+      expect(result as typeof inserted).toEqual(inserted);
       // The parsed content is stored, without the keys the schema does not know
       const insertedRows = (mockCardInsertMany.mock.calls[0] as unknown[])[0] as { content: unknown }[];
       expect(insertedRows[0]?.content).toEqual({ front: 'q', back: 'a' });
@@ -441,9 +426,7 @@ describe('LearningService', () => {
     it('throws CardNotFoundError when the card is not found or not owned', async () => {
       mockCardFindByIdWithOwner.mockImplementationOnce(async () => null);
 
-      expect(
-        learningService.updateCardOrThrow('user-1', 'card-1', { position: 5 }),
-      ).rejects.toBeInstanceOf(CardNotFoundError);
+      expect(learningService.updateCardOrThrow('user-1', 'card-1', { position: 5 })).rejects.toBeInstanceOf(CardNotFoundError);
       expect(mockCardUpdateById).not.toHaveBeenCalled();
     });
 
@@ -469,9 +452,7 @@ describe('LearningService', () => {
       }));
       mockCardUpdateById.mockImplementationOnce(async () => null);
 
-      expect(
-        learningService.updateCardOrThrow('user-1', 'card-1', { position: 5 }),
-      ).rejects.toBeInstanceOf(CardNotFoundError);
+      expect(learningService.updateCardOrThrow('user-1', 'card-1', { position: 5 })).rejects.toBeInstanceOf(CardNotFoundError);
     });
 
     it('validates new content against the stored card type', async () => {
@@ -513,9 +494,7 @@ describe('LearningService', () => {
     it('throws CardNotFoundError when the card is not found or not owned', async () => {
       mockCardFindByIdWithOwner.mockImplementationOnce(async () => null);
 
-      expect(
-        learningService.deleteCardOrThrow('user-1', 'card-1'),
-      ).rejects.toBeInstanceOf(CardNotFoundError);
+      expect(learningService.deleteCardOrThrow('user-1', 'card-1')).rejects.toBeInstanceOf(CardNotFoundError);
       expect(mockTransaction).not.toHaveBeenCalled();
     });
 
@@ -552,9 +531,7 @@ describe('LearningService', () => {
         throw new Error('delete fail');
       });
 
-      expect(
-        learningService.deleteCardOrThrow('user-1', 'card-1'),
-      ).rejects.toThrow('delete fail');
+      expect(learningService.deleteCardOrThrow('user-1', 'card-1')).rejects.toThrow('delete fail');
       expect(transactionFailed).toBe(true);
     });
   });
@@ -574,9 +551,7 @@ describe('LearningService', () => {
     it('throws CardNotFoundError when the card is not found or not owned', async () => {
       mockCardFindByIdWithOwner.mockImplementationOnce(async () => null);
 
-      expect(
-        learningService.reviewCardOrThrow('user-1', 'card-1', 3, 'sixieme'),
-      ).rejects.toBeInstanceOf(CardNotFoundError);
+      expect(learningService.reviewCardOrThrow('user-1', 'card-1', 3, 'sixieme')).rejects.toBeInstanceOf(CardNotFoundError);
       expect(mockFsrsReviewCard).not.toHaveBeenCalled();
     });
 
@@ -598,9 +573,7 @@ describe('LearningService', () => {
     it('throws CardNotFoundError when the card is not found or not owned', async () => {
       mockCardFindByIdWithOwner.mockImplementationOnce(async () => null);
 
-      expect(
-        learningService.previewCardOrThrow('user-1', 'card-1', 'sixieme'),
-      ).rejects.toBeInstanceOf(CardNotFoundError);
+      expect(learningService.previewCardOrThrow('user-1', 'card-1', 'sixieme')).rejects.toBeInstanceOf(CardNotFoundError);
       expect(mockFsrsPreviewScheduling).not.toHaveBeenCalled();
     });
 

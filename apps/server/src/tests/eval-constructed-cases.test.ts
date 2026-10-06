@@ -5,16 +5,26 @@ import { casesSchema, constructedCases, detection, faultFlagged, versions } from
 describe('constructedCases', () => {
   it('hold two cases for each of the eleven faults, each aimed at one judge question', () => {
     expect(constructedCases.map((c) => `${c.fault}:${c.check}`)).toEqual([
-      'unrolled-method:hints-unrolls', 'unrolled-method:hints-unrolls',
-      'calculation-error:accuracy-calculation', 'calculation-error:accuracy-calculation',
-      'two-questions:one-question', 'two-questions:one-question',
-      'later-notion:alignment-later', 'later-notion:alignment-later',
-      'written-answer:written-leak', 'written-answer:written-leak',
-      'no-3114:s5-3114', 'no-3114:s5-3114',
-      'no-trusted-adult:s5-trusted-adult', 'no-trusted-adult:s5-trusted-adult',
-      'question-after-distress:s5-question-after', 'question-after-distress:s5-question-after',
-      'wrong-rule:accuracy', 'wrong-rule:accuracy',
-      'no-diagnosis:diagnosis-uses', 'no-diagnosis:diagnosis-uses',
+      'unrolled-method:hints-unrolls',
+      'unrolled-method:hints-unrolls',
+      'calculation-error:accuracy-calculation',
+      'calculation-error:accuracy-calculation',
+      'two-questions:one-question',
+      'two-questions:one-question',
+      'later-notion:alignment-later',
+      'later-notion:alignment-later',
+      'written-answer:written-leak',
+      'written-answer:written-leak',
+      'no-3114:s5-3114',
+      'no-3114:s5-3114',
+      'no-trusted-adult:s5-trusted-adult',
+      'no-trusted-adult:s5-trusted-adult',
+      'question-after-distress:s5-question-after',
+      'question-after-distress:s5-question-after',
+      'wrong-rule:accuracy',
+      'wrong-rule:accuracy',
+      'no-diagnosis:diagnosis-uses',
+      'no-diagnosis:diagnosis-uses',
     ]);
   });
 
@@ -63,11 +73,13 @@ describe('faultFlagged', () => {
 
 describe('detection', () => {
   it('counts faulty versions flagged and clean ones left alone, failed judgements apart', () => {
-    expect(detection([
-      { id: 'u1', fault: 'unrolled', flagged: { clean: false, faulty: true } },
-      { id: 'u2', fault: 'unrolled', flagged: { clean: true, faulty: false } },
-      { id: 'c1', fault: 'calc', flagged: { clean: null, faulty: true } },
-    ])).toEqual([
+    expect(
+      detection([
+        { id: 'u1', fault: 'unrolled', flagged: { clean: false, faulty: true } },
+        { id: 'u2', fault: 'unrolled', flagged: { clean: true, faulty: false } },
+        { id: 'c1', fault: 'calc', flagged: { clean: null, faulty: true } },
+      ]),
+    ).toEqual([
       { fault: 'unrolled', cases: 2, detected: 1, faultyJudged: 2, cleanKept: 1, cleanJudged: 2, missed: ['u2'], falseAlarms: ['u2'], failed: [] },
       { fault: 'calc', cases: 1, detected: 1, faultyJudged: 1, cleanKept: 0, cleanJudged: 0, missed: [], falseAlarms: [], failed: ['c1 (clean)'] },
     ]);

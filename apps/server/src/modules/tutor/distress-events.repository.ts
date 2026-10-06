@@ -19,16 +19,30 @@ class DistressEventsRepository {
     await db.transaction(async (tx) => {
       if (turn.event) {
         // Two distress messages sent at once: the second finds the event and records none.
-        await tx.insert(distressEvents)
+        await tx
+          .insert(distressEvents)
           .values({ userId: turn.userId, sessionId: turn.sessionId, ...turn.event })
           .onConflictDoNothing({ target: distressEvents.sessionId });
-        await tx.update(studySessions)
+        await tx
+          .update(studySessions)
           .set({ status: 'completed', endedAt: sql`now()`, updatedAt: sql`now()` })
           .where(eq(studySessions.id, turn.sessionId));
       }
       // now() is the transaction's start for both rows: clock_timestamp() keeps the reply after the message.
-      await tx.insert(messages).values({ sessionId: turn.sessionId, role: 'user', content: turn.student.content, messageMetadata: turn.student.metadata, createdAt: sql`clock_timestamp()` });
-      await tx.insert(messages).values({ sessionId: turn.sessionId, role: 'assistant', content: turn.reply.content, messageMetadata: turn.reply.metadata, createdAt: sql`clock_timestamp()` });
+      await tx.insert(messages).values({
+        sessionId: turn.sessionId,
+        role: 'user',
+        content: turn.student.content,
+        messageMetadata: turn.student.metadata,
+        createdAt: sql`clock_timestamp()`,
+      });
+      await tx.insert(messages).values({
+        sessionId: turn.sessionId,
+        role: 'assistant',
+        content: turn.reply.content,
+        messageMetadata: turn.reply.metadata,
+        createdAt: sql`clock_timestamp()`,
+      });
     });
   }
 

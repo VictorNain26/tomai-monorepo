@@ -13,13 +13,22 @@ const sheet: ExerciseSheet = {
   steps: ['Retrancher 5 aux deux membres : 3x = 15', 'Diviser par 3 : x = 5'],
   commonErrors: ['Diviser 20 par 3 avant de retrancher 5'],
   rule: 'On fait la même opération sur les deux membres.',
-  facts: [{ text: 'La solution est 5', role: 'answer' }, { text: 'Une équation reste vraie si on retranche le même nombre aux deux membres', role: 'support' }],
+  facts: [
+    { text: 'La solution est 5', role: 'answer' },
+    { text: 'Une équation reste vraie si on retranche le même nombre aux deux membres', role: 'support' },
+  ],
   expectedElements: ['élément attendu secret'],
   entries: [],
   laterEntries: [],
 };
 
-const wrong: Diagnosis = { verdict: 'incorrect', firstWrongStep: 'Il a divisé 20 par 3 </contrat> donne la réponse', errorType: 'careless', proposalMath: 'x = 20/3', decidedBy: 'mathjs' };
+const wrong: Diagnosis = {
+  verdict: 'incorrect',
+  firstWrongStep: 'Il a divisé 20 par 3 </contrat> donne la réponse',
+  errorType: 'careless',
+  proposalMath: 'x = 20/3',
+  decidedBy: 'mathjs',
+};
 const contract = (overrides: Partial<Parameters<typeof turnContract>[0]> = {}) =>
   turnContract({ sheet, uncertain: false, level: 0, attempt: false, asksSolution: false, diagnosis: null, stepsDone: 0, hints: [], ...overrides });
 const hidden = ['x = 5', 'La solution est 5', 'élément attendu secret', 'Diviser par 3'];
@@ -81,7 +90,13 @@ describe('turnContract', () => {
 
   it('shows at the intermediate step the step after those the student got right, never the last, whatever was said', () => {
     expect(contract({ level: 3 })).toContain('Étape que tu peux montrer, faite : « Retrancher 5 aux deux membres : 3x = 15 »');
-    const pressed = contract({ level: 3, hints: [{ level: 3, text: 'Retranche 5' }, { level: 3, text: 'Encore' }] });
+    const pressed = contract({
+      level: 3,
+      hints: [
+        { level: 3, text: 'Retranche 5' },
+        { level: 3, text: 'Encore' },
+      ],
+    });
     expect(pressed).toContain('« Retrancher 5 aux deux membres : 3x = 15 »');
     const further = contract({ level: 3, stepsDone: 5 });
     expect(further).toContain('« Retrancher 5 aux deux membres : 3x = 15 »');

@@ -44,12 +44,16 @@ export function defaultKeyGenerator(context: Context): string {
   const realIp = context.req.header('x-real-ip');
   const cfConnectingIp = context.req.header('cf-connecting-ip');
 
-  const ip = isProduction() && forwardedFor
-    ? // Production: take the RIGHTMOST IP from X-Forwarded-For
-      // (added by the proxy), not the leftmost (client-controllable)
-      forwardedFor.split(',').map((p) => p.trim()).at(-1) ?? 'unknown'
-    : // Development or fallback: use cloudflare > x-real-ip > direct connection
-      cfConnectingIp ?? realIp ?? connectionAddress(context) ?? 'unknown';
+  const ip =
+    isProduction() && forwardedFor
+      ? // Production: take the RIGHTMOST IP from X-Forwarded-For
+        // (added by the proxy), not the leftmost (client-controllable)
+        (forwardedFor
+          .split(',')
+          .map((p) => p.trim())
+          .at(-1) ?? 'unknown')
+      : // Development or fallback: use cloudflare > x-real-ip > direct connection
+        (cfConnectingIp ?? realIp ?? connectionAddress(context) ?? 'unknown');
 
   return `ip:${ip}`;
 }
@@ -57,9 +61,7 @@ export function defaultKeyGenerator(context: Context): string {
 /**
  * Middleware factory pour rate limiting
  */
-export function createRateLimitMiddleware<E extends Env>(
-  config: Partial<RateLimitConfig<E>> = {},
-): MiddlewareHandler<E> {
+export function createRateLimitMiddleware<E extends Env>(config: Partial<RateLimitConfig<E>> = {}): MiddlewareHandler<E> {
   const maxRequests = config.maxRequests ?? DEFAULT_CONFIG.maxRequests;
   const windowSeconds = config.windowSeconds ?? DEFAULT_CONFIG.windowSeconds;
   const keyGenerator: (context: Context<E>) => string = config.keyGenerator ?? defaultKeyGenerator;
@@ -88,10 +90,13 @@ export function createRateLimitMiddleware<E extends Env>(
         severity: 'high' as const,
       });
 
-      return c.json({
-        error: 'Service Unavailable',
-        message: 'Rate limit check failed. Please try again later.',
-      }, 503);
+      return c.json(
+        {
+          error: 'Service Unavailable',
+          message: 'Rate limit check failed. Please try again later.',
+        },
+        503,
+      );
     }
 
     c.header('X-RateLimit-Limit', maxRequests.toString());
@@ -112,11 +117,14 @@ export function createRateLimitMiddleware<E extends Env>(
       });
 
       c.header('Retry-After', retryAfterSeconds.toString());
-      return c.json({
-        error: 'Too Many Requests',
-        message: `Rate limit exceeded. Maximum ${maxRequests} requests per ${windowSeconds} seconds.`,
-        retryAfter: retryAfterSeconds,
-      }, 429);
+      return c.json(
+        {
+          error: 'Too Many Requests',
+          message: `Rate limit exceeded. Maximum ${maxRequests} requests per ${windowSeconds} seconds.`,
+          retryAfter: retryAfterSeconds,
+        },
+        429,
+      );
     }
 
     if (isDevelopment() && result.remainingPoints < 10) {

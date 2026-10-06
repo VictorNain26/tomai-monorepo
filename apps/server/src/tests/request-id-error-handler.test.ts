@@ -27,17 +27,25 @@ const app = new Hono<AppEnv>()
     throw new Error('connection string postgres://secret');
   })
   .get('/ok', (c) => c.json({ requestId: c.var.requestId }))
-  .post('/json', validate('json', z.object({ a: z.number(), items: z.array(z.object({ name: z.string().min(1) })).optional() })), (c) => c.json(c.req.valid('json')))
+  .post('/json', validate('json', z.object({ a: z.number(), items: z.array(z.object({ name: z.string().min(1) })).optional() })), (c) =>
+    c.json(c.req.valid('json')),
+  )
   .post(
     '/strict/:id',
     validate('param', z.object({ id: z.uuid() })),
-    validate('json', z.strictObject({ name: z.string().optional() }).refine((body) => body.name !== undefined, 'Au moins un champ à modifier')),
+    validate(
+      'json',
+      z.strictObject({ name: z.string().optional() }).refine((body) => body.name !== undefined, 'Au moins un champ à modifier'),
+    ),
     (c) => c.json(c.req.valid('json')),
   )
   .onError(handleError)
   .notFound(handleNotFound);
 
-interface Envelope { error: { code: string; message: string; fields?: { location: string; path: string; code: string; message: string }[] }; requestId: string }
+interface Envelope {
+  error: { code: string; message: string; fields?: { location: string; path: string; code: string; message: string }[] };
+  requestId: string;
+}
 
 async function call(path: string, init?: RequestInit) {
   const res = await app.request(path, init);

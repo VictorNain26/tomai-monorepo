@@ -31,14 +31,24 @@ describe('alignment of the exercises with the referential', () => {
       const { entries, laterEntries } = exercise.alignment;
       for (const id of [...entries, ...laterEntries]) {
         const entry = byId.get(id);
-        expect({ exercise: exercise.id, id, subject: entry?.subject, inForce: inForce(id), notEarlier: rank(entry?.level ?? '') >= rank(exercise.level) })
-          .toEqual({ exercise: exercise.id, id, subject: exercise.subject, inForce: true, notEarlier: true });
+        expect({
+          exercise: exercise.id,
+          id,
+          subject: entry?.subject,
+          inForce: inForce(id),
+          notEarlier: rank(entry?.level ?? '') >= rank(exercise.level),
+        }).toEqual({ exercise: exercise.id, id, subject: exercise.subject, inForce: true, notEarlier: true });
       }
       for (const id of laterEntries) {
-        expect({ exercise: exercise.id, id, later: rank(byId.get(id)?.level ?? '') > rank(exercise.level) }).toEqual({ exercise: exercise.id, id, later: true });
+        expect({ exercise: exercise.id, id, later: rank(byId.get(id)?.level ?? '') > rank(exercise.level) }).toEqual({
+          exercise: exercise.id,
+          id,
+          later: true,
+        });
       }
       expect({ exercise: exercise.id, distinct: new Set([...entries, ...laterEntries]).size }).toEqual({
-        exercise: exercise.id, distinct: entries.length + laterEntries.length,
+        exercise: exercise.id,
+        distinct: entries.length + laterEntries.length,
       });
     }
   });
@@ -46,7 +56,10 @@ describe('alignment of the exercises with the referential', () => {
   it('holds at least one entry of the class itself for every linked exercise', () => {
     for (const exercise of dataset.exercises) {
       if (!exercise.alignment) continue;
-      expect({ id: exercise.id, inClass: exercise.alignment.entries.some((id) => byId.get(id)?.level === exercise.level) }).toEqual({ id: exercise.id, inClass: true });
+      expect({ id: exercise.id, inClass: exercise.alignment.entries.some((id) => byId.get(id)?.level === exercise.level) }).toEqual({
+        id: exercise.id,
+        inClass: true,
+      });
     }
   });
 
@@ -61,7 +74,11 @@ describe('alignment of the exercises with the referential', () => {
 describe('alignment schema', () => {
   it('rejects an empty list of entries and an unknown key', () => {
     const [first] = dataset.exercises;
-    const parse = (alignment: unknown) => datasetSchema.safeParse({ exercises: [{ ...first, alignment }], scenarios: dataset.scenarios.slice(0, 1).map((s) => ({ ...s, exercises: 'all' })) }).success;
+    const parse = (alignment: unknown) =>
+      datasetSchema.safeParse({
+        exercises: [{ ...first, alignment }],
+        scenarios: dataset.scenarios.slice(0, 1).map((s) => ({ ...s, exercises: 'all' })),
+      }).success;
     expect(parse({ entries: ['x'], laterEntries: [] })).toBe(true);
     expect(parse(null)).toBe(true);
     expect(parse({ entries: [], laterEntries: [] })).toBe(false);

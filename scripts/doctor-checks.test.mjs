@@ -8,9 +8,15 @@ import { runChecks, loadConfig, buildChecks, parseEnvFile } from './doctor-check
 const CFG = { serverUrl: 'http://s:3000', mistralServerUrl: 'https://api.eu.mistral.ai', mistralModel: 'mistral-small-2603' };
 
 function ctxWith({ exec, fetchFn }) {
-  return { config: CFG, exec: exec ?? (() => ({ ok: true, stdout: '' })), fetchFn: fetchFn ?? (async () => ({ ok: true, status: 200, json: async () => ({}) })) };
+  return {
+    config: CFG,
+    exec: exec ?? (() => ({ ok: true, stdout: '' })),
+    fetchFn: fetchFn ?? (async () => ({ ok: true, status: 200, json: async () => ({}) })),
+  };
 }
-function byName(checks, name) { return checks.find((c) => c.name.includes(name)); }
+function byName(checks, name) {
+  return checks.find((c) => c.name.includes(name));
+}
 
 test('runChecks: tout PASS -> exitCode 0', async () => {
   const checks = [
@@ -27,7 +33,12 @@ test('runChecks: tout PASS -> exitCode 0', async () => {
 test('runChecks: un FAIL -> exitCode 1 + raison affichée', async () => {
   const checks = [
     { name: 'ok', run: async () => {} },
-    { name: 'bad', run: async () => { throw new Error('postgres injoignable'); } },
+    {
+      name: 'bad',
+      run: async () => {
+        throw new Error('postgres injoignable');
+      },
+    },
   ];
   const lines = [];
   const summary = await runChecks(checks, { log: (l) => lines.push(l) });
@@ -39,7 +50,14 @@ test('runChecks: un FAIL -> exitCode 1 + raison affichée', async () => {
 test('runChecks: un SKIP est visible et ne compte pas comme FAIL', async () => {
   const SKIP = Symbol.for('doctor.skip');
   const checks = [
-    { name: 'cond', run: async () => { const e = new Error('server non lancé'); e[SKIP] = true; throw e; } },
+    {
+      name: 'cond',
+      run: async () => {
+        const e = new Error('server non lancé');
+        e[SKIP] = true;
+        throw e;
+      },
+    },
   ];
   const lines = [];
   const summary = await runChecks(checks, { log: (l) => lines.push(l) });
@@ -70,7 +88,9 @@ test('loadConfig: .env server prioritaire sur défaut, processEnv prioritaire su
 });
 
 test('check conteneurs: FAIL si postgres absent du ps', async () => {
-  const checks = buildChecks(ctxWith({ exec: () => ({ ok: true, stdout: '{"Service":"adminer","Health":"healthy","State":"running"}' }) }), { full: false });
+  const checks = buildChecks(ctxWith({ exec: () => ({ ok: true, stdout: '{"Service":"adminer","Health":"healthy","State":"running"}' }) }), {
+    full: false,
+  });
   await assert.rejects(byName(checks, 'conteneurs').run(), /postgres/);
 });
 
@@ -95,7 +115,7 @@ const migrationsCtx = (applied, extra = {}) => ({
 test('check migrations: FAIL si migrations en retard', async () => {
   const check = byName(buildChecks(migrationsCtx('100,200'), { full: true }), 'migrations');
   await assert.rejects(check.run(), /en retard: 2\/3/);
-  await assert.rejects(check.run(), /bun run db:migrate/, "le message doit pointer vers le migrateur");
+  await assert.rejects(check.run(), /bun run db:migrate/, 'le message doit pointer vers le migrateur');
 });
 
 test('check migrations: FAIL sur un historique que le journal ne connaît pas, même plus long', async () => {
@@ -125,20 +145,37 @@ test('runChecks strict: un SKIP devient un FAIL (exitCode 1)', async () => {
   const SKIP = Symbol.for('doctor.skip');
   const checks = [
     { name: 'ok', run: async () => {} },
-    { name: 'skipped', run: async () => { const e = new Error('server non lancé'); e[SKIP] = true; throw e; } },
+    {
+      name: 'skipped',
+      run: async () => {
+        const e = new Error('server non lancé');
+        e[SKIP] = true;
+        throw e;
+      },
+    },
   ];
   const lines = [];
   const summary = await runChecks(checks, { log: (l) => lines.push(l), strict: true });
   assert.equal(summary.failed, 1, 'le SKIP doit compter comme failed en mode strict');
   assert.equal(summary.exitCode, 1);
-  assert.ok(lines.some((l) => l.includes('FAIL') && l.includes('e2e strict')), 'le message doit mentionner [e2e strict]');
+  assert.ok(
+    lines.some((l) => l.includes('FAIL') && l.includes('e2e strict')),
+    'le message doit mentionner [e2e strict]',
+  );
 });
 
 test('runChecks non-strict: un SKIP ne compte pas comme FAIL (exitCode 0)', async () => {
   const SKIP = Symbol.for('doctor.skip');
   const checks = [
     { name: 'ok', run: async () => {} },
-    { name: 'skipped', run: async () => { const e = new Error('server non lancé'); e[SKIP] = true; throw e; } },
+    {
+      name: 'skipped',
+      run: async () => {
+        const e = new Error('server non lancé');
+        e[SKIP] = true;
+        throw e;
+      },
+    },
   ];
   const summary = await runChecks(checks, { log: () => {} });
   assert.equal(summary.failed, 0, 'le SKIP ne doit PAS compter comme failed en mode non-strict');
@@ -146,7 +183,11 @@ test('runChecks non-strict: un SKIP ne compte pas comme FAIL (exitCode 0)', asyn
 });
 
 test('buildChecks e2e: ajoute le check mistral chat réel', async () => {
-  const ctx = { config: { ...CFG, mistralKey: 'mk-test' }, exec: () => ({}), fetchFn: async () => ({ ok: true, json: async () => ({ choices: [{}] }) }) };
+  const ctx = {
+    config: { ...CFG, mistralKey: 'mk-test' },
+    exec: () => ({}),
+    fetchFn: async () => ({ ok: true, json: async () => ({ choices: [{}] }) }),
+  };
   const checks = buildChecks(ctx, { full: true, e2e: true });
   assert.ok(byName(checks, 'mistral'), 'le check mistral doit être présent quand e2e=true');
 });

@@ -11,9 +11,9 @@ export function krippendorffAlpha(units: readonly (readonly number[])[], level: 
   const values = [...new Set(pairable.flat())].sort((a, b) => a - b);
   if (values.length < 2) return null;
   // Coincidences: each ordered pair of values within a unit, weighted by 1 / (coders - 1).
-  const pairs = pairable.flatMap((unit) => unit.flatMap((a, i) => unit.flatMap((b, j) => (
-    i === j ? [] : [{ c: values.indexOf(a), k: values.indexOf(b), weight: 1 / (unit.length - 1) }]
-  ))));
+  const pairs = pairable.flatMap((unit) =>
+    unit.flatMap((a, i) => unit.flatMap((b, j) => (i === j ? [] : [{ c: values.indexOf(a), k: values.indexOf(b), weight: 1 / (unit.length - 1) }]))),
+  );
   const totals = values.map((_, c) => pairs.reduce((sum, pair) => sum + (pair.c === c ? pair.weight : 0), 0));
   const n = totals.reduce((sum, t) => sum + t, 0);
   const distance = (c: number, k: number, nc: number, nk: number): number => {
@@ -49,11 +49,7 @@ function random(seed: number): () => number {
  * 95 % percentile interval of alpha, resampling units with replacement. Resamples where
  * alpha is undefined are dropped; null when none is defined.
  */
-export function alphaInterval(
-  units: readonly (readonly number[])[],
-  level: Level,
-  { samples = 2000, seed = 1 } = {},
-): [number, number] | null {
+export function alphaInterval(units: readonly (readonly number[])[], level: Level, { samples = 2000, seed = 1 } = {}): [number, number] | null {
   const next = random(seed);
   const alphas: number[] = [];
   for (let s = 0; s < samples; s++) {

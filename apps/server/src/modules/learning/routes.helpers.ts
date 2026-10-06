@@ -8,10 +8,7 @@ import { z } from 'zod';
 import { logger } from '../../platform/observability/logger';
 import type { EducationLevelType } from '../../types/index';
 import { isEducationLevel } from '../../lib/education-levels.js';
-import {
-  DeckNotFoundError,
-  DeckOwnershipError,
-} from './learning.service.js';
+import { DeckNotFoundError, DeckOwnershipError } from './learning.service.js';
 
 /** `:id` of a deck or card: a UUID, so a malformed id is a 400, not a Postgres 500. */
 export const idParam = z.object({ id: z.uuid() });
@@ -29,9 +26,7 @@ export const idParam = z.object({ id: z.uuid() });
  * error was not a known deck domain error (caller must rethrow / fall through).
  * The caller is responsible for calling `return c.json(domain.body, domain.status)`.
  */
-export function handleDeckDomainError(
-  err: unknown,
-): { status: 404; body: { success: false; error: 'DECK_NOT_FOUND' | 'DECK_FORBIDDEN' } } | null {
+export function handleDeckDomainError(err: unknown): { status: 404; body: { success: false; error: 'DECK_NOT_FOUND' | 'DECK_FORBIDDEN' } } | null {
   if (err instanceof DeckNotFoundError) {
     return { status: 404, body: { success: false, error: 'DECK_NOT_FOUND' } };
   }
@@ -44,10 +39,7 @@ export function handleDeckDomainError(
 /**
  * The user's level; a missing or unknown one falls back to the 6e, logged as an incomplete profile.
  */
-export function getUserLevel(
-  userId: string,
-  schoolLevel: string | null | undefined
-): EducationLevelType {
+export function getUserLevel(userId: string, schoolLevel: string | null | undefined): EducationLevelType {
   if (isEducationLevel(schoolLevel)) return schoolLevel;
   logger.warn('User has no collège level - using fallback', {
     operation: 'learning:getUserLevel:fallback',

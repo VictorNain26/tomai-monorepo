@@ -47,7 +47,8 @@ export async function createStudentAccount(input: StudentAccountInput): Promise<
 
 export async function setPassword(userId: string, password: string): Promise<void> {
   const hashedPassword = await hashPassword(password);
-  await db.update(account)
+  await db
+    .update(account)
     .set({ password: hashedPassword })
     .where(and(eq(account.userId, userId), eq(account.providerId, 'credential')));
 }

@@ -9,8 +9,16 @@ export const SUBJECT_FAMILIES = ['mathematiques', 'francais', 'langues', 'scienc
 export type SubjectFamily = (typeof SUBJECT_FAMILIES)[number];
 
 export const SUBJECT_SLUGS = [
-  'mathematiques', 'francais', 'anglais', 'espagnol', 'allemand', 'italien',
-  'histoire-geo', 'physique-chimie', 'svt', 'technologie',
+  'mathematiques',
+  'francais',
+  'anglais',
+  'espagnol',
+  'allemand',
+  'italien',
+  'histoire-geo',
+  'physique-chimie',
+  'svt',
+  'technologie',
 ] as const;
 
 export type SubjectSlug = (typeof SUBJECT_SLUGS)[number];

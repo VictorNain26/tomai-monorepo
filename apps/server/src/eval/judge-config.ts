@@ -49,7 +49,11 @@ export interface JudgeUsage {
 export const NO_USAGE: JudgeUsage = { inputTokens: 0, cachedInputTokens: 0, outputTokens: 0 };
 
 export function addUsage(a: JudgeUsage, b: JudgeUsage): JudgeUsage {
-  return { inputTokens: a.inputTokens + b.inputTokens, cachedInputTokens: a.cachedInputTokens + b.cachedInputTokens, outputTokens: a.outputTokens + b.outputTokens };
+  return {
+    inputTokens: a.inputTokens + b.inputTokens,
+    cachedInputTokens: a.cachedInputTokens + b.cachedInputTokens,
+    outputTokens: a.outputTokens + b.outputTokens,
+  };
 }
 
 /**

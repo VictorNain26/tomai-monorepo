@@ -58,10 +58,15 @@ class FileContextService {
       logger.warn('File text not extracted', { fileId: file.id, method: extraction.metadata.extractionMethod, operation: 'file-extraction' });
     }
     await filesRepository
-      .mergeEducationalContext(file.id, extraction.success
-        ? { extractedText: extraction.text, extractionMethod: extraction.metadata.extractionMethod, wordCount: extraction.metadata.wordCount }
-        : { extractionFailed: true })
-      .catch((err: unknown) => { logger.warn('Extraction result not saved', { fileId: file.id, err, operation: 'file-extraction' }); });
+      .mergeEducationalContext(
+        file.id,
+        extraction.success
+          ? { extractedText: extraction.text, extractionMethod: extraction.metadata.extractionMethod, wordCount: extraction.metadata.wordCount }
+          : { extractionFailed: true },
+      )
+      .catch((err: unknown) => {
+        logger.warn('Extraction result not saved', { fileId: file.id, err, operation: 'file-extraction' });
+      });
     return extraction.success ? extraction.text : UNREADABLE;
   }
 
@@ -81,7 +86,12 @@ class FileContextService {
     const [records, attached] = await Promise.all([
       filesRepository.findReadyOwnedBy(userId, requested),
       sessionFilesRepository.findBySessionWithContext(sessionId).catch((err: unknown) => {
-        logger.error('Session files not loaded, the turn goes on without them', { sessionId, err, operation: 'file-context', severity: 'medium' as const });
+        logger.error('Session files not loaded, the turn goes on without them', {
+          sessionId,
+          err,
+          operation: 'file-context',
+          severity: 'medium' as const,
+        });
         return [];
       }),
     ]);

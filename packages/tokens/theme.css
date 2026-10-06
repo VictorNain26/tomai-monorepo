@@ -9,9 +9,9 @@
  * charge la fonte par Fontsource : la valeur de repli de var() porte son nom, sinon
  * toute la pile serait invalide et le navigateur retomberait sur sa serif. */
 @theme inline {
-  --font-sans: var(--font-nunito, "Nunito Variable"), ui-sans-serif, system-ui, sans-serif;
-  --font-heading: var(--font-nunito, "Nunito Variable"), ui-sans-serif, system-ui, sans-serif;
-  --font-hand: var(--font-caveat, "Caveat Variable"), cursive;
+  --font-sans: var(--font-nunito, 'Nunito Variable'), ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--font-nunito, 'Nunito Variable'), ui-sans-serif, system-ui, sans-serif;
+  --font-hand: var(--font-caveat, 'Caveat Variable'), cursive;
 }
 
 @theme {
@@ -20,31 +20,31 @@
   --radius-2xl: 20px;
 
   /* Couleurs sémantiques (light) — stylo Bic quatre couleurs sur papier crème */
-  --color-background: #FAF7F0;
-  --color-foreground: #1D1D22;
-  --color-primary: #1F3F9E;
-  --color-primary-foreground: #FFFFFF;
-  --color-secondary: #F0EADD;
-  --color-secondary-foreground: #1D1D22;
-  --color-muted: #F0EADD;
-  --color-muted-foreground: #5C5C66;
-  --color-accent: #F0EADD;
-  --color-accent-foreground: #1D1D22;
-  --color-card: #FFFDF8;
-  --color-card-foreground: #1D1D22;
-  --color-popover: #FFFDF8;
-  --color-popover-foreground: #1D1D22;
-  --color-destructive: #B42318;
-  --color-destructive-foreground: #FFFFFF;
-  --color-success: #1B7337;
-  --color-success-foreground: #FFFFFF;
-  --color-warning: #E0A43A;
-  --color-warning-foreground: #1D1D22;
-  --color-highlight: #F9E08B;
-  --color-annotation: #C0282D;
-  --color-border: #E3DACB;
-  --color-input: #8A7F6C;
-  --color-ring: #1F3F9E;
+  --color-background: #faf7f0;
+  --color-foreground: #1d1d22;
+  --color-primary: #1f3f9e;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #f0eadd;
+  --color-secondary-foreground: #1d1d22;
+  --color-muted: #f0eadd;
+  --color-muted-foreground: #5c5c66;
+  --color-accent: #f0eadd;
+  --color-accent-foreground: #1d1d22;
+  --color-card: #fffdf8;
+  --color-card-foreground: #1d1d22;
+  --color-popover: #fffdf8;
+  --color-popover-foreground: #1d1d22;
+  --color-destructive: #b42318;
+  --color-destructive-foreground: #ffffff;
+  --color-success: #1b7337;
+  --color-success-foreground: #ffffff;
+  --color-warning: #e0a43a;
+  --color-warning-foreground: #1d1d22;
+  --color-highlight: #f9e08b;
+  --color-annotation: #c0282d;
+  --color-border: #e3dacb;
+  --color-input: #8a7f6c;
+  --color-ring: #1f3f9e;
   --color-overlay: #000000;
 
   /* Motion — fast: micro-feedback (press, toggle) ; base: transitions

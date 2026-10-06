@@ -70,7 +70,6 @@ const SUMMARIZATION_PROMPT_VERSION = '2026-10-05.2';
 const SUMMARIZATION_CACHE_KEY = `summarization-${SUMMARIZATION_PROMPT_VERSION}`;
 
 class SummarizationService {
-
   /**
    * Résume ce que le résumé précédent ne couvre pas encore, hors de la fenêtre récente, dès
    * qu'un lot entier s'y trouve. Appelé en fire-and-forget après chaque réponse ; ne throw
@@ -90,12 +89,15 @@ class SummarizationService {
       const lastSummarizedMessage = messagesToSummarize.at(-1);
       if (!lastSummarizedMessage) return;
 
-      const messagesText = messagesToSummarize.map(m => `[${m.role}]: ${m.content}`).join('\n\n');
+      const messagesText = messagesToSummarize.map((m) => `[${m.role}]: ${m.content}`).join('\n\n');
       const summary = await this.generateSummary(messagesText, session.conversationSummary, { userId: session.userId, sessionId });
       if (!summary) return;
 
       // Two runs started by turns close together: the one that read an older cutoff writes nothing.
-      const stored = await studySessionsRepository.replaceSummary(sessionId, session.summaryUpToMessageId, { conversationSummary: summary, summaryUpToMessageId: lastSummarizedMessage.id });
+      const stored = await studySessionsRepository.replaceSummary(sessionId, session.summaryUpToMessageId, {
+        conversationSummary: summary,
+        summaryUpToMessageId: lastSummarizedMessage.id,
+      });
       if (!stored) return;
 
       logger.info('Conversation summarized', {
@@ -120,11 +122,7 @@ class SummarizationService {
    * Le résumé précédent et les seuls nouveaux échanges. Ordre messages = system prompt
    * (stable, caché) → contenu variable.
    */
-  private async generateSummary(
-    messagesText: string,
-    previousSummary: string | null,
-    owner: CostOwner,
-  ): Promise<string | null> {
+  private async generateSummary(messagesText: string, previousSummary: string | null, owner: CostOwner): Promise<string | null> {
     const userContent = previousSummary
       ? `## RÉSUMÉ PRÉCÉDENT\n${previousSummary}\n\n## NOUVEAUX ÉCHANGES\n${messagesText}`
       : `## NOUVEAUX ÉCHANGES\n${messagesText}`;

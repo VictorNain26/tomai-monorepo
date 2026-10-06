@@ -13,7 +13,7 @@ Lors d'une compaction, préserver : PR en cours, branche, plan en cours, derni
 terminée, décisions ouvertes.
 
 Avant un commit : `bun run typecheck && bun run lint`, et `bun run test` quand du code testé
-change.
+change. Prettier formate le code (`bun run format`) ; le pre-commit et la CI le vérifient.
 
 ## Frontière des apps
 
@@ -50,4 +50,4 @@ connaître évite de croire couvert ce qui ne l'est pas :
   gabarit `.env.example`, rouvert par la négation `Read(!.env.example)`. Les porteurs de
   clés — `*.keystore`, `*.jks`, `*.p8`, `*.p12`, `*.pem` — sont bloqués par des règles
   distinctes.
-- **lefthook** : lint + typecheck en pre-commit, tests + build en pre-push.
+- **lefthook** : lint, format (Prettier) + typecheck en pre-commit, tests + build en pre-push.

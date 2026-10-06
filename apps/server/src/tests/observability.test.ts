@@ -5,14 +5,11 @@ const MODULE = new URL('../platform/observability/logger.ts', import.meta.url).p
 
 /** Runs `script` with `logger` in scope in a fresh production process and returns the JSON lines it printed. */
 function logLines(script: string, env: Record<string, string> = {}): Record<string, unknown>[] {
-  const result = Bun.spawnSync(
-    ['bun', '--no-env-file', '-e', `const { logger } = await import(${JSON.stringify(MODULE)}); ${script}`],
-    {
-      cwd: tmpdir(),
-      env: { PATH: process.env.PATH ?? '', NODE_ENV: 'production', ...env },
-      stderr: 'pipe',
-    },
-  );
+  const result = Bun.spawnSync(['bun', '--no-env-file', '-e', `const { logger } = await import(${JSON.stringify(MODULE)}); ${script}`], {
+    cwd: tmpdir(),
+    env: { PATH: process.env.PATH ?? '', NODE_ENV: 'production', ...env },
+    stderr: 'pipe',
+  });
   expect(result.exitCode).toBe(0);
   return result.stdout
     .toString()
@@ -89,14 +86,15 @@ describe('logger', () => {
     `);
     expect(JSON.stringify(lines)).not.toContain('Léa');
     const [db, mistral] = lines.map((line) => line['err'] as { message: string; cause?: { message: string; code?: string } });
-    expect(db).toMatchObject({ message: 'Failed query: insert into "study_sessions" ("topic") values ($1)', cause: { message: 'SQLSTATE 22P02 study_sessions', code: '22P02' } });
+    expect(db).toMatchObject({
+      message: 'Failed query: insert into "study_sessions" ("topic") values ($1)',
+      cause: { message: 'SQLSTATE 22P02 study_sessions', code: '22P02' },
+    });
     expect(mistral?.message).toBe('MistralError (HTTP 422)');
   });
 
   it('does not throw on a BigInt or a circular reference', () => {
-    const lines = logLines(
-      `const a = {}; a.self = a; logger.info('big', { n: 10n }); logger.info('circular', { a });`,
-    );
+    const lines = logLines(`const a = {}; a.self = a; logger.info('big', { n: 10n }); logger.info('circular', { a });`);
     expect(lines.map((l) => l['msg'])).toEqual(['big', 'circular']);
   });
 

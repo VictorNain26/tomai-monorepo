@@ -76,7 +76,10 @@ const SUBJECT_INSTRUCTIONS: Record<CardFamily, string> = {
 // ============================================================================
 
 const LEVEL_TO_CYCLE: Record<EducationLevelType, EducationCycle> = {
-  sixieme: 'cycle3', cinquieme: 'cycle4', quatrieme: 'cycle4', troisieme: 'cycle4',
+  sixieme: 'cycle3',
+  cinquieme: 'cycle4',
+  quatrieme: 'cycle4',
+  troisieme: 'cycle4',
 };
 
 const CYCLE_GUIDANCE: Record<EducationCycle, string> = {
@@ -88,7 +91,7 @@ const CYCLE_GUIDANCE: Record<EducationCycle, string> = {
   cycle4: `**Cycle 4 (5ème-3ème, 12-14 ans)**
 - Vocabulaire scolaire standard
 - Termes techniques du programme
-- Raisonnement et argumentation`
+- Raisonnement et argumentation`,
 };
 
 // ============================================================================
@@ -107,7 +110,7 @@ export function getSubjectInstructions(subject: SubjectSlug): string {
 export function getRecommendedCardTypes(subject: SubjectSlug): CardType[] {
   // Retourne tous les types avec les suggérés en premier
   const suggested = SUGGESTED_CARD_TYPES[SUBJECTS[subject].family];
-  const others = CARD_TYPES.filter(t => !suggested.includes(t));
+  const others = CARD_TYPES.filter((t) => !suggested.includes(t));
   return [...suggested, ...others];
 }
 
@@ -118,4 +121,3 @@ export function getEducationCycle(level: EducationLevelType): EducationCycle {
 export function getCycleAdaptationInstructions(cycle: EducationCycle): string {
   return CYCLE_GUIDANCE[cycle];
 }
-

@@ -48,7 +48,10 @@ describe.skipIf(!dbReachable)('usersRepository.deleteByUsernamePrefix', () => {
   });
 
   it('refuses an empty prefix, which would match every user', async () => {
-    const outcome = await repository.deleteByUsernamePrefix('').then(() => 'resolved', (error: unknown) => String(error));
+    const outcome = await repository.deleteByUsernamePrefix('').then(
+      () => 'resolved',
+      (error: unknown) => String(error),
+    );
     expect(outcome).toContain('non-empty prefix');
     expect(await repository.findByUsername(`other${tag}`)).toBeDefined();
   });

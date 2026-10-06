@@ -27,16 +27,13 @@ mock.module('../modules/tutor/chat-session.service', () => ({
   },
 }));
 
-const getSessionHistory = mock(async (_sessionId: string, _options?: unknown): Promise<{ id: string; role: string; content: string; createdAt: Date }[]> => []);
-const saveMessage = mock(
-  async (
-    _sessionId: string,
-    _role: 'user' | 'assistant',
-    _content: string,
-    _metadata?: unknown,
-    _options?: unknown,
-  ) => ({ messageId: 'msg-1', realSessionId: 'session-001' }),
+const getSessionHistory = mock(
+  async (_sessionId: string, _options?: unknown): Promise<{ id: string; role: string; content: string; createdAt: Date }[]> => [],
 );
+const saveMessage = mock(async (_sessionId: string, _role: 'user' | 'assistant', _content: string, _metadata?: unknown, _options?: unknown) => ({
+  messageId: 'msg-1',
+  realSessionId: 'session-001',
+}));
 mock.module('../modules/tutor/chat-message.service', () => ({
   chatMessageService: { saveMessage, getSessionHistory },
 }));
@@ -45,7 +42,11 @@ mock.module('../modules/tutor/study-sessions.repository', () => ({
   studySessionsRepository: { updateSubject: mock(async () => {}) },
 }));
 
-interface Texts { fileIds: string[]; attachedFileInfos: { fileName: string; fileId: string }[]; files: { fileId: string; fileName: string; text: string }[] }
+interface Texts {
+  fileIds: string[];
+  attachedFileInfos: { fileName: string; fileId: string }[];
+  files: { fileId: string; fileName: string; text: string }[];
+}
 const prepareFileContext = mock(async (): Promise<Texts> => ({ fileIds: [], attachedFileInfos: [], files: [] }));
 mock.module('../modules/documents/index', () => ({
   sessionFilesRepository: { attach: mock(async () => {}) },
@@ -74,20 +75,49 @@ mock.module('../modules/tutor/turn-analysis.service', () => ({
 const record = mock(async (_owner: unknown, _call: unknown) => {});
 mock.module('../platform/ai/cost', () => ({ recordAiCost: record }));
 
-
 const sheet = (statement: string): ExerciseSheet => ({
-  statement, kind: 'short', answer: '5', answerForms: ['5'], mathEquation: null, mathAnswer: '5', steps: [], commonErrors: [],
-  rule: null, facts: [], expectedElements: [], entries: [], laterEntries: [],
+  statement,
+  kind: 'short',
+  answer: '5',
+  answerForms: ['5'],
+  mathEquation: null,
+  mathAnswer: '5',
+  steps: [],
+  commonErrors: [],
+  rule: null,
+  facts: [],
+  expectedElements: [],
+  entries: [],
+  laterEntries: [],
 });
-interface Change { levelChange: number; top: number; stepDone: boolean; solved: boolean | undefined }
+interface Change {
+  levelChange: number;
+  top: number;
+  stepDone: boolean;
+  solved: boolean | undefined;
+}
 interface Turn {
-  exercise: { id: string | null; sheet: ExerciseSheet | null; uncertain: boolean; hintLevel: number; stepsDone: number; hints: { level: number; text: string }[]; solved: boolean } | null;
+  exercise: {
+    id: string | null;
+    sheet: ExerciseSheet | null;
+    uncertain: boolean;
+    hintLevel: number;
+    stepsDone: number;
+    hints: { level: number; text: string }[];
+    solved: boolean;
+  } | null;
   diagnosis: null;
   hintLevel: number | null;
   contract: string | null;
   change: Change | null;
 }
-const prepareExerciseTurn = mock(async (_params: unknown): Promise<Turn> => ({ exercise: null, diagnosis: null, hintLevel: null, contract: null, change: null }));
+const prepareExerciseTurn = mock(async (_params: unknown): Promise<Turn> => ({
+  exercise: null,
+  diagnosis: null,
+  hintLevel: null,
+  contract: null,
+  change: null,
+}));
 mock.module('../modules/tutor/exercise-turn', () => ({ prepareExerciseTurn }));
 let currentState: { id: string; sheet: ExerciseSheet | null } | null = null;
 mock.module('../modules/tutor/exercise-sheet.service', () => ({ currentExercise: mock(async () => currentState) }));
@@ -128,19 +158,31 @@ describe('ChatOrchestrationService.prepareTurn — distress and input moderation
 
   it('answers a distress seen by Mistral or by the rules, before any exercise sheet', async () => {
     moderation = { flagged: ['selfharm'], selfharmScore: 0.35 };
-    expect(await chatOrchestrationService.prepareTurn({ ...studentTurn, content: "j'ai envie de disparaître" }))
-      .toEqual({ kind: 'distress', sessionId: 'session-001', source: 'both', selfharmScore: 0.35 });
+    expect(await chatOrchestrationService.prepareTurn({ ...studentTurn, content: "j'ai envie de disparaître" })).toEqual({
+      kind: 'distress',
+      sessionId: 'session-001',
+      source: 'both',
+      selfharmScore: 0.35,
+    });
 
     moderation = { flagged: [], selfharmScore: 0.01 };
-    expect(await chatOrchestrationService.prepareTurn({ ...studentTurn, content: 'je me fais du mal quand je rate' }))
-      .toEqual({ kind: 'distress', sessionId: 'session-001', source: 'rules', selfharmScore: 0.01 });
+    expect(await chatOrchestrationService.prepareTurn({ ...studentTurn, content: 'je me fais du mal quand je rate' })).toEqual({
+      kind: 'distress',
+      sessionId: 'session-001',
+      source: 'rules',
+      selfharmScore: 0.01,
+    });
     expect(prepareExerciseTurn).not.toHaveBeenCalled();
   });
 
   it('lets the rules judge alone when moderation cannot answer, and logs it', async () => {
     moderation = new Error('down');
-    expect(await chatOrchestrationService.prepareTurn({ ...studentTurn, content: "j'ai plus envie de vivre" }))
-      .toEqual({ kind: 'distress', sessionId: 'session-001', source: 'rules', selfharmScore: null });
+    expect(await chatOrchestrationService.prepareTurn({ ...studentTurn, content: "j'ai plus envie de vivre" })).toEqual({
+      kind: 'distress',
+      sessionId: 'session-001',
+      source: 'rules',
+      selfharmScore: null,
+    });
 
     const context = tutorTurn(await chatOrchestrationService.prepareTurn({ ...studentTurn, content: 'Résous 3x + 5 = 20.' }));
     expect(context.inputModeration).toBeNull();
@@ -161,15 +203,23 @@ describe('ChatOrchestrationService.prepareTurn — distress and input moderation
     expect('inputModeration' in context).toBe(false);
 
     moderation = { flagged: ['selfharm'], selfharmScore: null };
-    expect(await chatOrchestrationService.prepareTurn({ ...studentTurn, content: 'Je pars loin, adieu' }))
-      .toEqual({ kind: 'distress', sessionId: 'session-001', source: 'moderation', selfharmScore: null });
+    expect(await chatOrchestrationService.prepareTurn({ ...studentTurn, content: 'Je pars loin, adieu' })).toEqual({
+      kind: 'distress',
+      sessionId: 'session-001',
+      source: 'moderation',
+      selfharmScore: null,
+    });
   });
 
   it('answers any message of a session closed for distress with the fixed reply, without moderating it', async () => {
     closed = true;
     moderateStudentTurn.mockClear();
-    expect(await chatOrchestrationService.prepareTurn({ ...studentTurn, content: 'Résous 3x + 5 = 20.' }))
-      .toEqual({ kind: 'distress', sessionId: 'session-001', source: 'closed', selfharmScore: null });
+    expect(await chatOrchestrationService.prepareTurn({ ...studentTurn, content: 'Résous 3x + 5 = 20.' })).toEqual({
+      kind: 'distress',
+      sessionId: 'session-001',
+      source: 'closed',
+      selfharmScore: null,
+    });
     expect(moderateStudentTurn).not.toHaveBeenCalled();
   });
 });
@@ -188,8 +238,12 @@ describe('ChatOrchestrationService.screenDistress — a request the route refuse
     ]);
     moderateStudentTurn.mockClear();
     moderation = { flagged: ['selfharm'], selfharmScore: 0.6 };
-    expect(await chatOrchestrationService.screenDistress({ userId: 'user-001', content: "j'ai envie de mourir" }))
-      .toEqual({ kind: 'distress', sessionId: 'session-001', source: 'both', selfharmScore: 0.6 });
+    expect(await chatOrchestrationService.screenDistress({ userId: 'user-001', content: "j'ai envie de mourir" })).toEqual({
+      kind: 'distress',
+      sessionId: 'session-001',
+      source: 'both',
+      selfharmScore: 0.6,
+    });
     expect(moderateStudentTurn).toHaveBeenCalledWith('Que fais-tu du + 5 ?', "j'ai envie de mourir");
 
     moderation = { flagged: [], selfharmScore: 0 };
@@ -198,8 +252,12 @@ describe('ChatOrchestrationService.screenDistress — a request the route refuse
 
   it('answers a closed session with the fixed reply', async () => {
     closed = true;
-    expect(await chatOrchestrationService.screenDistress({ userId: 'user-001', content: 'Tu es là ?' }))
-      .toEqual({ kind: 'distress', sessionId: 'session-001', source: 'closed', selfharmScore: null });
+    expect(await chatOrchestrationService.screenDistress({ userId: 'user-001', content: 'Tu es là ?' })).toEqual({
+      kind: 'distress',
+      sessionId: 'session-001',
+      source: 'closed',
+      selfharmScore: null,
+    });
   });
 });
 
@@ -211,7 +269,15 @@ describe('ChatOrchestrationService.prepareTurn — exercise', () => {
 
   const request = { userId: 'user-001', content: 'Résous 3x + 5 = 20.', fileIds: [], schoolLevel: 'quatrieme' as const, flashcards: true };
   const underContract: Turn = {
-    exercise: { id: 'ex-1', sheet: sheet('Résous 3x + 5 = 20.'), uncertain: false, hintLevel: 1, stepsDone: 0, hints: [{ level: 0, text: 'Que cherches-tu ?' }], solved: false },
+    exercise: {
+      id: 'ex-1',
+      sheet: sheet('Résous 3x + 5 = 20.'),
+      uncertain: false,
+      hintLevel: 1,
+      stepsDone: 0,
+      hints: [{ level: 0, text: 'Que cherches-tu ?' }],
+      solved: false,
+    },
     diagnosis: null,
     hintLevel: 2,
     contract: '<contrat>\nPalier 3\n</contrat>',
@@ -223,7 +289,10 @@ describe('ChatOrchestrationService.prepareTurn — exercise', () => {
     prepareFileContext.mockImplementationOnce(async () => ({
       fileIds: ['f2'],
       attachedFileInfos: [{ fileName: 'photo.jpg', fileId: 'f2' }],
-      files: [{ fileId: 'f1', fileName: 'cours.pdf', text: 'Le cours' }, { fileId: 'f2', fileName: 'photo.jpg', text: 'Résous 3x + 5 = 20.' }],
+      files: [
+        { fileId: 'f1', fileName: 'cours.pdf', text: 'Le cours' },
+        { fileId: 'f2', fileName: 'photo.jpg', text: 'Résous 3x + 5 = 20.' },
+      ],
     }));
 
     const context = tutorTurn(await chatOrchestrationService.prepareTurn({ ...request, fileIds: ['f2', 'someone-elses'] }));
@@ -235,7 +304,8 @@ describe('ChatOrchestrationService.prepareTurn — exercise', () => {
       subject: 'mathematiques',
       studentText: 'Résous 3x + 5 = 20.',
       lastTutorText: null,
-      attachedFilesBlock: '<attached_file name="cours.pdf">\nLe cours\n</attached_file>\n\n<attached_file name="photo.jpg">\nRésous 3x + 5 = 20.\n</attached_file>',
+      attachedFilesBlock:
+        '<attached_file name="cours.pdf">\nLe cours\n</attached_file>\n\n<attached_file name="photo.jpg">\nRésous 3x + 5 = 20.\n</attached_file>',
     });
     expect(context.attachedFiles.map((file) => file.fileId)).toEqual(['f1', 'f2']);
     expect(context.fileIds).toEqual(['f2']);
@@ -257,7 +327,12 @@ describe('ChatOrchestrationService.prepareTurn — exercise', () => {
 
     expect(context.turnInstruction).toBe('<contrat>\nPalier 3\n</contrat>');
     expect(context.exerciseSheet?.statement).toBe('Résous 3x + 5 = 20.');
-    expect(context.exerciseProgress).toEqual({ id: 'ex-1', hintLevel: 2, diagnosis: null, change: { levelChange: 1, top: 4, stepDone: false, solved: false } });
+    expect(context.exerciseProgress).toEqual({
+      id: 'ex-1',
+      hintLevel: 2,
+      diagnosis: null,
+      change: { levelChange: 1, top: 4, stepDone: false, solved: false },
+    });
   });
 
   it('keeps the turn instruction and no progress without a contract', async () => {
@@ -273,8 +348,9 @@ describe('ChatOrchestrationService.prepareTurn — exercise', () => {
   it('adds to the contract, on a plan without cards, the notice for a request of cards', async () => {
     prepareExerciseTurn.mockImplementationOnce(async () => underContract);
     analyseTurn.mockImplementationOnce(async () => analysis({ wantsFlashcards: true }));
-    expect(tutorTurn(await chatOrchestrationService.prepareTurn({ ...request, flashcards: false })).turnInstruction)
-      .toBe('<contrat>\nPalier 3\n</contrat>\n\nCARDS-COMPLET');
+    expect(tutorTurn(await chatOrchestrationService.prepareTurn({ ...request, flashcards: false })).turnInstruction).toBe(
+      '<contrat>\nPalier 3\n</contrat>\n\nCARDS-COMPLET',
+    );
 
     analyseTurn.mockImplementationOnce(async () => analysis({ wantsFlashcards: true }));
     expect(tutorTurn(await chatOrchestrationService.prepareTurn(request)).turnInstruction ?? '').not.toContain('CARDS-COMPLET');
@@ -331,10 +407,12 @@ describe('ChatOrchestrationService.finishTurn', () => {
       check: noExercise,
     });
 
-    expect(record.mock.calls).toEqual([[
-      { userId: 'user-001', sessionId: 'session-001' },
-      { model: 'mistral-small-2603', operation: 'chat', inputTokens: 10, cachedInputTokens: 0, outputTokens: 900 },
-    ]]);
+    expect(record.mock.calls).toEqual([
+      [
+        { userId: 'user-001', sessionId: 'session-001' },
+        { model: 'mistral-small-2603', operation: 'chat', inputTokens: 10, cachedInputTokens: 0, outputTokens: 900 },
+      ],
+    ]);
     expect(saveMessage).not.toHaveBeenCalled();
     expect(summarizeIfNeeded).not.toHaveBeenCalled();
   });
@@ -342,10 +420,16 @@ describe('ChatOrchestrationService.finishTurn', () => {
   it('does not keep response messages it could not replay: a cut turn, or one ending on a tool result', async () => {
     const toolEnding = [
       { role: 'assistant' as const, content: [{ type: 'tool-call' as const, toolCallId: 't1', toolName: 'generate_flashcards', input: {} }] },
-      { role: 'tool' as const, content: [{ type: 'tool-result' as const, toolCallId: 't1', toolName: 'generate_flashcards', output: { type: 'json' as const, value: {} } }] },
+      {
+        role: 'tool' as const,
+        content: [{ type: 'tool-result' as const, toolCallId: 't1', toolName: 'generate_flashcards', output: { type: 'json' as const, value: {} } }],
+      },
     ];
     const reply = [{ role: 'assistant' as const, content: [{ type: 'text' as const, text: 'Bonjour à toi' }] }];
-    for (const [modelMessages, aborted] of [[toolEnding, false], [reply, true]] as const) {
+    for (const [modelMessages, aborted] of [
+      [toolEnding, false],
+      [reply, true],
+    ] as const) {
       saveMessage.mockClear();
       await chatOrchestrationService.finishTurn({
         sessionId: 'session-001',
@@ -359,7 +443,7 @@ describe('ChatOrchestrationService.finishTurn', () => {
         startTime: Date.now(),
         attachedFileInfo: null,
         turnAnalysis: noopAnalysis,
-      check: noExercise,
+        check: noExercise,
       });
       expect(saveMessage.mock.calls[0]?.[2]).toBe('Bonjour à toi');
       expect((saveMessage.mock.calls[0]?.[3] as Record<string, unknown> | undefined)?.['modelMessages']).toBeUndefined();
@@ -367,7 +451,15 @@ describe('ChatOrchestrationService.finishTurn', () => {
   });
 
   it('stores the response messages as the model produced them, to replay them next turn', async () => {
-    const modelMessages = [{ role: 'assistant' as const, content: [{ type: 'reasoning' as const, text: 'raisonnement' }, { type: 'text' as const, text: 'Bonjour à toi' }] }];
+    const modelMessages = [
+      {
+        role: 'assistant' as const,
+        content: [
+          { type: 'reasoning' as const, text: 'raisonnement' },
+          { type: 'text' as const, text: 'Bonjour à toi' },
+        ],
+      },
+    ];
     await chatOrchestrationService.finishTurn({
       sessionId: 'session-001',
       userId: 'user-001',
@@ -419,23 +511,30 @@ describe('ChatOrchestrationService.finishTurn', () => {
   it("records the turn's change on the exercise and the tutor's message once seen, never for a cut turn", async () => {
     recordTurn.mockClear();
     const progress = { id: 'ex-1', hintLevel: 2, diagnosis: null, change: { levelChange: 1, top: 4, stepDone: false, solved: false } };
-    const finish = (aborted: boolean) => chatOrchestrationService.finishTurn({
-      sessionId: 'session-001',
-      userId: 'user-001',
-      userContent: 'Je bloque',
-      text: 'Regarde le +5.',
-      model: 'mistral-small-2603',
-      usage: undefined,
-      startTime: Date.now(),
-      attachedFileInfo: null,
-      turnAnalysis: noopAnalysis,
-      check: noExercise,
-      exerciseProgress: progress,
-      aborted,
-    });
+    const finish = (aborted: boolean) =>
+      chatOrchestrationService.finishTurn({
+        sessionId: 'session-001',
+        userId: 'user-001',
+        userContent: 'Je bloque',
+        text: 'Regarde le +5.',
+        model: 'mistral-small-2603',
+        usage: undefined,
+        startTime: Date.now(),
+        attachedFileInfo: null,
+        turnAnalysis: noopAnalysis,
+        check: noExercise,
+        exerciseProgress: progress,
+        aborted,
+      });
 
     await finish(false);
-    expect(recordTurn).toHaveBeenCalledWith('ex-1', { levelChange: 1, top: 4, stepDone: false, solved: false, hint: { level: 2, text: 'Regarde le +5.' } });
+    expect(recordTurn).toHaveBeenCalledWith('ex-1', {
+      levelChange: 1,
+      top: 4,
+      stepDone: false,
+      solved: false,
+      hint: { level: 2, text: 'Regarde le +5.' },
+    });
     expect(saveMessage.mock.calls.at(-1)?.[3]).toMatchObject({ exerciseTurn: { diagnosis: null, hintLevel: 2 } });
 
     recordTurn.mockClear();
@@ -446,7 +545,15 @@ describe('ChatOrchestrationService.finishTurn', () => {
 
 describe('readStoredResponseMessages', () => {
   it('replays stored response messages, an older message as text, an unreadable value as text after logging it', () => {
-    const reply = [{ role: 'assistant', content: [{ type: 'reasoning', text: 'r' }, { type: 'text', text: 't' }] }];
+    const reply = [
+      {
+        role: 'assistant',
+        content: [
+          { type: 'reasoning', text: 'r' },
+          { type: 'text', text: 't' },
+        ],
+      },
+    ];
     expect(readStoredResponseMessages(reply, 'm1')).toEqual(reply as ReturnType<typeof readStoredResponseMessages>);
     expect(readStoredResponseMessages(null, 'm2')).toBeUndefined();
     mockLogger.error.mockClear();

@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { motion } from "motion/react";
-import { REVEAL_SECONDS } from "@/lib/motion";
+import { motion } from 'motion/react';
+import { REVEAL_SECONDS } from '@/lib/motion';
 
-type Direction = "up" | "left" | "right" | "none";
+type Direction = 'up' | 'left' | 'right' | 'none';
 
 const offsets: Record<Direction, { x: number; y: number }> = {
   up: { x: 0, y: 20 },
@@ -16,7 +16,7 @@ export function FadeIn({
   children,
   className,
   delay = 0,
-  direction = "up",
+  direction = 'up',
 }: {
   children: React.ReactNode;
   className?: string;
@@ -30,8 +30,8 @@ export function FadeIn({
       data-reveal=""
       initial={{ opacity: 0, x: offset.x, y: offset.y }}
       whileInView={{ opacity: 1, x: 0, y: 0 }}
-      viewport={{ once: true, margin: "-80px" }}
-      transition={{ duration: REVEAL_SECONDS, delay, ease: "easeOut" }}
+      viewport={{ once: true, margin: '-80px' }}
+      transition={{ duration: REVEAL_SECONDS, delay, ease: 'easeOut' }}
       className={className}
     >
       {children}

@@ -7,7 +7,16 @@ import { NO_USAGE, type Generate } from '../eval/judge-config';
 const opts = (characters: number): Parameters<Generate>[0] => ({
   messages: [{ role: 'user', content: 'x'.repeat(characters) }],
   schema: z.unknown(),
-  schemaName: 's', functionId: 'f', owner: null, model: 'm', temperature: 0, maxTokens: 10, maxRetries: 0, seed: 1, promptCacheKey: 'k', repairInvalid: false,
+  schemaName: 's',
+  functionId: 'f',
+  owner: null,
+  model: 'm',
+  temperature: 0,
+  maxTokens: 10,
+  maxRetries: 0,
+  seed: 1,
+  promptCacheKey: 'k',
+  repairInvalid: false,
 });
 
 // What a call resolves to once through: the schema read on an empty answer.
@@ -57,8 +66,14 @@ describe('throttled', () => {
     expect(calls).toBe(3);
 
     let attempts = 0;
-    const always: Generate = () => { attempts += 1; return Promise.reject(limit()); };
-    const outcome = await throttled(always, { requests: 10, tokens: 1000, intervalMs: 20 })(opts(3)).then(() => 'resolved', (e: unknown) => String(e));
+    const always: Generate = () => {
+      attempts += 1;
+      return Promise.reject(limit());
+    };
+    const outcome = await throttled(always, { requests: 10, tokens: 1000, intervalMs: 20 })(opts(3)).then(
+      () => 'resolved',
+      (e: unknown) => String(e),
+    );
     expect(outcome).toContain('Rate limit exceeded');
     expect(attempts).toBe(4);
 
@@ -73,12 +88,18 @@ describe('throttled', () => {
     expect(unavailable).toBe(2);
 
     let rejected = 0;
-    const invalid: Generate = () => { rejected += 1; return Promise.reject(new APICallError({ message: 'Bad request', url: 'u', requestBodyValues: {}, statusCode: 400 })); };
+    const invalid: Generate = () => {
+      rejected += 1;
+      return Promise.reject(new APICallError({ message: 'Bad request', url: 'u', requestBodyValues: {}, statusCode: 400 }));
+    };
     await throttled(invalid, { requests: 10, tokens: 1000, intervalMs: 20 })(opts(3)).catch(() => undefined);
     expect(rejected).toBe(1);
 
     let other = 0;
-    const broken: Generate = () => { other += 1; return Promise.reject(new Error('500')); };
+    const broken: Generate = () => {
+      other += 1;
+      return Promise.reject(new Error('500'));
+    };
     await throttled(broken, { requests: 10, tokens: 1000, intervalMs: 20 })(opts(3)).catch(() => undefined);
     expect(other).toBe(1);
   });

@@ -28,11 +28,7 @@ class DocumentExtractionService {
   /**
    * Extrait le texte d'un document selon son type MIME
    */
-  async extractText(
-    buffer: ArrayBuffer,
-    mimeType: string,
-    owner: CostOwner,
-  ): Promise<ExtractionResult> {
+  async extractText(buffer: ArrayBuffer, mimeType: string, owner: CostOwner): Promise<ExtractionResult> {
     const startTime = Date.now();
     const cleanMimeType = mimeType.split(';')[0]?.trim() ?? '';
 
@@ -49,13 +45,7 @@ class DocumentExtractionService {
 
       // DOC (ancien format Word) - limité
       if (cleanMimeType === 'application/msword') {
-        return this.createResult(
-          false,
-          '',
-          'text',
-          startTime,
-          'Format .doc non supporté. Veuillez convertir en .docx ou .pdf'
-        );
+        return this.createResult(false, '', 'text', startTime, 'Format .doc non supporté. Veuillez convertir en .docx ou .pdf');
       }
 
       // Texte brut
@@ -66,33 +56,26 @@ class DocumentExtractionService {
       // Images - Mistral Vision OCR/description
       if (cleanMimeType.startsWith('image/')) {
         const { text, error } = await readImageWithMistralVision(buffer, cleanMimeType, owner);
-        return this.createResult(text !== '', text, 'mistral-vision', startTime, text === '' ? error ?? "Aucun contenu lu dans l'image" : undefined);
+        return this.createResult(
+          text !== '',
+          text,
+          'mistral-vision',
+          startTime,
+          text === '' ? (error ?? "Aucun contenu lu dans l'image") : undefined,
+        );
       }
 
       // Type non supporté
-      return this.createResult(
-        false,
-        '',
-        'text',
-        startTime,
-        `Type de fichier non supporté: ${cleanMimeType}`
-      );
-
+      return this.createResult(false, '', 'text', startTime, `Type de fichier non supporté: ${cleanMimeType}`);
     } catch (error) {
       logger.error('Document extraction failed', {
         err: error,
         mimeType: cleanMimeType,
         operation: 'document-extraction',
-        severity: 'medium' as const
+        severity: 'medium' as const,
       });
 
-      return this.createResult(
-        false,
-        '',
-        'text',
-        startTime,
-        error instanceof Error ? error.message : 'Extraction failed'
-      );
+      return this.createResult(false, '', 'text', startTime, error instanceof Error ? error.message : 'Extraction failed');
     }
   }
 
@@ -100,10 +83,7 @@ class DocumentExtractionService {
    * Extraction PDF via unpdf (pure JS, serverless-compatible)
    * @see https://github.com/unjs/unpdf
    */
-  private async extractFromPDF(
-    buffer: ArrayBuffer,
-    startTime: number
-  ): Promise<ExtractionResult> {
+  private async extractFromPDF(buffer: ArrayBuffer, startTime: number): Promise<ExtractionResult> {
     try {
       // unpdf API: getDocumentProxy + extractText
       const pdf = await getDocumentProxy(new Uint8Array(buffer));
@@ -116,17 +96,11 @@ class DocumentExtractionService {
         pageCount: totalPages,
         wordCount,
         textLength: extractedText.length,
-        operation: 'pdf-extraction'
+        operation: 'pdf-extraction',
       });
 
       if (!extractedText || extractedText.length < 10) {
-        return this.createResult(
-          false,
-          '',
-          'unpdf',
-          startTime,
-          'PDF sans contenu texte extractible (peut nécessiter OCR)'
-        );
+        return this.createResult(false, '', 'unpdf', startTime, 'PDF sans contenu texte extractible (peut nécessiter OCR)');
       }
 
       return {
@@ -136,37 +110,27 @@ class DocumentExtractionService {
           pageCount: totalPages,
           wordCount,
           extractionMethod: 'unpdf',
-          extractionTimeMs: Date.now() - startTime
-        }
+          extractionTimeMs: Date.now() - startTime,
+        },
       };
-
     } catch (error) {
       logger.error('PDF extraction error', {
         err: error,
         operation: 'pdf-extraction',
-        severity: 'medium' as const
+        severity: 'medium' as const,
       });
 
-      return this.createResult(
-        false,
-        '',
-        'unpdf',
-        startTime,
-        'Erreur lors de l\'extraction du PDF'
-      );
+      return this.createResult(false, '', 'unpdf', startTime, "Erreur lors de l'extraction du PDF");
     }
   }
 
   /**
    * Extraction DOCX via mammoth
    */
-  private async extractFromDOCX(
-    buffer: ArrayBuffer,
-    startTime: number
-  ): Promise<ExtractionResult> {
+  private async extractFromDOCX(buffer: ArrayBuffer, startTime: number): Promise<ExtractionResult> {
     try {
       const result = await mammoth.extractRawText({
-        buffer: Buffer.from(buffer)
+        buffer: Buffer.from(buffer),
       });
 
       const text = result.value.trim();
@@ -175,8 +139,8 @@ class DocumentExtractionService {
       // Log warnings si présents
       if (result.messages.length > 0) {
         logger.warn('DOCX extraction warnings', {
-          warnings: result.messages.map(m => m.message),
-          operation: 'docx-extraction'
+          warnings: result.messages.map((m) => m.message),
+          operation: 'docx-extraction',
         });
       }
 
@@ -184,17 +148,11 @@ class DocumentExtractionService {
         wordCount,
         textLength: text.length,
         warningsCount: result.messages.length,
-        operation: 'docx-extraction'
+        operation: 'docx-extraction',
       });
 
       if (!text || text.length < 10) {
-        return this.createResult(
-          false,
-          '',
-          'mammoth',
-          startTime,
-          'Document Word vide ou sans contenu texte'
-        );
+        return this.createResult(false, '', 'mammoth', startTime, 'Document Word vide ou sans contenu texte');
       }
 
       return {
@@ -203,46 +161,30 @@ class DocumentExtractionService {
         metadata: {
           wordCount,
           extractionMethod: 'mammoth',
-          extractionTimeMs: Date.now() - startTime
-        }
+          extractionTimeMs: Date.now() - startTime,
+        },
       };
-
     } catch (error) {
       logger.error('DOCX extraction error', {
         err: error,
         operation: 'docx-extraction',
-        severity: 'medium' as const
+        severity: 'medium' as const,
       });
 
-      return this.createResult(
-        false,
-        '',
-        'mammoth',
-        startTime,
-        'Erreur lors de l\'extraction du document Word'
-      );
+      return this.createResult(false, '', 'mammoth', startTime, "Erreur lors de l'extraction du document Word");
     }
   }
 
   /**
    * Extraction texte brut
    */
-  private extractFromText(
-    buffer: ArrayBuffer,
-    startTime: number
-  ): ExtractionResult {
+  private extractFromText(buffer: ArrayBuffer, startTime: number): ExtractionResult {
     try {
       const text = Buffer.from(buffer).toString('utf8').trim();
       const wordCount = this.countWords(text);
 
       if (!text || text.length < 1) {
-        return this.createResult(
-          false,
-          '',
-          'text',
-          startTime,
-          'Fichier texte vide'
-        );
+        return this.createResult(false, '', 'text', startTime, 'Fichier texte vide');
       }
 
       return {
@@ -251,18 +193,11 @@ class DocumentExtractionService {
         metadata: {
           wordCount,
           extractionMethod: 'text',
-          extractionTimeMs: Date.now() - startTime
-        }
+          extractionTimeMs: Date.now() - startTime,
+        },
       };
-
     } catch {
-      return this.createResult(
-        false,
-        '',
-        'text',
-        startTime,
-        'Erreur lors de la lecture du fichier texte'
-      );
+      return this.createResult(false, '', 'text', startTime, 'Erreur lors de la lecture du fichier texte');
     }
   }
 
@@ -274,7 +209,7 @@ class DocumentExtractionService {
     text: string,
     method: ExtractionResult['metadata']['extractionMethod'],
     startTime: number,
-    error?: string
+    error?: string,
   ): ExtractionResult {
     return {
       success,
@@ -282,9 +217,9 @@ class DocumentExtractionService {
       metadata: {
         wordCount: this.countWords(text),
         extractionMethod: method,
-        extractionTimeMs: Date.now() - startTime
+        extractionTimeMs: Date.now() - startTime,
       },
-      error
+      error,
     };
   }
 
@@ -293,7 +228,7 @@ class DocumentExtractionService {
    */
   private countWords(text: string): number {
     if (!text) return 0;
-    return text.split(/\s+/).filter(w => w.length > 0).length;
+    return text.split(/\s+/).filter((w) => w.length > 0).length;
   }
 }
 

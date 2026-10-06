@@ -1,7 +1,7 @@
 import type { userRoleEnum, SchoolLevel } from '../db/schema';
 
 // Type pour le rôle utilisateur
-type UserRole = typeof userRoleEnum.enumValues[number];
+type UserRole = (typeof userRoleEnum.enumValues)[number];
 
 // Utilisateur authentifié injecté par requireUser / requireParent
 export interface AuthenticatedUser {

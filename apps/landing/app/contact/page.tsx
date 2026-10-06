@@ -1,16 +1,16 @@
-import type { Metadata } from "next";
-import { PageLayout } from "@/components/layout/page-layout";
-import { Button } from "@repo/ui";
+import type { Metadata } from 'next';
+import { PageLayout } from '@/components/layout/page-layout';
+import { Button } from '@repo/ui';
 
-const CONTACT_EMAIL = "contact@tomia.fr";
+const CONTACT_EMAIL = 'contact@tomia.fr';
 
-const DESCRIPTION = "Une question, une suggestion ? Écrivez-nous.";
+const DESCRIPTION = 'Une question, une suggestion ? Écrivez-nous.';
 
 export const metadata: Metadata = {
-  title: "Contactez-nous",
+  title: 'Contactez-nous',
   description: DESCRIPTION,
   alternates: {
-    canonical: "/contact",
+    canonical: '/contact',
   },
 };
 

@@ -53,6 +53,7 @@ packages/
 
 ```bash
 bun run typecheck && bun run lint  # validation, obligatoire avant commit
+bun run format                     # Prettier, vérifié en CI et sur les fichiers indexés
 bun run test                       # tests unitaires du serveur et des paquets ; scripts : bun run test:scripts
 bun run build                      # build production
 bun run seed                       # comptes parent + élève, dev uniquement

@@ -34,7 +34,9 @@ async function extract(source: ProgrammeSource): Promise<{ file: TextFile; formu
     throw new Error(`${source.id}: the banner names ${declaredLevels.join(', ') || 'no class'}, not ${source.level}`);
   }
   if (dropped.length > 0) {
-    throw new Error(`${source.id}: list blocks without class or domain: ${dropped.map((b) => `p${String(b.page)} « ${b.text.slice(0, 60)} »`).join('; ')}`);
+    throw new Error(
+      `${source.id}: list blocks without class or domain: ${dropped.map((b) => `p${String(b.page)} « ${b.text.slice(0, 60)} »`).join('; ')}`,
+    );
   }
   const missing = entries.filter((entry) => !`${plain[entry.page - 1] ?? ''}${plain[entry.page] ?? ''}`.includes(canonical(entry.text)));
   if (missing.length > 0) {

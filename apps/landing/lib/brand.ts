@@ -1,1 +1,1 @@
-export const BRAND_NAME = "TomIA";
+export const BRAND_NAME = 'TomIA';

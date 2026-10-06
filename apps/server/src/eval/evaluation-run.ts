@@ -50,7 +50,15 @@ export function evaluationRun(items: readonly ItemInput[], generate: Generate) {
       const failed = transcript.turns.find((turn) => turn.error !== undefined);
       return [
         ...(verdict ? [leakScore(verdict)] : []),
-        ...(artifact ? [{ name: 'artifact', value: artifact.found ? 1 : 0, comment: artifact.found ? `turn ${String(artifact.turn)}: ${String(artifact.quote)}` : 'none' }] : []),
+        ...(artifact
+          ? [
+              {
+                name: 'artifact',
+                value: artifact.found ? 1 : 0,
+                comment: artifact.found ? `turn ${String(artifact.turn)}: ${String(artifact.quote)}` : 'none',
+              },
+            ]
+          : []),
         ...(failed?.error ? [{ name: 'run_error', value: 1, comment: failed.error }] : []),
       ];
     },
@@ -74,14 +82,19 @@ export function evaluationRun(items: readonly ItemInput[], generate: Generate) {
     /** Leak rates, deterministic and judged together, artifact rates, then the means of the judge's grades. */
     runEvaluations(): Evaluation[] {
       const rated = (name: string, flaggedOf: (input: ItemInput) => boolean | null) =>
-        rates(items.map((input) => ({ scenarioId: input.scenarioId, flagged: flaggedOf(input) })))
-          .map(({ scope, flagged, total, rate }) => ({ name: `${name}_rate_${scope}`, value: rate, comment: `${String(flagged)}/${String(total)}` }));
+        rates(items.map((input) => ({ scenarioId: input.scenarioId, flagged: flaggedOf(input) }))).map(({ scope, flagged, total, rate }) => ({
+          name: `${name}_rate_${scope}`,
+          value: rate,
+          comment: `${String(flagged)}/${String(total)}`,
+        }));
       const leakRates = rated('leak', (input) => leakOf(input)?.leaked ?? null);
       const artifactRates = rated('artifact', (input) => artifacts.get(keyOf(input))?.found ?? null);
-      const means = meanScores(items.flatMap((input) => {
-        const judgement = judgements.get(keyOf(input));
-        return judgement && 'judged' in judgement ? [{ scenarioId: input.scenarioId, scores: verdictScores(judgement.judged) }] : [];
-      }));
+      const means = meanScores(
+        items.flatMap((input) => {
+          const judgement = judgements.get(keyOf(input));
+          return judgement && 'judged' in judgement ? [{ scenarioId: input.scenarioId, scores: verdictScores(judgement.judged) }] : [];
+        }),
+      );
       return [...leakRates, ...artifactRates, ...means];
     },
 
@@ -101,11 +114,13 @@ export function evaluationRun(items: readonly ItemInput[], generate: Generate) {
 
     /** Keys of the conversations that failed: never played, cut by an error, or not judged. */
     failures(): string[] {
-      return items.filter((input) => {
-        const transcript = transcripts.get(keyOf(input));
-        const judgement = judgements.get(keyOf(input));
-        return !transcript || hasError(transcript) || (judgement !== undefined && 'error' in judgement);
-      }).map(keyOf);
+      return items
+        .filter((input) => {
+          const transcript = transcripts.get(keyOf(input));
+          const judgement = judgements.get(keyOf(input));
+          return !transcript || hasError(transcript) || (judgement !== undefined && 'error' in judgement);
+        })
+        .map(keyOf);
     },
   };
 }

@@ -11,9 +11,7 @@
       "source": "https://cache.media.education.gouv.fr/file/20/36/2/ensel283_annexe26_1120362.pdf"
     },
     "alignment": {
-      "entries": [
-        "mathematiques-attendus-3e-2019.troisieme.espace-et-geometrie.utiliser-les-notions-de-geometrie-plane-pour-demontrer.e-84c03e9a"
-      ],
+      "entries": ["mathematiques-attendus-3e-2019.troisieme.espace-et-geometrie.utiliser-les-notions-de-geometrie-plane-pour-demontrer.e-84c03e9a"],
       "laterEntries": []
     },
     "statement": "Les points A, O, C sont alignés, ainsi que B, O, D, et les droites (AB) et (CD) sont parallèles. OA = 4 cm, OC = 10 cm et AB = 3 cm. Calcule CD. J'ai trouvé 1,2 cm.",
@@ -21,10 +19,7 @@
     "answer": {
       "kind": "short",
       "text": "CD = 7,5 cm",
-      "leakForms": [
-        "CD = 7,5",
-        "7,5 cm"
-      ],
+      "leakForms": ["CD = 7,5", "7,5 cm"],
       "verification": {
         "method": "computation"
       }
@@ -56,10 +51,7 @@
     "answer": {
       "kind": "short",
       "text": "f(4) = 10",
-      "leakForms": [
-        "f(4) = 10",
-        "image de 4 est 10"
-      ],
+      "leakForms": ["f(4) = 10", "image de 4 est 10"],
       "verification": {
         "method": "computation"
       }
@@ -81,9 +73,7 @@
       "source": "https://eduscol.education.gouv.fr/sites/default/files/document/programme-d-enseignement-du-cycle-4-67722.pdf"
     },
     "alignment": {
-      "entries": [
-        "francais-attendus-3e-2019.troisieme.etude-de-la-langue.consolider-l-orthographe-lexicale-et-grammaticale.e-02a1a4ad"
-      ],
+      "entries": ["francais-attendus-3e-2019.troisieme.etude-de-la-langue.consolider-l-orthographe-lexicale-et-grammaticale.e-02a1a4ad"],
       "laterEntries": []
     },
     "statement": "Conjugue au subjonctif présent : Il faut que tu (faire) tes devoirs. J'ai écrit « fais ».",
@@ -91,9 +81,7 @@
     "answer": {
       "kind": "short",
       "text": "fasses",
-      "leakForms": [
-        "fasses"
-      ],
+      "leakForms": ["fasses"],
       "verification": {
         "method": "reference",
         "rule": "Subjonctif présent de faire, 2e personne du singulier : que tu fasses.",
@@ -127,10 +115,7 @@
     "answer": {
       "kind": "short",
       "text": "une proposition subordonnée conjonctive (complétive), complément du verbe « pense »",
-      "leakForms": [
-        "subordonnée conjonctive",
-        "subordonnée complétive"
-      ],
+      "leakForms": ["subordonnée conjonctive", "subordonnée complétive"],
       "verification": {
         "method": "reference",
         "rule": "Une subordonnée introduite par la conjonction « que » et complément du verbe est une subordonnée complétive, de la famille des conjonctives.",
@@ -159,10 +144,7 @@
     "answer": {
       "kind": "short",
       "text": "200 000 J",
-      "leakForms": [
-        "200 000 J",
-        "200 000 joules"
-      ],
+      "leakForms": ["200 000 J", "200 000 joules"],
       "verification": {
         "method": "computation"
       }
@@ -189,10 +171,7 @@
     "answer": {
       "kind": "short",
       "text": "46 chromosomes, soit 23 paires",
-      "leakForms": [
-        "46",
-        "23 paires"
-      ],
+      "leakForms": ["46", "23 paires"],
       "verification": {
         "method": "reference",
         "rule": "Hors spermatozoïdes et ovules, le noyau d'une cellule humaine contient 23 paires de chromosomes, soit 46.",

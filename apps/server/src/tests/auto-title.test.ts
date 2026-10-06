@@ -28,8 +28,19 @@ mock.module('../platform/ai/moderation', () => ({
 const { autoTitleService } = await import('../modules/tutor/auto-title.service');
 
 const sheet = {
-  statement: 'Résous 3x + 5 = 20.', kind: 'short' as const, answer: 'x = 5', answerForms: ['x = 5'], mathEquation: null, mathAnswer: null,
-  steps: [], commonErrors: [], rule: null, facts: [], expectedElements: [], entries: [], laterEntries: [],
+  statement: 'Résous 3x + 5 = 20.',
+  kind: 'short' as const,
+  answer: 'x = 5',
+  answerForms: ['x = 5'],
+  mathEquation: null,
+  mathAnswer: null,
+  steps: [],
+  commonErrors: [],
+  rule: null,
+  facts: [],
+  expectedElements: [],
+  entries: [],
+  laterEntries: [],
 };
 
 beforeEach(() => {

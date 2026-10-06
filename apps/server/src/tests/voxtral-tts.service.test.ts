@@ -45,10 +45,12 @@ describe('VoxtralTTSService', () => {
 
   it('bills the characters of the text read to the owner, and nothing for a failed call', async () => {
     recordAiCost.mockClear();
-    fetchSpy = spyOn(globalThis, 'fetch').mockResolvedValueOnce(new Response(JSON.stringify({ audio_data: 'AAAA' }), {
-      status: 200,
-      headers: { 'content-type': 'application/json' },
-    }));
+    fetchSpy = spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+      new Response(JSON.stringify({ audio_data: 'AAAA' }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      }),
+    );
     // Counted as graphemes: the emoji (two UTF-16 units) and the decomposed « é » (two code points) are one each.
     await getVoxtralTTSService().synthesize('Bonjour 🙂 e\u0301', owner);
     expect(recordAiCost.mock.calls).toEqual([[owner, { model: 'voxtral-mini-tts-2603', operation: 'text-to-speech', characters: 11 }]]);
@@ -123,8 +125,11 @@ describe('VoxtralTTSService', () => {
     let captured: AbortSignal | undefined;
     fetchSpy = spyOn(globalThis, 'fetch').mockImplementation(((input: Request) => {
       captured = input.signal;
-      return new Promise((_, reject) => { input.signal.addEventListener('abort', () => { reject(input.signal.reason as Error); }); },
-      );
+      return new Promise((_, reject) => {
+        input.signal.addEventListener('abort', () => {
+          reject(input.signal.reason as Error);
+        });
+      });
     }) as unknown as typeof fetch);
 
     const result = await getVoxtralTTSService().synthesize('Bonjour', owner);

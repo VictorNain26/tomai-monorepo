@@ -1,13 +1,4 @@
-import {
-  fsrs,
-  createEmptyCard,
-  Rating,
-  State,
-  type Card as FSRSCard,
-  type RecordLog,
-  type FSRSParameters,
-  type Grade,
-} from 'ts-fsrs';
+import { fsrs, createEmptyCard, Rating, State, type Card as FSRSCard, type RecordLog, type FSRSParameters, type Grade } from 'ts-fsrs';
 import { learningCardsRepository } from './learning-cards.repository.js';
 import { learningDecksRepository } from './learning-decks.repository.js';
 import type { FSRSData } from './decks.schema.js';
@@ -16,8 +7,6 @@ import type { EducationLevelType } from '../../types/index.js';
 import { logger } from '../../platform/observability/logger.js';
 
 import type { ReviewResult, CardForReview, DeckReviewStats, GetDueCardsOptions } from './fsrs-types.js';
-
-;
 
 class FSRSService {
   private getScheduler(level: EducationLevelType): ReturnType<typeof fsrs> {
@@ -47,7 +36,7 @@ class FSRSService {
       learning_steps: 0,
       reps: data.reps ?? 0,
       lapses: data.lapses ?? 0,
-      state: (data.state ?? State.New),
+      state: data.state ?? State.New,
       ...(data.lastReview && { last_review: new Date(data.lastReview) }),
     };
   }
@@ -64,11 +53,7 @@ class FSRSService {
     };
   }
 
-  async reviewCard(
-    cardId: string,
-    rating: Rating,
-    level: EducationLevelType
-  ): Promise<ReviewResult> {
+  async reviewCard(cardId: string, rating: Rating, level: EducationLevelType): Promise<ReviewResult> {
     const scheduler = this.getScheduler(level);
     const now = new Date();
 
@@ -153,9 +138,7 @@ class FSRSService {
         let priority: number;
 
         if (isOverdue) {
-          const daysOverdue = Math.floor(
-            (now.getTime() - dueDate.getTime()) / (24 * 60 * 60 * 1000)
-          );
+          const daysOverdue = Math.floor((now.getTime() - dueDate.getTime()) / (24 * 60 * 60 * 1000));
           priority = -daysOverdue * 10;
         } else if (fsrsCard.state === State.Learning || fsrsCard.state === State.Relearning) {
           priority = 100;
@@ -257,10 +240,7 @@ class FSRSService {
     return this.cardToFsrsData(emptyCard);
   }
 
-  previewScheduling(
-    level: EducationLevelType,
-    currentFsrsData: FSRSData | null
-  ): Record<Grade, { due: Date; interval: number }> {
+  previewScheduling(level: EducationLevelType, currentFsrsData: FSRSData | null): Record<Grade, { due: Date; interval: number }> {
     const scheduler = this.getScheduler(level);
     const currentCard = this.fsrsDataToCard(currentFsrsData);
     const now = new Date();

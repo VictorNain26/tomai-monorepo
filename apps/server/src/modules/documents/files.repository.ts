@@ -16,10 +16,7 @@ class FilesRepository {
    * Créer un nouveau fichier
    */
   async create(fileData: NewFile): Promise<File> {
-    const [createdFile] = await db
-      .insert(files)
-      .values(fileData)
-      .returning();
+    const [createdFile] = await db.insert(files).values(fileData).returning();
 
     if (!createdFile) {
       throw new Error('Failed to create file record');
@@ -32,11 +29,7 @@ class FilesRepository {
    * Trouver un fichier par ID
    */
   async findById(id: string): Promise<File | undefined> {
-    const [file] = await db
-      .select()
-      .from(files)
-      .where(eq(files.id, id))
-      .limit(1);
+    const [file] = await db.select().from(files).where(eq(files.id, id)).limit(1);
 
     return file;
   }
@@ -57,10 +50,7 @@ class FilesRepository {
     return await db
       .select()
       .from(files)
-      .where(and(
-        eq(files.userId, userId),
-        eq(files.status, 'ready')
-      ))
+      .where(and(eq(files.userId, userId), eq(files.status, 'ready')))
       .orderBy(desc(files.createdAt))
       .limit(limit);
   }
@@ -71,10 +61,7 @@ class FilesRepository {
    * doit être purgé). Utilisé avant la suppression pour collecter les clés.
    */
   async listByUserId(userId: string): Promise<Pick<File, 'id' | 'storageKey'>[]> {
-    return await db
-      .select({ id: files.id, storageKey: files.storageKey })
-      .from(files)
-      .where(eq(files.userId, userId));
+    return await db.select({ id: files.id, storageKey: files.storageKey }).from(files).where(eq(files.userId, userId));
   }
 
   /**
@@ -85,7 +72,7 @@ class FilesRepository {
       .update(files)
       .set({
         status,
-        updatedAt: sql`NOW()`
+        updatedAt: sql`NOW()`,
       })
       .where(eq(files.id, id))
       .returning();
@@ -97,10 +84,7 @@ class FilesRepository {
    * Supprimer un fichier (hard delete)
    */
   async hardDelete(id: string): Promise<boolean> {
-    const result = await db
-      .delete(files)
-      .where(eq(files.id, id))
-      .returning();
+    const result = await db.delete(files).where(eq(files.id, id)).returning();
 
     return result.length > 0;
   }
@@ -118,11 +102,7 @@ class FilesRepository {
       updateData.sizeBytes = sizeBytes;
     }
 
-    const [updatedFile] = await db
-      .update(files)
-      .set(updateData)
-      .where(eq(files.id, id))
-      .returning();
+    const [updatedFile] = await db.update(files).set(updateData).where(eq(files.id, id)).returning();
 
     return updatedFile;
   }

@@ -8,14 +8,13 @@ const exists = (path: string) => ['src/tests', 'src/integration-tests', 'src/tes
 
 describe('parseArgs', () => {
   it('runs src/tests on half the cores by default', () => {
-    expect(parseArgs([], exists, 8)).toEqual({ target: 'src/tests', coverage: false, jobs: 4, bunArgs: [] });
+    expect(parseArgs([], exists, 8)).toEqual({ target: 'src/tests', jobs: 4, bunArgs: [] });
     expect(parseArgs([], exists, 1).jobs).toBe(1);
   });
 
-  it('reads the target, coverage and jobs, and hands every other option to bun test', () => {
-    expect(parseArgs(['src/integration-tests', '--jobs=1', '--coverage', '-t', 'embeddings', '--timeout', '20000'], exists, 8)).toEqual({
+  it('reads the target and jobs, and hands every other option to bun test', () => {
+    expect(parseArgs(['src/integration-tests', '--jobs=1', '-t', 'embeddings', '--timeout', '20000'], exists, 8)).toEqual({
       target: 'src/integration-tests',
-      coverage: true,
       jobs: 1,
       bunArgs: ['-t', 'embeddings', '--timeout', '20000'],
     });
@@ -39,7 +38,9 @@ describe('totalsOf', () => {
 describe('run-tests.ts', () => {
   const dir = mkdtempSync(join(tmpdir(), 'run-tests-'));
   const script = resolve(import.meta.dir, '../../scripts/run-tests.ts');
-  afterAll(() => { rmSync(dir, { recursive: true, force: true }); });
+  afterAll(() => {
+    rmSync(dir, { recursive: true, force: true });
+  });
 
   const run = (...args: string[]) => {
     const child = Bun.spawnSync(['bun', 'run', script, ...args], { cwd: dir, env: { ...process.env, NO_COLOR: '1' } });
@@ -47,8 +48,14 @@ describe('run-tests.ts', () => {
   };
 
   it('runs each file in its own process, sums their counts, and fails when one file fails', () => {
-    writeFileSync(join(dir, 'a.test.ts'), "import { test, expect } from 'bun:test';\ntest('a', () => { expect(globalThis.shared).toBeUndefined(); globalThis.shared = 1; });\n");
-    writeFileSync(join(dir, 'b.spec.ts'), "import { test, expect } from 'bun:test';\ntest('b', () => { expect(globalThis.shared).toBeUndefined(); globalThis.shared = 1; });\n");
+    writeFileSync(
+      join(dir, 'a.test.ts'),
+      "import { test, expect } from 'bun:test';\ntest('a', () => { expect(globalThis.shared).toBeUndefined(); globalThis.shared = 1; });\n",
+    );
+    writeFileSync(
+      join(dir, 'b.spec.ts'),
+      "import { test, expect } from 'bun:test';\ntest('b', () => { expect(globalThis.shared).toBeUndefined(); globalThis.shared = 1; });\n",
+    );
     const passing = run('.', '--jobs=1');
     expect(passing.code).toBe(0);
     expect(passing.out).toContain(' 2 pass\n 0 fail\nRan 2 files, 0 failed.');

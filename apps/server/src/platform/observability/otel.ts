@@ -20,18 +20,9 @@ import { NodeSDK } from '@opentelemetry/sdk-node';
 import { registerTelemetry } from 'ai';
 import { OpenTelemetry } from '@ai-sdk/otel';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
-import {
-  BatchSpanProcessor,
-  ConsoleSpanExporter,
-  SimpleSpanProcessor,
-  type SpanProcessor,
-} from '@opentelemetry/sdk-trace-base';
+import { BatchSpanProcessor, ConsoleSpanExporter, SimpleSpanProcessor, type SpanProcessor } from '@opentelemetry/sdk-trace-base';
 import { resourceFromAttributes } from '@opentelemetry/resources';
-import {
-  ATTR_SERVICE_NAME,
-  ATTR_SERVICE_VERSION,
-  ATTR_DEPLOYMENT_ENVIRONMENT_NAME,
-} from '@opentelemetry/semantic-conventions/incubating';
+import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION, ATTR_DEPLOYMENT_ENVIRONMENT_NAME } from '@opentelemetry/semantic-conventions/incubating';
 
 let sdk: NodeSDK | null = null;
 let started = false;
@@ -78,8 +69,7 @@ export function setupOtel(processors: SpanProcessor[] = buildProcessors()): void
     resource: resourceFromAttributes({
       [ATTR_SERVICE_NAME]: process.env.OTEL_SERVICE_NAME ?? 'tomai-server',
       [ATTR_SERVICE_VERSION]: process.env.APP_VERSION ?? 'dev',
-      [ATTR_DEPLOYMENT_ENVIRONMENT_NAME]:
-        process.env.OTEL_DEPLOYMENT_ENVIRONMENT ?? Bun.env.NODE_ENV ?? 'development',
+      [ATTR_DEPLOYMENT_ENVIRONMENT_NAME]: process.env.OTEL_DEPLOYMENT_ENVIRONMENT ?? Bun.env.NODE_ENV ?? 'development',
     }),
     spanProcessors: processors,
   });
@@ -92,4 +82,3 @@ export function setupOtel(processors: SpanProcessor[] = buildProcessors()): void
 export async function shutdownOtel(): Promise<void> {
   await sdk?.shutdown();
 }
-

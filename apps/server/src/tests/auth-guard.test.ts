@@ -97,9 +97,7 @@ describe('auth guards', () => {
   });
 
   describe('requireParent', () => {
-    const app = new Hono<AppEnv>()
-      .get('/parent-only', requireParent, (c) => c.json({ role: c.var.user.role }))
-      .onError(handleError);
+    const app = new Hono<AppEnv>().get('/parent-only', requireParent, (c) => c.json({ role: c.var.user.role })).onError(handleError);
 
     it('lets a parent through', async () => {
       const parent = makeParentUser();

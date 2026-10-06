@@ -88,7 +88,7 @@ export function truncateToTokenBudget(text: string, maxTokens: number): TokenEst
     truncated.lastIndexOf('. '),
     truncated.lastIndexOf('.\n'),
     truncated.lastIndexOf('! '),
-    truncated.lastIndexOf('? ')
+    truncated.lastIndexOf('? '),
   );
 
   if (lastSentenceEnd > maxChars * 0.5) {

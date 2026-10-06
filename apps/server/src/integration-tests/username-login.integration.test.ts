@@ -27,7 +27,7 @@ if (!dbReachable) {
 // ============================================================
 
 let auth: Awaited<typeof import('../platform/auth/auth')>['auth'];
-let parentService: InstanceType<typeof import('../modules/family/parent.service')['ParentService']>;
+let parentService: InstanceType<(typeof import('../modules/family/parent.service'))['ParentService']>;
 let createdParentId: string;
 let createdChildId: string;
 let childUsername: string;
@@ -72,7 +72,10 @@ afterAll(async () => {
   const { db } = await import('../db/connection');
   const { user } = await import('../db/schema');
   const { inArray } = await import('drizzle-orm');
-  await db.delete(user).where(inArray(user.id, [createdParentId, createdChildId].filter(Boolean))).catch(() => null);
+  await db
+    .delete(user)
+    .where(inArray(user.id, [createdParentId, createdChildId].filter(Boolean)))
+    .catch(() => null);
 });
 
 // ============================================================
@@ -120,8 +123,10 @@ describe.skipIf(!dbReachable)('username plugin — autonomous child login', () =
 
     const signedIn = await auth.api.signInUsername({ body: { username: childUsername, password: newPassword } });
     expect(signedIn.user.username).toBe(childUsername);
-    const oldPassword = await auth.api.signInUsername({ body: { username: childUsername, password: childPassword } })
-      .then(() => undefined, (error: unknown) => error);
+    const oldPassword = await auth.api.signInUsername({ body: { username: childUsername, password: childPassword } }).then(
+      () => undefined,
+      (error: unknown) => error,
+    );
     expect(oldPassword).toBeInstanceOf(Error);
   });
 });
@@ -135,8 +140,10 @@ describe.skipIf(!dbReachable)('role and level, written by the server only', () =
     expect((await usersRepository.findById(signedUp.user.id))?.role).toBe('parent');
     await usersRepository.deleteById(signedUp.user.id);
 
-    const withLevel = await auth.api.signUpEmail({ body: { ...body, email: `level_${body.email}`, schoolLevel: 'seconde' } as typeof body })
-      .then(() => undefined, (error: unknown) => error);
+    const withLevel = await auth.api.signUpEmail({ body: { ...body, email: `level_${body.email}`, schoolLevel: 'seconde' } as typeof body }).then(
+      () => undefined,
+      (error: unknown) => error,
+    );
     expect(withLevel).toBeInstanceOf(Error);
   });
 
@@ -144,10 +151,15 @@ describe.skipIf(!dbReachable)('role and level, written by the server only', () =
     const { setPassword } = await import('../modules/auth/index');
     await setPassword(createdChildId, 'role-test-password-1!');
     const { headers } = await auth.api.signInUsername({ body: { username: childUsername, password: 'role-test-password-1!' }, returnHeaders: true });
-    const cookie = headers.getSetCookie().map((line) => line.split(';')[0]).join('; ');
+    const cookie = headers
+      .getSetCookie()
+      .map((line) => line.split(';')[0])
+      .join('; ');
     for (const change of [{ role: 'parent' }, { schoolLevel: 'troisieme' }]) {
-      const refused = await auth.api.updateUser({ body: change as { name?: string }, headers: { cookie } })
-        .then(() => undefined, (error: unknown) => error);
+      const refused = await auth.api.updateUser({ body: change as { name?: string }, headers: { cookie } }).then(
+        () => undefined,
+        (error: unknown) => error,
+      );
       expect(refused).toBeInstanceOf(Error);
     }
     const { usersRepository } = await import('../modules/auth/index');

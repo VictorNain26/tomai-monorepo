@@ -1,14 +1,8 @@
 {
   "$schema": "https://turborepo.dev/schema.v2.json",
   "ui": "tui",
-  "globalDependencies": [
-    "tsconfig.base.json"
-  ],
-  "globalEnv": [
-    "NODE_ENV",
-    "CI",
-    "APP_ENV"
-  ],
+  "globalDependencies": ["tsconfig.base.json"],
+  "globalEnv": ["NODE_ENV", "CI", "APP_ENV"],
   "globalPassThroughEnv": [
     "GITHUB_ACTIONS",
     "VERCEL",
@@ -25,21 +19,13 @@
     "SEED_CHILD_PASSWORD"
   ],
   "tasks": {
+    "transit": {
+      "dependsOn": ["^transit"]
+    },
     "build": {
-      "dependsOn": ["^build", "^build:types"],
-      "inputs": [
-        "$TURBO_DEFAULT$",
-        ".env.production",
-        ".env.staging",
-        "!.env.local",
-        "!.env.*.local"
-      ],
-      "outputs": [
-        ".next/**",
-        "!.next/cache/**",
-        "dist/**",
-        "build/**"
-      ],
+      "dependsOn": ["^build", "^build:types", "transit"],
+      "inputs": ["$TURBO_DEFAULT$", ".env.production", ".env.staging", "!.env.local", "!.env.*.local"],
+      "outputs": [".next/**", "!.next/cache/**", "dist/**", "build/**"],
       "env": ["NEXT_RUNTIME", "VERCEL_ENV", "SENTRY_AUTH_TOKEN"]
     },
     "build:types": {
@@ -51,6 +37,7 @@
       "persistent": true
     },
     "lint": {
+      "dependsOn": ["^build:types", "transit"],
       "outputs": []
     },
     "typecheck": {
@@ -70,8 +57,12 @@
       "cache": false,
       "persistent": true
     },
+    "test:e2e": {
+      "dependsOn": ["build", "transit"],
+      "outputs": []
+    },
     "test": {
-      "outputs": ["coverage/**"],
+      "outputs": [],
       "passThroughEnv": ["DATABASE_URL", "BETTER_AUTH_SECRET"]
     }
   }

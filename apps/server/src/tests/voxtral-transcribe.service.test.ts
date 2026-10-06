@@ -30,9 +30,7 @@ const owner = { userId: 'u1' };
 // Import après mocks
 // ============================================
 
-const { getVoxtralTranscribeService, isVoxtralTranscribeConfigured } = await import(
-  '../modules/voice/voxtral-transcribe.service'
-);
+const { getVoxtralTranscribeService, isVoxtralTranscribeConfigured } = await import('../modules/voice/voxtral-transcribe.service');
 
 // ============================================
 // Helpers
@@ -52,9 +50,7 @@ function mockFetchSuccess(text: string, model = 'voxtral-mini-2602', usage: Reco
 }
 
 function mockFetchError(status: number, body = 'error') {
-  return spyOn(globalThis, 'fetch').mockResolvedValueOnce(
-    new Response(body, { status }),
-  );
+  return spyOn(globalThis, 'fetch').mockResolvedValueOnce(new Response(body, { status }));
 }
 
 function mockFetchThrow(message: string) {
@@ -178,7 +174,6 @@ describe('VoxtralTranscribeService', () => {
       expect(recordAiCost.mock.calls).toEqual([[owner, { model: 'voxtral-mini-2602', operation: 'speech-to-text', usageUnknown: true }]]);
       expect(mockLogger.warn).toHaveBeenCalled();
     });
-
   });
 
   describe('transcribe — API errors', () => {
@@ -226,8 +221,11 @@ describe('VoxtralTranscribeService', () => {
       let captured: AbortSignal | undefined;
       fetchSpy = spyOn(globalThis, 'fetch').mockImplementation(((input: Request) => {
         captured = input.signal;
-        return new Promise((_, reject) => { input.signal.addEventListener('abort', () => { reject(input.signal.reason as Error); }); },
-        );
+        return new Promise((_, reject) => {
+          input.signal.addEventListener('abort', () => {
+            reject(input.signal.reason as Error);
+          });
+        });
       }) as unknown as typeof fetch);
 
       const result = await getVoxtralTranscribeService().transcribe(makeAudioBuffer(), 'audio/webm', owner);

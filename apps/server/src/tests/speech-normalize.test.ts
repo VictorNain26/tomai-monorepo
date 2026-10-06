@@ -25,9 +25,7 @@ describe('normalizeForSpeech — markdown', () => {
   });
 
   it('supprime le code inline', () => {
-    expect(normalizeForSpeech('La fonction `parseInt()` convertit.')).toBe(
-      'La fonction parseInt() convertit.',
-    );
+    expect(normalizeForSpeech('La fonction `parseInt()` convertit.')).toBe('La fonction parseInt() convertit.');
   });
 
   it('supprime les blocs de code fencés', () => {
@@ -47,9 +45,7 @@ describe('normalizeForSpeech — markdown', () => {
   });
 
   it('supprime les marqueurs de liste avec tiret', () => {
-    expect(normalizeForSpeech('- Premier point\n- Deuxième point')).toBe(
-      'Premier point\nDeuxième point',
-    );
+    expect(normalizeForSpeech('- Premier point\n- Deuxième point')).toBe('Premier point\nDeuxième point');
   });
 
   it('supprime les marqueurs de liste avec astérisque', () => {
@@ -57,15 +53,11 @@ describe('normalizeForSpeech — markdown', () => {
   });
 
   it('supprime les marqueurs de liste numérotée', () => {
-    expect(normalizeForSpeech('1. Premier\n2. Deuxième\n10. Dixième')).toBe(
-      'Premier\nDeuxième\nDixième',
-    );
+    expect(normalizeForSpeech('1. Premier\n2. Deuxième\n10. Dixième')).toBe('Premier\nDeuxième\nDixième');
   });
 
   it('transforme les liens markdown en texte seul', () => {
-    expect(normalizeForSpeech('Voir [la documentation](https://example.com) ici.')).toBe(
-      'Voir la documentation ici.',
-    );
+    expect(normalizeForSpeech('Voir [la documentation](https://example.com) ici.')).toBe('Voir la documentation ici.');
   });
 
   it('supprime les citations blockquote', () => {

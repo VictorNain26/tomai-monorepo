@@ -9,9 +9,7 @@ import { checkDbReachable } from './_helpers/db';
 
 const dbReachable = await checkDbReachable();
 
-const baseDatabaseUrl =
-  Bun.env.DATABASE_URL ??
-  'postgresql://tomai_dev:tomai_dev_password@localhost:5432/tomai_dev';
+const baseDatabaseUrl = Bun.env.DATABASE_URL ?? 'postgresql://tomai_dev:tomai_dev_password@localhost:5432/tomai_dev';
 const testDbName = `tomai_migrate_lock_test_${Date.now()}`;
 
 describe.skipIf(!dbReachable)('runMigrations — concurrent boot exclusivity', () => {
@@ -31,9 +29,7 @@ describe.skipIf(!dbReachable)('runMigrations — concurrent boot exclusivity', (
   afterAll(async () => {
     const adminClient = postgres(adminUrl.toString(), { max: 1 });
     try {
-      await adminClient.unsafe(
-        `SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '${testDbName}' AND pid <> pg_backend_pid()`
-      );
+      await adminClient.unsafe(`SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '${testDbName}' AND pid <> pg_backend_pid()`);
       await adminClient.unsafe(`DROP DATABASE IF EXISTS ${testDbName}`);
     } finally {
       await adminClient.end();
@@ -63,13 +59,11 @@ describe.skipIf(!dbReachable)('runMigrations — concurrent boot exclusivity', (
     const checkDb = drizzle(checkClient);
     try {
       const rows = await checkDb.execute<{ hash: string; count: string }>(
-        sql`SELECT hash, COUNT(*)::text as count FROM drizzle.__drizzle_migrations GROUP BY hash HAVING COUNT(*) > 1`
+        sql`SELECT hash, COUNT(*)::text as count FROM drizzle.__drizzle_migrations GROUP BY hash HAVING COUNT(*) > 1`,
       );
       expect(rows.length).toBe(0);
 
-      const allRows = await checkDb.execute<{ count: string }>(
-        sql`SELECT COUNT(*)::text as count FROM drizzle.__drizzle_migrations`
-      );
+      const allRows = await checkDb.execute<{ count: string }>(sql`SELECT COUNT(*)::text as count FROM drizzle.__drizzle_migrations`);
       expect(Number(allRows[0]?.count)).toBeGreaterThan(0);
     } finally {
       await checkClient.end();

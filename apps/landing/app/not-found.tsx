@@ -1,10 +1,10 @@
-import type { Metadata } from "next";
-import Link from "next/link";
-import { Button } from "@repo/ui";
-import { PageLayout } from "@/components/layout/page-layout";
+import type { Metadata } from 'next';
+import Link from 'next/link';
+import { Button } from '@repo/ui';
+import { PageLayout } from '@/components/layout/page-layout';
 
 export const metadata: Metadata = {
-  title: "Page introuvable",
+  title: 'Page introuvable',
 };
 
 export default function NotFound() {

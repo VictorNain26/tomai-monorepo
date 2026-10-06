@@ -1,21 +1,22 @@
-import type { Metadata } from "next";
-import { Caveat, Nunito } from "next/font/google";
-import "./globals.css";
-import { Header } from "@/components/layout/header";
-import { Footer } from "@/components/layout/footer";
-import { MotionProvider } from "@/components/motion-provider";
-import { BRAND_NAME } from "@/lib/brand";
+import type { Metadata } from 'next';
+import { Caveat, Nunito } from 'next/font/google';
+import './globals.css';
+import { Header } from '@/components/layout/header';
+import { Footer } from '@/components/layout/footer';
+import { MotionProvider } from '@/components/motion-provider';
+import { JsonLd } from '@/components/json-ld';
+import { BRAND_NAME } from '@/lib/brand';
 
 const nunito = Nunito({
-  subsets: ["latin"],
-  display: "swap",
-  variable: "--font-nunito",
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-nunito',
 });
 
 const caveat = Caveat({
-  subsets: ["latin"],
-  display: "swap",
-  variable: "--font-caveat",
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-caveat',
 });
 
 const TITLE = `${BRAND_NAME} – Une aide aux devoirs pour le collège, en préparation`;
@@ -29,37 +30,48 @@ export const metadata: Metadata = {
   },
   description: DESCRIPTION,
   applicationName: BRAND_NAME,
-  category: "education",
+  category: 'education',
   keywords: [
-    BRAND_NAME, "tutorat", "éducation", "IA",
-    "aide aux devoirs", "aide devoirs IA",
-    "soutien scolaire", "soutien scolaire IA",
-    "tuteur IA français",
-    "collège", "6e", "5e", "4e", "3e",
-    "application éducative", "app scolaire",
-    "IA européenne", "Mistral",
+    BRAND_NAME,
+    'tutorat',
+    'éducation',
+    'IA',
+    'aide aux devoirs',
+    'aide devoirs IA',
+    'soutien scolaire',
+    'soutien scolaire IA',
+    'tuteur IA français',
+    'collège',
+    '6e',
+    '5e',
+    '4e',
+    '3e',
+    'application éducative',
+    'app scolaire',
+    'IA européenne',
+    'Mistral',
   ],
   authors: [{ name: BRAND_NAME }],
   creator: BRAND_NAME,
   openGraph: {
-    type: "website",
-    locale: "fr_FR",
+    type: 'website',
+    locale: 'fr_FR',
     title: TITLE,
     description: DESCRIPTION,
     siteName: BRAND_NAME,
   },
   twitter: {
-    card: "summary_large_image",
+    card: 'summary_large_image',
     title: TITLE,
     description: DESCRIPTION,
   },
-  metadataBase: new URL("https://tomia.fr"),
+  metadataBase: new URL('https://tomia.fr'),
   alternates: {
-    canonical: "/",
+    canonical: '/',
   },
   other: {
-    "apple-mobile-web-app-capable": "yes",
-    "apple-mobile-web-app-status-bar-style": "default",
+    'apple-mobile-web-app-capable': 'yes',
+    'apple-mobile-web-app-status-bar-style': 'default',
   },
   robots: {
     index: true,
@@ -67,27 +79,27 @@ export const metadata: Metadata = {
     googleBot: {
       index: true,
       follow: true,
-      "max-video-preview": -1,
-      "max-image-preview": "large",
-      "max-snippet": -1,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
     },
   },
 };
 
 const jsonLd = [
   {
-    "@context": "https://schema.org",
-    "@type": "Organization",
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
     name: BRAND_NAME,
-    url: "https://tomia.fr",
-    logo: "https://tomia.fr/icon-512.png",
+    url: 'https://tomia.fr',
+    logo: 'https://tomia.fr/icon-512.png',
   },
   {
-    "@context": "https://schema.org",
-    "@type": "WebSite",
-    url: "https://tomia.fr",
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    url: 'https://tomia.fr',
     name: BRAND_NAME,
-    inLanguage: "fr",
+    inLanguage: 'fr',
   },
 ];
 
@@ -101,16 +113,15 @@ export default function RootLayout({
       <body>
         <noscript>
           {/* data-reveal must mark only elements whose hidden state is Motion's entry state */}
-          <style>{"[data-reveal]{opacity:1!important;transform:none!important}path[data-reveal]{stroke-dasharray:none!important}"}</style>
+          <style>{'[data-reveal]{opacity:1!important;transform:none!important}path[data-reveal]{stroke-dasharray:none!important}'}</style>
         </noscript>
-        {jsonLd.map((schema, i) => (
-          <script
-            key={i}
-            type="application/ld+json"
-            dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
-          />
+        {jsonLd.map((schema) => (
+          <JsonLd key={schema['@type']} data={schema} />
         ))}
-        <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-full">
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-full"
+        >
           Aller au contenu principal
         </a>
         <MotionProvider>

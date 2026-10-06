@@ -14,13 +14,19 @@ describe.skipIf(!dbReachable)('requireAuth — a deleted account loses access im
       body: { email, password: 'revocation-password-123!', name: 'Revocation' },
       returnHeaders: true,
     });
-    cookie = headers.getSetCookie().map((c) => c.split(';')[0]).join('; ');
+    cookie = headers
+      .getSetCookie()
+      .map((c) => c.split(';')[0])
+      .join('; ');
   });
 
   afterAll(async () => {
     const { db } = await import('../db/connection');
     const { user } = await import('../db/schema');
-    await db.delete(user).where(eq(user.email, email)).catch(() => null);
+    await db
+      .delete(user)
+      .where(eq(user.email, email))
+      .catch(() => null);
   });
 
   it('authenticates the fresh session', async () => {

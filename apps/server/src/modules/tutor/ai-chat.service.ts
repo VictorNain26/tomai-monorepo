@@ -12,12 +12,7 @@
  *   prompt + history), so turn N+1 reads turn N's prefix from cache.
  */
 
-import {
-  streamText,
-  isStepCount,
-  type ToolSet,
-  type LanguageModel,
-} from 'ai';
+import { streamText, isStepCount, type ToolSet, type LanguageModel } from 'ai';
 import { mistralProvider } from '../../platform/ai/provider.js';
 import type { MistralLanguageModelChatOptions } from '@ai-sdk/mistral';
 import { routeReasoningEffort } from './mistral-reasoning.js';
@@ -27,10 +22,7 @@ import { levelLabel } from '../../lib/education-levels.js';
 import type { SubjectFamily } from '../../lib/subjects.js';
 import { optimizeConversationHistory } from './conversation-optimizer.js';
 import { assembleChatPrompt, type HistoryTurn } from './chat-message-assembler.js';
-import {
-  wrapAttachedFiles,
-  MAX_TOOL_ITERATIONS,
-} from './mistral-helpers.js';
+import { wrapAttachedFiles, MAX_TOOL_ITERATIONS } from './mistral-helpers.js';
 import { calculateBudget, truncateToTokenBudget } from './token-budget.service.js';
 import { env } from '../../platform/config/env.js';
 import type { TurnUsage } from './turn-usage.js';
@@ -92,7 +84,10 @@ function flashcardsApproval(analysis: TurnAnalysis | undefined) {
   if (analysis?.wantsFlashcards) return 'approved';
   return analysis?.error === undefined
     ? { type: 'denied' as const, reason: "L'élève n'a pas demandé de cartes : propose-les-lui, sans les créer." }
-    : { type: 'denied' as const, reason: "Les cartes ne peuvent pas être créées à ce tour : si l'élève en a demandé, dis-le-lui et propose de réessayer." };
+    : {
+        type: 'denied' as const,
+        reason: "Les cartes ne peuvent pas être créées à ce tour : si l'élève en a demandé, dis-le-lui et propose de réessayer.",
+      };
 }
 
 /**
@@ -180,11 +175,15 @@ export function streamChat(params: ChatStreamParams): ReturnType<typeof streamTe
     },
     telemetry: { functionId: 'chat-stream', recordInputs: false, recordOutputs: false },
     timeout: env.CHAT_STREAM_TIMEOUT_MS,
-    onLanguageModelCallStart: () => { params.usage?.callStarted(); },
+    onLanguageModelCallStart: () => {
+      params.usage?.callStarted();
+    },
     onChunk: ({ chunk }) => {
       if (chunk.type === 'text-delta' || chunk.type === 'reasoning-delta') params.usage?.delta(chunk.text);
     },
-    onLanguageModelCallEnd: ({ usage }) => { params.usage?.callEnded(usage); },
+    onLanguageModelCallEnd: ({ usage }) => {
+      params.usage?.callEnded(usage);
+    },
     onError: ({ error }) => {
       logger.error('Chat stream failed', { operation: 'chat-stream:error', sessionId: params.sessionId, err: error, severity: 'high' as const });
     },

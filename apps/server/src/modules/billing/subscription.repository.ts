@@ -12,11 +12,7 @@ interface ChildSubscriptionRow {
 
 class SubscriptionRepository {
   async findFamilyBilling(parentId: string): Promise<FamilyBilling | undefined> {
-    const [billing] = await db
-      .select()
-      .from(familyBilling)
-      .where(eq(familyBilling.parentId, parentId))
-      .limit(1);
+    const [billing] = await db.select().from(familyBilling).where(eq(familyBilling.parentId, parentId)).limit(1);
     return billing;
   }
 

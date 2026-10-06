@@ -49,23 +49,25 @@ export async function prepareExerciseTurn(params: ExerciseTurnParams): Promise<E
   // The statement in progress pasted again with a new try is the same exercise: the code knows
   // it, the analysis took it for a new one (measured 2026-10-05). A new sheet would reset the level.
   const restated = params.current?.sheet ? findLeakForm(params.studentText, [params.current.sheet.statement]) !== null : false;
-  const exercise = analysis.bringsExercise && !restated
-    ? await prepareExerciseSheet({
-      userId,
-      sessionId,
-      level: params.level,
-      subject: params.subject,
-      studentText: params.studentText,
-      attachedFilesBlock: params.attachedFilesBlock,
-    })
-    : params.current;
+  const exercise =
+    analysis.bringsExercise && !restated
+      ? await prepareExerciseSheet({
+          userId,
+          sessionId,
+          level: params.level,
+          subject: params.subject,
+          studentText: params.studentText,
+          attachedFilesBlock: params.attachedFilesBlock,
+        })
+      : params.current;
   const attempt = analysis.proposesAnswer;
   if (!exercise?.sheet || (exercise.solved && !attempt)) return { exercise, diagnosis: null, hintLevel: null, contract: null, change: null };
 
   // An uncertain sheet cannot judge: no diagnosis is asked of it.
-  const diagnosis = attempt && !exercise.uncertain
-    ? await diagnose(exercise.sheet, { studentText: params.studentText, lastTutorText: params.lastTutorText, userId, sessionId })
-    : null;
+  const diagnosis =
+    attempt && !exercise.uncertain
+      ? await diagnose(exercise.sheet, { studentText: params.studentText, lastTutorText: params.lastTutorText, userId, sessionId })
+      : null;
   const change: ExerciseChange = {
     levelChange: levelChange({ attempt, verdict: diagnosis?.verdict ?? null, uncertain: exercise.uncertain }),
     top: topLevel(exercise.uncertain),

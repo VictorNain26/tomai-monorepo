@@ -61,7 +61,8 @@ describe('generateText', () => {
     mockFetchJson(capture, chatCompletion('ok'));
 
     await generateText({
-      functionId: 'test', owner: null,
+      functionId: 'test',
+      owner: null,
       messages: [{ role: 'user', content: 'Salut' }],
       maxTokens: 256,
       promptCacheKey: 'test-cache-v1',
@@ -111,7 +112,13 @@ describe('generateStructured', () => {
     const capture: { body?: Record<string, unknown> } = {};
     mockFetchJson(capture, chatCompletion(JSON.stringify({ intent: 'explain-concept' })));
 
-    const result = await generateStructured({ functionId: 'test', owner: null, messages: [{ role: 'user', content: 'classe' }], schema, schemaName: 'intent' });
+    const result = await generateStructured({
+      functionId: 'test',
+      owner: null,
+      messages: [{ role: 'user', content: 'classe' }],
+      schema,
+      schemaName: 'intent',
+    });
 
     expect(result).toEqual({ object: { intent: 'explain-concept' }, usage: { inputTokens: 10, cachedInputTokens: 0, outputTokens: 5 } });
     const responseFormat = capture.body?.['response_format'] as Record<string, unknown>;
@@ -127,11 +134,18 @@ describe('generateStructured', () => {
     globalThis.fetch = (async (_url: string | URL | Request, init?: RequestInit) => {
       bodies.push(JSON.parse(init?.body as string) as Record<string, unknown>);
       return new Response(JSON.stringify(chatCompletion(replies[bodies.length - 1] ?? '')), {
-        status: 200, headers: { 'content-type': 'application/json' },
+        status: 200,
+        headers: { 'content-type': 'application/json' },
       });
     }) as unknown as typeof fetch;
 
-    const result = await generateStructured({ functionId: 'test', owner: null, messages: [{ role: 'user', content: 'salut' }], schema, schemaName: 'intent' });
+    const result = await generateStructured({
+      functionId: 'test',
+      owner: null,
+      messages: [{ role: 'user', content: 'salut' }],
+      schema,
+      schemaName: 'intent',
+    });
 
     expect(result.object).toEqual({ intent: 'chit-chat' });
     expect(result.usage).toEqual({ inputTokens: 20, cachedInputTokens: 0, outputTokens: 10 });
@@ -144,12 +158,18 @@ describe('generateStructured', () => {
     globalThis.fetch = (async () => {
       calls += 1;
       return new Response(JSON.stringify(chatCompletion(JSON.stringify({ intent: 'nope' }))), {
-        status: 200, headers: { 'content-type': 'application/json' },
+        status: 200,
+        headers: { 'content-type': 'application/json' },
       });
     }) as unknown as typeof fetch;
 
-    const rejection = await generateStructured({ functionId: 'test', owner: null, messages: [{ role: 'user', content: 'x' }], schema, schemaName: 'intent' })
-      .catch((error: unknown) => error);
+    const rejection = await generateStructured({
+      functionId: 'test',
+      owner: null,
+      messages: [{ role: 'user', content: 'x' }],
+      schema,
+      schemaName: 'intent',
+    }).catch((error: unknown) => error);
 
     expect(NoObjectGeneratedError.isInstance(rejection)).toBe(true);
     expect(calls).toBe(2);
@@ -160,12 +180,19 @@ describe('generateStructured', () => {
     globalThis.fetch = (async () => {
       calls += 1;
       return new Response(JSON.stringify(chatCompletion(JSON.stringify({ intent: 'nope' }))), {
-        status: 200, headers: { 'content-type': 'application/json' },
+        status: 200,
+        headers: { 'content-type': 'application/json' },
       });
     }) as unknown as typeof fetch;
 
-    const rejection = await generateStructured({ functionId: 'test', owner: null, messages: [{ role: 'user', content: 'x' }], schema, schemaName: 'intent', repairInvalid: false })
-      .catch((error: unknown) => error);
+    const rejection = await generateStructured({
+      functionId: 'test',
+      owner: null,
+      messages: [{ role: 'user', content: 'x' }],
+      schema,
+      schemaName: 'intent',
+      repairInvalid: false,
+    }).catch((error: unknown) => error);
 
     expect(NoObjectGeneratedError.isInstance(rejection)).toBe(true);
     expect(calls).toBe(1);
@@ -184,12 +211,19 @@ describe('generateStructured', () => {
         });
       });
       return new Response(JSON.stringify(chatCompletion(content)), {
-        status: 200, headers: { 'content-type': 'application/json' },
+        status: 200,
+        headers: { 'content-type': 'application/json' },
       });
     }) as unknown as typeof fetch;
 
-    const rejection = await generateStructured({ functionId: 'test', owner: null, messages: [{ role: 'user', content: 'x' }], schema, schemaName: 'intent', timeoutMs: 250 })
-      .catch((error: unknown) => error);
+    const rejection = await generateStructured({
+      functionId: 'test',
+      owner: null,
+      messages: [{ role: 'user', content: 'x' }],
+      schema,
+      schemaName: 'intent',
+      timeoutMs: 250,
+    }).catch((error: unknown) => error);
 
     expect(calls).toBe(2);
     expect(rejection).toBeInstanceOf(Error);
@@ -200,7 +234,14 @@ describe('generateStructured', () => {
     const capture: { body?: Record<string, unknown> } = {};
     mockFetchJson(capture, chatCompletion(JSON.stringify({ intent: 'explain-concept' })));
 
-    await generateStructured({ functionId: 'test', owner: null, messages: [{ role: 'user', content: 'classe' }], schema, schemaName: 'intent', promptCacheKey: 'intent-v1' });
+    await generateStructured({
+      functionId: 'test',
+      owner: null,
+      messages: [{ role: 'user', content: 'classe' }],
+      schema,
+      schemaName: 'intent',
+      promptCacheKey: 'intent-v1',
+    });
 
     expect(capture.body?.['prompt_cache_key']).toBe('intent-v1');
   });
@@ -222,25 +263,59 @@ describe('generateStructured', () => {
     await generateStructured({ functionId: 'test', owner: null, messages: [{ role: 'user', content: 'classe' }], schema, schemaName: 'intent' });
     expect(capture.body?.['random_seed']).toBeUndefined();
 
-    await generateStructured({ functionId: 'test', owner: null, messages: [{ role: 'user', content: 'classe' }], schema, schemaName: 'intent', seed: 7 });
+    await generateStructured({
+      functionId: 'test',
+      owner: null,
+      messages: [{ role: 'user', content: 'classe' }],
+      schema,
+      schemaName: 'intent',
+      seed: 7,
+    });
     expect(capture.body?.['random_seed']).toBe(7);
   });
 
   it('reports the input tokens read from the prompt cache', async () => {
-    mockFetchJson({}, { ...chatCompletion(JSON.stringify({ intent: 'explain-concept' })), usage: { prompt_tokens: 10, completion_tokens: 5, total_tokens: 15, prompt_tokens_details: { cached_tokens: 8 } } });
-    const { usage } = await generateStructured({ functionId: 'test', owner: null, messages: [{ role: 'user', content: 'classe' }], schema, schemaName: 'intent' });
+    mockFetchJson(
+      {},
+      {
+        ...chatCompletion(JSON.stringify({ intent: 'explain-concept' })),
+        usage: { prompt_tokens: 10, completion_tokens: 5, total_tokens: 15, prompt_tokens_details: { cached_tokens: 8 } },
+      },
+    );
+    const { usage } = await generateStructured({
+      functionId: 'test',
+      owner: null,
+      messages: [{ role: 'user', content: 'classe' }],
+      schema,
+      schemaName: 'intent',
+    });
     expect(usage).toEqual({ inputTokens: 10, cachedInputTokens: 8, outputTokens: 5 });
   });
 
   it('keeps reasoning off for structured outputs unless asked, and lifts the output cap when reasoning', async () => {
     const capture: { body?: Record<string, unknown> } = {};
     mockFetchJson(capture, chatCompletion(JSON.stringify({ intent: 'explain-concept' })));
-    await generateStructured({ functionId: 'test', owner: null, messages: [{ role: 'user', content: 'classe' }], schema, schemaName: 'intent', maxTokens: 256 });
+    await generateStructured({
+      functionId: 'test',
+      owner: null,
+      messages: [{ role: 'user', content: 'classe' }],
+      schema,
+      schemaName: 'intent',
+      maxTokens: 256,
+    });
     expect(capture.body?.['reasoning_effort']).toBe('none');
     expect(capture.body?.['max_tokens']).toBe(256);
 
     mockFetchJson(capture, chatCompletion(JSON.stringify({ intent: 'explain-concept' })));
-    await generateStructured({ functionId: 'test', owner: null, messages: [{ role: 'user', content: 'classe' }], schema, schemaName: 'intent', maxTokens: 256, reasoningEffort: 'high' });
+    await generateStructured({
+      functionId: 'test',
+      owner: null,
+      messages: [{ role: 'user', content: 'classe' }],
+      schema,
+      schemaName: 'intent',
+      maxTokens: 256,
+      reasoningEffort: 'high',
+    });
     expect(capture.body?.['reasoning_effort']).toBe('high');
     expect(capture.body).not.toHaveProperty('max_tokens');
   });
@@ -251,26 +326,35 @@ describe('cost of each call, recorded for its owner', () => {
   const owner = { userId: 'u1', sessionId: 's1' };
   const respond = (replies: string[]) => {
     let calls = 0;
-    globalThis.fetch = (async () => new Response(JSON.stringify(chatCompletion(replies[calls++] ?? '')), {
-      status: 200, headers: { 'content-type': 'application/json' },
-    })) as unknown as typeof fetch;
+    globalThis.fetch = (async () =>
+      new Response(JSON.stringify(chatCompletion(replies[calls++] ?? '')), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      })) as unknown as typeof fetch;
   };
 
   it('records a text call once, under its functionId', async () => {
     respond(['Titre']);
     await generateText({ functionId: 'auto-title', owner, messages: [{ role: 'user', content: 'x' }] });
-    expect(recordAiCost.mock.calls).toEqual([[owner, { model: 'mistral-small-2603', operation: 'auto-title', inputTokens: 10, cachedInputTokens: 0, outputTokens: 5 }]]);
+    expect(recordAiCost.mock.calls).toEqual([
+      [owner, { model: 'mistral-small-2603', operation: 'auto-title', inputTokens: 10, cachedInputTokens: 0, outputTokens: 5 }],
+    ]);
   });
 
   it('records each attempt of a structured call, the answer outside the schema too', async () => {
     respond([JSON.stringify({ intent: 'nope' }), JSON.stringify({ intent: 'chit-chat' })]);
     await generateStructured({ functionId: 'turn-analysis', owner, messages: [{ role: 'user', content: 'x' }], schema, schemaName: 'intent' });
-    expect(recordAiCost.mock.calls.map(([who, call]) => [who, call.operation, call.inputTokens])).toEqual([[owner, 'turn-analysis', 10], [owner, 'turn-analysis', 10]]);
+    expect(recordAiCost.mock.calls.map(([who, call]) => [who, call.operation, call.inputTokens])).toEqual([
+      [owner, 'turn-analysis', 10],
+      [owner, 'turn-analysis', 10],
+    ]);
   });
 
   it('records a failed repair too: both calls were billed', async () => {
     respond([JSON.stringify({ intent: 'nope' }), JSON.stringify({ intent: 'nope' })]);
-    await generateStructured({ functionId: 'turn-analysis', owner, messages: [{ role: 'user', content: 'x' }], schema, schemaName: 'intent' }).catch(() => null);
+    await generateStructured({ functionId: 'turn-analysis', owner, messages: [{ role: 'user', content: 'x' }], schema, schemaName: 'intent' }).catch(
+      () => null,
+    );
     expect(recordAiCost).toHaveBeenCalledTimes(2);
   });
 

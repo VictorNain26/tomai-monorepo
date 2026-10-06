@@ -8,40 +8,25 @@ type NewUser = typeof user.$inferInsert;
 
 class UsersRepository {
   async findByEmail(email: string): Promise<User | undefined> {
-    const [foundUser] = await db
-      .select()
-      .from(user)
-      .where(eq(user.email, email))
-      .limit(1);
+    const [foundUser] = await db.select().from(user).where(eq(user.email, email)).limit(1);
 
     return foundUser;
   }
 
   async findByUsername(username: string): Promise<User | undefined> {
-    const [foundUser] = await db
-      .select()
-      .from(user)
-      .where(eq(user.username, username))
-      .limit(1);
+    const [foundUser] = await db.select().from(user).where(eq(user.username, username)).limit(1);
 
     return foundUser;
   }
 
   async findById(id: string): Promise<User | undefined> {
-    const [foundUser] = await db
-      .select()
-      .from(user)
-      .where(eq(user.id, id))
-      .limit(1);
+    const [foundUser] = await db.select().from(user).where(eq(user.id, id)).limit(1);
 
     return foundUser;
   }
 
   async create(userData: NewUser): Promise<User> {
-    const [createdUser] = await db
-      .insert(user)
-      .values(userData)
-      .returning();
+    const [createdUser] = await db.insert(user).values(userData).returning();
 
     if (!createdUser) {
       throw new Error('Failed to create user');
@@ -70,10 +55,7 @@ class UsersRepository {
    * Les contraintes CASCADE suppriment automatiquement les données liées
    */
   async deleteById(id: string): Promise<boolean> {
-    const result = await db
-      .delete(user)
-      .where(eq(user.id, id))
-      .returning();
+    const result = await db.delete(user).where(eq(user.id, id)).returning();
 
     return result.length > 0;
   }

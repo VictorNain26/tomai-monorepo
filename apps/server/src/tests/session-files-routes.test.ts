@@ -30,11 +30,12 @@ const { handleError } = await import('../platform/http/error-handler');
 
 const app = new Hono<AppEnv>().route('/api', sessionFilesRoutes).onError(handleError);
 
-const attachRequest = () => app.request(`/api/chat/session/${SESSION_ID}/files`, {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ fileId: FILE_ID }),
-});
+const attachRequest = () =>
+  app.request(`/api/chat/session/${SESSION_ID}/files`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ fileId: FILE_ID }),
+  });
 
 beforeEach(() => {
   fileOwner = 'student-1';

@@ -16,22 +16,23 @@ export interface OutputCheckRecord {
 }
 
 export class ChatMessageService {
-  async getSessionHistory(sessionId: string, options?: { limit?: number | undefined; afterMessageId?: string | undefined }): Promise<Omit<DbMessage, 'modelMessages'>[]> {
+  async getSessionHistory(
+    sessionId: string,
+    options?: { limit?: number | undefined; afterMessageId?: string | undefined },
+  ): Promise<Omit<DbMessage, 'modelMessages'>[]> {
     try {
       // After the summary's last message, as the summary reads them: the rest of the session stays in the database.
       const sessionMessages = await messagesRepository.findAfter(sessionId, options?.afterMessageId ?? null);
 
       if (options?.limit && sessionMessages.length > options.limit) {
-        const messagesWithFiles = sessionMessages.filter(msg => msg.attachedFile !== null);
-        const messagesWithoutFiles = sessionMessages.filter(msg => msg.attachedFile === null);
+        const messagesWithFiles = sessionMessages.filter((msg) => msg.attachedFile !== null);
+        const messagesWithoutFiles = sessionMessages.filter((msg) => msg.attachedFile === null);
 
         const recentMessages = messagesWithoutFiles.slice(-options.limit);
 
         const combinedMessages = [...messagesWithFiles, ...recentMessages];
 
-        const sortedMessages = combinedMessages.sort((a, b) =>
-          a.createdAt.getTime() - b.createdAt.getTime()
-        );
+        const sortedMessages = combinedMessages.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
 
         logger.info('Session history retrieved with optimization', {
           operation: 'history:optimized',
@@ -39,7 +40,7 @@ export class ChatMessageService {
           messagesWithFiles: messagesWithFiles.length,
           recentMessages: recentMessages.length,
           finalCount: sortedMessages.length,
-          sessionId
+          sessionId,
         });
 
         return sortedMessages;
@@ -94,7 +95,7 @@ export class ChatMessageService {
       /** The turn was cut (timeout, error): the text is what the student saw of it. */
       cut?: boolean | undefined;
     },
-    options: { verifySessionExists?: boolean } = {}
+    options: { verifySessionExists?: boolean } = {},
   ): Promise<{ messageId: string; realSessionId: string }> {
     try {
       // Session verification is optional: orchestration layer already resolves + owner-checks
@@ -108,7 +109,7 @@ export class ChatMessageService {
             reason: `Session ${sessionId} not found`,
             operation: 'saveMessage',
             sessionId,
-            severity: 'high' as const
+            severity: 'high' as const,
           });
           throw new Error(`Session ${sessionId} not found. Create session explicitly first.`);
         }
@@ -171,7 +172,7 @@ export class ChatMessageService {
           operation: 'message:access:unauthorized',
           messageId,
           userId,
-          severity: 'medium' as const
+          severity: 'medium' as const,
         });
         return null;
       }
@@ -184,12 +185,10 @@ export class ChatMessageService {
         aiModel: message.aiModel,
         timestamp: message.createdAt,
         tokensUsed: message.tokensUsed,
-        attachedFile: message.attachedFile &&
-          typeof message.attachedFile === 'object' &&
-          'fileName' in message.attachedFile &&
-          message.attachedFile.fileName
-            ? message.attachedFile as { fileName: string; fileId?: string; mimeType?: string; fileSizeBytes?: number; }
-            : null
+        attachedFile:
+          message.attachedFile && typeof message.attachedFile === 'object' && 'fileName' in message.attachedFile && message.attachedFile.fileName
+            ? (message.attachedFile as { fileName: string; fileId?: string; mimeType?: string; fileSizeBytes?: number })
+            : null,
       };
     } catch (_error) {
       logger.error('Error getting message by ID', { operation: 'chat:message:get', err: _error, messageId, userId, severity: 'medium' as const });

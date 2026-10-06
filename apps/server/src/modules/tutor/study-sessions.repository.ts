@@ -41,7 +41,7 @@ class StudySessionsRepository {
       .values({
         userId: input.userId,
         subject: input.subject,
-        ...(input.topic && { topic: input.topic })
+        ...(input.topic && { topic: input.topic }),
       })
       .returning();
 
@@ -53,22 +53,13 @@ class StudySessionsRepository {
   }
 
   async findById(id: string): Promise<StudySession | undefined> {
-    const [session] = await db
-      .select()
-      .from(studySessions)
-      .where(eq(studySessions.id, id))
-      .limit(1);
+    const [session] = await db.select().from(studySessions).where(eq(studySessions.id, id)).limit(1);
 
     return session;
   }
 
   async findByUserId(userId: string, limit = 20): Promise<StudySession[]> {
-    return await db
-      .select()
-      .from(studySessions)
-      .where(eq(studySessions.userId, userId))
-      .orderBy(desc(studySessions.startedAt))
-      .limit(limit);
+    return await db.select().from(studySessions).where(eq(studySessions.userId, userId)).orderBy(desc(studySessions.startedAt)).limit(limit);
   }
 
   /**
@@ -81,7 +72,7 @@ class StudySessionsRepository {
       .from(studySessions)
       .where(
         sql`${studySessions.userId} = ${userId}
-            AND ${studySessions.status} = 'active'`
+            AND ${studySessions.status} = 'active'`,
       )
       .orderBy(desc(studySessions.startedAt))
       .limit(1);
@@ -110,13 +101,15 @@ class StudySessionsRepository {
    */
   async findByUserIdWithLastMessage(
     userId: string,
-    options: { limit?: number; offset?: number } = {}
-  ): Promise<(StudySession & {
-    messageCount: number;
-    lastMessageContent: string | null;
-    lastMessageRole: string | null;
-    lastMessageAt: Date | null;
-  })[]> {
+    options: { limit?: number; offset?: number } = {},
+  ): Promise<
+    (StudySession & {
+      messageCount: number;
+      lastMessageContent: string | null;
+      lastMessageRole: string | null;
+      lastMessageAt: Date | null;
+    })[]
+  > {
     const { limit = 20, offset = 0 } = options;
 
     return await db
@@ -140,16 +133,22 @@ class StudySessionsRepository {
       })
       .from(studySessions)
       .where(eq(studySessions.userId, userId))
-      .orderBy(sql`COALESCE((
+      .orderBy(
+        sql`COALESCE((
         SELECT created_at FROM messages WHERE session_id = ${studySessions.id}
         ORDER BY created_at DESC LIMIT 1
-      ), ${studySessions.startedAt}) DESC`)
+      ), ${studySessions.startedAt}) DESC`,
+      )
       .limit(limit)
       .offset(offset);
   }
 
   /** The summary replaced only if it still ends where the caller read it: whether it was. */
-  async replaceSummary(id: string, readCutoff: string | null, summary: { conversationSummary: string; summaryUpToMessageId: string }): Promise<boolean> {
+  async replaceSummary(
+    id: string,
+    readCutoff: string | null,
+    summary: { conversationSummary: string; summaryUpToMessageId: string },
+  ): Promise<boolean> {
     const rows = await db
       .update(studySessions)
       .set({ ...summary, updatedAt: sql`NOW()` })
@@ -163,7 +162,7 @@ class StudySessionsRepository {
       .update(studySessions)
       .set({
         ...input,
-        updatedAt: sql`NOW()` // Best practice Drizzle ORM: DB-level timestamp
+        updatedAt: sql`NOW()`, // Best practice Drizzle ORM: DB-level timestamp
       })
       .where(eq(studySessions.id, id))
       .returning();
@@ -221,10 +220,7 @@ class StudySessionsRepository {
   }
 
   async deleteById(id: string): Promise<boolean> {
-    const result = await db
-      .delete(studySessions)
-      .where(eq(studySessions.id, id))
-      .returning();
+    const result = await db.delete(studySessions).where(eq(studySessions.id, id)).returning();
 
     return result.length > 0;
   }

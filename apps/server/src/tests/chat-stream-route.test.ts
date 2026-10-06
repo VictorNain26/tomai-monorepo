@@ -23,7 +23,6 @@ mock.module('../platform/ai/moderation', () => ({
   moderateTexts: mock(async (texts: string[]) => texts.map(() => [])),
 }));
 
-
 // ============================================
 // MOCKS (must be before any import of the real modules)
 // ============================================
@@ -66,7 +65,10 @@ mock.module('../modules/billing/index', () => ({ checkQuota }));
 
 // chat-orchestration.service — the "business logic" seam
 class ChatOrchestrationError extends Error {
-  constructor(message: string, public readonly statusCode: number) {
+  constructor(
+    message: string,
+    public readonly statusCode: number,
+  ) {
     super(message);
     this.name = 'ChatOrchestrationError';
   }
@@ -80,7 +82,14 @@ const prepareTurn = mock(async (_req: unknown) => ({
   conversationSummary: null,
   conversationHistory: [],
   turnInstruction: null,
-  turnAnalysis: { subject: 'general', bringsExercise: false, proposesAnswer: false, asksSolution: false, asksExplanation: false, wantsFlashcards: false },
+  turnAnalysis: {
+    subject: 'general',
+    bringsExercise: false,
+    proposesAnswer: false,
+    asksSolution: false,
+    asksExplanation: false,
+    wantsFlashcards: false,
+  },
   files: [],
   attachedFiles: [],
   attachedFileInfo: null,
@@ -165,8 +174,12 @@ function realStreamChat(params: unknown): StreamChatResult {
     prompt: 'Bonjour Tom',
     tools,
     stopWhen: isStepCount(5),
-    onLanguageModelCallStart: () => { usage.callStarted(); },
-    onLanguageModelCallEnd: ({ usage: called }) => { usage.callEnded(called); },
+    onLanguageModelCallStart: () => {
+      usage.callStarted();
+    },
+    onLanguageModelCallEnd: ({ usage: called }) => {
+      usage.callEnded(called);
+    },
   });
   return lastStreamChatResult;
 }
@@ -232,10 +245,12 @@ describe('POST /api/chat/stream', () => {
 
   it('refuses a level outside the collège, which the prompt does not serve', async () => {
     currentUser = { id: 'user-001', role: 'student', schoolLevel: 'sixieme', firstName: 'Léo' };
-    const res = await app.fetch(makeRequest({
-      message: { id: 'm1', role: 'user', parts: [{ type: 'text', text: 'Bonjour Tom' }] },
-      schoolLevel: 'terminale',
-    }));
+    const res = await app.fetch(
+      makeRequest({
+        message: { id: 'm1', role: 'user', parts: [{ type: 'text', text: 'Bonjour Tom' }] },
+        schoolLevel: 'terminale',
+      }),
+    );
     expect(res.status).toBe(400);
     const json = (await res.json()) as { error: { code: string } };
     expect(json.error.code).toBe('VALIDATION_ERROR');
@@ -243,16 +258,22 @@ describe('POST /api/chat/stream', () => {
 
   it('refuses a subject outside the collège taxonomy', async () => {
     currentUser = { id: 'user-001', role: 'student', schoolLevel: 'sixieme', firstName: 'Léo' };
-    const res = await app.fetch(makeRequest({
-      message: { id: 'm1', role: 'user', parts: [{ type: 'text', text: 'Bonjour Tom' }] },
-      subject: 'philosophie',
-    }));
+    const res = await app.fetch(
+      makeRequest({
+        message: { id: 'm1', role: 'user', parts: [{ type: 'text', text: 'Bonjour Tom' }] },
+        subject: 'philosophie',
+      }),
+    );
     expect(res.status).toBe(400);
   });
 
-  it('passes the plan\'s cards to the turn and the tools: given on Complet, refused on Gratuit, neither when unread', async () => {
+  it("passes the plan's cards to the turn and the tools: given on Complet, refused on Gratuit, neither when unread", async () => {
     currentUser = { id: 'user-001', role: 'student', schoolLevel: 'sixieme', firstName: 'Léo' };
-    for (const [flashcards, tools] of [[true, true], [false, false], [null, false]] as const) {
+    for (const [flashcards, tools] of [
+      [true, true],
+      [false, false],
+      [null, false],
+    ] as const) {
       prepareTurn.mockClear();
       buildChatTools.mockClear();
       quotaFlashcards = flashcards;
@@ -283,7 +304,14 @@ describe('POST /api/chat/stream', () => {
     });
 
     expect(finishTurn).toHaveBeenCalledTimes(1);
-    const finishArgs = finishTurn.mock.calls[0]?.[0] as { sessionId: string; userId: string; text: string; modelMessages: { role: string }[]; aborted: boolean; outputCheck?: unknown };
+    const finishArgs = finishTurn.mock.calls[0]?.[0] as {
+      sessionId: string;
+      userId: string;
+      text: string;
+      modelMessages: { role: string }[];
+      aborted: boolean;
+      outputCheck?: unknown;
+    };
     // The model's response messages, tool call and result included, travel to the persistence,
     // with whether the stream was cut.
     expect(finishArgs.modelMessages.map((m) => m.role)).toEqual(['assistant', 'tool', 'assistant']);
@@ -297,10 +325,23 @@ describe('POST /api/chat/stream', () => {
   it('stores the text the student read after a held one, what was held, and replays the turn as read', async () => {
     currentUser = { id: 'user-001', role: 'student', schoolLevel: 'sixieme', firstName: 'Léo' };
     const sheet = {
-      statement: 'Résous 3x + 5 = 20.', kind: 'short', answer: 'x = 5', answerForms: ['x = 5'], mathEquation: null, mathAnswer: null,
-      steps: [], commonErrors: [], rule: null, facts: [], expectedElements: [], entries: [], laterEntries: [],
+      statement: 'Résous 3x + 5 = 20.',
+      kind: 'short',
+      answer: 'x = 5',
+      answerForms: ['x = 5'],
+      mathEquation: null,
+      mathAnswer: null,
+      steps: [],
+      commonErrors: [],
+      rule: null,
+      facts: [],
+      expectedElements: [],
+      entries: [],
+      laterEntries: [],
     };
-    prepareTurn.mockImplementationOnce(async () => ({ ...(await prepareTurn.getMockImplementation()?.({})), exerciseSheet: sheet, exerciseUncertain: false }) as never);
+    prepareTurn.mockImplementationOnce(
+      async () => ({ ...(await prepareTurn.getMockImplementation()?.({})), exerciseSheet: sheet, exerciseUncertain: false }) as never,
+    );
     const replies = ['Donc x = 5.', 'Que fais-tu du + 5 ?'];
     streamChatImpl = (params) => {
       const { usage } = params as { usage: TurnUsage };
@@ -322,8 +363,12 @@ describe('POST /api/chat/stream', () => {
           }),
         }),
         prompt: 'Je bloque',
-        onLanguageModelCallStart: () => { usage.callStarted(); },
-        onLanguageModelCallEnd: ({ usage: called }) => { usage.callEnded(called); },
+        onLanguageModelCallStart: () => {
+          usage.callStarted();
+        },
+        onLanguageModelCallEnd: ({ usage: called }) => {
+          usage.callEnded(called);
+        },
       });
     };
 
@@ -331,7 +376,12 @@ describe('POST /api/chat/stream', () => {
 
     expect(body).not.toContain('x = 5');
     expect(body).toContain('Que fais-tu du + 5 ?');
-    const finishArgs = finishTurn.mock.calls[0]?.[0] as { text: string; outputCheck: unknown; modelMessages: unknown; usage: { totalTokens: number } };
+    const finishArgs = finishTurn.mock.calls[0]?.[0] as {
+      text: string;
+      outputCheck: unknown;
+      modelMessages: unknown;
+      usage: { totalTokens: number };
+    };
     expect(finishArgs.text).toBe('Que fais-tu du + 5 ?');
     expect(finishArgs.outputCheck).toEqual({ findings: ['answer'], outcome: 'regenerated' });
     expect(finishArgs.modelMessages).toEqual([{ role: 'assistant', content: [{ type: 'text', text: 'Que fais-tu du + 5 ?' }] }]);
@@ -392,14 +442,19 @@ describe('POST /api/chat/stream', () => {
             stream: new ReadableStream({
               start: (controller) => {
                 controller.enqueue({ type: 'stream-start', warnings: [] });
-                abortSignal?.addEventListener('abort', () => { controller.error(abortSignal.reason); });
+                abortSignal?.addEventListener('abort', () => {
+                  controller.error(abortSignal.reason);
+                });
               },
             }),
           }),
         }),
         prompt: 'Bonjour Tom',
         timeout: 100,
-        onLanguageModelCallStart: () => { meter.callStarted(); meter.delta('r'.repeat(80)); },
+        onLanguageModelCallStart: () => {
+          meter.callStarted();
+          meter.delta('r'.repeat(80));
+        },
       });
     };
 

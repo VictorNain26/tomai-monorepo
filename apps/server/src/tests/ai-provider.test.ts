@@ -11,7 +11,10 @@ const { env } = await import('../platform/config/env.js');
 function fakeMistralResponse() {
   return new Response(
     JSON.stringify({
-      id: 'cmpl-1', object: 'chat.completion', created: 0, model: 'mistral-small-2603',
+      id: 'cmpl-1',
+      object: 'chat.completion',
+      created: 0,
+      model: 'mistral-small-2603',
       choices: [{ index: 0, message: { role: 'assistant', content: 'ok' }, finish_reason: 'stop' }],
       usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 },
     }),

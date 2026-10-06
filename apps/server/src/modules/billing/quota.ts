@@ -1,13 +1,7 @@
 import { userSubscriptionsRepository } from './user-subscriptions.repository.js';
 import { logger } from '../../platform/observability/logger.js';
 import { env } from '../../platform/config/env.js';
-import {
-  QUOTA_CONFIG,
-  getDailyResetTime,
-  lastDailyReset,
-  type DailyUsage,
-  type QuotaCheckResult,
-} from './quota-config.js';
+import { QUOTA_CONFIG, getDailyResetTime, lastDailyReset, type DailyUsage, type QuotaCheckResult } from './quota-config.js';
 
 /**
  * The user's day against their plan's budget: what their AI calls cost since the last reset
@@ -20,9 +14,10 @@ export async function dailyUsage(userId: string): Promise<DailyUsage> {
     userSubscriptionsRepository.spentSince(userId, lastDailyReset(new Date())),
   ]);
   // A Complet plan counts while it is active and not expired; otherwise the Gratuit budget.
-  const plan = subscription?.plan === 'premium' && subscription.status === 'active' && (subscription.expiresAt === null || subscription.expiresAt > new Date())
-    ? 'premium'
-    : 'free';
+  const plan =
+    subscription?.plan === 'premium' && subscription.status === 'active' && (subscription.expiresAt === null || subscription.expiresAt > new Date())
+      ? 'premium'
+      : 'free';
   const budgetMicroEur = QUOTA_CONFIG[plan].dailyBudgetMicroEur;
   return {
     plan,

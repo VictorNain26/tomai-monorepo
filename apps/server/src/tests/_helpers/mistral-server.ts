@@ -6,7 +6,11 @@ type Reply = 'unavailable' | 'refused' | 'answer' | 'hang';
 
 export function mistralServer() {
   const state = { replies: [] as Reply[], requests: 0 };
-  const moderation = { id: 'm', model: 'mistral-moderation-2603', results: [{ categories: { selfharm: false }, categoryScores: { selfharm: 0.01 } }] };
+  const moderation = {
+    id: 'm',
+    model: 'mistral-moderation-2603',
+    results: [{ categories: { selfharm: false }, categoryScores: { selfharm: 0.01 } }],
+  };
   const server = Bun.serve({
     port: 0,
     fetch: () => {
@@ -24,6 +28,9 @@ export function mistralServer() {
 /** How a call ended, and how long it took. */
 export async function outcome(call: Promise<unknown>): Promise<{ ended: string; ms: number }> {
   const start = Date.now();
-  const ended = await call.then(() => 'answered', (err: unknown) => (err instanceof Error ? err.constructor.name : 'failed'));
+  const ended = await call.then(
+    () => 'answered',
+    (err: unknown) => (err instanceof Error ? err.constructor.name : 'failed'),
+  );
   return { ended, ms: Date.now() - start };
 }

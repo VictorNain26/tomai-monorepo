@@ -66,7 +66,9 @@ export async function extract(input: JudgeInput, generate: Generate): Promise<{ 
     const listed = object.messages.filter((m) => Number(m.turn) === index + 1);
     return {
       turn: index + 1,
-      questions: [...new Set(listed.flatMap((m) => m.questions).filter((q) => questionSentences(text).some((sentence) => quotesSomething(sentence, q))))],
+      questions: [
+        ...new Set(listed.flatMap((m) => m.questions).filter((q) => questionSentences(text).some((sentence) => quotesSomething(sentence, q)))),
+      ],
     };
   });
   return { extraction: { messages: facts }, usage };

@@ -1,39 +1,26 @@
-import { fixupPluginRules } from "@eslint/compat";
-import pluginReactHooks from "eslint-plugin-react-hooks";
-import pluginReact from "eslint-plugin-react";
-import globals from "globals";
-import { config as baseConfig } from "./base.js";
+import eslintReact from '@eslint-react/eslint-plugin';
+import pluginReactHooks from 'eslint-plugin-react-hooks';
+import globals from 'globals';
+import { config as baseConfig } from './base.js';
 
-// eslint-plugin-react@7.x not yet ESLint 10 compatible
-const fixedReact = fixupPluginRules(pluginReact);
-const fixedReactHooks = fixupPluginRules(pluginReactHooks);
+const reactStrict = eslintReact.configs['strict-type-checked'];
 
 /**
- * A custom ESLint configuration for libraries that use React.
+ * ESLint configuration for React code: ESLint React's strict type-checked preset and the React
+ * team's hooks rules. ESLint React's own conflict preset, applied last, turns off the hooks rules
+ * it already covers, so a defect is reported once.
  *
  * @type {import("eslint").Linter.Config[]} */
 export const config = [
   ...baseConfig,
+  { ...reactStrict, files: ['**/*.{ts,tsx}'] },
+  pluginReactHooks.configs.flat.recommended,
+  eslintReact.configs['disable-conflict-eslint-plugin-react-hooks'],
   {
-    plugins: { react: fixedReact },
-    rules: pluginReact.configs.flat.recommended.rules,
     languageOptions: {
-      ...pluginReact.configs.flat.recommended.languageOptions,
       globals: {
-        ...globals.serviceworker,
         ...globals.browser,
       },
-    },
-  },
-  {
-    plugins: {
-      "react-hooks": fixedReactHooks,
-    },
-    settings: { react: { version: "detect" } },
-    rules: {
-      ...pluginReactHooks.configs.recommended.rules,
-      // React scope no longer necessary with new JSX transform.
-      "react/react-in-jsx-scope": "off",
     },
   },
 ];

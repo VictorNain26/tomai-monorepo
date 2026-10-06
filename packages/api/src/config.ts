@@ -44,9 +44,7 @@ export function getBaseUrl(): string {
  */
 export function getApiConfig(): ApiConfig {
   if (!apiConfig) {
-    throw new Error(
-      '[API] Not initialized. Call initializeApi() at app startup.'
-    );
+    throw new Error('[API] Not initialized. Call initializeApi() at app startup.');
   }
   return apiConfig;
 }

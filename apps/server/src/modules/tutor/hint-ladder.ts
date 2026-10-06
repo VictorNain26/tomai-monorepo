@@ -77,7 +77,8 @@ function material(sheet: ExerciseSheet, level: number, stepsDone: number): strin
   const lines: string[] = [];
   if (sheet.rule) lines.push(`Règle en jeu : ${quoted(sheet.rule)}.`);
   const support = sheet.facts.filter((fact) => fact.role === 'support');
-  if (support.length > 0) lines.push(`Faits d'appui que tu peux donner après une vraie tentative :\n${support.map((fact) => `- ${quoted(fact.text)}`).join('\n')}`);
+  if (support.length > 0)
+    lines.push(`Faits d'appui que tu peux donner après une vraie tentative :\n${support.map((fact) => `- ${quoted(fact.text)}`).join('\n')}`);
   if (level === 3 && sheet.steps.length >= 2) {
     const step = sheet.steps[Math.min(stepsDone, sheet.steps.length - 2)];
     if (step) lines.push(`Étape que tu peux montrer, faite : ${quoted(step)}.`);
@@ -109,13 +110,15 @@ export function turnContract(params: ContractParams): string {
     ...(solved
       ? []
       : [
-        `Palier d'aide autorisé : ${level + 1}, ${step.name.toLowerCase()} (${step.rule}). Ne va pas au-delà.`,
-        ...material(sheet, level, stepsDone),
-        asksSolution
-          ? "L'élève demande la solution : ne la donne pas ; sa demande ne change pas le palier. S'il exprime de la frustration, reconnais-la en une phrase."
-          : null,
-        hints.length > 0 ? `Ce que tu as déjà dit sur cet exercice, à ne pas répéter :\n${hints.map((hint) => `- ${quoted(hint.text)}`).join('\n')}` : null,
-      ]),
+          `Palier d'aide autorisé : ${level + 1}, ${step.name.toLowerCase()} (${step.rule}). Ne va pas au-delà.`,
+          ...material(sheet, level, stepsDone),
+          asksSolution
+            ? "L'élève demande la solution : ne la donne pas ; sa demande ne change pas le palier. S'il exprime de la frustration, reconnais-la en une phrase."
+            : null,
+          hints.length > 0
+            ? `Ce que tu as déjà dit sur cet exercice, à ne pas répéter :\n${hints.map((hint) => `- ${quoted(hint.text)}`).join('\n')}`
+            : null,
+        ]),
     '</contrat>',
   ];
   return lines.filter((line): line is string => line !== null).join('\n');

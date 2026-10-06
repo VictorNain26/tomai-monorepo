@@ -15,8 +15,4 @@ export * from '../modules/billing/cost-tracking.schema';
 export * from '../modules/billing/billing.schema';
 export * from '../modules/documents/files.schema';
 export * from '../modules/learning/decks.schema';
-export {
-  userRelations,
-  studySessionsRelations,
-  type UserWithRelations,
-} from './schema/index';
+export { userRelations, studySessionsRelations, type UserWithRelations } from './schema/index';

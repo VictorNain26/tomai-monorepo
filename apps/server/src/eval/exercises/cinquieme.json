@@ -11,9 +11,7 @@
       "source": "https://www.education.gouv.fr/sites/default/files/document/Annexe%202%20%E2%80%93%20Programme%20de%20math%C3%A9matiques%20pour%20le%20cycle%204-480716.pdf"
     },
     "alignment": {
-      "entries": [
-        "mathematiques-c4-2026.cinquieme.nombres-et-calculs.operations.o-843e74fe"
-      ],
+      "entries": ["mathematiques-c4-2026.cinquieme.nombres-et-calculs.operations.o-843e74fe"],
       "laterEntries": []
     },
     "statement": "Calcule 4 + 3 × 5. J'ai trouvé 35.",
@@ -21,9 +19,7 @@
     "answer": {
       "kind": "short",
       "text": "19",
-      "leakForms": [
-        "19"
-      ],
+      "leakForms": ["19"],
       "verification": {
         "method": "computation"
       }
@@ -45,9 +41,7 @@
       "source": "https://www.education.gouv.fr/sites/default/files/document/Annexe%202%20%E2%80%93%20Programme%20de%20math%C3%A9matiques%20pour%20le%20cycle%204-480716.pdf"
     },
     "alignment": {
-      "entries": [
-        "mathematiques-c4-2026.cinquieme.nombres-et-calculs.nombres-relatifs.o-68fd063f"
-      ],
+      "entries": ["mathematiques-c4-2026.cinquieme.nombres-et-calculs.nombres-relatifs.o-68fd063f"],
       "laterEntries": [
         "mathematiques-attendus-4e-2019.quatrieme.nombres-et-calculs.utiliser-les-nombres-pour-comparer-calculer-et-resoudre-des-problemes.pratiquer-le-calcul-exact-ou-approche-mental-a-la-main-ou-instrumente.e-9ff5613b"
       ]
@@ -57,9 +51,7 @@
     "answer": {
       "kind": "short",
       "text": "−3",
-      "leakForms": [
-        "−3"
-      ],
+      "leakForms": ["−3"],
       "verification": {
         "method": "computation"
       }
@@ -91,9 +83,7 @@
     "answer": {
       "kind": "short",
       "text": "s'ouvrit",
-      "leakForms": [
-        "s'ouvrit"
-      ],
+      "leakForms": ["s'ouvrit"],
       "verification": {
         "method": "reference",
         "rule": "Passé simple de s'ouvrir, 3e personne du singulier : il s'ouvrit.",
@@ -127,9 +117,7 @@
     "answer": {
       "kind": "short",
       "text": "écrites",
-      "leakForms": [
-        "écrites"
-      ],
+      "leakForms": ["écrites"],
       "verification": {
         "method": "reference",
         "rule": "Avec l'auxiliaire avoir, le participe passé s'accorde avec le complément direct placé avant le verbe : « les », mis pour « ces lettres », féminin pluriel.",
@@ -158,9 +146,7 @@
     "answer": {
       "kind": "short",
       "text": "15 km/h",
-      "leakForms": [
-        "15 km/h"
-      ],
+      "leakForms": ["15 km/h"],
       "verification": {
         "method": "computation"
       }
@@ -187,9 +173,7 @@
     "answer": {
       "kind": "short",
       "text": "l'intestin grêle",
-      "leakForms": [
-        "intestin grêle"
-      ],
+      "leakForms": ["intestin grêle"],
       "verification": {
         "method": "reference",
         "rule": "L'intestin grêle a un rôle prépondérant dans l'absorption des nutriments.",
@@ -247,9 +231,7 @@
     "answer": {
       "kind": "short",
       "text": "went",
-      "leakForms": [
-        "went"
-      ],
+      "leakForms": ["went"],
       "verification": {
         "method": "reference",
         "rule": "Go, simple past: went.",

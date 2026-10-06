@@ -20,20 +20,23 @@ export const ExerciseSheetSchema = z.object({
   answerForms: z.array(z.string()).describe("Les écritures de la réponse qu'un élève pourrait recopier ; vide pour une production rédigée."),
   mathEquation: z.string().nullable().describe("L'équation de l'énoncé en syntaxe mathjs si l'exercice demande de la résoudre, sinon null."),
   mathAnswer: z.string().nullable().describe('La réponse en syntaxe mathjs si elle est un nombre, une expression ou une équation, sinon null.'),
-  steps: z.array(z.string()).describe('Les étapes de la résolution, dans l\'ordre.'),
+  steps: z.array(z.string()).describe("Les étapes de la résolution, dans l'ordre."),
   commonErrors: z.array(z.string()).describe("Les erreurs fréquentes d'un élève de cette classe sur cet exercice."),
   rule: z.string().nullable().describe("La règle qui s'applique, en grammaire ou en orthographe, sinon null."),
-  facts: z.array(z.object({
-    text: z.string(),
-    role: z.enum(['answer', 'support']).describe('answer : il donne tout ou partie de la réponse du devoir ; support : un fait d\'appui qui ne la donne pas.'),
-  })),
+  facts: z.array(
+    z.object({
+      text: z.string(),
+      role: z
+        .enum(['answer', 'support'])
+        .describe("answer : il donne tout ou partie de la réponse du devoir ; support : un fait d'appui qui ne la donne pas."),
+    }),
+  ),
   expectedElements: z.array(z.string()).describe("Les éléments attendus d'une production rédigée ; vide sinon."),
-  entries: z.array(z.string()).describe('Les identifiants des notions de <programme> que l\'exercice travaille.'),
-  laterEntries: z.array(z.string()).describe('Les identifiants des notions de <later_programme> qu\'une aide pourrait être tentée d\'utiliser.'),
+  entries: z.array(z.string()).describe("Les identifiants des notions de <programme> que l'exercice travaille."),
+  laterEntries: z.array(z.string()).describe("Les identifiants des notions de <later_programme> qu'une aide pourrait être tentée d'utiliser."),
 });
 
 export type ExerciseSheet = z.infer<typeof ExerciseSheetSchema>;
-
 
 /** The school year a date belongs to, named after the September that opens it. */
 export function schoolYearOf(date: Date): number {
@@ -53,8 +56,7 @@ export function notionsFor(level: EducationLevelType, subject: SubjectFamily | u
   if (subject !== 'mathematiques' && subject !== 'francais') return null;
   const entries = programmeFor(level, subject, schoolYear)?.entries ?? [];
   if (entries.length === 0) return null;
-  const later = EDUCATION_LEVELS.slice(EDUCATION_LEVELS.indexOf(level) + 1)
-    .flatMap((next) => programmeFor(next, subject, schoolYear)?.entries ?? []);
+  const later = EDUCATION_LEVELS.slice(EDUCATION_LEVELS.indexOf(level) + 1).flatMap((next) => programmeFor(next, subject, schoolYear)?.entries ?? []);
   return { entries, later };
 }
 
@@ -104,14 +106,15 @@ export function keepKnownNotions(sheet: ExerciseSheet, notions: Notions | null):
   return { sheet: kept, dropped: sheet.entries.length + sheet.laterEntries.length - kept.entries.length - kept.laterEntries.length };
 }
 
-const normalized = (text: string) => text
-  .normalize('NFKC')
-  .toLowerCase()
-  .replace(/[’‘]/g, "'")
-  .replace(/[«»"]/g, '')
-  .replace(/\s+/g, ' ')
-  .trim()
-  .replace(/[.!;]+$/, '');
+const normalized = (text: string) =>
+  text
+    .normalize('NFKC')
+    .toLowerCase()
+    .replace(/[’‘]/g, "'")
+    .replace(/[«»"]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/[.!;]+$/, '');
 
 function sameAnswer(a: ExerciseSheet, b: ExerciseSheet): boolean {
   if (a.mathAnswer !== null && b.mathAnswer !== null) {
@@ -144,14 +147,19 @@ export function vote(drafts: readonly ExerciseSheet[]): VotedSheet | null {
     .map((draft) => ({ draft, agreeing: shorts.filter((other) => other === draft || sameAnswer(draft, other)).length }))
     .reduce<{ draft: ExerciseSheet; agreeing: number } | null>((best, next) => (best && best.agreeing >= next.agreeing ? best : next), null);
   const sheet = supported?.draft ?? first;
-  const mathCheck = sheet.kind === 'short' && sheet.mathEquation !== null && sheet.mathAnswer !== null
-    ? checkAnswer(sheet.mathEquation, sheet.mathAnswer)
-    : 'not-applicable';
+  const mathCheck =
+    sheet.kind === 'short' && sheet.mathEquation !== null && sheet.mathAnswer !== null
+      ? checkAnswer(sheet.mathEquation, sheet.mathAnswer)
+      : 'not-applicable';
   return { sheet, uncertain: (supported?.agreeing ?? 0) < 2 || mathCheck === 'failed', mathCheck };
 }
 
 const entryById = new Map(programmes.flatMap(({ entries }) => entries.map((entry) => [entry.id, entry] as const)));
-const texts = (ids: readonly string[]) => ids.flatMap((id) => entryById.get(id)?.text ?? []).map((text) => `- ${text}`).join('\n');
+const texts = (ids: readonly string[]) =>
+  ids
+    .flatMap((id) => entryById.get(id)?.text ?? [])
+    .map((text) => `- ${text}`)
+    .join('\n');
 
 /**
  * What the writer receives of the exercise in progress: its statement and its notions, never the
@@ -165,5 +173,7 @@ export function exerciseBlock(sheet: ExerciseSheet): string {
     sheet.entries.length > 0 ? `Notions du programme de la classe qu'il travaille :\n${texts(sheet.entries)}` : null,
     sheet.laterEntries.length > 0 ? `Notions des classes suivantes, à ne pas utiliser dans ton aide :\n${texts(sheet.laterEntries)}` : null,
     '</exercise>',
-  ].filter((line): line is string => line !== null).join('\n');
+  ]
+    .filter((line): line is string => line !== null)
+    .join('\n');
 }

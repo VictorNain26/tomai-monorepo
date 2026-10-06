@@ -65,9 +65,10 @@ function alternate(messages: readonly ModelMessage[]): ModelMessage[] {
     if (last?.role === 'user' && message.role === 'user') {
       out[out.length - 1] = {
         role: 'user',
-        content: typeof last.content === 'string' && typeof message.content === 'string'
-          ? `${last.content}\n\n${message.content}`
-          : [...textParts(last.content), ...textParts(message.content)],
+        content:
+          typeof last.content === 'string' && typeof message.content === 'string'
+            ? `${last.content}\n\n${message.content}`
+            : [...textParts(last.content), ...textParts(message.content)],
       };
     } else {
       out.push(message);
@@ -95,9 +96,11 @@ function alternate(messages: readonly ModelMessage[]): ModelMessage[] {
  */
 export function assembleChatPrompt(parts: ChatTurnParts): { system: string; messages: ModelMessage[] } {
   const past = pruneMessages({
-    messages: parts.history.flatMap((turn): ModelMessage[] => (turn.role === 'user'
-      ? [{ role: 'user', content: wrapUserMessage(turn.content) }]
-      : turn.modelMessages ?? [{ role: 'assistant', content: turn.content }])),
+    messages: parts.history.flatMap((turn): ModelMessage[] =>
+      turn.role === 'user'
+        ? [{ role: 'user', content: wrapUserMessage(turn.content) }]
+        : (turn.modelMessages ?? [{ role: 'assistant', content: turn.content }]),
+    ),
     reasoning: 'before-last-message',
     toolCalls: 'none',
     emptyMessages: 'remove',
@@ -111,11 +114,8 @@ export function assembleChatPrompt(parts: ChatTurnParts): { system: string; mess
       : []),
   ];
 
-  const text = [
-    parts.subjectBlock,
-    parts.turnInstruction,
-    parts.inputMode === 'voice' ? VOICE_MARKER : null,
-    wrapUserMessage(parts.studentText),
-  ].filter((block): block is string => Boolean(block)).join('\n\n');
+  const text = [parts.subjectBlock, parts.turnInstruction, parts.inputMode === 'voice' ? VOICE_MARKER : null, wrapUserMessage(parts.studentText)]
+    .filter((block): block is string => Boolean(block))
+    .join('\n\n');
   return { system: parts.systemPrompt, messages: alternate([...opening, ...past, { role: 'user', content: text }]) };
 }

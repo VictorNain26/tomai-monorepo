@@ -46,4 +46,3 @@ export function buildSystemPrompt(params: SystemPromptParams): string {
 
   return parts.join('\n\n');
 }
-

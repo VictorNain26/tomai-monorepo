@@ -85,7 +85,8 @@ mock.module('../modules/tutor/messages.repository', () => ({
   messagesRepository: {
     findBySessionId: mock(async () => findBySessionIdResult),
     findAfter: mock(async (_sessionId: string, afterId: string | null) =>
-      (afterId ? findBySessionIdResult.slice(findBySessionIdResult.findIndex((m) => m.id === afterId) + 1) : findBySessionIdResult)),
+      afterId ? findBySessionIdResult.slice(findBySessionIdResult.findIndex((m) => m.id === afterId) + 1) : findBySessionIdResult,
+    ),
     create: createMessage,
     findById: mock(async () => findMessageByIdResult),
   },
@@ -141,7 +142,10 @@ const { ChatSessionService } = await import('../modules/tutor/chat-session.servi
 const { ChatMessageService } = await import('../modules/tutor/chat-message.service');
 
 function rejection(promise: Promise<unknown>): Promise<unknown> {
-  return promise.then(() => undefined, (error: unknown) => error);
+  return promise.then(
+    () => undefined,
+    (error: unknown) => error,
+  );
 }
 
 const VALID_UUID = '550e8400-e29b-41d4-a716-446655440000';
@@ -191,17 +195,15 @@ describe('ChatSessionService', () => {
       createSessionResult = { id: VALID_UUID };
       // Simulate error by making findActiveByUser throw
       const { studySessionsRepository } = await import('../modules/tutor/study-sessions.repository');
-      (studySessionsRepository.findActiveByUser as ReturnType<typeof mock>).mockImplementationOnce(
-        () => Promise.reject(new Error('DB connection lost'))
+      (studySessionsRepository.findActiveByUser as ReturnType<typeof mock>).mockImplementationOnce(() =>
+        Promise.reject(new Error('DB connection lost')),
       );
 
       expect(await rejection(sessionService.getOrCreateActiveSession('user-err'))).toBeInstanceOf(Error);
       expect(mockLogger.error).toHaveBeenCalled();
 
       // Restore
-      (studySessionsRepository.findActiveByUser as ReturnType<typeof mock>).mockImplementation(
-        () => Promise.resolve(findActiveByUserResult)
-      );
+      (studySessionsRepository.findActiveByUser as ReturnType<typeof mock>).mockImplementation(() => Promise.resolve(findActiveByUserResult));
     });
   });
 
@@ -396,7 +398,6 @@ describe('ChatSessionService', () => {
       expect(result?.firstName).toBe('Alice');
     });
   });
-
 });
 
 // ============================================
@@ -441,16 +442,12 @@ describe('ChatMessageService', () => {
     });
 
     it('should throw for invalid session ID', async () => {
-      expect(await rejection(
-        messageService.saveMessage('invalid', 'user', 'Hello', {})
-      )).toBeInstanceOf(Error);
+      expect(await rejection(messageService.saveMessage('invalid', 'user', 'Hello', {}))).toBeInstanceOf(Error);
     });
 
     it('should throw when session not found', async () => {
       findByIdResult = null;
-      expect(await rejection(
-        messageService.saveMessage(VALID_UUID, 'user', 'Hello', {})
-      )).toBeInstanceOf(Error);
+      expect(await rejection(messageService.saveMessage(VALID_UUID, 'user', 'Hello', {}))).toBeInstanceOf(Error);
     });
 
     it('should handle attached file metadata', async () => {
@@ -502,9 +499,7 @@ describe('ChatMessageService', () => {
       const now = new Date();
       const msgs: MessageData[] = [];
       for (let i = 0; i < 20; i++) {
-        msgs.push(
-          makeMessage({ id: `msg-${i}`, createdAt: new Date(now.getTime() + i * 1000) })
-        );
+        msgs.push(makeMessage({ id: `msg-${i}`, createdAt: new Date(now.getTime() + i * 1000) }));
       }
       findBySessionIdResult = msgs;
 

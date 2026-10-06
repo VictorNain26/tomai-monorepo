@@ -10,7 +10,11 @@ import { describe, it, expect, beforeEach, mock } from 'bun:test';
 // MOCKS — must precede repository import
 // ============================================
 
-interface Row { id: string; parentUserId: string; childUserId: string }
+interface Row {
+  id: string;
+  parentUserId: string;
+  childUserId: string;
+}
 
 let rows: Row[] = [];
 let idCounter = 0;
@@ -19,9 +23,7 @@ let idCounter = 0;
 const mockOnConflictDoNothing = mock(async () => []);
 
 const mockInsertValues = mock((vals: { parentUserId: string; childUserId: string }) => {
-  const alreadyExists = rows.some(
-    (r) => r.parentUserId === vals.parentUserId && r.childUserId === vals.childUserId,
-  );
+  const alreadyExists = rows.some((r) => r.parentUserId === vals.parentUserId && r.childUserId === vals.childUserId);
   if (!alreadyExists) {
     rows.push({ id: String(++idCounter), ...vals });
   }
@@ -67,8 +69,7 @@ const mockSelectWhere = mock(async (_condition: unknown) => {
 const mockSelectFrom = mock((_table: unknown) => ({
   where: (_condition: unknown) => ({
     // Pour getChildIds / getParentIds (await direct)
-    then: (resolve: (v: Record<string, string>[]) => unknown, reject: (e: unknown) => unknown) =>
-      mockSelectWhere(null).then(resolve, reject),
+    then: (resolve: (v: Record<string, string>[]) => unknown, reject: (e: unknown) => unknown) => mockSelectWhere(null).then(resolve, reject),
     // Pour isLinked (.limit(1))
     limit: mockSelectLimit,
   }),

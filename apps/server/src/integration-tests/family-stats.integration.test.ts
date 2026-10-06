@@ -14,7 +14,10 @@ describe.skipIf(!dbReachable)('family children and study stats from postgres', (
   afterAll(async () => {
     const { db } = await import('../db/connection');
     const { user } = await import('../db/schema');
-    await db.delete(user).where(inArray(user.id, ids)).catch(() => null);
+    await db
+      .delete(user)
+      .where(inArray(user.id, ids))
+      .catch(() => null);
   });
 
   it('lists active children, and inactive ones on request', async () => {

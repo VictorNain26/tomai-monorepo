@@ -16,20 +16,15 @@ Parles-en aussi à un adulte de confiance : un parent, un professeur, l'infirmi�
 J'arrête notre conversation ici pour que tu puisses le faire.`;
 
 // Accents dropped, so a rule need not spell « disparaître » both ways.
-const normalized = (text: string) => text
-  .normalize('NFD')
-  .replace(/\p{M}/gu, '')
-  .toLowerCase()
-  .replace(/[’‘`]/g, "'")
-  .replace(/\s+/g, ' ');
+const normalized = (text: string) => text.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().replace(/[’‘`]/g, "'").replace(/\s+/g, ' ');
 
 // « mourir de rire », « de honte »… are figures of speech, not wishes.
-const DYING = "mourir(?! de (?:rire|honte|faim|froid|chaud|peur|ennui))";
+const DYING = 'mourir(?! de (?:rire|honte|faim|froid|chaud|peur|ennui))';
 // The student speaking of themself, as they type it: a character's wish is a school text.
 const I_HAVE = "\\b(?:j'ai|j ai|jai|je n'ai|je nai|j'avais|javais)";
 const I_WANT = "\\b(?:je veux|j'veux|jveux|je voudrais|j'voudrais|j'aimerais|jaimerais)";
 const WISH = `(?:${DYING}|disparaitre|crever|en finir|me tuer|me suicider|me faire du mal|ne plus exister|plus exister|ne plus etre la|plus etre la|ne plus vivre|plus vivre)`;
-const BODY = "(?:expres|les veines|les poignets|le poignet|le bras|les bras)";
+const BODY = '(?:expres|les veines|les poignets|le poignet|le bras|les bras)';
 
 /** First-person wishes to die or disappear, and self-harm. */
 const RULES: readonly RegExp[] = [

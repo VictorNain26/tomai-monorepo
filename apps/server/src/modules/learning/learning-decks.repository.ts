@@ -8,11 +8,7 @@
 import { and, desc, eq } from 'drizzle-orm';
 import type { PgUpdateSetSource } from 'drizzle-orm/pg-core';
 import { db } from '../../db/connection.js';
-import {
-  learningDecks,
-  type LearningDeck,
-  type NewLearningDeck,
-} from './decks.schema.js';
+import { learningDecks, type LearningDeck, type NewLearningDeck } from './decks.schema.js';
 
 /**
  * Drizzle database or transaction — accepted by every write method so the
@@ -30,15 +26,8 @@ class LearningDecksRepository {
   /**
    * List decks owned by a user, most-recently-updated first.
    */
-  async listByUser(
-    userId: string,
-    opts: ListDecksOptions = {},
-  ): Promise<LearningDeck[]> {
-    const query = db
-      .select()
-      .from(learningDecks)
-      .where(eq(learningDecks.userId, userId))
-      .orderBy(desc(learningDecks.updatedAt));
+  async listByUser(userId: string, opts: ListDecksOptions = {}): Promise<LearningDeck[]> {
+    const query = db.select().from(learningDecks).where(eq(learningDecks.userId, userId)).orderBy(desc(learningDecks.updatedAt));
 
     if (opts.limit !== undefined && opts.offset !== undefined) {
       return query.limit(opts.limit).offset(opts.offset);
@@ -57,11 +46,7 @@ class LearningDecksRepository {
    * Callers (LearningService) are responsible for enforcing ownership.
    */
   async findById(deckId: string): Promise<LearningDeck | null> {
-    const [deck] = await db
-      .select()
-      .from(learningDecks)
-      .where(eq(learningDecks.id, deckId))
-      .limit(1);
+    const [deck] = await db.select().from(learningDecks).where(eq(learningDecks.id, deckId)).limit(1);
 
     return deck ?? null;
   }
@@ -71,16 +56,11 @@ class LearningDecksRepository {
    * Returns null if the deck does not exist or is owned by someone else.
    * Single round-trip combined check (IDOR-safe).
    */
-  async findByUserAndId(
-    userId: string,
-    deckId: string,
-  ): Promise<LearningDeck | null> {
+  async findByUserAndId(userId: string, deckId: string): Promise<LearningDeck | null> {
     const [deck] = await db
       .select()
       .from(learningDecks)
-      .where(
-        and(eq(learningDecks.id, deckId), eq(learningDecks.userId, userId)),
-      )
+      .where(and(eq(learningDecks.id, deckId), eq(learningDecks.userId, userId)))
       .limit(1);
 
     return deck ?? null;
@@ -92,10 +72,7 @@ class LearningDecksRepository {
    * performed atomically by the service layer.
    */
   async insert(data: NewLearningDeck, executor: DbOrTx = db): Promise<LearningDeck> {
-    const [created] = await executor
-      .insert(learningDecks)
-      .values(data)
-      .returning();
+    const [created] = await executor.insert(learningDecks).values(data).returning();
 
     if (!created) {
       throw new Error('Failed to insert deck');
@@ -108,11 +85,7 @@ class LearningDecksRepository {
    * Update an existing deck by id. Ownership is checked upstream by the
    * service; repositories intentionally perform no auth logic.
    */
-  async updateById(
-    deckId: string,
-    patch: PgUpdateSetSource<typeof learningDecks>,
-    executor: DbOrTx = db,
-  ): Promise<LearningDeck | null> {
+  async updateById(deckId: string, patch: PgUpdateSetSource<typeof learningDecks>, executor: DbOrTx = db): Promise<LearningDeck | null> {
     const [updated] = await executor
       .update(learningDecks)
       .set({ ...patch, updatedAt: new Date() })

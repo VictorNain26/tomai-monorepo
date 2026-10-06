@@ -3,10 +3,7 @@ import { logger } from '../../platform/observability/logger';
 import type { ChildInfo, ParentDashboardMetrics } from './parent-types';
 
 export class ParentDashboardService {
-  async getParentDashboardMetrics(
-    parentId: string,
-    children: ChildInfo[],
-  ): Promise<ParentDashboardMetrics[]> {
+  async getParentDashboardMetrics(parentId: string, children: ChildInfo[]): Promise<ParentDashboardMetrics[]> {
     try {
       if (children.length === 0) {
         return [];
@@ -28,8 +25,16 @@ export class ParentDashboardService {
               lastSessionDate: stats.lastSessionDate,
             };
           } catch (childError) {
-            logger.error('Critical error fetching child metrics', { operation: 'parent:dashboard:child', err: childError, childId: child.id, parentId, severity: 'high' as const });
-            throw new Error(`Impossible de récupérer les métriques pour l'enfant ${child.id}: ${(childError as Error).message}`, { cause: childError });
+            logger.error('Critical error fetching child metrics', {
+              operation: 'parent:dashboard:child',
+              err: childError,
+              childId: child.id,
+              parentId,
+              severity: 'high' as const,
+            });
+            throw new Error(`Impossible de récupérer les métriques pour l'enfant ${child.id}: ${(childError as Error).message}`, {
+              cause: childError,
+            });
           }
         }),
       );
