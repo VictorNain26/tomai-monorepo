@@ -2,17 +2,8 @@
   "$schema": "https://turborepo.dev/schema.v2.json",
   "ui": "tui",
   "globalDependencies": ["tsconfig.base.json"],
-  "globalEnv": ["NODE_ENV", "CI", "APP_ENV"],
-  "globalPassThroughEnv": [
-    "GITHUB_ACTIONS",
-    "VERCEL",
-    "OTEL_EXPORTER_OTLP_ENDPOINT",
-    "OTEL_DISABLED",
-    "OTEL_SERVICE_NAME",
-    "OTEL_DEPLOYMENT_ENVIRONMENT",
-    "APP_VERSION",
-    "SENTRY_DSN"
-  ],
+  "globalEnv": ["NODE_ENV", "CI"],
+  "globalPassThroughEnv": ["GITHUB_ACTIONS", "VERCEL"],
   "tasks": {
     "transit": {
       "dependsOn": ["^transit"]
