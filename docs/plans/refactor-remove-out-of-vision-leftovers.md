@@ -62,6 +62,24 @@ recrée la base locale : accord de Victor le 2026-10-06. Chemins relatifs à `ap
 - Tables et colonnes d'abonnement, forfaits absents de `subscription_plans` : point 8.
 - Routes de séance qui se recouvrent : lot 3, avec le client.
 
+## Après revue
+
+- Base locale d'un autre historique : Drizzle n'applique que les migrations plus récentes que
+  la dernière appliquée, et le doctor comptait les lignes. Il compare désormais les `when` du
+  journal aux `created_at` appliqués et dit comment recréer la base ; le volume est renommé
+  (`tomai_postgres_dev_data`), un clone existant repart d'une base vide.
+- Matière en enum Postgres (`subject`, `subject_family`) plutôt qu'un `varchar` typé à la
+  compilation seulement.
+- `role` et `schoolLevel` de Better Auth en `input: false` (`db/schema.mjs`, `parseInputData`,
+  better-auth 1.7.5 : valeur par défaut à l'inscription, 400 `FIELD_NOT_ALLOWED` à la mise à
+  jour) : un élève pouvait se donner le rôle de parent par `update-user`. Test d'intégration qui
+  échoue sans le correctif.
+- `getUserLevel` valide le niveau au lieu de le caster ; familles typées dans le raisonnement et
+  la fiche ; entrée de l'outil de fiches typée, sans revalidation ; tests des routes de paquets ;
+  `extract` inutile du schéma d'évaluation ; ligne `vector` de la compétence `dev-bootstrap`.
+- Écarté : le libellé de la matière dans le briefing du juge. Il imprime le slug depuis toujours ;
+  passer au libellé changerait le texte des 32 exercices au lieu des 4 d'histoire.
+
 ## Validation
 
 `bun run typecheck`, `bun run lint`, `bunx knip`, `bun run test`, `bun run test:scripts`,

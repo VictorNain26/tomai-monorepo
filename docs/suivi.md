@@ -605,4 +605,7 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
   aux routes ; `GET /api/tts/voices`, `GET /learning/config` et `GET /health/ai`, appel Mistral
   réel sans authentification. L'historique des migrations repart d'une base unique, sans
   pgvector ni les valeurs d'enum `admin` et `rag_program` ; Docker et la CI passent sur l'image
-  officielle `postgres:18.6`, et la base locale se recrée (volume `tomai_postgres18_dev_data`).
+  officielle `postgres:18.6`, sur un volume renommé (`tomai_postgres_dev_data`) : un clone existant
+  repart d'une base vide, et `bun run doctor` signale une base d'un autre historique. Après revue,
+  `role` et `schoolLevel` ne s'écrivent plus que par le serveur : un élève pouvait se donner le
+  rôle de parent par `update-user` de Better Auth.
