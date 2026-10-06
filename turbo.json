@@ -80,6 +80,9 @@
       "cache": false,
       "persistent": true
     },
+    "test:e2e": {
+      "outputs": []
+    },
     "test": {
       "inputs": [
         "$TURBO_DEFAULT$",

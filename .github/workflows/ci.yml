@@ -158,6 +158,44 @@ jobs:
           fi
 
   # =============================================
+  # Job 3b: End-to-end (Playwright)
+  # =============================================
+  # Browsers are installed, not cached: https://playwright.dev/docs/ci#caching-browsers
+  # (restoring takes as long as downloading, and the system dependencies are not cacheable).
+  e2e:
+    name: E2E (Playwright)
+    needs: validate-tasks
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/setup-monorepo
+        with:
+          turbo-cache-key: e2e
+      - name: List e2e tasks to run
+        id: tasks
+        run: |
+          if [ "${{ github.event_name }}" = "push" ] && [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            AFFECTED=""
+          else
+            AFFECTED="--affected"
+          fi
+          echo "affected=$AFFECTED" >> "$GITHUB_OUTPUT"
+          TASKS=$(bunx --no-install turbo run test:e2e $AFFECTED --dry=json | jq -r '[.tasks[] | select(.command != "<NONEXISTENT>") | .taskId] | join(" ")')
+          echo "tasks=$TASKS" >> "$GITHUB_OUTPUT"
+          echo "e2e tasks: ${TASKS:-none}"
+      # web runs on WebKit (iphone) and Chromium (android), the landing on Chromium.
+      - name: Install browsers and their system dependencies
+        if: steps.tasks.outputs.tasks != ''
+        working-directory: apps/web
+        run: bunx --no-install playwright install --with-deps chromium webkit
+      - name: Run e2e
+        if: steps.tasks.outputs.tasks != ''
+        run: bunx --no-install turbo run test:e2e ${{ steps.tasks.outputs.affected }}
+
+  # =============================================
   # Job 4: Migration sync (server DB schema only)
   # =============================================
   migrations:
