@@ -222,7 +222,11 @@ vérifié contre Victor). La télémétrie enregistre entrées et sorties en év
 
 ## Ce qui se porte
 
-Le code se réécrit ; ce savoir passe dans la nouvelle arborescence, relu, jamais copié en bloc :
+Rien de l'architecture actuelle ne se garde. Seul se porte ce qui compte vraiment : ce qui a été
+mesuré, validé par Victor ou vérifié contre une source. Chaque élément passe dans la nouvelle
+arborescence relu, jamais copié en bloc ; le reste se réécrit ou disparaît. Les outils se gardent
+(Bun, Hono, Drizzle, better-auth, Vite, React, TanStack Router, Mistral), pas la façon dont on les
+a assemblés ; le squelette de `apps/web` (#408, #414) correspond déjà à la cible.
 
 - **Données** : les 32 exercices vérifiés, les scénarios, les cas construits et l'échantillon
   d'accord (`eval/`) ; le référentiel (`referential/texts/*.json`, 1 172 entrées, SHA-256) ; les
@@ -278,15 +282,20 @@ Drizzle ; `scripts/run-tests.ts` ; `scripts/doctor*` ; les migrations 0000 à 00
 4. Foyer et comptes : gardien, élève créé par le gardien, matrice d'accès.
 5. Le tuteur porté : le tour en étapes, le contrôle fail-closed, l'enregistrement de tour, les
    séances et messages, le quota par foyer.
-6. Le harnais reconstruit, mesuré contre les baselines du 2026-10-06, puis la fermeture des
-   fuites restantes.
-7. Le chat et la connexion dans le web.
-8. La préproduction UE : étude des hébergeurs, puis compte ouvert par Victor.
+6. Le chat et la connexion dans le web.
+7. La préproduction UE, pour que Victor teste sur son téléphone. L'étude des hébergeurs avance en
+   parallèle dès l'étape 2, et Victor ouvre le compte.
+8. Le harnais reconstruit, mesuré contre les baselines du 2026-10-06, puis la fermeture des
+   fuites restantes. Il passe après la préproduction parce que la vision veut que Victor teste au
+   plus tôt, et qu'aucune donnée d'élève n'est en jeu avant l'ouverture ; il reste exigé avant.
 
 Viennent ensuite, dans l'ordre du lot 3 : consentement et mention IA, photo et voix, parcours
 parent, paiement. La porte avant ouverture et le lot 4 sont inchangés.
 
-## Décisions de Victor
+## Décisions de Victor, prises le 2026-10-06
+
+Toutes acceptées telles que proposées, ainsi que l'ordre ci-dessus.
+
 
 1. **Fermer #415** sans la merger : le code vise l'ancien tuteur ; son diagnostic et ses
    correctifs se portent à l'étape 5.

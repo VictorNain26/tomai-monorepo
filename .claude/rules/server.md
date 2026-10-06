@@ -6,6 +6,9 @@ paths:
 
 # Serveur (`apps/server`)
 
+**En refonte** : l'architecture cible est `docs/etudes/2026-10-06/refonte-architecture.md` ; elle
+prime sur les patterns ci-dessous là où ils divergent, et chaque étape réécrit cette règle.
+
 Spec du tuteur : `docs/tuteur.md` ; modules et rangement : `docs/architecture.md`. Premier
 démarrage ou stack locale cassée : skill `dev-bootstrap`. Appel IA, choix de modèle, coût :
 skill `mistral-stack`. Migrations : `.claude/rules/database-migrations.md`.
