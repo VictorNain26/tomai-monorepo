@@ -21,13 +21,17 @@ bloquant levé). L'historique vit dans git et les PR.
     conversations, `etudes/2026-10-06/passage-de-fin.md` ; 11 fuites sur 106, sur cinq exercices
     qui demandent un fait, un mot ou une forme, diagnostiquées par #415), la refonte de
     l'évaluation (`etudes/2026-10-06/refonte-evaluation.md`), le client web (#406, #408, #414).
-- **Prochaine action** : étape 2 de la refonte, la suppression de l'ancien serveur et le socle ;
-  l'étude des hébergeurs UE avance en parallèle. L'ordre complet est dans l'étude. Test complet
-  dans Chrome à la fin de chaque étape.
+- **Étape 2 faite** : l'ancien serveur, `packages/api` et `packages/web-host` supprimés ; le socle
+  en place (composition, erreurs RFC 9457, better-auth, base et migrations, logs, santé, arrêt,
+  service du web), testé sur une vraie base, frontières vérifiées au lint ; la suite de bout en
+  bout du web tourne contre le serveur construit (`tooling/playwright-web`).
+- **Prochaine action** : étape 3, la CI en un pipeline avec `ci-ok` et l'image réécrite ; l'étude
+  des hébergeurs UE avance en parallèle. L'ordre complet est dans l'étude. Test complet dans
+  Chrome à la fin de chaque étape.
 - **Décisions de Victor en attente**, au moment de l'étape qui en dépend : budgets du quota
   (étape 5) ; offre Mistral payante pour paralléliser l'évaluation et juge d'une autre famille,
   seulement s'il est très bon marché (étape 8) ; fournisseur d'e-mail UE (étape 4).
-- **PR ouvertes :** #418 (cette étude), #419 (Renovate sans fusion automatique) ; `gh pr list`.
+- **PR ouvertes :** `gh pr list`.
 - **Landing en ligne gelée** jusqu'au lot 4, hors de la refonte : seuls des correctifs d'honnêteté
   ou techniques y entrent. L'identité visuelle est rejetée et se refait au lot 4.
 
@@ -38,8 +42,14 @@ nomme son étape de refonte ou son lot ; quand le plan de la PR s'écrit, le poi
 tâche ou est explicitement renvoyé (`.claude/rules/plans-and-agents.md`). Ce que la refonte
 supprime ou que l'étude couvre n'y figure plus.
 
+### Refonte — comptes (étape 4)
+
+- **Sessions et mots de passe** : réinitialisation par e-mail avec `revokeSessionsOnPasswordReset`, et suppression des sessions d'un élève quand le gardien change son mot de passe (better-auth 1.7, `init-options.d.mts`).
+
 ### Refonte — préproduction (étape 7)
 
+- **Observabilité** : OpenTelemetry et Sentry côté serveur, avec une destination dans l'UE contrainte par la config (`refonte-architecture.md`, « Données et autorisation »).
+- **Postgres de l'hébergeur** : `verify-full` vérifie le certificat contre les CA du système ; une CA privée demande l'option `ssl` avec `ca` (`platform/db/client.ts`).
 - **Hébergement** : délai de grâce SIGTERM d'au moins un tour de chat, stockage partagé du rate limit s'il y a plusieurs instances, `trustedProxies` de better-auth derrière le proxy de l'hébergeur ; compression des fichiers du web par le build ou par le proxy, selon l'hébergeur.
 - **Client web** : `ai` aligné sur la version qu'épingle `@ai-sdk/react`, avec l'étape 6 ; mesures sur un vrai iPhone et un Android (`etudes/2026-10-06/client-web.md`).
 - **Connexion** : la page d'erreur de better-auth (`/api/auth/error`) a un `<style>` en ligne que la CSP bloque ; `onAPIError.errorURL` vers une page du web, avec l'étape 6.
@@ -80,9 +90,9 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
 - **Bun 1.4.2** plante par intermittence sous `bun test --isolate` (« Segmentation fault »,
   trace dans `JSFinalizationRegistry::takeDeadHoldingsValue`) : bug de Bun, oven-sh/bun#44161,
   ouvert, aucun correctif, la 1.4.2 est la dernière version. Il touchait environ trois passages
-  sur quatre en local, aussi le pre-push. Les tests tournent donc un processus par fichier
-  (`apps/server/scripts/run-tests.ts`). La refonte supprime ce lanceur avec les `mock.module`
-  (étape 2) : vérifier alors que `bun test` simple ne touche pas le bug.
+  sur quatre en local, aussi le pre-push. Le lanceur qui isolait chaque fichier est parti avec les
+  `mock.module` (étape 2) : `bun test` simple, cinq passages de suite sans plantage le 2026-10-06.
+  Guetter un « Segmentation fault » en CI.
 - **Override de `source-map-js`** (`package.json`, #398) : `postcss` et `@tailwindcss/node`
   figent la 1.2.1, touchée par GHSA-68fv-2mgg-jv7q (haute) ; l'override les force en `^1.2.2`.
   Le retirer quand les deux déclarent 1.2.2 ou plus. Même audit, dépendances de
@@ -131,6 +141,7 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
 
 | Étape | Pour | Statut |
 |---|---|---|
+| Recréer la base locale, qui porte l'ancien schéma : `docker compose down -v` puis `bun run setup` (skill `dev-bootstrap`) ; et dans `apps/server/.env`, `BETTER_AUTH_URL=http://localhost:3002` | Refonte, étape 2 | à faire |
 | Juger un échantillon de conversations sur la page prévue, par courtes séances | Vérifier le juge, lot 1 | quand la page existe |
 | Ouvrir le compte de l'hébergeur UE recommandé par l'étude | Préproduction, lot 3 | à faire, après l'étude |
 | Langfuse : la description de la file d'annotation `tom-judge-agreement` renvoie encore à `docs/agent.md`, devenu `docs/tuteur.md` ; la corriger dans l'interface (l'API n'a pas de mise à jour de file) | Évaluation | à faire |

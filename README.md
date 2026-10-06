@@ -9,14 +9,15 @@ conversations. Pré-lancement : aucun utilisateur en production.
 ```bash
 bun install    # Bun 1.4.2+ ; Node 24+ pour la landing
 bun run setup  # .env, BETTER_AUTH_SECRET, postgres, migrations Drizzle
-bun run dev    # infra Docker + server :3000 + landing :3001 + web :3002
+bun run dev    # postgres, migrations, puis server :3000 + landing :3001 + web :3002
 ```
 
-Arrêt de l'infra : `bun run dev:down`.
+Arrêt de l'infra : `bun run dev:down`. `bun run dev` attend que postgres soit prêt et que les
+migrations passent ; sinon rien ne démarre.
 
-`bun run dev` démarre l'infra puis **attend que postgres soit `healthy`** avant de
-lancer les apps ; si l'infra est incomplète, rien ne démarre. `bun run doctor` donne
-le détail, `bun run doctor:e2e` la version stricte où un `SKIP` compte comme un échec.
+**En refonte** depuis le 2026-10-06 (`docs/etudes/2026-10-06/refonte-architecture.md`) : le
+serveur est reconstruit par étapes, et ne fait pour l'instant que l'auth, la santé et le service
+du web.
 
 ## Structure
 
@@ -27,26 +28,25 @@ apps/
 └── web/          # Vite + React + TanStack Router — application, téléphone d'abord (3002)
 
 packages/
-├── api/             # Client typé (hono/client) — le contrat serveur → clients
-├── web-host/        # Service du build web sur l'origine de l'API : fichiers, fallback, en-têtes
 ├── ui/              # Primitives shadcn sur Radix
 ├── tokens/          # Design tokens CSS (Tailwind v4) partagés
 └── eslint-config/   # Config ESLint partagée
+
+tooling/
+└── playwright-web/  # Suite de bout en bout du web, contre le serveur construit
 ```
 
 ## Stack
 
 | Couche | Technologies |
 |--------|-------------|
-| Backend | Bun 1.4, Hono 4, PostgreSQL 18, Drizzle ORM 0.45 |
+| Backend | Bun 1.4, Hono 4, PostgreSQL 18, Drizzle ORM 0.45, pino |
 | Landing | Next.js 16, TailwindCSS 4, Motion 13, `@repo/ui` (shadcn) |
 | Web | Vite 8, React 19, TanStack Router, TailwindCSS 4 ; tests Playwright à largeur de téléphone (`docs/etudes/2026-10-06/client-web.md`) |
-| Auth | Better Auth 1.7 + Google OAuth, comptes élèves par username |
-| Chat | Vercel AI SDK 7 : `streamText` côté serveur ; `useChat` côté web, cible du lot 3. Un seul protocole client/serveur |
-| IA | Mistral Small 4 — chat, lecture d'une image jointe (`modules/documents/mistral-vision.ts`), TTS et STT Voxtral. Stack 100 % EU |
+| Auth | Better Auth 1.7, e-mail et mot de passe ; foyer et comptes élèves à l'étape 4 de la refonte |
+| IA | Mistral Small 4, endpoint UE, avec le tuteur à l'étape 5 de la refonte |
 | Paiements | Aucun branché. Paiement web prévu au lot 3 |
-| Stockage | Scaleway S3 (fr-par), uploads par URL présignée |
-| Observabilité | Sentry initialisé sur server et landing. La région dépend du DSN, absent du dépôt. Pas d'analytics installée |
+| Observabilité | Logs pino ; Sentry sur la landing, OTel et Sentry côté serveur avec la préproduction. Pas d'analytics installée |
 | Monorepo | Turborepo, workspaces Bun |
 | Déploiement | Landing : Vercel (`apps/landing/vercel.json`), previews de branche déployées. Server : image `apps/server/Dockerfile`, qui embarque le build du web, rien de déployé ; hébergeur tranché au lot 3. Web : servi par le serveur, sur la même origine que l'API ; en dev, Vite (3002) envoie `/api/` au serveur par son proxy |
 
@@ -55,15 +55,12 @@ packages/
 ```bash
 bun run typecheck && bun run lint  # validation, obligatoire avant commit
 bun run format                     # Prettier, vérifié en CI et sur les fichiers indexés
-bun run test                       # tests unitaires du serveur et des paquets ; scripts : bun run test:scripts
+bun run test                       # tests du serveur (Postgres local) et des paquets
 bun run build                      # build production
-bun run seed                       # comptes parent + élève, dev uniquement
 bun run db:generate                # migration SQL d'un changement de schéma
 ```
 
-Base neuve : `bun run setup` applique les migrations (`db:migrate`) ; `db:push` ne sert
-qu'à itérer le schéma en local une fois ces migrations appliquées (skill `dev-bootstrap`,
-`.claude/rules/database-migrations.md`).
+Migrations : `.claude/rules/database-migrations.md` ; stack locale : skill `dev-bootstrap`.
 
 ## Git
 

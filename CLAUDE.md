@@ -35,10 +35,10 @@ y entrent (`.claude/rules/landing.md`).
 `/code-review` (natif) couvre correction et qualité. S'y ajoutent quatre exigences
 propres au monorepo, à vérifier explicitement :
 
-- **Contrat client** — une modification dans `packages/api/` doit rester rétrocompatible
-  pour les clients ; les types viennent du serveur, jamais redéfinis côté client.
-- **Frontières workspace** — imports via les packages `@repo/*`, aucune dépendance
-  circulaire.
+- **Contrat client** — les types du client viennent du serveur (client typé de `hono/client`),
+  jamais redéfinis côté client.
+- **Frontières** — entre workspaces, imports via les packages déclarés, aucune dépendance
+  circulaire ; dans le serveur, les règles de `eslint-plugin-boundaries`.
 - **Taille de fichier** — au-delà de ~400 lignes, le fichier fait trop de choses.
 - **Test associé** — tout service, helper ou validation modifié a son `*.test.ts`
   couvrant le cas nominal et les cas limites. Pas de test décoratif (mocks massifs,
