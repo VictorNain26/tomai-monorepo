@@ -10,11 +10,11 @@
     "helpers:pinGitHubActionDigests"
   ],
   "timezone": "Europe/Paris",
-  "schedule": ["before 9am on monday"],
+  "schedule": ["* * * * 1"],
   "labels": ["dependencies"],
   "rangeStrategy": "bump",
   "rebaseWhen": "conflicted",
-  "prHourlyLimit": 4,
+  "prHourlyLimit": 0,
   "prConcurrentLimit": 8,
   "branchConcurrentLimit": 8,
   "ignorePaths": [
@@ -36,7 +36,7 @@
   },
   "lockFileMaintenance": {
     "enabled": true,
-    "schedule": ["before 9am on monday"],
+    "schedule": ["* * * * 1"],
     "automerge": true,
     "automergeType": "pr",
     "automergeStrategy": "merge-commit",
