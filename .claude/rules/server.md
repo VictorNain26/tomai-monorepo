@@ -6,52 +6,46 @@ paths:
 
 # Serveur (`apps/server`)
 
-**En refonte** : l'architecture cible est `docs/etudes/2026-10-06/refonte-architecture.md` ; elle
-prime sur les patterns ci-dessous là où ils divergent, et chaque étape réécrit cette règle.
+Architecture cible et ses sources : `docs/etudes/2026-10-06/refonte-architecture.md`, qui se
+reconstruit par étapes ; ce qui n'est pas encore là n'existe pas, on ne le recrée pas à côté.
+Spec du tuteur : `docs/tuteur.md`. Stack locale : skill `dev-bootstrap`. Appel IA : skill
+`mistral-stack`. Migrations : `.claude/rules/database-migrations.md`.
 
-Spec du tuteur : `docs/tuteur.md` ; modules et rangement : `docs/architecture.md`. Premier
-démarrage ou stack locale cassée : skill `dev-bootstrap`. Appel IA, choix de modèle, coût :
-skill `mistral-stack`. Migrations : `.claude/rules/database-migrations.md`.
+## Composition
 
-## Frontière de types (AppType / client typé)
-
-Le type `AppType` (`typeof app`) est l'arbre de routes que consomment les clients via
-`hc<AppType>` (`hono/client`, dans `@repo/api`). Il est **entremêlé au runtime Bun** (DB,
-services) : un client qui typecheckerait `src/app.ts` directement hériterait des globals
-`Bun` et tomberait sur des `TS2868`. D'où le contrat suivant, qu'il ne faut pas contourner :
-
-- Le serveur publie son type comme **artefact buildé** : `bun run build:types` émet
-  `dist/types/app.d.ts`, et l'export `tomai-server/app` pointe dessus, jamais sur la source.
-- `@repo/api` et les clients consomment ce `.d.ts`. Si un client réclame les globals Bun,
-  c'est que la frontière fuit — corriger la fuite, pas le client.
-- Ordonnancement par turbo : `typecheck` `dependsOn ["^build:types"]`. `dist/types/` est
-  gitignored, jamais commité.
-- Sur un clone neuf, `packages/api/src/client.ts` est rouge dans l'IDE tant que le `.d.ts`
-  n'existe pas ; `bun run typecheck` à la racine le régénère.
-- Émettre le `.d.ts` exige un contrat public **nommable** : tout type qui fuit dans
-  `AppType` doit être exporté (cf. `StreamGenerationParams`) ou neutralisé.
+- `src/main.ts` est la seule racine de composition : lui seul lit l'environnement
+  (`loadConfig(Bun.env)`, `src/config.ts`), crée les dépendances et les passe. Aucun autre
+  fichier n'importe d'état global : un service reçoit la base, le logger, la config en
+  paramètre ; `createApp(deps)` construit l'app.
+- Les frontières sont vérifiées au lint (`eslint-plugin-boundaries`, `eslint.config.mjs`) :
+  `platform` n'importe que `platform` et la config ; `domain` rien ; un fichier hors de toute
+  classification est refusé. Une nouvelle zone s'y déclare dans la PR qui la crée.
 
 ## Patterns
 
-- **Pas de logique métier dans un route handler** → déléguer au service.
-- **Pas d'accès DB depuis une route** → passer par le repository.
-- **Routes** : handler écrit juste après le chemin, routes chaînées pour que le client typé
-  les infère, pas de contrôleur
-  ([best practices Hono](https://hono.dev/docs/guides/best-practices)).
-- **Validation HTTP** : Zod partout, via `validate(target, schema)`
-  (`platform/http/context.ts`), qui envoie l'échec dans l'enveloppe `VALIDATION_ERROR`.
-- **Auth** : `requireUser` ou `requireParent` (`platform/http/context.ts`) posés sur la
-  route, qui remplissent `c.var.user` et `c.var.session`. Jamais de `use()` d'auth dans un
-  sous-routeur monté sur un préfixe partagé : il s'appliquerait à tout ce préfixe.
-- **Transactions** : `db.transaction(...)` dès qu'une opération touche plusieurs tables.
-- **Uploads** : URL présignée, le client écrit dans S3 sans passer par le backend.
+- **Erreurs** : RFC 9457 (`platform/http/problem.ts`). On lève `new Problem(code, detail?)`,
+  un code déclaré avec son statut ; aucun try/catch dans une route, aucun corps d'erreur écrit
+  à la main ; un message interne ne sort jamais.
+- **Routes** : sous-apps Hono montées par `app.route()`, handler écrit après le chemin, sans
+  contrôleur ([best practices Hono](https://hono.dev/docs/guides/best-practices)). Une route
+  `/api` se monte avant `webClient`, sinon la page répondrait à sa place.
+- **Base** : seul un repository touche `db` ; `db.transaction(...)` dès qu'une opération touche
+  plusieurs tables. Une table se déclare dans un `schema.ts`, réexporté par
+  `platform/db/schema.ts`.
+- **Logs** : pino reçu en dépendance, contexte en premier argument
+  (`logger.error({ err }, 'message')`) ; le `requestId` s'ajoute seul. Jamais de contenu d'élève.
+- **Auth** : better-auth (`platform/auth/auth.ts`), sur ses propres tables. Son contrôle
+  d'origine est forcé, y compris sous `NODE_ENV=test` où il se désactive sinon.
 
 ## Sécurité
 
-- **Fail-fast au boot** : `src/platform/config/env.ts` valide l'environnement au chargement
-  et refuse de démarrer sur une variable requise absente ou invalide.
-- Une seule origine sert l'API et le client web (`webClient` de `@repo/web-host`, monté après
-  les routes `/api`, hors de `AppType`) : pas de CORS, cookie de session limité à l'hôte.
-- En-têtes de sécurité, CSP comprise (`securityHeaders` de `@repo/web-host`), et rate limit
-  de `/api` et `/health` se posent dans `src/app.ts` ; le preset `ai` de `platform/http/rate-limit.ts`, plus
-  strict, garde les routes du chat.
+- Une seule origine sert l'API et le web : pas de CORS, cookie de session limité à l'hôte, CSP
+  `default-src 'self'` (`platform/http/security-headers.ts`), `no-store` sur `/api`.
+- En production, TLS vérifié vers Postgres (`platform/db/client.ts`), et refus de démarrer tant
+  qu'une migration du journal n'est pas appliquée.
+
+## Tests
+
+Sur une vraie base : `testDatabase()` (`src/testing/database.ts`) donne à chaque fichier sa
+base, copiée d'un modèle migré par le preload. L'app se construit par `createApp` avec ses
+vraies dépendances. Aucun `mock.module`. Détail : `.claude/rules/testing.md`.

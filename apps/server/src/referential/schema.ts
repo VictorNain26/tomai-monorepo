@@ -1,12 +1,12 @@
 import { z } from 'zod';
-import { educationLevelSchema } from '../lib/education-levels.js';
-import { SUBJECT_SLUGS } from '../lib/subjects.js';
+import { schoolLevelSchema } from '../domain/levels';
+import { SUBJECT_SLUGS } from '../domain/subjects';
 
 const text = z.string().trim().min(1);
 
 const entrySchema = z.strictObject({
   id: text,
-  level: educationLevelSchema,
+  level: schoolLevelSchema,
   subject: z.enum(SUBJECT_SLUGS),
   domain: text,
   /** In a text for one class: the end-of-cycle expectation the entry belongs to. */

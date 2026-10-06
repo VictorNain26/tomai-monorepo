@@ -12,36 +12,28 @@
     "OTEL_DEPLOYMENT_ENVIRONMENT",
     "APP_VERSION",
     "SENTRY_DSN",
-    "GIT_COMMIT_SHA",
-    "SEED_PARENT_EMAIL",
-    "SEED_PARENT_PASSWORD",
-    "SEED_CHILD_USERNAME",
-    "SEED_CHILD_PASSWORD"
+    "GIT_COMMIT_SHA"
   ],
   "tasks": {
     "transit": {
       "dependsOn": ["^transit"]
     },
     "build": {
-      "dependsOn": ["^build", "^build:types", "transit"],
+      "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", ".env.production", ".env.staging", "!.env.local", "!.env.*.local"],
       "outputs": [".next/**", "!.next/cache/**", "dist/**", "build/**"],
       "env": ["NEXT_RUNTIME", "VERCEL_ENV", "SENTRY_AUTH_TOKEN"]
-    },
-    "build:types": {
-      "dependsOn": ["^build:types"],
-      "outputs": ["dist/types/**"]
     },
     "dev": {
       "cache": false,
       "persistent": true
     },
     "lint": {
-      "dependsOn": ["^build:types", "transit"],
+      "dependsOn": ["transit"],
       "outputs": []
     },
     "typecheck": {
-      "dependsOn": ["^typecheck", "^build:types"],
+      "dependsOn": ["transit"],
       "outputs": []
     },
     "clean": {
@@ -50,20 +42,18 @@
     "db:generate": {
       "cache": false
     },
-    "db:push": {
-      "cache": false
-    },
     "db:studio": {
       "cache": false,
       "persistent": true
     },
     "test:e2e": {
-      "dependsOn": ["build", "transit"],
-      "outputs": []
+      "dependsOn": ["build", "^build"],
+      "outputs": [],
+      "passThroughEnv": ["E2E_DATABASE_URL"]
     },
     "test": {
       "outputs": [],
-      "passThroughEnv": ["DATABASE_URL", "BETTER_AUTH_SECRET"]
+      "passThroughEnv": ["DATABASE_URL"]
     }
   }
 }

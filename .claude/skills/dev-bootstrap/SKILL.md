@@ -1,6 +1,6 @@
 ---
 name: dev-bootstrap
-description: Démarrer le monorepo depuis un clone neuf, ou réparer une stack locale qui ne monte pas — postgres, migrations Drizzle. À utiliser quand le serveur refuse de booter, qu'une table manque, ou qu'on part d'une base vide. Explique pourquoi db:migrate et non db:push sur une base neuve.
+description: Démarrer le monorepo depuis un clone neuf, ou réparer une stack locale qui ne monte pas — postgres, migrations Drizzle. À utiliser quand le serveur refuse de démarrer, qu'une table manque, qu'une base locale porte un ancien schéma, ou qu'on part d'une base vide.
 ---
 
 # Premier démarrage, et réparation d'une stack locale
@@ -9,71 +9,40 @@ description: Démarrer le monorepo depuis un clone neuf, ou réparer une stack l
 
 ```bash
 bun install
-bun run setup         # .env, BETTER_AUTH_SECRET, postgres, migrations
-bun run dev
+bun run setup         # .env depuis .env.example, BETTER_AUTH_SECRET, postgres, migrations
+bun run dev           # postgres prêt, migrations, puis les apps
 ```
 
-`bun run setup` (`scripts/setup.mjs`) enchaîne ces étapes dans l'ordre. Le reste de
-cette skill sert quand il échoue, ou pour comprendre ce qu'il fait.
+`bun run dev` lance `docker compose up -d --wait postgres`, puis `db:migrate` du serveur, puis
+`turbo run dev` : si postgres ne répond pas ou si une migration échoue, rien ne démarre. Le
+serveur tourne sur l'hôte, pas en conteneur.
 
-## Le piège : `db:migrate`, jamais `db:push`, sur une base neuve
+## Le serveur refuse de démarrer
 
-Au boot, `platform/lifecycle/server-lifecycle.ts` vérifie la table de suivi
-`drizzle.__drizzle_migrations`. **`db:push` ne la crée pas** — il synchronise le
-schéma directement. Sur une base vierge, un `db:push` donne donc un schéma correct
-et un serveur qui refuse quand même de démarrer, ce qui est le symptôme le plus
-déroutant de la stack.
+Il refuse tant qu'une migration du journal (`apps/server/drizzle/`) n'est pas appliquée, et le
+dit dans son log (« Migrations not applied »). `bun run db:migrate` (`apps/server`) les
+applique. Il n'y a pas de `db:push` : il contournerait le journal que le serveur vérifie.
 
-Séquence manuelle si `bun run setup` a échoué en route (commandes `docker` depuis la
-racine, `bun run` depuis `apps/server`) :
+## Une base locale qui porte un ancien schéma
+
+La refonte du 2026-10-06 repart d'une baseline neuve : une base créée avant, avec l'ancien
+schéma, fait échouer la migration (« relation already exists »). Il faut la recréer. Ce sont des
+données locales, sans élève réel, mais leur suppression ne se rattrape pas : la commande se
+lance à la main.
 
 ```bash
-docker compose up -d --wait postgres
-bun run db:migrate    # crée __drizzle_migrations, puis applique le SQL
-bun run dev
-```
-
-Une fois la table de suivi créée, `db:push` redevient le bon outil pour **itérer**
-le schéma en local.
-
-## `.env` minimal qui suffit à booter
-
-Auth et DB sont les seules variables requises (`apps/server/src/platform/config/env.ts`) ;
-tout le reste est incrémental — une feature (IA, stockage, Google OAuth) échoue à
-l'usage tant que sa variable manque, mais le serveur démarre.
-
-```
-NODE_ENV=development
-BETTER_AUTH_SECRET=<openssl rand -base64 32>
-BETTER_AUTH_URL=http://localhost:3002
-DATABASE_URL=postgresql://tomai_dev:tomai_dev_password@localhost:5432/tomai_dev
-```
-
-Sans `MISTRAL_API_KEY`, le serveur démarre et `/health` reste `healthy` (il ne
-sonde que la base) ; le chat et la génération de cartes échouent à l'usage.
-
-Le web (`apps/web`, :3002) n'a besoin d'aucune origine CORS : en dev, le proxy de Vite envoie
-`/api/` et `/health` au serveur sur :3000 ; en production, Hono sert son build sur l'origine de
-l'API (`docs/architecture.md`, « Client web »).
-
-## Ce que `bun run dev` attend réellement
-
-`scripts/dev.mjs` démarre l'infra puis attend **postgres en `healthy`** avant de
-lancer les apps. Si l'infra est incomplète, les apps ne démarrent pas du tout —
-c'est voulu, pas un bug.
-
-Le backend tourne sur l'**host**, pas en conteneur : pas de collision sur `:3000`.
-
-## Diagnostic
-
-```bash
-bun run doctor    # PASS/FAIL/SKIP par dépendance
-bun run doctor:e2e    # strict : un SKIP compte comme un échec
-```
-
-## Repartir d'une base vraiment propre
-
-```bash
-docker compose down -v   # détruit les volumes, donc les données locales
+docker compose down -v   # détruit le volume postgres, donc les données locales
 bun run setup
 ```
+
+## `.env` qui suffit à démarrer
+
+Le schéma, ses valeurs par défaut et ses contrôles : `apps/server/src/config.ts`. En dev, seuls
+`DATABASE_URL` et `BETTER_AUTH_SECRET` sont requis ; `apps/server/.env.example` donne les
+valeurs de la stack locale.
+
+## Les tests
+
+Ceux du serveur tournent sur le même Postgres : chaque fichier crée sa base et la supprime, ce
+qui demande un utilisateur autorisé à créer des bases (celui de `docker compose` l'est). La
+suite de bout en bout du web utilise sa propre base, `tom_e2e`, recréée à chaque lancement.

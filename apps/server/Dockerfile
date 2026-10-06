@@ -32,7 +32,6 @@ WORKDIR /app
 COPY package.json bun.lock bunfig.toml ./
 COPY apps/web/package.json ./apps/web/
 COPY packages/tokens/package.json ./packages/tokens/
-COPY packages/web-host/package.json ./packages/web-host/
 COPY packages/eslint-config/package.json ./packages/eslint-config/
 
 RUN --mount=type=cache,target=/root/.bun/install/cache \
@@ -57,18 +56,15 @@ ENV BUILD_DATE=${BUILD_DATE}
 
 COPY package.json bun.lock bunfig.toml ./
 COPY apps/server/package.json ./apps/server/
-COPY packages/web-host/package.json ./packages/web-host/
 COPY packages/eslint-config/package.json ./packages/eslint-config/
 
 # Full install (dev + prod) for build
 RUN --mount=type=cache,target=/root/.bun/install/cache \
     bun install --frozen-lockfile --ignore-scripts --filter tomai-server
 
-# Sources, and the test runner the typecheck and the lint read too
-COPY packages/web-host/src/ ./packages/web-host/src/
+# Sources, and what the typecheck and the lint read
 COPY apps/server/src/ ./apps/server/src/
-COPY apps/server/scripts/ ./apps/server/scripts/
-COPY apps/server/tsconfig*.json apps/server/eslint.config.mjs ./apps/server/
+COPY apps/server/drizzle.config.ts apps/server/tsconfig*.json apps/server/eslint.config.mjs ./apps/server/
 COPY packages/eslint-config/*.js ./packages/eslint-config/
 COPY tsconfig.base.json turbo.json ./
 
@@ -84,7 +80,7 @@ WORKDIR /app/apps/server
 RUN bun run typecheck && \
     bun run lint && \
     bun run build && \
-    test -f dist/index.js -a -f dist/migrate.js || (echo "ERREUR: dist/index.js ou dist/migrate.js manquant" && exit 1)
+    test -f dist/main.js -a -f dist/migrate.js || (echo "ERREUR: dist/main.js ou dist/migrate.js manquant" && exit 1)
 
 # Stage 4: PRODUCTION
 FROM base AS production
@@ -111,13 +107,13 @@ COPY --chown=tomai:tomai apps/server/drizzle/ ./apps/server/drizzle/
 COPY --chown=tomai:tomai apps/server/docker-entrypoint.sh ./apps/server/docker-entrypoint.sh
 RUN chmod +x ./apps/server/docker-entrypoint.sh
 
-# Smoke import: échoue le `docker build` si un module externalisé du bundle
-# n'est pas résolvable depuis node_modules (la classe de bug qui a cassé PR #120
-# avec `drizzle-orm/postgres-js/migrator`). On teste seulement migrate.js car
-# index.js a un side-effect top-level (startServer) qui requiert la DB.
-# migrate.ts est gardé par `if (import.meta.main)`, donc l'import est safe.
-RUN bun --eval "await import('./apps/server/dist/migrate.js'); console.log('smoke OK')" \
-    || (echo "ERREUR: smoke import a échoué — un externalisé n'est pas résolvable au runtime" && exit 1)
+# Smoke import: every static import of a bundle resolves before its first line runs. Started
+# without an environment, a bundle whose imports all resolve stops on its config; one that
+# needs a module missing from node_modules stops on "Cannot find module" (the bug class of #120).
+RUN cd apps/server && \
+    bun --no-env-file dist/main.js 2>&1 | grep -q 'Invalid environment' && \
+    bun --no-env-file dist/migrate.js 2>&1 | grep -q 'Invalid environment' \
+    || (echo "ERREUR: un bundle ne se charge pas, un module importé n'est pas résolvable" && exit 1)
 
 WORKDIR /app/apps/server
 ENV NODE_ENV=production
@@ -126,10 +122,10 @@ USER tomai
 EXPOSE 3000
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD curl -sf http://localhost:${PORT:-3000}/health || exit 1
+    CMD curl -sf http://localhost:${PORT:-3000}/health/live || exit 1
 
 ENTRYPOINT ["./docker-entrypoint.sh"]
-CMD ["bun", "--smol", "dist/index.js"]
+CMD ["bun", "--smol", "dist/main.js"]
 
 # OCI Metadata
 LABEL org.opencontainers.image.title="TomAI Backend" \

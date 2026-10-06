@@ -6,10 +6,7 @@
       "project": ["scripts/**/*.mjs"]
     },
     "apps/server": {
-      "entry": ["src/app.ts", "src/tests/**/*.test.ts", "src/integration-tests/**/*.test.ts", "src/live/**/*.test.ts"],
-      "project": ["src/**/*.ts", "scripts/**/*.ts"]
-    },
-    "packages/api": {
+      "entry": ["src/main.ts", "src/**/*.test.ts"],
       "project": ["src/**/*.ts"]
     },
     "packages/ui": {
@@ -18,8 +15,9 @@
     "packages/tokens": {
       "entry": ["*.test.mjs"]
     },
-    "packages/web-host": {
-      "project": ["src/**/*.ts"]
+    "tooling/playwright-web": {
+      "entry": ["reset-database.ts"],
+      "ignoreDependencies": ["tomai-server", "web"]
     }
   }
 }

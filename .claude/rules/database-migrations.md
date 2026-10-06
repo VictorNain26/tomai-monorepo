@@ -1,41 +1,37 @@
 ---
 description: Migrations Drizzle — chargé uniquement sur le schéma DB et les migrations
 paths:
-  - "apps/server/src/db/**"
-  - "apps/server/src/**/*.schema.ts"
+  - "apps/server/src/**/schema.ts"
   - "apps/server/src/platform/db/**"
   - "apps/server/drizzle/**"
   - "apps/server/drizzle.config*.ts"
-  - "**/schema.ts"
 ---
 
 # Migrations Drizzle ORM
 
-Source de vérité : les tables de chaque module, `apps/server/src/modules/*/*.schema.ts`,
-réexportées par `src/db/schema.ts`, que lit `drizzle-kit` (`drizzle.config.ts`).
+Source de vérité : les `schema.ts` (tables de better-auth : `src/platform/auth/schema.ts`),
+réexportés par `src/platform/db/schema.ts`, que lit `drizzle-kit` (`drizzle.config.ts`).
 
 ## Base locale
 
-- **Base neuve** : `bun run setup` (racine), qui applique les migrations par `db:migrate`.
-  Jamais `db:push` sur une base vierge : il ne crée pas la table de suivi que le serveur
-  vérifie au démarrage (skill `dev-bootstrap`).
-- **Itérer** sur le schéma : `bun run db:push` (`apps/server`), une fois les migrations
-  appliquées.
+`bun run db:migrate` (`apps/server`) applique les migrations ; `bun run dev` à la racine le fait
+avant de lancer les apps. Pas de `db:push` : il ne passe pas par le journal, et le serveur
+refuse de démarrer tant qu'une migration du journal n'est pas appliquée.
 
 ## Livrer un changement de schéma
 
 ```bash
 # depuis apps/server
 bun run db:generate   # SQL dans ./drizzle/
-git add src/modules/<module>/<fichier>.schema.ts drizzle/
+git add src/<chemin>/schema.ts drizzle/
 ```
 
-Au démarrage de l'image Docker, `docker-entrypoint.sh` applique les migrations
-(`dist/migrate.js`) hors `NODE_ENV=development`.
+Le job Migration Sync de la CI vérifie que le SQL commité correspond au schéma. Au démarrage
+de l'image Docker, `docker-entrypoint.sh` applique les migrations (`dist/migrate.js`) hors
+`NODE_ENV=development`.
 
 ## Interdictions
 
-- Pas de `db:push` hors d'une base locale.
 - Pas d'édition manuelle des `.sql` ni de `_journal.json`.
 - Une migration commitée ne se modifie ni ne se supprime : elle a pu être appliquée ailleurs.
 
@@ -53,15 +49,15 @@ Au démarrage de l'image Docker, `docker-entrypoint.sh` applique les migrations
   `CREATE INDEX IF NOT EXISTS` du même nom, qui ne fait alors plus rien et ne verrouille pas les
   écritures.
 
+## Concurrence au déploiement
+
+`runMigrations` (`src/platform/db/migrations.ts`) pose un advisory lock autour de `migrate()` :
+`drizzle-orm` n'en pose aucun et plusieurs instances migrent en parallèle au démarrage. Ne pas le
+retirer ; la course est reproduite par `src/platform/db/migrations.test.ts`.
+
 ## Diagnostic
 
 ```bash
 bun run db:check    # cohérence des snapshots de drizzle/ (malformés, collisions entre branches)
 bun run db:studio   # interface visuelle
 ```
-
-## Concurrence au déploiement
-
-`src/platform/db/migrate.ts` pose un advisory lock autour de `migrate()` : `drizzle-orm` n'en pose
-aucun et plusieurs instances migrent en parallèle au boot. Ne pas le retirer ; la
-course est reproduite par `src/integration-tests/migrate-lock.integration.test.ts`.

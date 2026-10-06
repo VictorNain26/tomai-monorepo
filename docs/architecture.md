@@ -26,42 +26,21 @@ directement la cible.
 | Pronote | **Hors V1** : module, `pawnote`, tables et routes retirés au lot 0 | Accès non officiel, cassé par la version 2026 de Pronote ; il ne revient que par une convention avec Index Éducation (vision, « Périmètre V1 ») |
 | Paiement | Web, **à facturation sans piège** (vision, « Offre et prix ») | Premier reproche des parents dans les avis |
 
-## Monolithe modulaire
+## Serveur
 
-Chaque module expose une interface publique (`index.ts`) ; un module n'importe
-jamais les fichiers internes d'un autre. Découpage cible, tiré du code actuel de
-`apps/server/src` :
+Monolithe modulaire, en refonte : structure, règles de dépendance et ordre de reconstruction
+dans `etudes/2026-10-06/refonte-architecture.md`. Les modules (foyer, tuteur, apprentissage,
+fichiers, voix, facturation) arrivent chacun avec l'étape qui le construit.
 
-| Module | Responsabilité |
-|---|---|
-| `auth` | Comptes parent (email, Google) et élève (username), création d'un compte élève, mot de passe ; le moteur de session (better-auth, gardes) est dans `platform/` et lit les tables par `db/schema` |
-| `family` | Rattachement parent ↔ enfants ; côté parent, résumé de la semaine et alerte de détresse, jamais les conversations ; lecture du statut et de l'usage d'abonnement (`/api/subscriptions`), qui compose enfants, liens et données de `billing` |
-| `tutor` | Agent IA : session de chat, classeur de séance, outils, résumé de séance, garde-fous, statistiques d'étude |
-| `learning` | Decks, cartes, révisions FSRS, génération de cartes |
-| `documents` | Upload, liste des fichiers, extraction, analyse, stockage S3, fichiers prêts pour un tour de chat |
-| `billing` | Formules Gratuit et Complet, budget quotidien en coût réel et accès aux fiches, table des coûts IA (`cost_tracking`, écrite par `platform/ai/cost.ts`), abonnement web. Module feuille : il n'importe aucun autre module |
-| `voice` | Transcription et synthèse vocale (Voxtral) |
-| `platform` | Config, DB, observabilité, erreurs |
-
-Rangement physique, fixé à la refonte demandée le 2026-10-01 (une PR par module, lot 0) :
-
-- `apps/server/src/platform/` : ce que tous les modules utilisent sans règle métier, et qui
-  n'importe aucun module — `config/`, `db/` (migrateur), `auth/` (instance better-auth,
-  lecture de session), `http/` (contexte Hono, gardes, validation, erreurs, rate limit),
-  `observability/` (logger, OpenTelemetry, Sentry), `ai/` (client Mistral et coût de chaque
-  appel, écrit dans la table de `billing` par `db/schema`), `lifecycle/`
-  (vérification au démarrage).
-- `apps/server/src/db/` : point de composition des données — le client Drizzle et le
-  schéma qui réunit les tables de tous les modules (les requêtes relationnelles de Drizzle
-  en ont besoin). Seule exception à la règle de l'index : ce schéma importe directement le
-  fichier `*.schema.ts` de chaque module, car passer par `index.ts` chargerait routes et
-  clients externes dans `drizzle-kit`. Pour la même raison, le `*.schema.ts` d'un module importe
-  directement celui dont il référence une table par clé étrangère. `src/index.ts`, de même,
-  démarre et arrête les jobs des modules.
-- `apps/server/src/modules/<module>/` : routes Hono du module (montées par `app.ts` sur
-  son préfixe), services, dépôts, tables Drizzle et schémas Zod, avec un `index.ts` pour
-  ce que les autres modules ont le droit d'appeler.
-- Les tests restent dans `src/tests/`, `src/integration-tests/` et `src/live/` (appels réels).
+En place (`apps/server/src`) :
+- `main.ts`, seule racine de composition, et `migrate.ts` ; `config.ts`, un seul schéma de
+  l'environnement ; `app.ts`, `createApp(deps)`.
+- `platform/` : `http` (erreurs RFC 9457, en-têtes de sécurité, service du web), `db` (client,
+  migrations sous verrou et vérifiées au démarrage), `auth` (better-auth et ses tables),
+  `observability` (pino), `lifecycle` (santé et arrêt).
+- `domain/` (niveaux, matières), `referential/` (outil et textes officiels), `eval/` (jeu
+  d'évaluation, données seules) ; `testing/` (une base de test par fichier).
+- Les frontières sont vérifiées au lint (`eslint-plugin-boundaries`).
 
 ## Client web
 
@@ -72,25 +51,24 @@ déduit.
 En place (`apps/web`) :
 - Application monopage Vite + React + TanStack Router, Tailwind sur les tokens `@repo/tokens`,
   tests Playwright à largeur de téléphone (WebKit et Chromium).
-- Servie par Hono sur la même origine que l'API (`packages/web-host`) : cookie de
+- Servie par Hono sur la même origine que l'API (`apps/server/src/platform/http/web-client.ts`) : cookie de
   session limité à l'hôte, sans CORS ni blocage de Safari, un seul déploiement. Le serveur lit le
   build dans `WEB_DIST_DIR`, que l'image Docker embarque ; une navigation hors de `/api` sans
   fichier reçoit `index.html`, un fichier absent reste un 404. Assets hachés en cache
   `immutable`, le reste en `no-cache` revalidé par ETag ; fichiers compressés au build. CSP
-  `default-src 'self'` sur toutes les réponses ; le rate limit ne compte que `/api` et
-  `/health`. En dev, le proxy de Vite envoie `/api/` et `/health` au serveur, et l'origine de
-  Vite est la base de better-auth : une seule origine aussi. Le preview et l'e2e du web
-  tournent sur ce même code (`serve-web`).
+  `default-src 'self'` sur toutes les réponses, `no-store` sur `/api`. En dev, le proxy de Vite
+  envoie `/api/` et `/health` au serveur, et l'origine de Vite est la base de better-auth : une
+  seule origine aussi. La suite de bout en bout (`tooling/playwright-web`) tourne sur le serveur
+  construit qui sert le web construit.
 - Après un déploiement, un onglet ouvert qui demande un morceau disparu de son ancien build se
   recharge une fois sur le nouveau (TanStack Router, `lazyRouteComponent`).
 - Installable (PWA, `vite-plugin-pwa`) : manifest et service worker, qui ne met en cache que le
   build, jamais une réponse `/api`, et laisse passer les navigations `/api` (callback OAuth).
   Photo, voix et push passeront par le web, sans application native en V1.
-- `@repo/api` prend une base absolue : `window.location.origin` pour le web.
 
 Cible :
-- Consommateur du client typé via `@repo/api` ; aujourd'hui `apps/web` n'appelle pas encore le
-  serveur.
+- Le client typé du serveur (`hcWithType`, `parseResponse` et `DetailedError` de `hono/client`)
+  arrive à l'étape 6 de la refonte ; aujourd'hui `apps/web` n'appelle pas encore le serveur.
 - Données par TanStack Query, formulaires par react-hook-form et Zod.
 - Primitives `@repo/ui` (shadcn sur Radix). Base UI est écarté : sur iOS, il ne verrouille pas
   le défilement derrière un panneau quand la barre de Safari est repliée
@@ -100,12 +78,12 @@ Cible :
 
 ## Observabilité
 
-- **En place** : logs pino avec un sérialiseur en liste blanche (aucun texte d'élève), spans
-  OpenTelemetry de l'AI SDK sans entrées ni sorties (`recordInputs: false`), Sentry si un DSN est
-  fourni ; aucun exporteur de traces en production.
-- **Défaut connu** : l'AI SDK écrit le message d'erreur dans le span quel que soit `recordInputs`,
-  et une erreur de validation y met la sortie du modèle ; `beforeSend` de Sentry ne nettoie que la
-  requête. À corriger avant tout export.
+- **En place** : logs pino avec le `requestId` de chaque requête et un sérialiseur d'erreurs en
+  liste blanche (aucun texte d'élève). OpenTelemetry et Sentry côté serveur arrivent avec la
+  préproduction, qui leur donne une destination dans l'UE.
+- **À tenir dès leur retour** : l'AI SDK écrit le message d'erreur dans le span quel que soit
+  `recordInputs`, et une erreur de validation y met la sortie du modèle ; les messages d'erreur
+  se réécrivent avant tout export.
 - **Cible** (`etudes/2026-10-06/refonte-evaluation.md`, « Observabilité en production ») : traces et
   métriques sans identifiant ni texte, logs avec `trace_id`, erreurs dans un outil hébergé dans
   l'UE, rétentions courtes, accès réservé ; la destination se tranche avec l'hébergeur.

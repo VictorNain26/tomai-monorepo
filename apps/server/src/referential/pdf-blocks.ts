@@ -1,4 +1,4 @@
-import { joinRuns, type Block, type PositionedText } from './parse.js';
+import { joinRuns, type Block, type PositionedText } from './parse';
 
 /** The parts of pdf.js text content and structure tree the extraction reads. */
 export type TextContentItem = { str: string; transform: unknown[]; width: number; height: number; hasEOL: boolean } | { type: string; id: string };

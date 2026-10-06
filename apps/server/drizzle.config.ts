@@ -1,20 +1,12 @@
 import { defineConfig } from 'drizzle-kit';
 
-// Bun charge automatiquement les fichiers .env — pas besoin de dotenv.
-
-// drizzle-kit generate needs no connection: a placeholder lets it run without a database.
-function getDatabaseUrl(): string {
-  return process.env.DATABASE_URL ?? 'postgresql://placeholder:placeholder@localhost:5432/placeholder';
-}
-
+// drizzle-kit generate needs no connection: the placeholder lets it run without a database.
 export default defineConfig({
   out: './drizzle',
-  schema: './src/db/schema.ts',
+  schema: './src/platform/db/schema.ts',
   dialect: 'postgresql',
   dbCredentials: {
-    url: getDatabaseUrl(),
+    url: process.env['DATABASE_URL'] ?? 'postgresql://placeholder:placeholder@localhost:5432/placeholder',
   },
-  // Mode développement - permet push direct
-  verbose: true,
   strict: true,
 });

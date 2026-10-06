@@ -12,6 +12,6 @@
 
 ## Checklist
 
-- [ ] `bun run typecheck && bun run lint` passes locally (+ `bun run test`, and `bun run test:integration` in `apps/server`, if the server changed)
+- [ ] `bun run typecheck && bun run lint` passes locally (+ `bun run test` if tested code changed; the server's tests need the docker compose Postgres)
 - [ ] No secrets committed (`git diff --cached`)
 - [ ] Migrations generated if schema changed (`cd apps/server && bun run db:generate`)

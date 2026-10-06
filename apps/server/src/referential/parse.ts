@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
-import type { EducationLevelType } from '../types/index.js';
-import type { Entry } from './schema.js';
-import type { ProgrammeSource } from './sources.js';
+import type { SchoolLevel } from '../domain/levels';
+import type { Entry } from './schema';
+import type { ProgrammeSource } from './sources';
 
 /** A text run of a PDF page, with its position (PDF units, y grows upwards). */
 export interface PositionedText {
@@ -24,7 +24,7 @@ export interface Block {
   formula: boolean;
 }
 
-const LEVELS: Record<string, EducationLevelType> = {
+const LEVELS: Record<string, SchoolLevel> = {
   sixième: 'sixieme',
   cinquième: 'cinquieme',
   quatrième: 'quatrieme',
@@ -51,7 +51,7 @@ const BANNER_DOMAINS = [
   'Étude de la langue',
 ];
 const CLASS_BANNER = /^attendus de fin ?d.année ?de ([3-6])e$/i;
-const BANNER_LEVELS: Record<string, EducationLevelType> = { '6': 'sixieme', '5': 'cinquieme', '4': 'quatrieme', '3': 'troisieme' };
+const BANNER_LEVELS: Record<string, SchoolLevel> = { '6': 'sixieme', '5': 'cinquieme', '4': 'quatrieme', '3': 'troisieme' };
 /** Rubric labels: they title a part of a section, not a theme. */
 const RUBRIC = /^(?:connaissances et capacités attendues|attendus de fin)/i;
 const CLOSING_RUBRIC = /^(?:prolongements possibles|mises en perspective)/i;
@@ -192,7 +192,7 @@ function slug(text: string): string {
     .replace(/^-|-$/g, '');
 }
 
-function levelOf(heading: string): EducationLevelType | 'other' | null {
+function levelOf(heading: string): SchoolLevel | 'other' | null {
   const level = LEVELS[heading.toLowerCase()];
   if (level) return level;
   return /^cours moyen/i.test(heading) ? 'other' : null;
@@ -215,7 +215,7 @@ export interface ParseResult {
   /** Blocks left out on purpose, listed for review: teacher notes, items beyond the class. */
   leftOut: { block: Block; reason: string }[];
   /** Classes named by the « Attendus de fin d'année de … » banners of the text. */
-  declaredLevels: EducationLevelType[];
+  declaredLevels: SchoolLevel[];
 }
 
 /**
@@ -232,9 +232,9 @@ export function parseBlocks(blocks: readonly Block[], source: Pick<ProgrammeSour
   const entries: Entry[] = [];
   const dropped: Block[] = [];
   const leftOut: ParseResult['leftOut'] = [];
-  const declaredLevels: EducationLevelType[] = [];
+  const declaredLevels: SchoolLevel[] = [];
   let domain = '';
-  let level: EducationLevelType | 'other' | null = source.level ?? null;
+  let level: SchoolLevel | 'other' | null = source.level ?? null;
   let cycleExpectation: string | null = null;
   let subtheme: string | null = null;
   let subsubtheme: string | null = null;

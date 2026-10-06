@@ -1,0 +1,22 @@
+{
+  "name": "@repo/playwright-web",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test:e2e": "playwright test",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint . --max-warnings 0"
+  },
+  "dependencies": {
+    "tomai-server": "workspace:*",
+    "web": "workspace:*"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "@repo/eslint-config": "workspace:*",
+    "@types/node": "^24.13.6",
+    "eslint": "^10.11.0",
+    "postgres": "^3.4.9",
+    "typescript": "6.0.3"
+  }
+}
