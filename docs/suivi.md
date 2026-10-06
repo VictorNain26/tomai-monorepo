@@ -193,6 +193,15 @@ contraire.
   attend les flux SSE) ; stockage partagé du rate limit s'il y a plusieurs instances ;
   `advanced.ipAddress.trustedProxies` de better-auth derrière le proxy de l'hébergeur.
 
+- **Client web** (`etudes/2026-10-06/client-web.md`), à faire au point 1 :
+  - `@repo/ui` passe de Radix à Base UI, landing gelée comprise ;
+  - `@repo/api` passe d'une URL absolue en `mode: 'cors'` à une base relative ;
+  - `ai` côté serveur s'aligne sur la version qu'épingle `@ai-sdk/react` ;
+  - Hono sert la SPA (fallback après `/api`, cache des assets, CSP) ;
+  - mesures sur un vrai iPhone et un Android, listées dans l'étude.
+- **Alerte au parent** : le push web n'atteint qu'un parent qui a installé l'app (iOS). L'alerte
+  de détresse demande un canal garanti, l'e-mail par exemple, et le push en plus. À décider
+  avec le parcours parent (point 3).
 - **Langue d'un oral** : la transcription impose le français, juste pour les réponses
   courtes ; un oral d'anglais, d'espagnol ou d'allemand se transcrit mal sous le français (un
   « Yes. » bruité devient « Oui. », mesuré le 2026-10-05). Le client déclare la langue
