@@ -20,7 +20,7 @@ directement la cible.
 | Topologie | **Un dépôt, backend en monolithe modulaire** | `ai-service` et `curriculum` séparés ont pourri puis été supprimés ; un service séparé ne se justifie que par une contrainte réelle |
 | Serveur | Bun + Hono (Elysia remplacé le 2026-10-01) | Client typé de bout en bout (`hono/client`) ; adoption et maintenance bien plus larges qu'Elysia, qui reposait sur un seul mainteneur ; tourne sur Bun, Node et l'edge |
 | LLM | **Mistral**, stack 100 % UE | Souveraineté, données de mineurs (RGPD) |
-| Modèle de chat | **Mistral Small 4** (`mistral-small-2603`), multimodal | Voir `agent.md` |
+| Modèle de chat | **Mistral Small 4** (`mistral-small-2603`), multimodal | Voir `tuteur.md` |
 | Référentiel de conception IA | Guides de certification Claude (Architect Foundations, Architect Professional, Developer Foundations), pratiques indépendantes du fournisseur | Pratiques reconnues, auditables |
 | Pronote | **Hors V1** : module, `pawnote`, tables et routes retirés au lot 0 | Accès non officiel, cassé par la version 2026 de Pronote ; il ne revient que par une convention avec Index Éducation (vision, « Périmètre V1 ») |
 | Paiement | Web, **à facturation sans piège** (vision, « Offre et prix ») | Premier reproche des parents dans les avis |

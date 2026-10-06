@@ -1,7 +1,7 @@
 # Roadmap V1
 
 Vision : `vision.md`. Specs techniques :
-`architecture.md`, `agent.md`.
+`architecture.md`, `tuteur.md`.
 
 Le fil conducteur de la vision : prouver avant de vendre. Le lot 1 mesure et observe, le lot 2
 construit ce qui nous distingue, le lot 3 le met entre les mains des familles, le lot 4

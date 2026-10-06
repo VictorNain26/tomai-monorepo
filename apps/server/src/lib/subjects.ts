@@ -1,5 +1,5 @@
 /**
- * Taxonomie unique des matières (`docs/agent.md`, § 4). Les slugs nomment les matières du
+ * Taxonomie unique des matières (`docs/tuteur.md`, § 4). Les slugs nomment les matières du
  * collège pour les outils, les paquets de cartes, le référentiel et le jeu d'évaluation ; les
  * familles regroupent les consignes du tuteur, et l'analyse du tour en choisit une.
  */

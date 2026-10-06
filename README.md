@@ -76,4 +76,4 @@ Produit et avancement, dans `docs/` :
 promesse, prix, périmètre) · [roadmap](./docs/roadmap.md) ·
 [suivi](./docs/suivi.md) (où on en est) · specs techniques
 [cible V1](./docs/architecture.md) et
-[agent IA](./docs/agent.md).
+[agent IA](./docs/tuteur.md).

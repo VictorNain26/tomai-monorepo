@@ -4,7 +4,7 @@ import type { MistralMessage } from '../platform/ai/mistral-client.js';
 
 /**
  * Pinned by its dated id, never by an alias: a new model, prompt or sampling is a new judge
- * to measure again (`judge-version.ts`). Small 4, the tutor's model (`docs/agent.md`); several
+ * to measure again (`judge-version.ts`). Small 4, the tutor's model (`docs/tuteur.md`); several
  * samples at a temperature above 0 align better with human grades than one deterministic
  * call (`etudes/2026-10-03/refonte-harnais.md`).
  */

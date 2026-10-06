@@ -2,7 +2,7 @@
 
 Statut : validée par Victor le 2026-10-01. Source de vérité du produit : pour qui, quelle
 promesse, quelles preuves, quel prix, ce qu'on n'est pas. Les specs techniques
-(`architecture.md`, `agent.md`) et la roadmap en découlent. Les
+(`architecture.md`, `tuteur.md`) et la roadmap en découlent. Les
 faits viennent des études du 2026-10-01 (`docs/etudes/`), qui portent les
 sources ; ce document les cite sans les recopier.
 

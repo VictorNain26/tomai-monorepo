@@ -6,7 +6,7 @@ paths:
 
 # Serveur (`apps/server`)
 
-Spec du tuteur : `docs/agent.md` ; modules et rangement : `docs/architecture.md`. Premier
+Spec du tuteur : `docs/tuteur.md` ; modules et rangement : `docs/architecture.md`. Premier
 démarrage ou stack locale cassée : skill `dev-bootstrap`. Appel IA, choix de modèle, coût :
 skill `mistral-stack`. Migrations : `.claude/rules/database-migrations.md`.
 

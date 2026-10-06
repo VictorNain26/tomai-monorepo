@@ -6,7 +6,7 @@ description: Choisir le modèle Mistral et l'appeler correctement — chat, rais
 # Stack IA — casting et réglages
 
 Contrainte non négociable : **stack 100 % Mistral, inférence en UE** (`api.eu.mistral.ai`,
-variable `MISTRAL_SERVER_URL`). Référence de conception : `docs/agent.md` §2-3.
+variable `MISTRAL_SERVER_URL`). Référence de conception : `docs/tuteur.md` §2-3.
 
 ## Casting
 
@@ -55,7 +55,7 @@ produit une ligne `unknownModel` à 0, à corriger dans la table.
 Coûts mesurés : `docs/etudes/2026-10-01/couts.md`. Aujourd'hui, seul le tour
 de chat est tracé et compté au quota, en tokens bruts : défauts listés dans
 `docs/suivi.md` (« Reporté », lot 2), cible dans
-`docs/agent.md` § 13. Tout nouvel appel IA passe par
+`docs/tuteur.md` § 13. Tout nouvel appel IA passe par
 `cost_tracking`.
 
 ## Sources

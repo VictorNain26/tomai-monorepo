@@ -6,7 +6,7 @@ bloquant levé).
 
 - Vision : `vision.md` (pour qui, promesse, preuves, prix).
 - Roadmap : `roadmap.md`.
-- Specs techniques : `architecture.md`, `agent.md`.
+- Specs techniques : `architecture.md`, `tuteur.md`.
 - Études datées : `etudes/`. Ce sont des instantanés, jamais mis à jour.
 
 ## Où on en est
