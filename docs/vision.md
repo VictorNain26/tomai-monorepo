@@ -2,7 +2,7 @@
 
 Statut : validée par Victor le 2026-10-01. Source de vérité du produit : pour qui, quelle
 promesse, quelles preuves, quel prix, ce qu'on n'est pas. Les specs techniques
-(`architecture.md`, `agent.md`) et la roadmap en découlent. Les
+(`architecture.md`, `tuteur.md`) et la roadmap en découlent. Les
 faits viennent des études du 2026-10-01 (`docs/etudes/`), qui portent les
 sources ; ce document les cite sans les recopier.
 
@@ -82,7 +82,7 @@ surveillance de l'enfant. Pas de classement, pas de points, pas de séries.
 - **Gratuit, utilisable chaque soir** : le quota se fixe en échanges ou en coût réel, à partir du coût
   mesuré (un compte gratuit à son plafond coûte de l'ordre de 0,18 € par mois,
   `etudes/2026-10-01/couts.md`). Le quota compte le coût réel de la journée ; ses
-  montants actuels (2 c par jour en Gratuit, 10 c en Complet) sont provisoires.
+  budgets (`apps/server/src/modules/billing/quota-config.ts`) sont provisoires.
 - **Complet à 7,99 € TTC par mois** : plancher défendable du modèle de coûts (marge
   positive dans le pire cas mesuré). Plus d'échanges et les fiches de révision. Prix non
   vérifié auprès de parents. Repères : Dinobot 5,99 et 9,99 €, Le Prof IA
@@ -126,7 +126,7 @@ qu'aucune donnée d'usage réelle ne les tranche :
 ## Marque
 
 Nom ouvert ; candidat « De sa main », qui dit la promesse, à vérifier (marques, domaines)
-au lot 4. L'identité visuelle se refait au lot 4, une fois la promesse prouvée . Les directions
+au lot 4. L'identité visuelle se refait au lot 4, une fois la promesse prouvée. Les directions
 explorées jusqu'au 2026-10-01 sont abandonnées.
 
 ## Critères de succès de la V1

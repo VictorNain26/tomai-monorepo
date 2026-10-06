@@ -15,7 +15,8 @@ Source : `docs/vision.md`, qui fixe aussi la promesse, la cible et le prix.
 - **Chaque chiffre public a une source primaire datée** ; chaque différence revendiquée face à un concurrent est **mesurée** (harnais du lot 1, protocole publié) ; ce qui n'est pas construit ne se promet pas.
 - **Pas de promesse de progrès scolaire ni de meilleures notes** : rien ne la mesure aujourd'hui. Pas de « le seul ».
 - **Preuve sociale réelle uniquement** : témoignages de vraies familles, avec leur accord, et chiffres sourcés ou mesures publiées. Jamais de témoignage, d'avis, de logo ni de compteur d'utilisateurs inventé ou anticipé.
-- Une phrase de la landing qu'on ne peut adosser à une source ou à une mesure se retire : c'est le seul type de changement admis tant que la landing est gelée (lot 4).
+- Une phrase de la landing qu'on ne peut adosser à une source ou à une mesure se retire : c'est le seul type de changement admis tant que la landing est gelée (lot 4).
+- **Jamais** : « conforme au cadre d'usage de l'IA du ministère », « agréé » ou « recommandé par l'Éducation nationale », « aligné sur les programmes » sans la métrique publiée, « fait les devoirs » (`docs/etudes/2026-10-01/education-nationale.md`, c).
 
 ## SEO technique & contenu
 
@@ -25,26 +26,13 @@ Source : `docs/vision.md`, qui fixe aussi la promesse, la cible et le prix.
 - **Sitemap XML** soumis à Search Console + `rel="canonical"` sur les variantes (UTM…) pour éviter la dilution. ([Google — SEO Starter Guide](https://developers.google.com/search/docs/fundamentals/seo-starter-guide))
 - **Images WebP/AVIF**, `loading="lazy"` partout SAUF l'image LCP (elle, préchargée `<link rel="preload">`), `alt` descriptif. ([web.dev — LCP](https://web.dev/articles/lcp))
 
-## Conversion (CRO) landing
+## Au lot 4, avec la réécriture
 
-- **Proposition de valeur above-the-fold, comprise en < 5 s** : H1 court (≈ < 8 mots) + sous-titre bénéfice. ([CXL](https://cxl.com/blog/how-to-build-a-high-converting-landing-page/))
-- **Un seul CTA primaire par page**, même destination répétée — plusieurs CTA divergents = paralysie décisionnelle. ([Unbounce — CRO](https://unbounce.com/conversion-rate-optimization/cro-best-practices/))
-- **Preuve juste avant le CTA** — là où le doute est maximal — et seulement une preuve réelle (règle ci-dessus). ([CXL](https://cxl.com/blog/how-to-build-a-high-converting-landing-page/))
-- **Inscription minimale** : ne demander que ce qui sert à ouvrir le compte ; collecter le reste après. Sur une landing de campagne dédiée, **retirer la nav** pour supprimer les fuites. ([Unbounce — CRO](https://unbounce.com/conversion-rate-optimization/cro-best-practices/))
-- **Prix et abonnement sans piège** : prix TTC affiché, mensuel, sans engagement, résiliable en un clic, prélèvement annoncé à l'avance (vision, « Offre et prix ») ; c'est le premier reproche des parents dans les avis.
+Sans objet pendant le gel ; à reprendre quand la landing se réécrit.
 
-## Copywriting
-
-- **Clarté > cleverness** : un non-expert saisit l'offre en 5 s. **Bénéfice avant fonctionnalité**, à partir du besoin que les parents expriment : soirées mangées par les devoirs, disputes, sentiment d'être dépassé (vision, « Pour qui »). ([CXL](https://cxl.com/blog/how-to-build-a-high-converting-landing-page/))
-- **Zéro jargon IA** dans le copy public (pas de « LLM/RAG/embeddings ») — on décrit ce qui se passe le soir (l'élève est aidé à trouver, l'IA ne fait pas l'exercice), pas un résultat scolaire ; le lexique tech reste pour la presse et la page des mesures.
-- **Voix cohérente pour les deux audiences** : le parent cherche sécurité et soirées apaisées, l'élève de l'aide sans être jugé.
-- **Pas de promotion déguisée** sur les forums de parents : la communauté la rejette (vision, « Distribution »).
-
-## Analytics privacy-first
-
-- **Mesure sans pistage abusif** : Matomo auto-hébergé en mode cookieless (exemption CNIL) ou Plausible EU (cookieless, < 1 ko, n'alourdit pas le LCP) pour du web analytics pur — mesurer 100 % des visites sans bandeau. Quand le produit a besoin de plus (product analytics, feature flags, session replay) : PostHog Cloud EU (hébergement Francfort). C'est la cible tranchée sur Tom. ([Matomo](https://matomo.org/blog/2025/06/privacy-friendly-analytics/), [Plausible](https://plausible.io), [PostHog EU](https://posthog.com/docs/privacy/gdpr-compliance))
-- **Définir 3–5 événements de conversion** (`inscription_démarrée`/`terminée`, `premier_échange`, `passage_complet`) avant tout A/B test — mesurer la transformation, pas les pages vues.
-- **A/B test : une hypothèse à la fois**, conclure seulement à significativité (p < 0,05, puissance > 80 %). ([CXL](https://cxl.com/blog/how-to-build-a-high-converting-landing-page/))
+- **Conversion** : proposition de valeur comprise en moins de 5 s, un seul CTA primaire, preuve réelle juste avant lui, inscription minimale ([CXL](https://cxl.com/blog/how-to-build-a-high-converting-landing-page/), [Unbounce — CRO](https://unbounce.com/conversion-rate-optimization/cro-best-practices/)) ; prix TTC, mensuel, sans engagement, résiliable en un clic (vision, « Offre et prix »).
+- **Copywriting** : bénéfice avant fonctionnalité, à partir du besoin que les parents expriment (vision, « Pour qui ») ; zéro jargon IA dans le copy public ; on décrit ce qui se passe le soir, pas un résultat scolaire ; pas de promotion déguisée sur les forums de parents (vision, « Distribution »).
+- **Mesure d'audience** : aucun outil choisi ni installé. Préférer une mesure sans cookie qui se passe de bandeau (exemption CNIL) : Matomo auto-hébergé en mode cookieless ou Plausible EU ([Matomo](https://matomo.org/blog/2025/06/privacy-friendly-analytics/), [Plausible](https://plausible.io)). Définir 3 à 5 événements de conversion avant tout A/B test, une hypothèse à la fois, conclusion seulement à significativité.
 
 ## RGPD / consentement (EU, mineurs)
 

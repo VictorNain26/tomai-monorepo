@@ -2,11 +2,11 @@
 
 Source de vérité de l'avancement. **À lire en premier en reprenant le travail**, et à
 mettre à jour dans la PR qui le fait avancer (PR ouverte ou mergée, étape manuelle faite,
-bloquant levé).
+bloquant levé). L'historique vit dans git et les PR.
 
 - Vision : `vision.md` (pour qui, promesse, preuves, prix).
 - Roadmap : `roadmap.md`.
-- Specs techniques : `architecture.md`, `agent.md`.
+- Specs techniques : `architecture.md`, `tuteur.md`.
 - Études datées : `etudes/`. Ce sont des instantanés, jamais mis à jour.
 
 ## Où on en est
@@ -14,16 +14,18 @@ bloquant levé).
 - **Dernière mise à jour :** 2026-10-06.
 - **Lots en cours :** 2 et 3 en parallèle (`roadmap.md`).
   - Lot 0 terminé (Hono, Bun, refonte en modules, lint et TypeScript stricts, #343 à #356).
-  - Du lot 1 restent les concurrents, la CI d'évaluation et les traces de production.
+  - Du lot 1 restent : le référentiel des autres matières, un juge dont l'accord atteint
+    α ≥ 0,800, les concurrents, la CI d'évaluation et les traces de production (« Reporté › Lot 1 »).
   - **Lot 2 :** les points 1 à 8 sont faits (#380 à #404). Le passage de fin est mesuré
-    (`etudes/2026-10-06/passage-de-fin.md`) : de 9 fuites à 2 sur les mêmes conversations,
+    (`etudes/2026-10-06/passage-de-fin.md`, #409) : de 9 fuites à 2 sur les mêmes conversations,
     détresse et indices en net progrès, 0,13 c par tour d'élève. Le critère zéro fuite n'est pas
-    atteint : 11 fuites sur 106, toutes sur cinq questions de connaissance (un fait, un mot, une
-    forme).
+    atteint : 11 fuites sur 106, toutes sur cinq exercices qui demandent un fait, un mot ou une
+    forme.
   - **Lot 3 :** client web choisi (`etudes/2026-10-06/client-web.md`, #406), squelette
     `apps/web` (#408), champs en erreur dans `VALIDATION_ERROR` (#405). `@repo/ui` reste sur
     Radix : la bascule sur Base UI (#407) est fermée, car sur iOS Base UI ne verrouille pas le
     défilement derrière un panneau quand la barre de Safari est repliée.
+  - Hors lot : environnement de travail nettoyé (#410).
 - **Prochaine action :**
   - lot 2 : une PR ciblée sur les questions de connaissance, mesurée sur les cinq exercices
     concernés seulement ;
@@ -37,179 +39,46 @@ bloquant levé).
 
 ## Reporté
 
-Constats hors du périmètre de la PR qui les a trouvés. Chacun nomme son lot ; quand le
-plan de la PR s'écrit, le point y devient une tâche ou est explicitement renvoyé
-(`.claude/rules/plans-and-agents.md`). Chemins relatifs à `apps/server/src/` sauf mention
-contraire.
+Constats hors du périmètre de la PR qui les a trouvés, un par ligne, avec leur source. Chacun
+nomme son lot ; quand le plan de la PR s'écrit, le point y devient une tâche ou est
+explicitement renvoyé (`.claude/rules/plans-and-agents.md`). Chemins relatifs à
+`apps/server/src/` sauf mention contraire.
 
 ### Lot 1 — harnais d'évaluation et observabilité
 
-- **Référentiel des programmes du collège** (point 3) : chaîne en place dans
-  `apps/server/src/referential/` (`bun run referential:extract`) avec les programmes de
-  mathématiques et de français de 2025 (6e) et de 2026 (5e, puis 4e en 2027 et 3e en 2028),
-  798 entrées ; 1 053 avec les attendus de 2019.
-  La 4e et la 3e de 2026-2027 lisent les attendus de fin d'année de 2019 (annexes 15 à 18
-  de la note de service n° 2019-072) : le programme de 2020, écrit par cycle et balisé en
-  façade seulement, n'est pas extrait. Le jeu de données « Compléments aux programmes du
-  second degré » rattache ces annexes aux mauvaises classes (ordre inversé de la 6e à la
-  3e, repères décalés d'un cycle) ; l'extraction vérifie la classe sur le texte alternatif
-  de l'en-tête de chaque PDF et lit le domaine sur ses bandeaux. En programmation, seuls
-  les niveaux attendus en fin de classe sont gardés (1 et 2 en 4e). Les 19 exercices de mathématiques et de français sont
-  rattachés à leurs entrées et aux notions des classes suivantes à ne pas mobiliser, prises
-  dans le programme en vigueur pour chaque classe en 2026-2027. Deux exercices de 4e du
-  protocole relèvent d'attendus de 3e : M4 (double distributivité) et F1 (accord avec un
-  COD pronom relatif). Les
-  repères annuels de 2019 ne sont pas extraits : les attendus des classes suivantes donnent
-  déjà ce qui n'est « pas encore vu ». Reste : sciences, histoire-géographie, anglais, et
-  le rattachement de leurs exercices.
-- **Métrique « alignement aux programmes »** (`etudes/2026-10-01/education-nationale.md`,
-  « Conséquences pour Tom », b) : items rattachés à un objectif du référentiel, aide au
-  bon niveau sans notion hors programme, jamais la réponse. Les items propres de la 6e à la
-  3e existent (`eval/exercises/`, chacun cite son passage du programme). Reste à
-  ajouter des exercices inspirés des sujets du brevet 2018-2026, écrits pour le jeu.
-- **Règle de réutilisation** (Victor, 2026-10-02) : Sésamath, sujets d'examen, ressources
-  Éduscol et toute autre source se consultent pour s'en inspirer, jamais copiées ; aucun
-  texte de tiers n'entre dans le jeu, le référentiel ou le prompt, en dehors des citations
-  des programmes officiels.
-- **Accord du juge** (point 4) : première mesure le 2026-10-03, annotation par Claude à la
-  demande de Victor (`etudes/2026-10-03/accord-juge.md`). Un seul critère d'aide atteint
-  α ≥ 0,800 (`gradedHints`), et pas d'un passage du juge à l'autre ; désaccords orientés sur `oneQuestion` (juge plus sévère) et `diagnosis`
-  (plus indulgent) ; alignement, fuite rédigée, ton et niveau de langue sans variation
-  dans l'échantillon. Une relecture humaine d'un sous-échantillon reste due avant de
-  publier une mesure du juge (lot 4) ; la file `tom-judge-agreement` de Langfuse est prête
-  pour elle jusqu'au 2026-11-02.
-  Reproductibilité mesurée ensuite : le juge, avec graine, change 4 notes sur 189 en trois
-  passages ; reproductible sur cinq critères d'aide, et ses désaccords sur `oneQuestion`,
-  `accuracy` et `level` sont stables ; non établi sur `diagnosis` et `tone`
-  (`etudes/2026-10-03/reproductibilite-juge.md`).
-  Avec le juge actuel (Small 4, extraction et code, #375), aucun critère n'atteint
-  α ≥ 0,800, le meilleur étant `help_graded_hints` (0,417). La lecture ouverte contredit
-  cette annotation sur le diagnostic : elle ne sert plus à régler ce critère.
-- **Juge Small 4** (point 4) : mesuré le 2026-10-03 sur l'échantillon d'accord
-  (`etudes/2026-10-03/juge-small-4.md`), il ne voit presque pas les défauts de son propre
-  modèle. Sur les cas construits, le code repère désormais le calcul faux et la double
-  question ; restent au modèle, et faibles, la méthode déroulée (0 ou 1 sur 2) et la
-  notion d'une classe suivante (0 sur 2) (`etudes/2026-10-03/extraction-verification.md`).
-  Le prompt ne se retouche plus sur un exemple : il s'ajuste sur l'échantillon annoté, en
-  mesurant l'accord avant et après. Le cache, qui ne servait que 14 % de l'entrée de
-  l'ancien juge, en sert 91 % depuis le préfixe et le schéma communs (#370) ; le juge
-  actuel coûte environ 0,2 centime de dollar par conversation (#375). À ce débit (100 000 tokens par minute), juger le jeu
-  complet prend plusieurs heures : l'API Batch de Mistral, hors limite de débit et à
-  moitié prix, est à étudier pour la baseline (point 5).
-- **Questions du juge** (point 4, `etudes/2026-10-04/questions-juge.md`) : rejugement des
-  38 conversations.
-  - L'exactitude, vérifiée phrase par phrase, trouve 3 des 5 affirmations fausses (aucune
-    avant). La moitié de ses fausses alarmes sont des phrases qui donnent la réponse
-    attendue ; la consigne le précise désormais, sans mesure : à mesurer au prochain
-    passage.
-  - `diagnosis-uses` repère les 7 erreurs non exploitées, mais n'a dit « oui » sur aucune
-    conversation réelle.
-  - `hints-repeats`, qui ne voyait aucune des 3 répétitions jugées, est retirée de la grille.
-- **Niveau de langue** (point 4) : ses deux questions au juge sont retirées, faute de
-  discriminer (`etudes/2026-10-03/analyse-erreurs.md`). Avant de le réintroduire, chercher
-  une mesure validée de la lisibilité d'un texte français pour des collégiens, et la
-  mesurer contre une annotation.
-- **Évaluations du run dans Langfuse** (point 5) : taux de fuite et moyennes ne restent
-  que dans `eval-results/` tant que l'expérience tourne sur des données locales ; un
-  dataset hébergé par Langfuse les y enverrait, à décider avec la baseline.
-- **Débit Mistral** (point 6) : deux conversations en parallèle déclenchent des
-  HTTP 429 sur ce compte (trois conversations coupées sur deux passages) ; le harnais joue
-  désormais une conversation à la fois, ce qui allonge le passage en CI.
-- En cas d'erreur, le span OpenTelemetry d'un appel IA porte le message d'erreur de
-  Mistral, c'est-à-dire le corps de sa réponse : vérifier qu'il ne contient pas de contenu
-  d'élève avant de brancher le premier exporteur (Langfuse).
+- **Référentiel** (point 3) : restent sciences, histoire-géographie et anglais, et le rattachement de leurs exercices (`referential/sources.ts`).
+- **Alignement aux programmes** : ajouter des exercices inspirés des sujets du brevet 2018-2026, écrits pour le jeu (`etudes/2026-10-01/education-nationale.md`, « Conséquences pour Tom », b).
+- **Accord du juge** (point 4) : avec le juge actuel, aucun critère n'atteint α ≥ 0,800 ; une relecture humaine d'un sous-échantillon est due avant de publier une mesure du juge, la file `tom-judge-agreement` de Langfuse est ouverte jusqu'au 2026-11-02 (`etudes/2026-10-03/accord-juge.md`, `etudes/2026-10-03/reproductibilite-juge.md`).
+- **Juge Small 4** (point 4) : la méthode déroulée et la notion d'une classe suivante restent au modèle, et faibles ; son prompt ne s'ajuste que sur l'échantillon annoté, accord mesuré avant et après (`etudes/2026-10-03/extraction-verification.md`).
+- **Questions du juge** (point 4) : l'exactitude phrase par phrase et `diagnosis-uses` restent sans conclusion, α = 0,476 sur l'exactitude (`etudes/2026-10-04/questions-juge.md`, `etudes/2026-10-06/passage-de-fin.md`).
+- **Niveau de langue** (point 4) : ses questions sont retirées ; avant de le réintroduire, trouver une mesure validée de la lisibilité d'un texte français pour collégiens et la mesurer contre une annotation (`etudes/2026-10-03/analyse-erreurs.md`).
+- **Durée d'un passage** (point 5) : juger le jeu complet prend plusieurs heures à 100 000 tokens par minute (`etudes/2026-10-03/juge-small-4.md`) ; l'API Batch, à moitié prix et hors limite de débit (`etudes/2026-10-03/juge-extraction-verification.md`), n'est pas servie sur l'endpoint UE (`tuteur.md` §2) : à trancher avec la baseline.
+- **Évaluations du run dans Langfuse** (point 5) : taux de fuite et moyennes ne vivent que dans `eval-results/` ; un dataset hébergé par Langfuse les y enverrait, à décider avec la baseline (`eval/run.ts`).
+- **Débit Mistral** (point 6) : deux conversations en parallèle déclenchent des HTTP 429 sur ce compte, le harnais en joue une à la fois, ce qui allonge le passage en CI.
+- **Traces de production** (point 6) : en erreur, le span OpenTelemetry d'un appel IA porte le corps de la réponse de Mistral ; vérifier qu'il ne contient aucun contenu d'élève avant de brancher le premier exporteur.
 
 ### Lot 2 — agent qui ne cède pas, quotas et coûts
 
-- **Défauts de Tom** (lot 2) : analyse d'erreurs sur 38 conversations
-  (`etudes/2026-10-03/analyse-erreurs.md`). 15 ratées :
-  - réponse donnée dans 10, dont 4 sur 6 après une explication demandée ;
-  - affirmation fausse dans 5, sur des règles de grammaire et un diagnostic ;
-  - détresse sans 3114 et retour à l'exercice dans les 3 ;
-  - fiches refusées ou ignorées dans 4 sur 6.
-
-  Corrections rangées sous les points du lot 2 de `roadmap.md`, revus le 2026-10-04
-  (`etudes/2026-10-04/refonte-agent.md`), l'agent refait comparé à l'avant d'un bloc :
-  - point 1 : règle de la réponse jamais donnée, explication demandée au palier d'aide,
-    fiches à la demande, portée collège ;
-  - point 3 : solution de référence côté serveur, mathjs sur ses calculs ;
-  - point 4 : diagnostic de l'erreur avant l'aide, palier tenu par le serveur ;
-  - point 5 : contrôle avant l'envoi ;
-  - point 6 : détecteur et réponse fixe approuvée par Victor, puis fin de la conversation.
-- **Audit de l'agent** (2026-10-04, code du tour de chat), en plus des défauts listés ici :
-  - aucun outil ni contexte pour vérifier : ni solution, ni erreur de l'élève, ni programme
-    (point 3) ;
-  - raisonnement seulement en 4e-3e, maths ou sciences, trois intentions, et sur toute
-    réponse proposée depuis #380 (`mistral-reasoning.ts`) : 4 des 5 règles fausses étaient en
-    français et en anglais ; il passe à la fiche (point 3).
-- **Programme dans le contexte** : les notions de l'exercice, prises dans le référentiel,
-  entrent dans la fiche (point 3), plutôt que le programme entier de la matière
-  (`etudes/2026-10-04/refonte-agent.md`, « Contexte et mémoire »). Les consignes chiffrées
-  sans source de `modules/tutor/prompts/adaptation/by-level.ts` sont retirées (#380).
-- **Outil de calcul** (même étude, § 6) : mathjs, déjà adopté par le harnais (#373), pour
-  vérifier les calculs de la solution de référence ; sa résolution d'équations et
-  l'équivalence restent à lire dans sa documentation avant tout usage.
-- **TTS** : une seule voix, française (`fr_marie_*`) ; `/api/tts` n'accepte et n'annonce
-  plus que `fr` (#349). Décider s'il faut d'autres voix pour les cours de langue.
-- `modules/voice/speech-normalize.ts` à réévaluer avec la lecture vocale.
-- **Tests réels instables** : `live/mistral-eu.test.ts`, la fiche d'exercice garde parfois zéro
-  notion connue (`keepKnownNotions`, échec du 2026-10-05) ; le test du juge échoue aussi par
-  moments. Une assertion sur une sortie de modèle doit tenir à chaque tirage, ou le test
-  mesurer un taux.
+- **TTS** : une seule voix, française (`fr_marie_*`), `/api/tts` n'accepte que `fr` ; décider s'il faut d'autres voix pour les cours de langue.
+- **Normalisation de la lecture vocale** : `modules/voice/speech-normalize.ts` à réévaluer avec la lecture vocale.
+- **Tests réels instables** : dans `live/mistral-eu.test.ts`, la fiche garde parfois zéro notion connue (`keepKnownNotions`), et le test du juge échoue par moments ; une assertion sur une sortie de modèle doit tenir à chaque tirage, ou le test mesurer un taux.
 
 ### Lot 3 — client web
 
-- **Après une détresse** : la conversation s'arrête, mais une nouvelle séance rend le tuteur
-  (`distress_events` est par séance). Décider avec l'alerte au parent ce que voit l'élève
-  ensuite, et qui le lève ; une photo seule n'est pas jugée (seul le texte de l'élève l'est,
-  un document de cours parlant de mort fermerait la séance à tort).
-
-- **Routes de séance qui se recouvrent** (`modules/tutor/chat-session.routes.ts`) :
-  `/chat/sessions/latest` et `POST /chat/session` (séance active, créée au besoin),
-  `/chat/session/new` et `/chat/session/:id/reset`. Garder celles qu'appelle le client web.
-
-- **Conformité** (même étude, c) : mention « vous parlez à une IA » dès la première
-  interaction (AI Act, art. 50, applicable depuis le 2 août 2026) ; consentement conjoint
-  élève et parent sous 15 ans (loi Informatique et Libertés, art. 45) ; AIPD ; résumé
-  parent proportionné et connu de l'enfant ; aucun lien avec un établissement (GAR,
-  tableau enseignant, notes transmises) sans réévaluer le classement « haut risque »
-  (annexe III, point 3, applicable le 2 décembre 2027).
-- **Facturation** : colonnes `revenuecat_customer_id` et `revenuecat_subscription_id` de
-  `family_billing`, enum `billing_status` et commentaires RevenueCat de
-  `modules/billing/billing.schema.ts`, restes du mobile, refaits avec le paiement web. Ses
-  routes qui ont besoin des enfants ou du lien parent-enfant vont dans `family`, comme
-  `/api/subscriptions` : `billing` reste un module feuille, sinon `billing`, `family` et
-  `tutor` s'importent en boucle (#354).
-- **Hébergement** : délai de grâce SIGTERM au moins égal à un tour de chat (`app.stop()`
-  attend les flux SSE) ; stockage partagé du rate limit s'il y a plusieurs instances ;
-  `advanced.ipAddress.trustedProxies` de better-auth derrière le proxy de l'hébergeur.
-
-- **Client web** (`etudes/2026-10-06/client-web.md`), à faire au point 1 :
-  - `@repo/api` passe d'une URL absolue en `mode: 'cors'` à une base relative ;
-  - `ai` côté serveur s'aligne sur la version qu'épingle `@ai-sdk/react` ;
-  - Hono sert la SPA (fallback après `/api`, cache des assets, CSP) ;
-  - mesures sur un vrai iPhone et un Android, listées dans l'étude.
-- **Alerte au parent** : le push web n'atteint qu'un parent qui a installé l'app (iOS). L'alerte
-  de détresse demande un canal garanti, l'e-mail par exemple, et le push en plus. À décider
-  avec le parcours parent (point 3).
-- **Langue d'un oral** : la transcription impose le français, juste pour les réponses
-  courtes ; un oral d'anglais, d'espagnol ou d'allemand se transcrit mal sous le français (un
-  « Yes. » bruité devient « Oui. », mesuré le 2026-10-05). Le client déclare la langue
-  d'un oral de langue, comme `inputMode`, et la route la passe à Voxtral.
+- **Après une détresse** : une nouvelle séance rend le tuteur (`distress_events` est par séance) et une photo seule n'est pas jugée ; décider avec l'alerte au parent ce que voit l'élève ensuite, et qui le lève (`modules/tutor/distress.ts`).
+- **Routes de séance qui se recouvrent** (`modules/tutor/chat-session.routes.ts`) : `/chat/sessions/latest` et `POST /chat/session`, `/chat/session/new` et `/chat/session/:id/reset` ; garder celles qu'appelle le client web.
+- **Conformité** : mention « vous parlez à une IA » dès la première interaction, consentement conjoint sous 15 ans, AIPD, résumé parent proportionné et connu de l'enfant, aucun lien avec un établissement sans réévaluer le haut risque (`etudes/2026-10-01/education-nationale.md`, c ; `tuteur.md` §11).
+- **Facturation** : colonnes et enum RevenueCat de `modules/billing/billing.schema.ts`, restes du mobile, refaits avec le paiement web ; les routes qui ont besoin des enfants vont dans `family`, `billing` reste un module feuille (#354).
+- **Hébergement** : délai de grâce SIGTERM d'au moins un tour de chat, stockage partagé du rate limit s'il y a plusieurs instances, `advanced.ipAddress.trustedProxies` de better-auth derrière le proxy de l'hébergeur.
+- **Client web**, point 1 : `@repo/api` en base relative, `ai` aligné sur la version qu'épingle `@ai-sdk/react`, Hono qui sert la SPA (fallback après `/api`, cache des assets, CSP), mesures sur un vrai iPhone et un Android (`etudes/2026-10-06/client-web.md`).
+- **Alerte au parent** : le push web n'atteint qu'un parent qui a installé l'app (iOS) ; l'alerte de détresse demande un canal garanti, l'e-mail par exemple, à décider avec le parcours parent (point 3).
+- **Langue d'un oral** : la transcription impose le français, et un oral de langue se transcrit mal (« Yes. » bruité devient « Oui. ») ; le client déclare la langue d'un oral de langue et la route la passe à Voxtral (`modules/voice/voxtral-transcribe.service.ts`).
 
 ### Lot 4 — marque et lancement
 
-- **À ne jamais écrire sur la landing** (même étude, c) : « conforme au cadre d'usage de
-  l'IA du ministère », « agréé » ou « recommandé par l'Éducation nationale », « aligné sur
-  les programmes » sans la métrique publiée, « fait les devoirs ».
-- CSP de la landing.
-- Tests e2e de la landing qui gardent l'identité rejetée (`signs.spec.ts`, graisse des
-  titres dans `type.spec.ts`, place de Tom dans `hero.spec.ts`) : à revoir avec la nouvelle
-  identité.
-- `Scribble` (`apps/landing/components/annotations/scribble.tsx`) provoque une erreur
-  d'hydratation sous mouvement réduit (`initial` différent entre serveur et client).
-  Correctif technique permis pendant le gel ; disparaît de toute façon avec l'identité du
-  lot 4.
+- **CSP de la landing** (`apps/landing/vercel.json`).
+- **Tests e2e qui gardent l'identité rejetée** (`signs.spec.ts`, graisse des titres dans `type.spec.ts`, place de Tom dans `hero.spec.ts`) : à revoir avec la nouvelle identité.
+- **`Scribble`** (`apps/landing/components/annotations/scribble.tsx`) : erreur d'hydratation sous mouvement réduit (`initial` différent entre serveur et client) ; correctif technique permis pendant le gel.
 
 ## Surveillance
 
@@ -277,11 +146,8 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
 
 | Étape | Pour | Statut |
 |---|---|---|
-| Après le merge de #344 : `rm -rf node_modules && bun install` à la racine du clone local (les `node_modules` actuels viennent de pnpm) | Outillage | à faire |
-| Base de dev locale : `bun run setup` (applique les migrations 0028 et 0029, qui suppriment les tables de la liste d'attente et de Pronote ; le doctor signale 28/30) | Outillage | à faire |
-| Entretiens de parents : remplacés par la recherche documentaire (`etudes/2026-10-01/parents.md`), décision de Victor le 2026-10-02 ; prix, appareil du soir et canaux restent des hypothèses (`vision.md`, « Questions ouvertes ») | Questions ouvertes de la vision | fait |
+| Langfuse : la description de la file d'annotation `tom-judge-agreement` renvoie encore à `docs/agent.md`, devenu `docs/tuteur.md` ; la corriger dans l'interface (l'API n'a pas de mise à jour de file) | Évaluation | à faire |
 | Demander le Zero Data Retention : réservé au paiement à l'usage (« only with pay-as-you-go », [centre d'aide Mistral](https://help.mistral.ai/en/articles/347612-can-i-activate-zero-data-retention-zdr)), or le compte est sur l'offre gratuite (8,50 € d'API inclus par mois, paiement à l'usage désactivé, constaté le 2026-10-02). Activer le paiement à l'usage avec un plafond, puis envoyer la demande avec sa justification (mineurs, RGPD) ; vérifier ensuite Admin › API › Confidentialité. L'entraînement sur les appels API et les modèles Labs y sont désactivés | Porte avant ouverture | à faire |
-| Retirer `NEXT_PUBLIC_SERVER_URL` du projet Vercel `tomai-landing` : absente du projet, constaté le 2026-10-02 | Lot 0, liste d'attente | fait |
 | Trancher le statut juridique avec un expert-comptable : rester micro-entrepreneur ou créer une SASU (le GAR n'accepte que des personnes morales ; seuils de TVA et de la micro calculés en abonnés dans `etudes/2026-10-01/statut-juridique.md`) | Avant l'ouverture, au démarrage du lot 3 | à faire |
 | Vérifier Tom dans le hero sur un iPhone (Safari : salut et respiration sans fond noir) | Landing en ligne | à faire |
 | Relecture des 32 exercices : confiée à Claude le 2026-10-02 et outillée (32 citations retrouvées mot pour mot dans leur PDF officiel, 14 sources de réponse en ligne, 14 réponses recalculées par le test) ; un regard pédagogique humain sur un échantillon reste à prévoir avant de publier les mesures | Lot 1, jeu rejouable par un tiers ; lot 4 pour la publication | fait |
@@ -290,327 +156,3 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
 | Ajouter `E2E (Playwright)` et `Script tests` aux checks requis du ruleset `Protect main` (Settings › Rules) : ils tournent depuis #412 mais ne bloquent pas un merge | Outillage | à faire |
 | Lundi 2026-10-12 : vérifier que Renovate a ouvert les mises à jour en attente du tableau de bord (#310), fenêtre élargie à tout le lundi par #412 ; sinon cocher « Create all awaiting schedule PRs at once » | Outillage | à faire |
 | Mettre à jour les plugins Claude Code (`claude plugin marketplace update`, puis `claude plugin update <nom>`) | Outillage | à faire |
-
-## Historique
-
-- **Lot 0** (2026-09-22 et 23) : specs, roadmap et plans réécrits (#306) ; GitHub Actions
-  sur leur dernière majeure (#307) ; A, `apps/mobile` et le billing RevenueCat supprimés
-  (#308) ; B, dépendances et outillage à jour, Renovate auto-hébergé (#309) ; C, Mistral
-  Small 4 sur l'endpoint UE (#313) ; D, bugs corrigés avec tests de non-régression (#315) ;
-  doc réalignée (#317) ; E1, appels IA sur l'AI SDK et le SDK Mistral (#318). Outillage
-  Claude Code en règles natives (#327).
-- **Landing** (2026-09-23 au 30) : une direction « cahier » (#319 à #321) puis une première
-  identité (#323 à #326, #329, #331, #332), toutes deux abandonnées ; liste d'attente
-  retirée (#333, #335) ; échange d'exemple et sections (#336, #337) ; correctifs de
-  dépendances (#330, #334).
-- **2026-10-01** : études, vision produit validée et nouvelle roadmap. Pronote sort de la
-  V1, l'identité visuelle est rejetée et se refait au lot 4, la landing en ligne est gelée.
-  Landing présentée « en préparation », sans affirmation fausse (#338) ; doc refondue sous
-  `docs/` (#339) ; fichiers d'instructions allégés (#328).
-  Étude du statut juridique (#340). Pronote, la liste d'attente et leurs tables retirés du
-  code, contexte Pronote de l'agent compris (#341).
-  E2 découpé en trois PR ; la première retire le cache et le moniteur mémoire, le limiteur
-  de pool, la double validation des routes enfant et les variables mortes, et passe le rate
-  limit sur rate-limiter-flexible (#342).
-  Serveur passé d'Elysia à Hono, sur Bun, après comparaison chiffrée ; Python écarté pour
-  le serveur (#343).
-  `bun install` remplace pnpm, lockfile migré à versions identiques (#344).
-  Scripts et tests de scripts sous Bun, attentes et `CREATE EXTENSION` en double retirés,
-  CI allégée, liste « outillage » soldée (#346). `appleWebApp` de la landing abandonné :
-  il émet `mobile-web-app-capable` au lieu de `apple-mobile-web-app-capable`.
-  Logger sur pino (même API, `LOG_LEVEL` appliqué, erreurs loggées avec leur stack sous
-  `err`) (#347).
-  Refonte du serveur commencée : socle sous `src/platform/` (#348), module `voice` (#349),
-  module `documents`, premier module qui porte ses tables ; une suppression de fichier
-  garde la ligne quand le stockage échoue, au lieu de laisser un objet d'élève orphelin
-  (#350). Module `learning` ; le tuteur lit les signaux de révision par le service du
-  module au lieu d'interroger ses tables (#351). Module `tutor` : le classeur de séance
-  passe de `documents` au tuteur, la purge RGPD quitte `platform`, et le contrôle de
-  migrations de la CI couvre enfin les schémas des modules (#352). Modules `auth` et
-  `family` : les comptes élèves passent par `auth`, le tableau de bord parent lit les
-  statistiques du tuteur, et le code qui exposait au parent le texte des séances est
-  supprimé avec le reste du code mort (#353). Module `billing` : module feuille, les routes
-  de statut et d'usage d'abonnement passent dans `family`, et `/api/subscriptions/usage` ne
-  révèle plus quels comptes existent (#354). Lint strict : configuration ESLint typée stricte
-  partagée, plus aucun `eslint-disable`, `noUncheckedIndexedAccess` activé, image Docker du
-  serveur réparée et bâtie en `NODE_ENV=production`, révision FSRS bornée aux quatre notes
-  (#355).
-  TypeScript strict : toutes les options du profil le plus strict, dont
-  `exactOptionalPropertyTypes`, qui a révélé une option better-auth mal typée masquant la
-  connexion par identifiant ; premiers tests de `@repo/api` (#356). Lot 0 terminé.
-- **2026-10-02** : jeu d'évaluation, 32 exercices de la 6e à la 3e et six scénarios, chaque
-  exercice cité contre le programme en vigueur, réponses recalculées ou sourcées (#358).
-  Étude de l'alignement sur les programmes, de l'évaluation et de l'observabilité, et du
-  lycée ; roadmap refondue : référentiel du collège et observabilité au lot 1, programme
-  dans le contexte et outil de calcul au lot 2, lycée après la V1, RAG vectoriel écarté par
-  la mesure (#359).
-  Exécuteur de l'évaluation : `bun run eval` joue les scénarios par la vraie route de chat,
-  détecte la réponse dans le texte, les sorties d'outils et les fiches, et écrit une
-  expérience Langfuse ; premiers passages réduits, trois fuites réelles ; forfaits absents
-  de `subscription_plans` relevés pour le lot 2 (#362).
-  Référentiel des programmes : extraction des annexes balisées du BO par l'arbre de
-  structure de pdf.js, fractions et exposants reconstruits et vérifiés à l'œil ; 798
-  entrées de mathématiques et de français, 6e de 2025, 5e à 3e de 2026 (#363).
-  Attendus de fin d'année de 2019 pour la 4e et la 3e, classe vérifiée sur le PDF malgré
-  les liens inversés du jeu de données officiel ; 1 053 entrées (#364). Exercices rattachés
-  au référentiel et aux notions des classes suivantes à ne pas mobiliser (#365).
-- **2026-10-03** : juge daté (`mistral-medium-2604`), un appel par critère, citations
-  vérifiées dans la transcription, fuite rédigée comptée avec la fuite déterministe ;
-  premier passage réduit à environ 1 centime par conversation (#366).
-  Annotation à l'aveugle et accord du juge : échantillon fixe de 38 conversations, file
-  d'annotation Langfuse, α de Krippendorff avec intervalle ; première mesure annotée par
-  Claude, un seul critère d'aide au seuil et sans robustesse (#367).
-  Juge avec graine et reproductibilité mesurée sur trois passages : 4 notes sur 189
-  changent ; reproductible sur cinq critères d'aide (#368).
-  Étude de la refonte du harnais, Small 4 pour tout rôle de LLM (#369). Juge Small 4 en
-  questions oui/non, cinq tirages, erreur de l'élève en référence, questions critiques en
-  sécurité, cache à 91 %, limite de débit ; il ne voit presque pas les défauts de son
-  propre modèle (#370). Étude du juge en extraction et vérification (#371).
-  Cas construits, une conversation saine et sa version fautive par défaut, pour mesurer ce
-  que le juge repère (#372). Le code répond à ce qui se vérifie : égalités écrites
-  recalculées par mathjs, questions relevées par Small 4 puis comptées, 3114 cherché dans
-  le texte ; calcul faux et deux questions repérés là où le modèle ne les voyait pas, sans
-  fausse alarme sur les cas construits (#373).
-  Nettoyage du harnais : une table par critère, version du juge calculée sur ce que lit
-  son modèle et commit dans chaque sortie, plus de relance cachée hors limite de débit,
-  données des études sorties de `src/` (#374).
-  Analyse d'erreurs sur les 38 conversations de l'échantillon (#375) :
-  - 15 ratées : réponse donnée dans 10, affirmation fausse dans 5, détresse sans 3114
-    dans les 3 ;
-  - le juge rate les affirmations fausses, dont 3 jamais soumises à `accuracy`, ainsi que
-    le retour à l'exercice après la détresse ;
-  - corrections du juge puis de Tom décidées sur sources, dans l'ordre de la roadmap.
-  Le harnais joue ce que fait la production (#376) :
-  - S4 confirme les fiches et demande l'explication au micro ;
-  - fuite de S4, fiches créées et question après la détresse répondues par le code ;
-  - balises et gabarits comptés ;
-  - questions qui ne discriminaient pas retirées.
-
-  Premier passage S4 et S5 :
-  - fuite par la voix dans 2 sur 6, et dans les fiches de M1 ;
-  - fiches non créées dans 2 sur 6 (un refus, un report) ;
-  - détresse sans 3114 dans les 3.
-- **2026-10-04** : questions du juge au modèle, puis rejugement des 38 conversations
-  (#377) :
-  - exactitude vérifiée phrase par phrase dans tous les scénarios : 3 des 5 affirmations
-    fausses trouvées, contre aucune ;
-  - diagnostic posé contre l'erreur de l'élève : les 7 erreurs non exploitées repérées ;
-  - répétition sans progression essayée puis retirée, faute d'en repérer aucune ;
-  - puce de liste lue comme un signe moins par le code des calculs, corrigée.
-
-  Épisodes de mémoire limités à l'élève (#378) :
-  - le filtre rendait `user_id = $1 and ttl_until IS NULL OR ttl_until > NOW()` : les
-    épisodes non expirés de tous les élèves entraient dans le prompt ;
-  - trouvé par l'audit de la refonte, testé sur postgres avec deux élèves ;
-  - index vectoriel retiré, jamais utilisé par la requête, qui parcourt exactement les
-    épisodes de l'élève ;
-  - en CI, un test d'intégration échoue au lieu d'être sauté quand la base ne répond pas.
-
-  Refonte de l'agent décidée sur sources (#379) : quatre recherches (conception d'un
-  tuteur, Small 4 et AI SDK 7, exactitude et garde-fous, autres appels IA) ; un workflow
-  tenu par le serveur (fiche d'exercice, diagnostic, palier, contrat du tour, contrôle avant
-  l'élève) ; spec corrigée (`toolApproval` au lieu de `needsApproval`, déprécié ; contrôle
-  avant l'élève et non après la génération ; ordre du contexte pour le cache) ; ordre du
-  lot 2 revu, deux passages au harnais.
-  Point 1 de la refonte, prompt et outils (#380) :
-  - prompt réécrit pour le collège, sans ce qui poussait à affirmer ni à dérouler la méthode ;
-  - consignes de tour corrigées : la pression ne fait pas monter d'un palier, une réponse
-    proposée se vérifie avant tout ;
-  - `get_student_profile` et `get_app_help` supprimés, styles d'apprentissage retirés
-    (colonne comprise), écriture de profil échouée remontée ;
-  - plus de plafond de tokens sur un tour qui raisonne (décision de Victor), et un tour qui
-    raisonne sans écrire compte au quota ;
-  - une réponse proposée se vérifie en raisonnement, quels que soient la classe et la
-    matière, en attendant la fiche (point 3) ;
-  - le chat refuse un niveau hors collège, que le prompt ne sert pas ;
-  - balises du prompt toutes neutralisées dans le texte de l'élève, vérifié par un test.
-  Point 2 de la refonte, première PR, socle du tour (#381) :
-  - historique rejoué tel que le modèle l'a produit, raisonnement et appels d'outils
-    compris (`messages.model_messages`) ; un appel réel à Mistral accepte le raisonnement
-    rejoué en bloc `thinking` (`live/mistral-eu.test.ts`) ;
-  - seul le dernier message de la fenêtre garde son raisonnement, pour le coût ; un tour
-    coupé, ou qui finit sur un résultat d'outil, se rejoue en texte ;
-  - routes de lecture limitées au texte vu par l'élève, sous test ;
-  - un seul message `user` par tour, le résumé dans le premier message de la fenêtre ;
-  - bloc de la matière dans le message du tour : le prompt système ne change plus d'un tour à
-    l'autre.
-  Point 2 de la refonte, seconde PR (#382) :
-  - outils en mode strict, acceptés par Mistral et remplis par un appel réel ;
-  - chaque appel au modèle terminé compte exactement, même si le tour est coupé ensuite ; un
-    appel coupé en cours est estimé, et le tour, marqué coupé, ne garde pas les messages du
-    modèle ni ne donne de titre ;
-  - un tour coupé pendant la création de fiches n'enregistre pas de paquet ;
-  - l'usage arrive dans le flux sans `stream_options`, vérifié par un appel réel ;
-  - renommages de l'AI SDK 7 : `instructions`, `onEnd`, option `timeout`.
-  Point 3 de la refonte, première PR, analyse du tour (#383) :
-  - une analyse en sortie structurée stricte remplace le classifieur d'intention : matière,
-    nouvel exercice apporté, réponse proposée, demandes de solution, d'explication ou de
-    fiches, en booléens sans recopie ; messages longs coupés en tête et en queue ; un appel
-    réel vérifie le schéma ;
-  - elle donne la consigne du tour, le routage du raisonnement et l'accord pour les fiches :
-    `toolApproval` refuse une création que l'élève n'a pas demandée ni acceptée, avec une
-    raison transmise au modèle (distincte quand l'analyse a échoué), puis retire l'outil pour
-    le reste du tour ;
-  - le transcript d'évaluation ne compte plus un appel refusé comme un outil appelé.
-  Point 3 de la refonte, deuxième PR, fiche d'exercice (#384) :
-  - à un nouvel exercice, trois tirages de Small 4 en raisonnement, votés : deux tirages
-    concordent par mathjs ou par le texte normalisé, sinon la fiche est incertaine ; mathjs
-    vérifie la réponse contre l'équation de l'énoncé ; notions de la classe et des classes
-    suivantes prises dans le référentiel ;
-  - table `exercise_sheets`, la dernière ligne de la séance étant l'exercice en cours ; coût
-    de chaque tirage dans `cost_tracking` ;
-  - le rédacteur reçoit l'énoncé et les notions en tête de fenêtre, jamais la réponse ;
-  - `stripPromptTags` retire jusqu'à stabilité : une balise imbriquée refermait la clôture
-    du message de l'élève ;
-  - mesuré sur un appel réel (4e, maths) : 6,3 s et 8 786 tokens d'entrée par tirage, le
-    programme en faisant l'essentiel.
-  Point 3 de la refonte, troisième PR, extraction des documents (#385) :
-  - l'analyse de document, un second tuteur sans garde-fou, devient une extraction : texte
-    tiré du PDF ou du docx sans modèle, image lue une fois par Small 4 en vision, transcrite
-    sans être résolue ; le chat reçoit ce texte, et non plus l'image ;
-  - les fichiers de la séance ouvrent la fenêtre dans l'ordre d'attache, stables pour le cache ;
-    la fiche les lit tous ; un fichier illisible apparaît comme tel ;
-  - un tour ne lit et n'attache que les fichiers de l'utilisateur, envoyés jusqu'au bout :
-    n'importe quel identifiant était lu, facturé, injecté et attaché, testé sur postgres.
-  Point 4 de la refonte, diagnostic, palier et contrat du tour (#386) :
-  - une proposition de l'élève est jugée contre la fiche par Small 4, mathjs tranchant là où
-    il sait (équations, valeurs égales à la réponse) ; type d'erreur selon Bridge ;
-  - le palier est tenu par le code, par exercice : il monte sur une proposition fausse, jamais
-    sans tentative, descend sur une étape juste ; une réponse finale juste termine l'exercice ;
-  - le contrat du tour donne au rédacteur le diagnostic, le palier et la seule part de la fiche
-    que le palier autorise, jamais la réponse ; sous contrat, la rédaction se fait sans
-    raisonnement ;
-  - ce que le tour change s'écrit une fois le tour vu, en une requête atomique.
-  Point 5 de la refonte, première PR, contrôle avant l'élève (#387) :
-  - le texte du modèle n'est plus transmis au fil de l'eau : le flux est gardé entier, contrôlé,
-    puis envoyé ; le message envoyé est celui qui est persisté ;
-  - contrôles déterministes : réponse et formes (sauf celles de l'énoncé, et une réponse juste
-    de l'élève confirmée), balises du prompt, égalités recalculées par mathjs ;
-  - sur un échec, une régénération sous contrainte sans outils, puis une réponse de repli ;
-    l'événement est gardé avec le message ;
-  - la détection de fuite, la typographie et la lecture des égalités passent dans `lib/`, un seul
-    exemplaire pour le harnais et le tuteur.
-  Point 5 de la refonte, seconde PR, modération de sortie (#389) :
-  - `mistral-moderation-2603` (gratuit, endpoint UE) relit le message avec les contrôles
-    déterministes ; drapeaux au seuil de Mistral sur `sexual`, `hate_and_discrimination`,
-    `violence_and_threats`, `dangerous`, `criminal`, `selfharm` ; indisponible, la réponse de
-    repli part, rien sans contrôle ;
-  - les fiches de révision sont contrôlées carte par carte avant leur enregistrement, dans la
-    conversation et hors d'elle ; le titre de séance et celui du paquet aussi.
-- **2026-10-05** : tests serveur lancés un processus par fichier (`scripts/run-tests.ts`),
-  `bun test --isolate` plantant Bun (oven-sh/bun#44161) ; deux tests fragiles révélés et
-  corrigés (#388).
-  Point 6 de la refonte, détresse et modération d'entrée (#390) :
-  - détresse jugée par le code : drapeau `selfharm` de Mistral ou règles en français à la
-    première personne ; réponse fixe approuvée par Victor (3114, 15 et 112, adulte de
-    confiance), séance close, événement unique par séance pour l'alerte du lot 3 ; ni quota,
-    ni limite de flux, ni écriture en échec ne retiennent la réponse ;
-  - modération du message de l'élève en parallèle de l'analyse du tour, catégories gardées
-    pour la mesure sans bloquer ;
-  - messages datés par postgres, à la microseconde : la réponse fixe, écrite juste après le
-    message, pouvait le précéder dans l'historique.
-
-  Premier passage du lot 2 (commit 46fad02c, S4 à S6 de l'échantillon, lus par le code) :
-  - S5 : 3114, adulte de confiance et aucune question après la détresse dans 3 sur 3 (avant :
-    0 sur 3) ;
-  - S6 : aucune fuite dans 4 sur 4 vérifiables ;
-  - S4 : fuite dans 2 sur 6 (avant : 4 sur 6), au tour vocal de M1 et de F1, séances sans
-    fiche : l'analyse du tour ratait l'énoncé suivi d'une tentative, 6 premiers messages sur 14 ;
-    définition corrigée et énoncé de l'exercice en cours donné à l'analyse, 0 sur 14 en trois
-    passages, aucune fausse alarme sur 7 messages sans exercice, l'exercice en cours recopié
-    gardé (par le code quand l'énoncé revient mot pour mot) (#391) ;
-  - incident Mistral pendant le passage, modération en 503 et en timeout : deux réponses
-    remplacées par le repli ; le client du SDK Mistral (modération, embeddings, voix) ne
-    retentait rien ; la modération coupe désormais une tentative bloquée à 1,5 s et retente
-    pendant 2,5 s, sous son budget de 5 s ; embeddings et voix retentent 429 et 5xx (#392).
-
-  S4 repassé après #391 et #392 (commit a7f7a452) : aucune fuite sur 6 (premier passage : 2,
-  avant la refonte : 4) ; fiches créées dans 5 sur 6 ; modération en timeout deux fois.
-
-  Point 7 de la refonte, appels annexes (#393) :
-  - `safePrompt` retiré, déprécié par Mistral ; ce qui atteint l'élève passe par la
-    modération ; analyse du tour remesurée, 1 premier message raté sur 42 (contre 0)
-    et aucune fausse alarme ;
-  - transcription : le français reste imposé, la mesure infirme l'étude (sans langue,
-    « Non. » devient « No. ») ; `detectedLanguage`, qui renvoyait la langue forcée,
-    retiré ; l'audio passé avec ses seuls octets, sans le pool d'un `Buffer` autour.
-
-  Point 7 de la refonte, logs sans contenu d'élève (#394), recensés par l'AST de TypeScript :
-  - erreurs nettoyées par famille, aux trois frontières qui recopient du contenu : la base
-    (paramètres de requête, valeur refusée), l'AI SDK (sortie du modèle, entrée d'un outil,
-    erreurs qu'une relance enveloppe), le SDK Mistral (corps de réponse) ; pile prise après
-    le message, cause comprise ;
-  - titre de séance, sujet saisi, nom de fichier, détail postgres et message brut des cartes
-    retirés des logs ;
-  - clé de stockage et URL d'upload sans le nom de fichier, qui partait aussi dans les
-    journaux du stockage.
-
-  Point 7 de la refonte, mémoire (#395) :
-  - résumé vraiment incrémental : l'ancien résumé et les seuls nouveaux messages, au lieu de
-    toute la conversation à chaque relance ; relancé tous les dix messages au-delà de la
-    fenêtre, et non plus à chaque tour, compté en base ; gabarits jamais remplis retirés ;
-  - épisode d'une séance close tiré de son résumé et de ses derniers échanges, plus de toute
-    la conversation ;
-  - séances passées rappelées une fois par séance et gardées sur elle, au lieu d'un embedding
-    et d'une recherche vectorielle à chaque message ; cherchées sur les trois premiers
-    messages tant que rien ne correspond, une panne ne figeant rien ;
-  - historique du tour lu après le résumé, sans charger la séance, avec dix messages de
-    marge sur le lot ; un résumé n'écrase plus un résumé plus récent.
-
-- **2026-10-06** : nettoyage demandé par Victor, d'après un inventaire du code serveur confronté
-  à la vision. Mémoire entre séances supprimée (#396) : épisodes et embeddings, profils
-  cognitif et par matière, outil `update_student_profile`, contexte d'apprentissage et bloc
-  `<student_context>`, purge de rétention qui ne purgeait qu'eux. La vision ne la promet pas,
-  le harnais ne la mesurait pas (séance neuve), ses seuils étaient inventés (similarité 0,6,
-  90 et 180 jours) ; le profil cognitif gardait, sans durée ni accès, des notes libres du
-  modèle sur un enfant. La page de confidentialité de la landing, qui décrivait ce profil et
-  une mémoire de 90 jours, dit ce qui est : aucun profil, une séance ne sert pas à la suivante.
-
-  Colonnes et tables sans usage supprimées (#397), relevées colonne par colonne dans le code :
-  dix-neuf colonnes de `study_sessions` (frustration, métriques socratiques, coût, appareil,
-  note…), neuf de `messages`, neuf de `user` et `session.impersonated_by` (plugin admin de Better
-  Auth, non activé), les tables `progress` et `parent_restore_token`, `files.storage_*` ; avec
-  elles `/progress/dashboard` et les champs toujours nuls du tableau de bord parent (durée,
-  frustration).
-
-  Restes hors vision supprimés (#399) : les niveaux du primaire et du lycée, dont l'enum
-  `school_level` ne garde que la 6e à la 3e, et les matières du lycée ; une seule taxonomie des
-  matières (`lib/subjects.ts`) au lieu de quatre listes qui ne s'accordaient pas, le slug validé
-  aux routes ; `GET /api/tts/voices`, `GET /learning/config` et `GET /health/ai`, appel Mistral
-  réel sans authentification. L'historique des migrations repart d'une base unique, sans
-  pgvector ni les valeurs d'enum `admin` et `rag_program` ; Docker et la CI passent sur l'image
-  officielle `postgres:18.6`, sur un volume renommé (`tomai_postgres_dev_data`) : un clone existant
-  repart d'une base vide, et `bun run doctor` signale une base d'un autre historique. Après revue,
-  `role` et `schoolLevel` ne s'écrivent plus que par le serveur : un élève pouvait se donner le
-  rôle de parent par `update-user` de Better Auth.
-
-  Point 8, premier pas (#400) : chaque appel IA tracé dans `cost_tracking` en micro-euros, au lieu de
-  centimes qui arrondissaient un tour à 0. Le client (`generateText`, `generateStructured`), la
-  transcription et la lecture vocale reçoivent un propriétaire obligatoire et tracent eux-mêmes, au
-  prix daté de chaque modèle : analyse du tour, titre, résumé, cartes, STT et TTS s'ajoutent au chat,
-  à la fiche, au diagnostic et à la lecture d'image. Le calcul passe de `billing` à `platform/ai`.
-
-  Quota au coût réel (#401) : la dépense de la journée se lit dans `cost_tracking` (somme des
-  micro-euros depuis la remise à zéro de 10 h), cache à son prix et lecture vocale comprise, au lieu
-  de compteurs de tokens tenus par le seul tour de chat. Budgets provisoires : 2 c par jour en
-  Gratuit, 10 c en Complet. Le budget se vérifie au chat, à la lecture vocale (prix connu avant
-  l'appel, une lecture à la fois), à la transcription d'un audio et aux cartes. La formule devient une colonne de
-  `user_subscriptions` : `subscription_plans`, jamais remplie, disparaît avec le bug « Free plan not
-  found » qui empêchait de compter la consommation.
-
-  Fiches du chat (#402) : l'outil n'est donné qu'au Complet ; en Gratuit, une demande reçoit une
-  consigne du tour qui dit la formule. Au Complet, une demande relevée par l'analyse impose l'appel de
-  l'outil au premier pas (`toolChoice`), au lieu de laisser le modèle refuser des fiches demandées et
-  confirmées (S4, 2026-10-05). Les compteurs de paquets (5 par jour, 50 par mois) partent : le budget
-  en euros borne déjà le coût des cartes.
-
-  Coût des appels au taux de Mistral (#403) : la page Coûts de l'organisation facture en euros, au
-  prix en dollars × 1,1 (endpoint UE) × 0,85, vérifié au chiffre près sur la lecture vocale et la
-  transcription. Le calcul convertissait à 0,92 et surestimait chaque coût d'environ 8 % ; les budgets
-  provisoires, inchangés, laissent donc environ 8 % d'usage de plus.
-
-  Environnement de travail nettoyé (`chore/clean-environment`) : tout `.env*` ignoré sauf les
-  gabarits ; l'action Claude reçoit enfin modèle, tours et outils par `claude_args` ; Docker réduit
-  à postgres et à l'image de production (port 3000) ; scripts morts, clés de `bunfig.toml`,
-  alias et options TypeScript inutiles, smoke test vers un hébergement inexistant, détection
-  Supabase et mentions Koyeb supprimés.

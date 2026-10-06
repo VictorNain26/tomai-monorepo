@@ -24,4 +24,5 @@ We will acknowledge within 48 hours and provide a fix timeline within 7 days.
 - SHA-pinned GitHub Actions (supply chain protection)
 - Non-root Docker containers (user `tomai`, UID 1001)
 - Security headers on the landing page (`apps/landing/vercel.json`: nosniff,
-  X-Frame-Options, Referrer-Policy, Permissions-Policy) and the server; no CSP yet (lot 3)
+  X-Frame-Options, Referrer-Policy, Permissions-Policy) and the server. No CSP yet: planned
+  for the web app (`apps/web`, served by the server) in lot 3, for the landing in lot 4

@@ -2,6 +2,7 @@
 description: Design system — chargé uniquement sur les fichiers d'interface
 paths:
   - "apps/landing/**/*.{ts,tsx,css}"
+  - "apps/web/**/*.{ts,tsx,css}"
   - "packages/ui/**/*.{ts,tsx,css}"
   - "packages/tokens/**/*.css"
 ---
@@ -25,7 +26,9 @@ survivent au changement d'identité.
   accessibilité y vit, on ne la refait pas dans une app.
 - **Accessibilité** : contraste WCAG AA, 4,5:1 pour le texte courant
   ([WCAG 2.2, 1.4.3](https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html)),
-  vérifié sur chaque paire de tokens qu'on associe ; cibles tactiles d'au moins 44 px ;
-  aucun défilement horizontal à largeur de téléphone ; mouvement réduit respecté ; contenu
-  lisible sans JavaScript sur la landing. La suite e2e de la landing garde tout sauf le
-  contraste (`.claude/rules/testing-and-commits.md`).
+  vérifié sur chaque paire de tokens qu'on associe (`packages/tokens/contrast.test.mjs` : une
+  paire de texte s'ajoute à `PAIRS`, tenue à 4,5:1 ; une paire de contrôle sans texte, bordure ou
+  anneau de focus, à `CONTROL_PAIRS`, tenue à 3:1, [WCAG 2.2, 1.4.11](https://www.w3.org/WAI/WCAG22/Understanding/non-text-contrast.html)) ; cibles tactiles d'au moins 44 px ; aucun défilement
+  horizontal à largeur de téléphone ; mouvement réduit respecté ; contenu lisible sans
+  JavaScript sur la landing. La suite e2e de la landing garde le reste
+  (`.claude/rules/testing.md`).

@@ -53,7 +53,7 @@ async function main(path: string | undefined): Promise<number> {
     queues.find((q) => q.name === QUEUE) ??
     (await api.annotationQueues.createQueue({
       name: QUEUE,
-      description: 'Conversations of the eval sample, graded blind to the judge (docs/agent.md, § 9).',
+      description: 'Conversations of the eval sample, graded blind to the judge (docs/tuteur.md, § 9).',
       scoreConfigIds: configIds,
     }));
   if ([...queue.scoreConfigIds].sort().join() !== [...configIds].sort().join()) {

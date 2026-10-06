@@ -8,6 +8,8 @@ const nextConfig = {
   poweredByHeader: false,
   compress: true,
   transpilePackages: ['@repo/ui'],
+  // One CLAUDE.md, at the monorepo root: next dev must not write AGENTS.md or CLAUDE.md here.
+  agentRules: false,
 
   images: {
     formats: ['image/avif', 'image/webp'],

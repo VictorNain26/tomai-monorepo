@@ -28,7 +28,7 @@ apps/
 
 packages/
 ├── api/             # Client typé (hono/client) — le contrat serveur → clients
-├── ui/              # Primitives shadcn (DOM)
+├── ui/              # Primitives shadcn sur Radix
 ├── tokens/          # Design tokens CSS (Tailwind v4) partagés
 └── eslint-config/   # Config ESLint partagée
 ```
@@ -41,25 +41,28 @@ packages/
 | Landing | Next.js 16, TailwindCSS 4, Motion 13, `@repo/ui` (shadcn) |
 | Web | Vite 8, React 19, TanStack Router, TailwindCSS 4 ; tests Playwright à largeur de téléphone (`docs/etudes/2026-10-06/client-web.md`) |
 | Auth | Better Auth 1.7 + Google OAuth, comptes élèves par username |
-| Chat | Vercel AI SDK 7 (`streamText` + `useChat`), un seul protocole client/serveur |
-| IA | Mistral Small 4 — chat, vision multimodale, OCR, TTS et STT Voxtral. Stack 100 % EU |
+| Chat | Vercel AI SDK 7 : `streamText` côté serveur ; `useChat` côté web, cible du lot 3. Un seul protocole client/serveur |
+| IA | Mistral Small 4 — chat, lecture d'une image jointe (`modules/documents/mistral-vision.ts`), TTS et STT Voxtral. Stack 100 % EU |
 | Paiements | Aucun branché. Paiement web prévu au lot 3 |
 | Stockage | Scaleway S3 (fr-par), uploads par URL présignée |
 | Observabilité | Sentry initialisé sur server et landing. La région dépend du DSN, absent du dépôt. Pas d'analytics installée |
 | Monorepo | Turborepo, workspaces Bun |
-| Déploiement | Landing : Vercel (`apps/landing/vercel.json`), previews de branche déployées. Server : image `apps/server/Dockerfile`, rien de déployé ; hébergeur tranché au lot 3 |
+| Déploiement | Landing : Vercel (`apps/landing/vercel.json`), previews de branche déployées. Server : image `apps/server/Dockerfile`, rien de déployé ; hébergeur tranché au lot 3. Web : servi par le serveur, sur la même origine que l'API (cible du lot 3) |
 
 ## Commandes
 
 ```bash
 bun run typecheck && bun run lint  # validation, obligatoire avant commit
 bun run format                     # Prettier, vérifié en CI et sur les fichiers indexés
-bun run test                       # tests server (Bun) ; scripts et hooks : bun run test:scripts
+bun run test                       # tests unitaires du serveur et des paquets ; scripts : bun run test:scripts
 bun run build                      # build production
 bun run seed                       # comptes parent + élève, dev uniquement
-bun run db:generate                # migrations Drizzle, pour la prod
-bun run db:push                    # sync direct du schéma, dev local uniquement
+bun run db:generate                # migration SQL d'un changement de schéma
 ```
+
+Base neuve : `bun run setup` applique les migrations (`db:migrate`) ; `db:push` ne sert
+qu'à itérer le schéma en local une fois ces migrations appliquées (skill `dev-bootstrap`,
+`.claude/rules/database-migrations.md`).
 
 ## Git
 
@@ -69,14 +72,12 @@ et merge commit — jamais de squash.
 ## Documentation
 
 `README.md` (ici) décrit la stack et le démarrage ; `CLAUDE.md` porte les
-instructions destinées aux agents.
+instructions destinées aux agents, et `.claude/rules/` celles qui ne valent que pour une
+partie du code, chargées sur ses chemins.
 
 Produit et avancement, dans `docs/` :
 [vision produit](./docs/vision.md) (pour qui,
 promesse, prix, périmètre) · [roadmap](./docs/roadmap.md) ·
 [suivi](./docs/suivi.md) (où on en est) · specs techniques
 [cible V1](./docs/architecture.md) et
-[agent IA](./docs/agent.md).
-
-Chaque app a sa propre doc : [server](./apps/server/CLAUDE.md) ·
-[landing](./apps/landing/CLAUDE.md)
+[tuteur IA](./docs/tuteur.md).
