@@ -24,11 +24,14 @@
     }
   },
   "scripts": {
+    "lint": "eslint . --max-warnings 0",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tests",
     "test": "bun test"
   },
   "devDependencies": {
+    "@repo/eslint-config": "workspace:*",
     "bun-types": "^1.4.2",
+    "eslint": "^10.11.0",
     "tomai-server": "workspace:*",
     "typescript": "6.0.3"
   },

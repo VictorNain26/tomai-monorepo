@@ -51,6 +51,7 @@
       "persistent": true
     },
     "lint": {
+      "dependsOn": ["^build:types"],
       "inputs": [
         "$TURBO_DEFAULT$",
         "eslint.config.*"
