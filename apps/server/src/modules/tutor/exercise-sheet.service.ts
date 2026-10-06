@@ -12,7 +12,7 @@ import { ExerciseSheetSchema, keepKnownNotions, notionsFor, schoolYearOf, sheetM
 import { exerciseSheetsRepository } from './exercise-sheets.repository.js';
 import { KEPT_HINTS, type Hint } from './hint-ladder.js';
 
-const EXERCISE_SHEET_PROMPT_VERSION = '2026-10-05';
+const EXERCISE_SHEET_PROMPT_VERSION = '2026-10-06.2';
 const DRAWS = 3;
 const SHEET_TIMEOUT_MS = 20_000;
 // Small 4's model card: « 0.7 for reasoning_effort="high" » (huggingface.co/mistralai/Mistral-Small-4-119B-2603).

@@ -12,7 +12,7 @@ import { logger } from '../../platform/observability/logger.js';
 import { stripPromptTags } from './mistral-helpers.js';
 import { SUBJECT_FAMILIES } from '../../lib/subjects.js';
 
-const TURN_ANALYSIS_PROMPT_VERSION = '2026-10-05.2';
+const TURN_ANALYSIS_PROMPT_VERSION = '2026-10-06';
 const MAX_CHARS = 4000;
 
 const TurnAnalysisSchema = z.object({
@@ -20,7 +20,7 @@ const TurnAnalysisSchema = z.object({
   bringsExercise: z
     .boolean()
     .describe(
-      "Le message contient l'énoncé d'un exercice, une consigne, une question ou un problème à résoudre, même suivi d'une réponse de l'élève ou d'une demande de solution, et ce n'est pas l'exercice en cours.",
+      "Le message contient l'énoncé d'un exercice, une consigne, une question ou un problème à résoudre, même suivi d'une réponse de l'élève ou d'une demande de solution, et ce n'est pas l'exercice en cours. Une question qui attend une réponse précise est un exercice, même posée comme une question de cours ou après la description d'une situation ou d'une expérience : un nombre, un fait, un mot, une forme, la nature d'un mot, ce que fait une grandeur (« Combien de chromosomes… ? », « Que fait la température… ? »). Une demande d'explication d'une notion n'en est pas un (« Explique-moi la photosynthèse »).",
     ),
   proposesAnswer: z.boolean().describe("L'élève propose une réponse ou une étape de sa résolution."),
   asksSolution: z.boolean().describe("L'élève demande la réponse, la solution ou que le tuteur fasse l'exercice."),
@@ -56,7 +56,9 @@ Dis la matière (general si elle est hors matière ou indéterminable), ce que l
 et ce que l'élève demande. Chaque champ se juge seul : un énoncé suivi de la réponse de l'élève
 apporte un exercice et propose une réponse. Recopier l'exercice en cours, en tout ou en
 partie, pour y répondre n'en apporte pas un autre ; sans exercice en cours, tout énoncé en
-apporte un. Le dernier message du tuteur sert à savoir si l'élève accepte ce que le tuteur
+apporte un, et toute question à laquelle on peut répondre juste ou faux aussi. Seules une
+demande d'explication d'une notion ou une demande de fiches n'en apportent pas. Le dernier
+message du tuteur sert à savoir si l'élève accepte ce que le tuteur
 proposait.`;
 
 // Head and tail: a statement opens a message, a proposal or an offer of cards closes it.
@@ -85,12 +87,15 @@ export async function analyseTurn(
           content: `<current_exercise>\n${clip(currentStatement ?? 'aucun')}\n</current_exercise>\n\n<tutor_message>\n${clip(lastTutorText ?? '')}\n</tutor_message>\n\n<student_message>\n${clip(studentText)}\n</student_message>`,
         },
       ],
-      temperature: 0,
-      maxTokens: 256,
+      // Without reasoning, a question of fact (« Combien de chromosomes… ? ») was read as a request
+      // for an explanation: no sheet, no check, and the tutor gave the answer (etudes/2026-10-06/
+      // passage-de-fin.md). 0.7 is Mistral's temperature for reasoning_effort high, as for the sheet.
+      temperature: 0.7,
+      reasoningEffort: 'high',
       schema: TurnAnalysisSchema,
       schemaName: 'turn_analysis',
       promptCacheKey: `turn-analysis-${TURN_ANALYSIS_PROMPT_VERSION}`,
-      timeoutMs: 8_000,
+      timeoutMs: 20_000,
     });
     return object;
   } catch (err) {

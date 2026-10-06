@@ -15,9 +15,17 @@ import { stripPromptTags, wrapUserMessage } from './mistral-helpers.js';
 
 export const ExerciseSheetSchema = z.object({
   statement: z.string().describe("L'énoncé tel que l'élève l'a donné, sans sa réponse ni ses commentaires."),
-  kind: z.enum(['short', 'written']).describe('short : une réponse courte qui se compare ; written : une production rédigée.'),
+  kind: z
+    .enum(['short', 'written'])
+    .describe(
+      'short : la réponse attendue tient en un nombre, un mot, une forme ou une phrase courte qui se compare (« 46 », « went », « elle reste constante ») ; written : une production à rédiger, un paragraphe, une justification développée, une rédaction.',
+    ),
   answer: z.string().nullable().describe('La réponse attendue ; null pour une production rédigée.'),
-  answerForms: z.array(z.string()).describe("Les écritures de la réponse qu'un élève pourrait recopier ; vide pour une production rédigée."),
+  answerForms: z
+    .array(z.string())
+    .describe(
+      "Les écritures de la réponse qu'un élève pourrait recopier, et aussi les plus courtes qui la donnent à elles seules, sans pronom ni article en tête (« reste constante » pour « elle reste constante », « subordonnée conjonctive » pour « proposition subordonnée conjonctive complétive ») ; vide pour une production rédigée.",
+    ),
   mathEquation: z.string().nullable().describe("L'équation de l'énoncé en syntaxe mathjs si l'exercice demande de la résoudre, sinon null."),
   mathAnswer: z.string().nullable().describe('La réponse en syntaxe mathjs si elle est un nombre, une expression ou une équation, sinon null.'),
   steps: z.array(z.string()).describe("Les étapes de la résolution, dans l'ordre."),
