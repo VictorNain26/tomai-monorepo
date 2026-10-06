@@ -35,13 +35,14 @@ describe('health', () => {
 });
 
 describe('shutdown', () => {
-  it('drains, stops the server, then closes the resources, and exits 0', async () => {
+  it('fails readiness, waits for the probe, stops the server, then closes the resources, and exits 0', async () => {
     const lifecycle = createLifecycle();
     const steps: string[] = [];
+    const started = Date.now();
     const code = await shutdown({
       lifecycle,
       stopServer: async () => {
-        steps.push(`stop, draining=${String(lifecycle.draining)}`);
+        steps.push(`stop after ${String(Date.now() - started >= 50)}, draining=${String(lifecycle.draining)}`);
       },
       close: [
         async () => {
@@ -49,10 +50,11 @@ describe('shutdown', () => {
         },
       ],
       logger,
+      drainMs: 50,
       deadlineMs: 1_000,
     });
     expect(code).toBe(0);
-    expect(steps).toEqual(['stop, draining=true', 'close']);
+    expect(steps).toEqual(['stop after true, draining=true', 'close']);
   });
 
   it('exits 1 past the deadline', async () => {
@@ -61,6 +63,7 @@ describe('shutdown', () => {
       stopServer: () => new Promise(() => undefined),
       close: [],
       logger,
+      drainMs: 0,
       deadlineMs: 20,
     });
     expect(code).toBe(1);
@@ -72,6 +75,7 @@ describe('shutdown', () => {
       stopServer: async () => undefined,
       close: [() => Promise.reject(new Error('boom'))],
       logger,
+      drainMs: 0,
       deadlineMs: 1_000,
     });
     expect(code).toBe(1);
