@@ -13,21 +13,21 @@ beforeEach(() => {
   inserted.length = 0;
 });
 
-// USD_TO_EUR defaults to 0.92; 1 € = 1,000,000 µ€.
+// Mistral bills in euros at 0.85 to the dollar; 1 € = 1,000,000 µ€.
 describe('computeCostMicroEur — tokens', () => {
   it('bills mistral-small-2603 at the Small 4 rate, EU endpoint upcharge included', () => {
-    // (0.15 + 0.60) USD × 1.1 × 0.92 = 0.759 EUR
+    // (0.15 + 0.60) USD × 1.1 × 0.85 = 0.70125 EUR
     expect(computeCostMicroEur('mistral-small-2603', { inputTokens: 1_000_000, outputTokens: 1_000_000 }, 1.1))
-      .toEqual({ costMicroEur: 759_000, unknownModel: false });
+      .toEqual({ costMicroEur: 701_250, unknownModel: false });
   });
 
   it('adds no upcharge on the global endpoint', () => {
-    expect(computeCostMicroEur('mistral-small-2603', { inputTokens: 1_000_000, outputTokens: 1_000_000 }, 1).costMicroEur).toBe(690_000);
+    expect(computeCostMicroEur('mistral-small-2603', { inputTokens: 1_000_000, outputTokens: 1_000_000 }, 1).costMicroEur).toBe(637_500);
   });
 
   it('keeps the cost of a text turn, which cents rounded to 0', () => {
-    // (1,000 × 0.15 + 6,000 × 0.015 + 300 × 0.60) / 1M USD × 1.1 × 0.92 = 0.00042504 EUR
-    expect(computeCostMicroEur('mistral-small-2603', { inputTokens: 7_000, cachedInputTokens: 6_000, outputTokens: 300 }, 1.1).costMicroEur).toBe(425);
+    // (1,000 × 0.15 + 6,000 × 0.015 + 300 × 0.60) / 1M USD × 1.1 × 0.85 = 0.0003927 EUR
+    expect(computeCostMicroEur('mistral-small-2603', { inputTokens: 7_000, cachedInputTokens: 6_000, outputTokens: 300 }, 1.1).costMicroEur).toBe(393);
   });
 
   it('flags unknownModel for an alias or a model without a price', () => {
@@ -39,28 +39,26 @@ describe('computeCostMicroEur — tokens', () => {
 
 describe('computeCostMicroEur — cached tokens', () => {
   it('bills cached tokens at 10 % of the input rate', () => {
-    // 2M × 0.15 + 8M × 0.015 = 0.42 USD × 1.1 × 0.92 = 0.42504 EUR
-    expect(computeCostMicroEur('mistral-small-2603', { inputTokens: 10_000_000, cachedInputTokens: 8_000_000 }, 1.1).costMicroEur).toBe(425_040);
+    // 2M × 0.15 + 8M × 0.015 = 0.42 USD × 1.1 × 0.85 = 0.3927 EUR
+    expect(computeCostMicroEur('mistral-small-2603', { inputTokens: 10_000_000, cachedInputTokens: 8_000_000 }, 1.1).costMicroEur).toBe(392_700);
   });
 
   it('bills the full input rate without cached tokens', () => {
-    expect(computeCostMicroEur('mistral-small-2603', { inputTokens: 10_000_000 }, 1.1).costMicroEur).toBe(1_518_000);
+    expect(computeCostMicroEur('mistral-small-2603', { inputTokens: 10_000_000 }, 1.1).costMicroEur).toBe(1_402_500);
   });
 
   it('bounds the cached tokens by the input tokens when the API value is off', () => {
-    expect(computeCostMicroEur('mistral-small-2603', { inputTokens: 10_000_000, cachedInputTokens: 50_000_000 }, 1.1).costMicroEur).toBe(151_800);
+    expect(computeCostMicroEur('mistral-small-2603', { inputTokens: 10_000_000, cachedInputTokens: 50_000_000 }, 1.1).costMicroEur).toBe(140_250);
   });
 });
 
 describe('computeCostMicroEur — voice', () => {
-  it('bills a transcription per minute of audio', () => {
-    // 90 s = 1.5 min × 0.003 USD × 1.1 × 0.92 = 0.004554 EUR
-    expect(computeCostMicroEur('voxtral-mini-2602', { audioSeconds: 90 }, 1.1).costMicroEur).toBe(4_554);
+  it('bills a transcription at the price on the cost page: 0,00004675 € a second', () => {
+    expect(computeCostMicroEur('voxtral-mini-2602', { audioSeconds: 1_000 }, 1.1).costMicroEur).toBe(46_750);
   });
 
-  it('bills speech per character of the text read', () => {
-    // 1,000 characters × 16 USD / M × 1.1 × 0.92 = 0.016192 EUR
-    expect(computeCostMicroEur('voxtral-mini-tts-2603', { characters: 1_000 }, 1.1).costMicroEur).toBe(16_192);
+  it('bills speech at the price on the cost page: 0,00001496 € a character', () => {
+    expect(computeCostMicroEur('voxtral-mini-tts-2603', { characters: 1_000 }, 1.1).costMicroEur).toBe(14_960);
   });
 });
 
