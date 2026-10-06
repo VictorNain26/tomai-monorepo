@@ -61,8 +61,6 @@ lancer les apps. Si l'infra est incomplète, les apps ne démarrent pas du tout 
 c'est voulu, pas un bug.
 
 Le backend tourne sur l'**host**, pas en conteneur : pas de collision sur `:3000`.
-L'image backend iso-prod reste disponible en opt-in via
-`docker compose --profile backend up`.
 
 ## Diagnostic
 

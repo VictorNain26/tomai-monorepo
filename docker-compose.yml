@@ -1,9 +1,7 @@
 # ============================================================
 # TomAI — Docker Compose (infra de développement du monorepo)
-# Défaut       : postgres
-# Backend (opt-in, iso-prod) : docker compose --profile backend up -d
-# Outils       : docker compose --profile tools up -d
-# Orchestration dev : `bun run dev` (à la racine)
+# Le serveur et les apps tournent sur l'host : `bun run dev` (à la racine).
+# Interface de la base : `bun run db:studio`.
 # ============================================================
 
 # Nom de projet Compose figé, indépendant du dossier : évite les conflits de
@@ -11,60 +9,6 @@
 name: tomai
 
 services:
-  # ===========================================
-  # Backend TomAI — conteneurisé (OPT-IN)
-  # En dev normal le backend tourne sur l'host via `bun run dev`.
-  # Ce service ne sert qu'à tester l'image iso-prod : --profile backend.
-  # ===========================================
-  backend:
-    profiles:
-      - backend
-    build:
-      context: .
-      dockerfile: apps/server/Dockerfile
-      target: development
-    container_name: tomai-backend-dev
-    ports:
-      - "3000:3000"
-    environment:
-      # Core
-      - NODE_ENV=development
-      - PORT=3000
-      - LOG_LEVEL=debug
-      - DOCKER_CONTAINER=true
-      # Database (internal Docker network)
-      - DATABASE_URL=postgresql://tomai_dev:tomai_dev_password@postgres:5432/tomai_dev
-      # Container-network override (diffère de apps/server/.env en host)
-      - BETTER_AUTH_URL=http://localhost:3000
-      # Les secrets (BETTER_AUTH_SECRET, GOOGLE_*, MISTRAL_API_KEY)
-      # viennent d'env_file :
-      # les lister en ${VAR} ici les écraserait (environment > env_file).
-    env_file:
-      - apps/server/.env
-    volumes:
-      # Hot-reload: mount sources (contexte = racine du monorepo)
-      - ./apps/server/src:/app/apps/server/src:ro
-      - ./apps/server/drizzle:/app/apps/server/drizzle:ro
-      - ./apps/server/tsconfig.json:/app/apps/server/tsconfig.json:ro
-      - ./apps/server/drizzle.config.ts:/app/apps/server/drizzle.config.ts:ro
-    depends_on:
-      postgres:
-        condition: service_healthy
-    networks:
-      - tomai-dev
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          memory: 1GB
-          cpus: '2.0'
-    healthcheck:
-      test: ["CMD", "curl", "-sf", "http://localhost:3000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
-
   # ===========================================
   # PostgreSQL 18
   # ===========================================
@@ -95,48 +39,6 @@ services:
       -c shared_buffers=256MB
       -c effective_cache_size=512MB
       -c max_connections=100
-
-  # ===========================================
-  # Outils optionnels (profile: tools)
-  # Usage: docker compose --profile tools up -d
-  # ===========================================
-
-  # Drizzle Studio - Database UI (port 4983)
-  drizzle-studio:
-    image: oven/bun:1.4-alpine
-    container_name: tomai-drizzle-studio
-    working_dir: /app
-    ports:
-      - "4983:4983"
-    environment:
-      - DATABASE_URL=postgresql://tomai_dev:tomai_dev_password@postgres:5432/tomai_dev
-    volumes:
-      - ./apps/server/drizzle:/app/drizzle:ro
-      - ./apps/server/drizzle.config.ts:/app/drizzle.config.ts:ro
-      - ./apps/server/src/db:/app/src/db:ro
-      - ./apps/server/package.json:/app/package.json:ro
-    command: sh -c "bun add drizzle-kit drizzle-orm postgres && bunx drizzle-kit studio --host 0.0.0.0"
-    depends_on:
-      postgres:
-        condition: service_healthy
-    networks:
-      - tomai-dev
-    profiles:
-      - tools
-
-  # Adminer - SQL client léger (port 8080)
-  adminer:
-    image: adminer:latest
-    container_name: tomai-adminer
-    ports:
-      - "8080:8080"
-    environment:
-      ADMINER_DEFAULT_SERVER: postgres
-      ADMINER_DESIGN: nette
-    networks:
-      - tomai-dev
-    profiles:
-      - tools
 
 # ===========================================
 # Volumes persistants
