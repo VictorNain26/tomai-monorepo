@@ -6,9 +6,9 @@ import mathematiquesAttendus4e from './texts/mathematiques-attendus-4e-2019.json
 import mathematiquesAttendus3e from './texts/mathematiques-attendus-3e-2019.json' with { type: 'json' };
 import francaisAttendus4e from './texts/francais-attendus-4e-2019.json' with { type: 'json' };
 import francaisAttendus3e from './texts/francais-attendus-3e-2019.json' with { type: 'json' };
-import type { SchoolLevel } from '../domain/levels.js';
-import { textFileSchema, type Entry, type TextFile } from './schema.js';
-import { PROGRAMME_SOURCES, type ProgrammeSource } from './sources.js';
+import type { SchoolLevel } from '../domain/levels';
+import { textFileSchema, type Entry, type TextFile } from './schema';
+import { PROGRAMME_SOURCES, type ProgrammeSource } from './sources';
 
 export type { Entry };
 

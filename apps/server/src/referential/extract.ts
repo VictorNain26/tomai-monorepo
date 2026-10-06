@@ -7,10 +7,10 @@
  */
 import { mkdir } from 'node:fs/promises';
 import { getDocumentProxy } from 'unpdf';
-import { parseBlocks, type Block, type ParseResult } from './parse.js';
-import { canonical, pageBlocks, plainText, runsById } from './pdf-blocks.js';
-import { PROGRAMME_SOURCES, type ProgrammeSource } from './sources.js';
-import type { Entry, TextFile } from './schema.js';
+import { parseBlocks, type Block, type ParseResult } from './parse';
+import { canonical, pageBlocks, plainText, runsById } from './pdf-blocks';
+import { PROGRAMME_SOURCES, type ProgrammeSource } from './sources';
+import type { Entry, TextFile } from './schema';
 
 async function extract(source: ProgrammeSource): Promise<{ file: TextFile; formulas: Entry[]; leftOut: ParseResult['leftOut'] }> {
   const response = await fetch(source.url);

@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
-import type { SchoolLevel } from '../domain/levels.js';
-import type { Entry } from './schema.js';
-import type { ProgrammeSource } from './sources.js';
+import type { SchoolLevel } from '../domain/levels';
+import type { Entry } from './schema';
+import type { ProgrammeSource } from './sources';
 
 /** A text run of a PDF page, with its position (PDF units, y grows upwards). */
 export interface PositionedText {

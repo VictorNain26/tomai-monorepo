@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { schoolLevelSchema } from '../domain/levels.js';
-import { SUBJECT_SLUGS } from '../domain/subjects.js';
+import { schoolLevelSchema } from '../domain/levels';
+import { SUBJECT_SLUGS } from '../domain/subjects';
 
 const text = z.string().trim().min(1);
 

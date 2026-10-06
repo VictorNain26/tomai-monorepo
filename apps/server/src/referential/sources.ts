@@ -1,5 +1,5 @@
-import type { SchoolLevel } from '../domain/levels.js';
-import type { SubjectSlug } from '../domain/subjects.js';
+import type { SchoolLevel } from '../domain/levels';
+import type { SubjectSlug } from '../domain/subjects';
 
 export interface ProgrammeSource {
   id: string;

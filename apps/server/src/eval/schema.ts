@@ -1,8 +1,8 @@
 import { z } from 'zod';
-import { schoolLevelSchema } from '../domain/levels.js';
-import { SUBJECT_SLUGS } from '../domain/subjects.js';
+import { schoolLevelSchema } from '../domain/levels';
+import { SUBJECT_SLUGS } from '../domain/subjects';
 
-export const STATEMENT_PLACEHOLDER = '{statement}';
+const STATEMENT_PLACEHOLDER = '{statement}';
 
 const text = z.string().trim().min(1);
 
@@ -51,9 +51,8 @@ const exerciseSchema = z.strictObject({
 
 /** A student message; a spoken one goes through the voice channel, as the microphone sends it. */
 const turnSchema = z.union([text, z.strictObject({ text, inputMode: z.literal('voice') })]);
-export type ScenarioTurn = z.infer<typeof turnSchema>;
 
-export function turnText(turn: ScenarioTurn): string {
+function turnText(turn: z.infer<typeof turnSchema>): string {
   return typeof turn === 'string' ? turn : turn.text;
 }
 
@@ -103,6 +102,3 @@ export const datasetSchema = z
       }
     }
   });
-
-export type Exercise = z.infer<typeof exerciseSchema>;
-export type Scenario = z.infer<typeof scenarioSchema>;
