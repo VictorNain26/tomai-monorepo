@@ -7,7 +7,7 @@ import { EDUCATION_LEVELS } from '../../lib/education-levels.js';
 // =============================================
 export const schoolLevelEnum = pgEnum('school_level', EDUCATION_LEVELS);
 
-export const userRoleEnum = pgEnum('user_role', ['student', 'parent', 'admin']);
+export const userRoleEnum = pgEnum('user_role', ['student', 'parent']);
 
 // =============================================
 // TABLES

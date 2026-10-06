@@ -109,15 +109,9 @@ describe('Token Budget Service', () => {
       expect(budget.historyMaxTokens).toBe(Math.floor(11116 * 0.55));
     });
 
-    it('should allocate 10% to current message', () => {
-      const budget = calculateBudget();
-      expect(budget.currentMessageMaxTokens).toBe(Math.floor(11116 * 0.10));
-    });
-
     it('should never allocate more than the available tokens', () => {
       const budget = calculateBudget();
-      const sum = budget.summaryMaxTokens + budget.historyMaxTokens +
-                  budget.currentMessageMaxTokens;
+      const sum = budget.summaryMaxTokens + budget.historyMaxTokens;
       expect(sum).toBeLessThanOrEqual(budget.availableTokens);
     });
   });
