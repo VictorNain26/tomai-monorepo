@@ -48,7 +48,7 @@ tooling/
 | Paiements | Aucun branché. Paiement web prévu au lot 3 |
 | Observabilité | Logs pino ; Sentry sur la landing, OTel et Sentry côté serveur avec la préproduction. Pas d'analytics installée |
 | Monorepo | Turborepo, workspaces Bun |
-| Déploiement | Landing : Vercel (`apps/landing/vercel.json`), previews de branche déployées. Server : image `apps/server/Dockerfile`, qui embarque le build du web, rien de déployé ; hébergeur tranché au lot 3. Web : servi par le serveur, sur la même origine que l'API ; en dev, Vite (3002) envoie `/api/` au serveur par son proxy |
+| Déploiement | Landing : Vercel (`apps/landing/vercel.json`), previews de branche déployées. Server : image `apps/server/Dockerfile`, qui embarque le build du web, publiée sur GHCR au SHA à chaque merge sur `main`, pas encore déployée ; hébergeur tranché au lot 3. Web : servi par le serveur, sur la même origine que l'API ; en dev, Vite (3002) envoie `/api/` au serveur par son proxy |
 
 ## Commandes
 

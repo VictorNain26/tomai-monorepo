@@ -25,10 +25,11 @@ bloquant levé). L'historique vit dans git et les PR.
   en place (composition, erreurs RFC 9457, better-auth, base et migrations, logs, santé, arrêt,
   service du web), testé sur une vraie base, frontières vérifiées au lint ; la suite de bout en
   bout du web tourne contre le serveur construit (`tooling/playwright-web`).
-- **Prochaine action** : étape 3, la CI en un pipeline avec `ci-ok` et l'image réécrite, sans
-  `node_modules` (les bundles se chargent sans, vérifié le 2026-10-07) ; l'étude
-  des hébergeurs UE avance en parallèle. L'ordre complet est dans l'étude. Test complet dans
-  Chrome à la fin de chaque étape.
+- **Étape 3** : un seul workflow, `ci.yml`, réuni par `ci-ok` ; l'image ne contient plus que Bun,
+  les bundles, les migrations et le web (261 Mo au lieu de 1,23 Go), lancée en CI contre
+  Postgres et publiée sur GHCR au SHA sur `main`.
+- **Prochaine action** : étape 4, le foyer et les comptes ; l'étude des hébergeurs UE avance en
+  parallèle. L'ordre complet est dans l'étude. Test complet dans Chrome à la fin de chaque étape.
 - **Décisions de Victor en attente**, au moment de l'étape qui en dépend : budgets du quota
   (étape 5) ; offre Mistral payante pour paralléliser l'évaluation et juge d'une autre famille,
   seulement s'il est très bon marché (étape 8) ; fournisseur d'e-mail UE (étape 4).
@@ -154,6 +155,6 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
 | Relecture des 32 exercices : confiée à Claude le 2026-10-02 et outillée (32 citations retrouvées mot pour mot dans leur PDF officiel, 14 sources de réponse en ligne, 14 réponses recalculées par le test) ; un regard pédagogique humain sur un échantillon reste à prévoir avant de publier les mesures | Lot 1, jeu rejouable par un tiers ; lot 4 pour la publication | fait |
 | Projet Langfuse « tomai » en région UE (`https://cloud.langfuse.com`, offre Hobby) et ses clés dans `apps/server/.env`, vérifiées par l'API (HTTP 200) le 2026-10-02 | Lot 1, point 2 | fait |
 | Espace Mistral « ci » et sa clé `github-actions`, en secret GitHub `MISTRAL_API_KEY_CI` (2026-10-02). Sans paiement à l'usage, la dépense reste bornée par les 8,50 € inclus ; la valeur du secret se vérifie au premier passage en CI | Lot 1, point 6 | fait |
-| Rendre requis le check agrégé `ci-ok` dans le ruleset `Protect main` (Settings › Rules), quand l'étape 3 de la refonte le crée ; puis rétablir la fusion automatique de Renovate (#419) | Outillage | après l'étape 3 |
+| Dans le ruleset `Protect main` (Settings › Rules › Protect main › Require status checks to pass) : retirer les anciens checks (typecheck, lint, Test, Build, Migration Sync, Dependency audit) et n'exiger que `ci-ok`. Puis demander à Claude de rétablir la fusion automatique de Renovate (#419) | Outillage | à faire, après le merge de l'étape 3 |
 | Lundi 2026-10-12 : vérifier que Renovate a ouvert les mises à jour en attente du tableau de bord (#310), fenêtre élargie à tout le lundi par #412 ; sinon cocher « Create all awaiting schedule PRs at once ». Sans fusion automatique (#419), ses PR se mergent à la main | Outillage | à faire |
 | Mettre à jour les plugins Claude Code (`claude plugin marketplace update`, puis `claude plugin update <nom>`) | Outillage | à faire |

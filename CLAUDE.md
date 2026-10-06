@@ -48,4 +48,5 @@ adversarial review step »). Un constat retenu se corrige avant le merge, puis
   `.env.*` (sauf `.env.example`) et les porteurs de clés. La règle porte sur le texte de la
   commande : une autre forme d'appel y échappe ([doc](https://code.claude.com/docs/en/permissions)).
 - lefthook : format, lint et typecheck avant un commit ; tests et build avant un push.
-- CI : typecheck, lint, tests, build, e2e, knip, sherif, migrations, sécurité.
+- CI (`.github/workflows/ci.yml`) : vérifications, tests, build, e2e, migrations, image, sécurité,
+  réunis par `ci-ok`, le seul check à exiger.
