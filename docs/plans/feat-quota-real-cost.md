@@ -47,6 +47,19 @@ Lot 2, point 8, deuxième PR : le quota compte le coût réel, lecture vocale co
 - Fiches de l'outil du chat réservées au Complet, outil imposé par le code : PR suivante.
 - Paiement et passage au Complet : lot 3.
 
+## Après revue
+
+- Le budget se vérifie à chaque entrée payante : chat, lecture vocale, transcription d'un audio à
+  l'upload, génération de cartes (route), au lieu des deux premières seulement.
+- Lecture vocale : son coût se calcule avant l'appel (graphèmes du texte lu), refusée si elle
+  dépasse ce qui reste ; une seule lecture à la fois par élève, sinon des lectures parallèles
+  passaient toutes avant qu'aucune ne soit enregistrée.
+- `/api/subscriptions/usage` lit `dailyUsage`, qui échoue au lieu d'afficher une dépense nulle ;
+  `checkQuota`, ouvert sur une panne, ne retient plus la formule Gratuit contre un abonné.
+- Un seul message de quota, vrai avant 10 h aussi (« à 10 h », plus « demain ») ; lectures du
+  quota en parallèle ; type de la formule des enfants ; le test d'intégration supprime ses lignes
+  de coût ; mock du chat au nouveau contrat.
+
 ## Validation
 
 `bun run typecheck`, `bun run lint`, `bunx knip`, `bun run test`, `db:check`,
