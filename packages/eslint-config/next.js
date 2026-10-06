@@ -6,7 +6,7 @@ import globals from "globals";
 import pluginNext from "@next/eslint-plugin-next";
 import { config as baseConfig } from "./base.js";
 
-// eslint-plugin-react@7.x not yet ESLint 10 compatible — see react.js
+// eslint-plugin-react@7.x not yet ESLint 10 compatible
 const fixedReact = fixupPluginRules(pluginReact);
 const fixedReactHooks = fixupPluginRules(pluginReactHooks);
 const fixedNext = fixupPluginRules(pluginNext);
