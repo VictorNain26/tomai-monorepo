@@ -4,23 +4,21 @@
 
 name: CI
 
+# No paths-ignore: `ci-ok` must report on every PR, or the ruleset blocks its merge, and every
+# commit on main gets its image.
 on:
   push:
     branches: [main]
-    paths-ignore:
-      - 'docs/**/*.md'
-      - 'README.md'
-      - 'LICENSE'
-  # No paths-ignore on PRs: `ci-ok` must report on every PR, or the ruleset blocks its merge.
   pull_request:
     branches: [main]
 
 permissions:
   contents: read
 
+# A new push cancels a PR's run; on main, each merge's run goes on to publish its image.
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   TURBO_SCM_BASE: origin/main
@@ -180,7 +178,7 @@ jobs:
         run: |
           IMAGE="${IMAGE,,}"
           echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
-          docker build --target production --build-arg GIT_COMMIT_SHA="$GITHUB_SHA" -t "$IMAGE:$GITHUB_SHA" -f apps/server/Dockerfile .
+          docker build --target production -t "$IMAGE:$GITHUB_SHA" -f apps/server/Dockerfile .
       # NODE_ENV=test: the service's Postgres has no TLS, which production requires.
       - name: Run against Postgres
         run: |
@@ -189,16 +187,21 @@ jobs:
             -e DATABASE_URL=postgresql://postgres:postgres@localhost:5432/postgres \
             -e BETTER_AUTH_SECRET="$(openssl rand -base64 32)" -e BETTER_AUTH_URL=http://localhost:3000 \
             "$IMAGE:$GITHUB_SHA"
-          for _ in $(seq 1 30); do
-            if curl -sf http://localhost:3000/health/ready; then echo; exit 0; fi
+          # The image's HEALTHCHECK, then readiness: migrations applied, database reachable.
+          for _ in $(seq 1 60); do
+            if [ "$(docker inspect -f '{{.State.Health.Status}}' server)" = healthy ] &&
+              curl -sf http://localhost:3000/health/ready; then echo; exit 0; fi
             sleep 1
           done
+          docker inspect -f '{{json .State.Health}}' server
           docker logs server
           exit 1
       - name: Publish
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          echo "$GITHUB_TOKEN" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
           docker push "$IMAGE:$GITHUB_SHA"
 
   secrets:

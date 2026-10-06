@@ -43,8 +43,6 @@ RUN bun run build && test -f dist/main.js -a -f dist/migrate.js
 # Stage 3: production.
 FROM oven/bun:1.4.2-slim@sha256:cb3bbbb08e13a4a2ff400f24c7a2a1d5efa83f6ef8544d52d95a519631e2fc61 AS production
 
-ARG GIT_COMMIT_SHA=unknown
-ENV GIT_COMMIT_SHA=${GIT_COMMIT_SHA}
 ENV NODE_ENV=production
 ENV WEB_DIST_DIR=/app/apps/web/dist
 
