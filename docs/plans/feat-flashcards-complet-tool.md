@@ -38,6 +38,17 @@ imposé par le code quand l'analyse du tour relève une demande ou un accord (d�
 
 - Passage de fin (mesure du coût d'une soirée, budgets définitifs).
 
+## Après revue
+
+- Un seul paquet par tour : après l'appel imposé, l'outil sort des outils actifs, sinon le modèle,
+  l'approbation toujours acquise, pouvait en refaire jusqu'à la fin des pas.
+- L'accès aux fiches se décide une fois, dans `billing` (`QuotaCheckResult.flashcards`) : un
+  Complet actif et non expiré ; sur une lecture en échec, ni fiches ni avis (`null`), la route de
+  cartes répond 503. Les deux routes lisent ce champ.
+- Approbation et `prepareStep` déclarés seulement quand l'outil est là ; JSDoc de
+  `turnInstruction` remise à sa place ; tests du branchement de la route, de l'appel unique et du
+  tour sans outil.
+
 ## Validation
 
 `bun run typecheck`, `bun run lint`, `bunx knip`, `bun run test`, `db:check`,
