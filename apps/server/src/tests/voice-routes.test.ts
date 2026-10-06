@@ -12,6 +12,8 @@ const synthesize = mock((_text: string, _owner: unknown, _options: unknown) =>
   Promise.resolve({ success: true, audioData: 'AAA', mimeType: 'audio/mpeg' }),
 );
 mock.module('../modules/voice/text-to-speech.service', () => ({ textToSpeechService: { synthesize } }));
+let allowed = true;
+mock.module('../modules/billing/index', () => ({ checkQuota: mock(async () => ({ allowed })) }));
 
 const { voiceRoutes } = await import('../modules/voice/voice.routes');
 const { handleError } = await import('../platform/http/error-handler');
@@ -26,7 +28,10 @@ function post(body: unknown) {
 }
 
 describe('voice routes', () => {
-  beforeEach(() => synthesize.mockClear());
+  beforeEach(() => {
+    synthesize.mockClear();
+    allowed = true;
+  });
 
   it.each([
     ['a language without a voice', { text: 'Bonjour', language: 'de' }],
@@ -41,5 +46,13 @@ describe('voice routes', () => {
     const res = await post({ text: 'Bonjour', schoolLevel: 'cinquieme' });
     expect(res.status).toBe(200);
     expect(synthesize.mock.calls[0]?.slice(1)).toEqual([{ userId: 'u1' }, { language: 'fr', schoolLevel: 'cinquieme' }]);
+  });
+
+  it('refuses speech once the day\'s budget is spent, before any synthesis', async () => {
+    allowed = false;
+    const res = await post({ text: 'Bonjour' });
+    expect(res.status).toBe(429);
+    expect(((await res.json()) as { error: { code: string } }).error.code).toBe('QUOTA_EXCEEDED');
+    expect(synthesize).not.toHaveBeenCalled();
   });
 });

@@ -1,6 +1,6 @@
 import { eq, inArray } from 'drizzle-orm';
 import { db } from '../../db/connection';
-import { familyBilling, userSubscriptions, subscriptionPlans } from '../../db/schema';
+import { familyBilling, userSubscriptions } from '../../db/schema';
 
 type FamilyBilling = typeof familyBilling.$inferSelect;
 
@@ -26,10 +26,9 @@ class SubscriptionRepository {
       .select({
         userId: userSubscriptions.userId,
         status: userSubscriptions.status,
-        planName: subscriptionPlans.name,
+        planName: userSubscriptions.plan,
       })
       .from(userSubscriptions)
-      .leftJoin(subscriptionPlans, eq(userSubscriptions.planId, subscriptionPlans.id))
       .where(inArray(userSubscriptions.userId, childIds));
   }
 }

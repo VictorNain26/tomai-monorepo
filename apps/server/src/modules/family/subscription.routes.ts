@@ -2,7 +2,7 @@
  * Subscription Routes
  *
  * GET /api/subscriptions/status - Get subscription status (DB-driven)
- * GET /api/subscriptions/usage  - Get token usage
+ * GET /api/subscriptions/usage  - Get the day's spend against the plan's budget
  *
  * Security: All routes require authentication and verify caller identity (IDOR protection)
  */
@@ -10,7 +10,7 @@
 import { Hono } from 'hono';
 import { requireParent, requireUser, type AppEnv } from '../../platform/http/context.js';
 import { subscriptionService } from './subscription.service.js';
-import { getUsageStats } from '../billing/index.js';
+import { checkQuota } from '../billing/index.js';
 import { parentChildRepository } from './parent-child.repository.js';
 
 // Mounted under /api/subscriptions by app.ts.
@@ -52,43 +52,16 @@ export const subscriptionRoutes = new Hono<AppEnv>()
       }, 403);
     }
 
-    const usage = await getUsageStats(userId);
+    const quota = await checkQuota(userId);
 
     return c.json({
       userId,
-      plan: usage.plan,
-
-      window: {
-        tokensUsed: usage.windowTokensUsed,
-        tokensRemaining: usage.windowTokensRemaining,
-        limit: usage.windowLimit,
-        usagePercent: usage.windowUsagePercent,
-        refreshIn: usage.windowRefreshIn,
-      },
-
+      plan: quota.plan,
       daily: {
-        tokensUsed: usage.dailyTokensUsed,
-        tokensRemaining: usage.dailyTokensRemaining,
-        limit: usage.dailyLimit,
-        usagePercent: usage.dailyUsagePercent,
-        resetsIn: usage.dailyResetsIn,
-      },
-
-      weekly: {
-        tokensUsed: usage.weeklyTokensUsed,
-      },
-
-      lifetime: {
-        totalTokensUsed: usage.totalTokensUsed,
-        totalMessagesCount: usage.totalMessagesCount,
-      },
-
-      usage: {
-        tokensUsed: usage.dailyTokensUsed,
-        tokensRemaining: usage.dailyTokensRemaining,
-        dailyLimit: usage.dailyLimit,
-        usagePercentage: usage.dailyUsagePercent,
-        resetsIn: usage.dailyResetsIn,
+        spentMicroEur: quota.spentMicroEur,
+        budgetMicroEur: quota.budgetMicroEur,
+        usagePercent: quota.usagePercent,
+        resetsIn: quota.resetsIn,
       },
     });
   });

@@ -105,12 +105,11 @@ export const chatMessageRoutes = new Hono<AppEnv>()
       return unlessDistress(c.json({
         error: {
           code: 'QUOTA_EXCEEDED' as const,
-          message: quotaCheck.message ?? 'Limite atteinte. Réessaie bientôt.',
+          message: 'Limite du jour atteinte. Réessaie après la remise à zéro.',
         },
         usage: {
-          windowUsagePercent: quotaCheck.windowUsagePercent,
-          dailyUsagePercent: quotaCheck.dailyUsagePercent,
-          windowRefreshIn: quotaCheck.windowRefreshIn,
+          usagePercent: quotaCheck.usagePercent,
+          resetsIn: quotaCheck.resetsIn,
           plan: quotaCheck.plan,
         },
         requestId,

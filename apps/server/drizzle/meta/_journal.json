@@ -15,6 +15,13 @@
       "when": 1791281425860,
       "tag": "0001_cost_micro_eur",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791282948072,
+      "tag": "0002_quota_real_cost",
+      "breakpoints": true
     }
   ]
 }

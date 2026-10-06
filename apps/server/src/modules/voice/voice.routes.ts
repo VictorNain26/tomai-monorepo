@@ -14,6 +14,8 @@ import { requireUser, validate, type AppEnv } from '../../platform/http/context.
 import { textToSpeechService, type TTSOptions } from './text-to-speech.service.js';
 import { logger } from '../../platform/observability/logger.js';
 import { educationLevelSchema } from '../../lib/education-levels.js';
+import { AppError } from '../../platform/http/errors.js';
+import { checkQuota } from '../billing/index.js';
 
 // ============================================
 // Routes
@@ -34,6 +36,8 @@ export const voiceRoutes = new Hono<AppEnv>()
       const user = c.var.user;
       const body = c.req.valid('json');
       const startTime = Date.now();
+      // Speech is the first cost (`etudes/2026-10-01/couts.md`): it draws on the same daily budget.
+      if (!(await checkQuota(user.id)).allowed) throw new AppError('QUOTA_EXCEEDED');
 
       try {
         const { text, language = 'fr', schoolLevel } = body;

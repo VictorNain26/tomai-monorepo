@@ -1,37 +1,52 @@
-import { describe, it, expect } from 'bun:test';
+import { describe, it, expect, afterAll } from 'bun:test';
+import { eq } from 'drizzle-orm';
 import { checkQuota } from '../modules/billing/quota.js';
 import { checkDeckQuota } from '../modules/billing/quota-deck.js';
-import { QUOTA_CONFIG } from '../modules/billing/quota-config.js';
+import { QUOTA_CONFIG, lastDailyReset } from '../modules/billing/quota-config.js';
 import { checkDbReachable } from './_helpers/db';
 
 /**
  * Integration test — quota enforcement is ON by default
  * (QUOTA_ENFORCEMENT_ENABLED defaults to `true` in config/env.ts).
  *
- * A user with no `user_subscriptions` row gets free-plan limits at zero
- * usage, read from the migrated DB — not unlimited access.
+ * The day's spend is read from `cost_tracking` in the migrated DB: a user without a
+ * `user_subscriptions` row is on the Gratuit budget, not unlimited.
  */
 
 const dbReachable = await checkDbReachable();
 
 describe.skipIf(!dbReachable)('checkQuota (enforcement enabled by default)', () => {
-  it('returns allowed=true for brand-new users with free plan limits', async () => {
-    const result = await checkQuota('new-user-id');
+  const stamp = Date.now();
+  const studentId = `quota_${stamp}`;
 
-    expect(result.allowed).toBe(true);
-    expect(result.plan).toBe('free');
-    expect(result.mode).toBe('normal');
-    expect(result.windowLimit).toBe(QUOTA_CONFIG.free.windowTokens);
-    expect(result.dailyLimit).toBe(QUOTA_CONFIG.free.dailyMaxTokens);
+  afterAll(async () => {
+    const { db } = await import('../db/connection');
+    const { user } = await import('../db/schema');
+    await db.delete(user).where(eq(user.id, studentId)).catch(() => null);
   });
 
-  it('reports zero usage for users without prior activity', async () => {
-    const result = await checkQuota('another-user');
+  it('gives a brand-new user the Gratuit budget at zero spend', async () => {
+    expect(await checkQuota(`new_${stamp}`)).toMatchObject({
+      allowed: true, plan: 'free', spentMicroEur: 0, budgetMicroEur: QUOTA_CONFIG.free.dailyBudgetMicroEur,
+    });
+  });
 
-    expect(result.windowTokensUsed).toBe(0);
-    expect(result.dailyTokensUsed).toBe(0);
-    expect(result.windowUsagePercent).toBe(0);
-    expect(result.dailyUsagePercent).toBe(0);
+  it("sums the user's calls since the last reset, and refuses once the budget is spent", async () => {
+    const { db } = await import('../db/connection');
+    const { user, costTracking } = await import('../db/schema');
+    await db.insert(user).values({ id: studentId, email: `${studentId}@internal.tomai` });
+    const today = new Date();
+    const yesterday = new Date(lastDailyReset(today).getTime() - 60_000);
+    await db.insert(costTracking).values([
+      { userId: studentId, aiModel: 'mistral-small-2603', operation: 'chat', costMicroEur: 12_000, createdAt: today },
+      { userId: studentId, aiModel: 'voxtral-mini-tts-2603', operation: 'text-to-speech', costMicroEur: 5_000, createdAt: today },
+      // Before the reset: yesterday's spend does not count.
+      { userId: studentId, aiModel: 'mistral-small-2603', operation: 'chat', costMicroEur: 50_000, createdAt: yesterday },
+    ]);
+    expect(await checkQuota(studentId)).toMatchObject({ allowed: true, spentMicroEur: 17_000 });
+
+    await db.insert(costTracking).values({ userId: studentId, aiModel: 'voxtral-mini-tts-2603', operation: 'text-to-speech', costMicroEur: 3_000, createdAt: today });
+    expect(await checkQuota(studentId)).toMatchObject({ allowed: false, spentMicroEur: 20_000 });
   });
 });
 

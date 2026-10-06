@@ -18,12 +18,10 @@ mock.module('../modules/family/parent-child.repository', () => ({ parentChildRep
 const getFamilyStatus = mock(async (_parentId: string) => ({ plan: 'free', status: 'inactive', billing: null, children: [] }));
 mock.module('../modules/family/subscription.service', () => ({ subscriptionService: { getFamilyStatus } }));
 
-const getUsageStats = mock(async (_userId: string) => ({
-  windowTokensUsed: 10, windowTokensRemaining: 90, windowLimit: 100, windowUsagePercent: 10, windowRefreshIn: '2h',
-  dailyTokensUsed: 10, dailyTokensRemaining: 990, dailyLimit: 1000, dailyUsagePercent: 1, dailyResetsIn: '5h',
-  weeklyTokensUsed: 10, totalTokensUsed: 10, totalMessagesCount: 1, plan: 'free' as const,
+const checkQuota = mock(async (_userId: string) => ({
+  allowed: true, plan: 'free' as const, spentMicroEur: 5_000, budgetMicroEur: 20_000, usagePercent: 25, resetsIn: '5h',
 }));
-mock.module('../modules/billing/index', () => ({ getUsageStats }));
+mock.module('../modules/billing/index', () => ({ checkQuota }));
 
 const { subscriptionRoutes } = await import('../modules/family/subscription.routes');
 const { handleError } = await import('../platform/http/error-handler');
@@ -33,7 +31,7 @@ const app = new Hono<AppEnv>().route('/api/subscriptions', subscriptionRoutes).o
 beforeEach(() => {
   signedIn = { id: 'parent-1', role: 'parent' };
   getFamilyStatus.mockClear();
-  getUsageStats.mockClear();
+  checkQuota.mockClear();
 });
 
 describe('GET /api/subscriptions/status', () => {
@@ -53,14 +51,15 @@ describe('GET /api/subscriptions/status', () => {
 });
 
 describe('GET /api/subscriptions/usage', () => {
-  it("lets a student read their own usage, without a lastResetAt it cannot prove", async () => {
+  it("lets a student read their own day: what was spent against the plan's budget", async () => {
     signedIn = { id: 'child-1', role: 'student' };
 
     const res = await app.request('/api/subscriptions/usage?userId=child-1');
-    const body = await res.json() as { usage: Record<string, unknown> };
 
     expect(res.status).toBe(200);
-    expect(body.usage).not.toHaveProperty('lastResetAt');
+    expect(await res.json()).toEqual({
+      userId: 'child-1', plan: 'free', daily: { spentMicroEur: 5_000, budgetMicroEur: 20_000, usagePercent: 25, resetsIn: '5h' },
+    });
   });
 
   it("lets a parent read a linked child's usage", async () => {
@@ -71,7 +70,7 @@ describe('GET /api/subscriptions/usage', () => {
     signedIn = { id: 'child-2', role: 'student' };
 
     expect((await app.request('/api/subscriptions/usage?userId=child-1')).status).toBe(403);
-    expect(getUsageStats).not.toHaveBeenCalled();
+    expect(checkQuota).not.toHaveBeenCalled();
   });
 
   it('answers an unknown id like a forbidden one, so it does not reveal which accounts exist', async () => {

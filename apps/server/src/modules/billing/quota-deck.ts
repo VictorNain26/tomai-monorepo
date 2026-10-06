@@ -12,7 +12,6 @@ import {
   type DeckQuotaResult,
   type DeckUsageResult,
 } from './quota-config.js';
-import { ensureUserSubscription } from './quota.js';
 
 export async function checkDeckQuota(userId: string): Promise<DeckQuotaResult> {
   // Feature flag: unlimited access when enforcement is off. Counters still
@@ -78,16 +77,8 @@ export async function incrementDeckUsage(userId: string): Promise<DeckUsageResul
   const { dailyDecks, monthlyDecks } = QUOTA_CONFIG.premium;
 
   try {
-    await ensureUserSubscription(userId);
+    const current = await userSubscriptionsRepository.ensure(userId);
 
-    const current = await userSubscriptionsRepository.findByUserId(userId);
-
-    if (!current) {
-      throw new Error('Subscription not found');
-    }
-
-    // Atomic increment (same pattern as incrementTokenUsage) — prevents
-    // lost-write races between concurrent deck generations for the same user.
     const updated = await userSubscriptionsRepository.applyDeckIncrement(userId, {
       shouldResetDaily: needsDailyReset(current.lastResetAt),
       lastResetAt: current.lastResetAt,
