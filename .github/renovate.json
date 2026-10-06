@@ -30,7 +30,9 @@
   "lockFileMaintenance": {
     "enabled": true,
     "schedule": ["* * * * 1"],
-    "automerge": false,
+    "automerge": true,
+    "automergeType": "pr",
+    "automergeStrategy": "merge-commit",
     "commitMessageAction": "Refresh",
     "commitMessageTopic": "lockfiles"
   },
@@ -50,9 +52,12 @@
       "enabled": false
     },
     {
-      "description": "Minor + patch after a 3-day release age (supply-chain buffer). No automerge: the required checks of Protect main leave out e2e, knip and the image until the overhaul's ci-ok check is required.",
+      "description": "Auto-merge minor + patch once ci-ok is green, after a 3-day release age (supply-chain buffer).",
       "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
-      "automerge": false,
+      "automerge": true,
+      "automergeType": "pr",
+      "automergeStrategy": "merge-commit",
+      "platformAutomerge": true,
       "minimumReleaseAge": "3 days"
     },
     {
