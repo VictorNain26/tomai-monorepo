@@ -14,7 +14,7 @@ export default defineConfig({
     { name: 'android', use: { ...devices['Pixel 7'] } },
   ],
   webServer: {
-    command: `bunx --no-install vite build && bunx --no-install vite preview --port ${PORT} --strictPort`,
+    command: `bunx --no-install vite preview --port ${PORT} --strictPort`,
     url: baseURL,
     reuseExistingServer: false,
     timeout: 120_000,

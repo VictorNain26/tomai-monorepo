@@ -168,17 +168,30 @@ jobs:
   # (restoring takes as long as downloading, and the system dependencies are not cacheable).
   e2e:
     name: E2E (Playwright)
-    needs: validate-tasks
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+      # Cheap check before the install: a PR that touches neither the apps under test, the
+      # packages they use nor the tooling skips the job's setup.
+      - name: Check whether the e2e suites are concerned
+        id: scope
+        run: |
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          elif git diff --name-only "origin/${{ github.base_ref }}...HEAD" | grep -qE '^(apps/(web|landing)/|packages/|bun\.lock$|package\.json$|turbo\.json$|\.github/)'; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          fi
       - uses: ./.github/actions/setup-monorepo
+        if: steps.scope.outputs.run == 'true'
         with:
           turbo-cache-key: e2e
       - name: List e2e tasks to run
+        if: steps.scope.outputs.run == 'true'
         id: tasks
         run: |
           if [ "${{ github.event_name }}" = "push" ] && [ "${{ github.ref }}" = "refs/heads/main" ]; then

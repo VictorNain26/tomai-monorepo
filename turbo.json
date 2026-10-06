@@ -19,8 +19,11 @@
     "SEED_CHILD_PASSWORD"
   ],
   "tasks": {
+    "transit": {
+      "dependsOn": ["^transit"]
+    },
     "build": {
-      "dependsOn": ["^build", "^build:types"],
+      "dependsOn": ["^build", "^build:types", "transit"],
       "inputs": ["$TURBO_DEFAULT$", ".env.production", ".env.staging", "!.env.local", "!.env.*.local"],
       "outputs": [".next/**", "!.next/cache/**", "dist/**", "build/**"],
       "env": ["NEXT_RUNTIME", "VERCEL_ENV", "SENTRY_AUTH_TOKEN"]
@@ -34,7 +37,7 @@
       "persistent": true
     },
     "lint": {
-      "dependsOn": ["^build:types"],
+      "dependsOn": ["^build:types", "transit"],
       "outputs": []
     },
     "typecheck": {
@@ -55,6 +58,7 @@
       "persistent": true
     },
     "test:e2e": {
+      "dependsOn": ["build", "transit"],
       "outputs": []
     },
     "test": {
