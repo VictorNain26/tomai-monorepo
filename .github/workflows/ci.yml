@@ -134,12 +134,6 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test
           BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET || 'ci-test-secret-not-for-production' }}
-      - name: Server test coverage (report only)
-        run: cd apps/server && bun run test:coverage
-        continue-on-error: true
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test
-          BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET || 'ci-test-secret-not-for-production' }}
 
   # =============================================
   # Job 3: Build (after validate passes)

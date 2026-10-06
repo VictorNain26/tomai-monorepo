@@ -7,7 +7,7 @@
  * JSFinalizationRegistry::takeDeadHoldingsValue; `--parallel` implies `--isolate`). A process per
  * file never retires a global. Back to `bun test --isolate` once a Bun release fixes it.
  *
- * Usage: bun run scripts/run-tests.ts [dir | file] [--coverage] [--jobs=N] [bun test options…]
+ * Usage: bun run scripts/run-tests.ts [dir | file] [--jobs=N] [bun test options…]
  * `--jobs=1` for files that share a database or an external API. Any other option goes to each
  * `bun test`, as `-t <pattern>` or `--timeout <ms>`.
  */
@@ -15,18 +15,13 @@
 import { existsSync } from 'node:fs';
 import { availableParallelism } from 'node:os';
 import { normalize } from 'node:path';
-import { rm, writeFile } from 'node:fs/promises';
 import { Glob } from 'bun';
-import { mergeCoverageReportFiles } from 'lcov-result-merger';
 
 // The names `bun test` discovers (https://bun.com/docs/test/discovery).
 export const TEST_FILES = '**/*{.test,_test,.spec,_spec}.{ts,tsx,js,jsx,mts,cts,mjs,cjs}';
-const COVERAGE_DIR = 'coverage';
-const COVERAGE_REPORTS = `${COVERAGE_DIR}/files/*/lcov.info`;
 
 export interface RunOptions {
   target: string;
-  coverage: boolean;
   jobs: number;
   bunArgs: string[];
 }
@@ -43,9 +38,8 @@ export function parseArgs(args: readonly string[], exists: (path: string) => boo
   if (!Number.isInteger(jobs) || jobs < 1) throw new Error(`--jobs takes a whole number from 1, not « ${jobsArg?.slice('--jobs='.length) ?? ''} »`);
   return {
     target,
-    coverage: args.includes('--coverage'),
     jobs,
-    bunArgs: args.filter((arg) => arg !== target && arg !== '--coverage' && arg !== jobsArg),
+    bunArgs: args.filter((arg) => arg !== target && arg !== jobsArg),
   };
 }
 
@@ -69,10 +63,9 @@ interface FileRun {
   ms: number;
 }
 
-async function runFile(file: string, index: number, options: RunOptions): Promise<FileRun> {
+async function runFile(file: string, options: RunOptions): Promise<FileRun> {
   const start = performance.now();
-  const coverage = options.coverage ? ['--coverage', '--coverage-reporter=lcov', `--coverage-dir=${COVERAGE_DIR}/files/${index}`] : [];
-  const child = Bun.spawn(['bun', 'test', `./${file}`, ...coverage, ...options.bunArgs], {
+  const child = Bun.spawn(['bun', 'test', `./${file}`, ...options.bunArgs], {
     stdout: 'pipe',
     stderr: 'pipe',
     // Plain output, which totalsOf reads.
@@ -88,29 +81,18 @@ async function main(): Promise<void> {
     ? [options.target]
     : [...new Glob(`${options.target}/${TEST_FILES}`).scanSync('.')].map((file) => normalize(file)).sort();
   if (files.length === 0) throw new Error(`No test file in ${options.target}`);
-  if (options.coverage) await rm(COVERAGE_DIR, { recursive: true, force: true });
 
   const runs: FileRun[] = [];
-  const queue = files.entries();
+  const queue = files.values();
   const worker = async () => {
-    for (const [index, file] of queue) {
-      const run = await runFile(file, index, options);
+    for (const file of queue) {
+      const run = await runFile(file, options);
       runs.push(run);
       if (run.code === 0) console.log(`✓ ${run.file} (${Math.round(run.ms)} ms)`);
       else console.log(`✗ ${run.file} (exit ${run.code})\n${run.output}`);
     }
   };
   await Promise.all(Array.from({ length: Math.min(options.jobs, files.length) }, worker));
-
-  if (options.coverage) {
-    const reports = [...new Glob(COVERAGE_REPORTS).scanSync('.')];
-    const merged = await mergeCoverageReportFiles(reports, { pattern: COVERAGE_REPORTS });
-    await writeFile(`${COVERAGE_DIR}/lcov.info`, merged);
-    const sum = (key: string) => [...merged.matchAll(new RegExp(`^${key}:(\\d+)$`, 'gm'))].reduce((total, match) => total + Number(match[1]), 0);
-    const found = sum('LF');
-    const hit = sum('LH');
-    console.log(`Lines covered: ${hit}/${found} (${found ? ((100 * hit) / found).toFixed(1) : '0'} %), ${COVERAGE_DIR}/lcov.info`);
-  }
 
   const totals = runs.map((run) => totalsOf(run.output)).reduce((a, b) => ({ pass: a.pass + b.pass, fail: a.fail + b.fail, skip: a.skip + b.skip, todo: a.todo + b.todo }));
   const failed = runs.filter((run) => run.code !== 0);

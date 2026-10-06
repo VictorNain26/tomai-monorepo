@@ -8,14 +8,13 @@ const exists = (path: string) => ['src/tests', 'src/integration-tests', 'src/tes
 
 describe('parseArgs', () => {
   it('runs src/tests on half the cores by default', () => {
-    expect(parseArgs([], exists, 8)).toEqual({ target: 'src/tests', coverage: false, jobs: 4, bunArgs: [] });
+    expect(parseArgs([], exists, 8)).toEqual({ target: 'src/tests', jobs: 4, bunArgs: [] });
     expect(parseArgs([], exists, 1).jobs).toBe(1);
   });
 
-  it('reads the target, coverage and jobs, and hands every other option to bun test', () => {
-    expect(parseArgs(['src/integration-tests', '--jobs=1', '--coverage', '-t', 'embeddings', '--timeout', '20000'], exists, 8)).toEqual({
+  it('reads the target and jobs, and hands every other option to bun test', () => {
+    expect(parseArgs(['src/integration-tests', '--jobs=1', '-t', 'embeddings', '--timeout', '20000'], exists, 8)).toEqual({
       target: 'src/integration-tests',
-      coverage: true,
       jobs: 1,
       bunArgs: ['-t', 'embeddings', '--timeout', '20000'],
     });

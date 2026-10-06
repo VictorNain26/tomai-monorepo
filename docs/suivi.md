@@ -236,7 +236,7 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
   figent la 1.2.1, touchée par GHSA-68fv-2mgg-jv7q (haute) ; l'override les force en `^1.2.2`.
   Le retirer quand les deux déclarent 1.2.2 ou plus. Même audit, dépendances de
   développement seulement : `braces` 3.0.3 (GHSA-vfj7-8cjw-p6xm), par
-  `@next/eslint-plugin-next` et `lcov-result-merger` ; la porte d'audit de la CI ne regarde
+  `@next/eslint-plugin-next` ; la porte d'audit de la CI ne regarde
   que la production.
 - **Sentry v11** : `apps/landing/next.config.*` importe `withSentryConfig` depuis
   `@sentry/nextjs`, déprécié (avertissement de `next typegen`) ; passer à

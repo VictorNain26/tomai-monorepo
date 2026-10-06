@@ -84,7 +84,7 @@
         "$TURBO_DEFAULT$",
         "**/*.test.ts"
       ],
-      "outputs": ["coverage/**"],
+      "outputs": [],
       "env": ["NODE_ENV", "CI"],
       "passThroughEnv": ["DATABASE_URL", "BETTER_AUTH_SECRET"]
     }

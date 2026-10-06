@@ -32,7 +32,6 @@
     "test:integration": "bun run scripts/run-tests.ts src/integration-tests --jobs=1",
     "test:live": "bun run scripts/run-tests.ts src/live --jobs=1",
     "test:watch": "bun test src/tests/ --isolate --watch",
-    "test:coverage": "bun run scripts/run-tests.ts src/tests --coverage",
     "validate": "bun run typecheck:strict && bun run lint",
     "validate:ci": "bun run typecheck:strict && bun run lint",
     "validate:prod": "bun run typecheck:strict && bun run lint",
@@ -92,7 +91,6 @@
     "bun-types": "^1.4.2",
     "drizzle-kit": "^0.31.11",
     "eslint": "^10.11.0",
-    "lcov-result-merger": "6.0.0",
     "typescript": "6.0.3"
   },
   "trustedDependencies": [
