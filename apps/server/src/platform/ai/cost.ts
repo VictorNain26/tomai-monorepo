@@ -55,7 +55,7 @@ const EU_REGIONAL_UPCHARGE = 1.1;
  * Coûts, read on 2026-10-06), speech is 0,00001496 € a character = 16 $ per million × 1,1 × 0,85,
  * and transcription 0,00004675 € a second = 0,003 $ a minute × 1,1 × 0,85 / 60.
  */
-const USD_TO_EUR = 0.85;
+const MISTRAL_USD_TO_EUR = 0.85;
 
 export function regionalUpcharge(serverUrl: string): number {
   return new URL(serverUrl).host === 'api.eu.mistral.ai' ? EU_REGIONAL_UPCHARGE : 1;
@@ -80,7 +80,7 @@ export function computeCostMicroEur(model: string, usage: CallUsage, upcharge: n
     ((usage.audioSeconds ?? 0) / 60) * (pricing.perMinute ?? 0) +
     ((usage.characters ?? 0) / 1_000_000) * (pricing.perMChars ?? 0);
 
-  return { costMicroEur: Math.round(usd * upcharge * USD_TO_EUR * 1_000_000), unknownModel: false };
+  return { costMicroEur: Math.round(usd * upcharge * MISTRAL_USD_TO_EUR * 1_000_000), unknownModel: false };
 }
 
 /** What a call costs, in micro-euros, at this server's endpoint; known beforehand for speech. */
@@ -116,7 +116,7 @@ export async function recordAiCost(owner: CostOwner, call: AiCall): Promise<void
         ...(call.characters !== undefined && { characters: call.characters }),
         ...(call.usageUnknown && { usageUnknown: true }),
         unknownModel,
-        usdToEur: USD_TO_EUR,
+        usdToEur: MISTRAL_USD_TO_EUR,
         regionalUpcharge: UPCHARGE,
       },
     });

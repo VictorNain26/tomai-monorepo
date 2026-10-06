@@ -37,6 +37,22 @@ describe('computeCostMicroEur — tokens', () => {
   });
 });
 
+describe('computeCostMicroEur — the cost page, to its precision (2026-10-06)', () => {
+  it('bills Small 4 on the EU endpoint at 0,14 € and 0,56 € per million tokens, rounded to the cent', () => {
+    const perMillion = (usage: { inputTokens?: number; outputTokens?: number }) =>
+      Math.round(computeCostMicroEur('mistral-small-2603', usage, 1.1).costMicroEur / 10_000) / 100;
+    expect(perMillion({ inputTokens: 1_000_000 })).toBe(0.14);
+    expect(perMillion({ outputTokens: 1_000_000 })).toBe(0.56);
+  });
+
+  it('bills Small 4 on the global endpoint at 0,13 € and 0,51 €', () => {
+    const perMillion = (usage: { inputTokens?: number; outputTokens?: number }) =>
+      Math.round(computeCostMicroEur('mistral-small-2603', usage, 1).costMicroEur / 10_000) / 100;
+    expect(perMillion({ inputTokens: 1_000_000 })).toBe(0.13);
+    expect(perMillion({ outputTokens: 1_000_000 })).toBe(0.51);
+  });
+});
+
 describe('computeCostMicroEur — cached tokens', () => {
   it('bills cached tokens at 10 % of the input rate', () => {
     // 2M × 0.15 + 8M × 0.015 = 0.42 USD × 1.1 × 0.85 = 0.3927 EUR
