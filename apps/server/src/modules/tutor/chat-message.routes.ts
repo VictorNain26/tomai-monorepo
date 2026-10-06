@@ -140,6 +140,7 @@ export const chatMessageRoutes = new Hono<AppEnv>()
         content: safeContent,
         fileIds,
         schoolLevel: resolvedSchoolLevel,
+        flashcards: quotaCheck.plan === 'premium',
       });
       if (turnCtx.kind === 'tutor') {
         await chatOrchestrationService.persistUserTurn({
@@ -195,6 +196,7 @@ export const chatMessageRoutes = new Hono<AppEnv>()
           userId: user.id,
           sessionId: turnCtx.sessionId,
           schoolLevel: resolvedSchoolLevel,
+          flashcards: quotaCheck.plan === 'premium',
           check,
           emitDeckCreated: d => { writer.write({ type: 'data-deck-created', data: d }); },
         });

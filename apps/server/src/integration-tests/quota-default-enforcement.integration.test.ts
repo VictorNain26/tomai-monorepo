@@ -1,7 +1,6 @@
 import { describe, it, expect, afterAll } from 'bun:test';
 import { eq } from 'drizzle-orm';
 import { checkQuota } from '../modules/billing/quota.js';
-import { checkDeckQuota } from '../modules/billing/quota-deck.js';
 import { QUOTA_CONFIG, lastDailyReset } from '../modules/billing/quota-config.js';
 import { checkDbReachable } from './_helpers/db';
 
@@ -49,23 +48,5 @@ describe.skipIf(!dbReachable)('checkQuota (enforcement enabled by default)', () 
 
     await db.insert(costTracking).values({ userId: studentId, aiModel: 'voxtral-mini-tts-2603', operation: 'text-to-speech', costMicroEur: 3_000, createdAt: today });
     expect(await checkQuota(studentId)).toMatchObject({ allowed: false, usage: { spentMicroEur: 20_000 } });
-  });
-});
-
-describe.skipIf(!dbReachable)('checkDeckQuota (enforcement enabled by default)', () => {
-  it('returns allowed=true for users with free plan', async () => {
-    const result = await checkDeckQuota('any-user-id');
-
-    expect(result.allowed).toBe(true);
-  });
-
-  it('reports the configured deck limits, not the unlimited bypass', async () => {
-    const result = await checkDeckQuota('test');
-
-    // Free plan currently has no deck quota, so these come back as the
-    // premium daily/monthly defaults from QUOTA_CONFIG for a user without a
-    // subscription row.
-    expect(result.dailyLimit).toBe(QUOTA_CONFIG.premium.dailyDecks);
-    expect(result.monthlyLimit).toBe(QUOTA_CONFIG.premium.monthlyDecks);
   });
 });

@@ -13,7 +13,7 @@ import { fileContextService, sessionFilesRepository } from '../documents/index.j
 import { wrapAttachedFiles } from './mistral-helpers.js';
 import { SUMMARY_BACKLOG, summarizationService } from './summarization.service.js';
 import { autoTitleService } from './auto-title.service.js';
-import { analyseTurn, turnInstruction as instructionFor } from './turn-analysis.service.js';
+import { analyseTurn, flashcardsUnavailable, turnInstruction as instructionFor } from './turn-analysis.service.js';
 import { prepareExerciseTurn } from './exercise-turn.js';
 import { currentExercise } from './exercise-sheet.service.js';
 import { hintOf } from './hint-ladder.js';
@@ -172,7 +172,8 @@ class ChatOrchestrationService {
       lastTutorText,
       attachedFilesBlock: files.length > 0 ? wrapAttachedFiles(files) : null,
     });
-    const turnInstruction = contract ?? instructionFor(turnAnalysis);
+    const notices = [contract ?? instructionFor(turnAnalysis), request.flashcards ? null : flashcardsUnavailable(turnAnalysis)].filter((notice) => notice !== null);
+    const turnInstruction = notices.length > 0 ? notices.join('\n\n') : null;
 
     logger.info('Chat context assembled', {
       userId: request.userId,

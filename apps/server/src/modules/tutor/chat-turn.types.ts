@@ -20,6 +20,8 @@ export interface PrepareTurnRequest {
   content: string;
   fileIds: string[];
   schoolLevel: EducationLevelType;
+  /** The plan includes the revision cards. */
+  flashcards: boolean;
 }
 
 /** @public — reachable only via the typed client's inferred route return types (apps/server build:types), not a direct import; knip false positive. */

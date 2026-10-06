@@ -15,6 +15,8 @@ import type { OutputCheckContext } from './output-check.js';
 import { SUBJECT_SLUGS } from '../../lib/subjects.js';
 
 export interface ChatToolContext {
+  /** The revision cards are the Complet plan's (`docs/vision.md`, « Offre et prix »). */
+  flashcards: boolean;
   userId: string;
   sessionId: string;
   schoolLevel: EducationLevelType;
@@ -45,6 +47,7 @@ export function buildChatTools(ctx: ChatToolContext): ToolSet {
     check: ctx.check,
   };
 
+  if (!ctx.flashcards) return {};
   return {
     generate_flashcards: tool({
       strict: true,

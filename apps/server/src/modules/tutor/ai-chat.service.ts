@@ -149,11 +149,18 @@ export function streamChat(params: ChatStreamParams) {
     // Cards are made when the student asks for them or accepts them, as the turn analysis read
     // it; denied, the call returns to the model with the reason.
     toolApproval: { generate_flashcards: flashcardsApproval(params.turnAnalysis) },
-    // Denial holds for the whole turn: a model that calls again would only spend steps.
-    prepareStep: ({ steps }) =>
-      params.turnAnalysis?.wantsFlashcards || !steps.some((step) => step.toolCalls.some((call) => call.toolName === 'generate_flashcards'))
-        ? undefined
-        : { activeTools: Object.keys(params.tools).filter((name) => name !== 'generate_flashcards') },
+    prepareStep: ({ steps, stepNumber }) => {
+      if (!('generate_flashcards' in params.tools)) return undefined;
+      // Asked or accepted: the code makes the call, the model does not decide it (S4, 2026-10-05,
+      // Small 4 refused confirmed cards on a rule no instruction gives).
+      if (params.turnAnalysis?.wantsFlashcards) {
+        return stepNumber === 0 ? { toolChoice: { type: 'tool', toolName: 'generate_flashcards' } } : undefined;
+      }
+      // Denial holds for the whole turn: a model that calls again would only spend steps.
+      return steps.some((step) => step.toolCalls.some((call) => call.toolName === 'generate_flashcards'))
+        ? { activeTools: Object.keys(params.tools).filter((name) => name !== 'generate_flashcards') }
+        : undefined;
+    },
     stopWhen: isStepCount(MAX_TOOL_ITERATIONS),
     temperature: env.MISTRAL_TEMPERATURE,
     // No output cap on a reasoning turn: the thinking counts in completion_tokens and a cap

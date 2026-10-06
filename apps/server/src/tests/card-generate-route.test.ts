@@ -10,8 +10,6 @@ const actualBilling = await import('../modules/billing/index');
 mock.module('../modules/billing/index', () => ({
   ...actualBilling,
   checkQuota: mock(async () => quota),
-  checkDeckQuota: mock(async () => ({ allowed: true })),
-  incrementDeckUsage: mock(async () => ({ newDecksGeneratedToday: 1, newDecksGeneratedThisMonth: 1, decksRemainingToday: 2, decksRemainingThisMonth: 9 })),
 }));
 
 let cards: { cardType: string; content: Record<string, unknown> }[] = [];

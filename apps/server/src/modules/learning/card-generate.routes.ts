@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { z } from 'zod';
 import { validate, type AuthEnv } from '../../platform/http/context.js';
 import { logger } from '../../platform/observability/logger';
-import { checkQuota, checkDeckQuota, incrementDeckUsage } from '../billing/index.js';
+import { checkQuota } from '../billing/index.js';
 import { getLevelConfig } from './learning-config.js';
 import {
   generateCards,
@@ -49,27 +49,6 @@ export const cardGenerateRoutes = new Hono<AuthEnv>()
         }, 403);
       }
       if (!quota.allowed) return c.json(toErrorResponse(new AppError('QUOTA_EXCEEDED')), 429);
-
-      const deckQuota = await checkDeckQuota(user.id);
-      if (!deckQuota.allowed) {
-        logger.info('Deck generation blocked - limit reached', {
-          operation: 'learning:generate:deck-limit',
-          userId: user.id,
-          decksRemainingToday: deckQuota.decksRemainingToday,
-          decksRemainingThisMonth: deckQuota.decksRemainingThisMonth,
-          dailyLimit: deckQuota.dailyLimit,
-          monthlyLimit: deckQuota.monthlyLimit,
-        });
-        return c.json({
-          error: 'Limite atteinte',
-          message: deckQuota.message,
-          code: 'DECK_LIMIT_REACHED',
-          decksRemainingToday: deckQuota.decksRemainingToday,
-          decksRemainingThisMonth: deckQuota.decksRemainingThisMonth,
-          dailyLimit: deckQuota.dailyLimit,
-          monthlyLimit: deckQuota.monthlyLimit,
-        }, 429);
-      }
 
       try {
         logger.info('Starting AI deck generation', {
@@ -140,18 +119,12 @@ export const cardGenerateRoutes = new Hono<AuthEnv>()
           cards: generatedCards,
         });
 
-        const deckUsage = await incrementDeckUsage(user.id);
-
         logger.info('AI deck generation completed', {
           operation: 'learning:generate:complete',
           userId: user.id,
           deckId: newDeck.id,
           cardsGenerated: insertedCards.length,
           tokensUsed: generationResult.tokensUsed,
-          decksGeneratedToday: deckUsage.newDecksGeneratedToday,
-          decksGeneratedThisMonth: deckUsage.newDecksGeneratedThisMonth,
-          decksRemainingToday: deckUsage.decksRemainingToday,
-          decksRemainingThisMonth: deckUsage.decksRemainingThisMonth,
         });
 
         return c.json({
@@ -159,8 +132,6 @@ export const cardGenerateRoutes = new Hono<AuthEnv>()
           cards: insertedCards,
           metadata: {
             tokensUsed: generationResult.tokensUsed,
-            decksRemainingToday: deckUsage.decksRemainingToday,
-            decksRemainingThisMonth: deckUsage.decksRemainingThisMonth,
           },
         });
       } catch (error) {

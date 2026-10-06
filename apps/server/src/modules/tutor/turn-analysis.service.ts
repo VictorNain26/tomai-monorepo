@@ -97,6 +97,15 @@ export async function analyseTurn(studentText: string, lastTutorText: string | n
  * work moves the hint level. A proposal is checked before asking for the method, or the error
  * is never shown.
  */
+/** A request for cards on a plan without them: say so, write none. */
+export function flashcardsUnavailable(analysis: TurnAnalysis): string | null {
+  if (!analysis.wantsFlashcards) return null;
+  return `<critical_instruction>
+L'élève demande des fiches de révision. Elles sont réservées à la formule Complet : dis-le-lui en
+une phrase, sans en écrire toi-même, puis reviens à ce qu'il faisait.
+</critical_instruction>`;
+}
+
 export function turnInstruction(analysis: TurnAnalysis): string | null {
   if (analysis.proposesAnswer) {
     return `<critical_instruction>

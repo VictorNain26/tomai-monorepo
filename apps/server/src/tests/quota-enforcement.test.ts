@@ -44,7 +44,6 @@ mock.module('../modules/billing/user-subscriptions.repository', () => ({
 
 // Import after env + mocks so env picks up the flag value.
 const { checkQuota, dailyUsage } = await import('../modules/billing/quota');
-const { checkDeckQuota } = await import('../modules/billing/quota-deck');
 const { lastDailyReset } = await import('../modules/billing/quota-config');
 
 beforeEach(() => {
@@ -99,48 +98,5 @@ describe('dailyUsage', () => {
   it('throws on a failed read instead of showing a spend it could not read', async () => {
     dbShouldThrow = new Error('connection terminated unexpectedly');
     expect(dailyUsage('user-001')).rejects.toThrow('connection terminated');
-  });
-});
-
-describe('checkDeckQuota (enforcement ON)', () => {
-  it('returns allowed=true under premium deck limits', async () => {
-    dbSelectResult = [{
-      decksGeneratedToday: 2,
-      decksGeneratedThisMonth: 10,
-      lastResetAt: new Date(),
-      lastMonthlyResetAt: new Date(),
-    }];
-    const result = await checkDeckQuota('user-001');
-    expect(result.allowed).toBe(true);
-    expect(result.decksRemainingToday).toBe(3);     // 5 - 2
-    expect(result.decksRemainingThisMonth).toBe(40); // 50 - 10
-    expect(result.dailyLimit).toBe(5);
-    expect(result.monthlyLimit).toBe(50);
-  });
-
-  it('returns allowed=false when daily deck limit is reached', async () => {
-    dbSelectResult = [{
-      decksGeneratedToday: 5, // at limit
-      decksGeneratedThisMonth: 10,
-      lastResetAt: new Date(),
-      lastMonthlyResetAt: new Date(),
-    }];
-    const result = await checkDeckQuota('user-001');
-    expect(result.allowed).toBe(false);
-    expect(result.decksRemainingToday).toBe(0);
-  });
-
-  it('returns full allowance for brand-new user with no subscription row', async () => {
-    dbSelectResult = [];
-    const result = await checkDeckQuota('brand-new-user');
-    expect(result.allowed).toBe(true);
-    expect(result.decksRemainingToday).toBe(5);
-    expect(result.decksRemainingThisMonth).toBe(50);
-  });
-
-  it('fails OPEN (allowed=true) when the DB read throws', async () => {
-    dbShouldThrow = new Error('connection terminated unexpectedly');
-    const result = await checkDeckQuota('user-001');
-    expect(result.allowed).toBe(true);
   });
 });

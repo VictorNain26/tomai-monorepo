@@ -247,6 +247,19 @@ describe('flashcards confirmed by the code', () => {
     }
   });
 
+  it('imposes the cards tool on the first step of a turn that asks for cards, and only then', async () => {
+    for (const wantsFlashcards of [true, false]) {
+      const model = new MockLanguageModelV4({
+        doStream: async () => ({ stream: simulateReadableStream({ chunkDelayInMs: 0, initialDelayInMs: 0, chunks: [{ type: 'stream-start', warnings: [] }, finishStreamPart()] }) }),
+      });
+      const tools: ToolSet = { ...noopTools, generate_flashcards: tool({ inputSchema: z.object({}), execute: async () => 'deck' }) };
+
+      await streamChat({ ...baseParams, tools, model, turnAnalysis: analysis({ wantsFlashcards }) }).text;
+
+      expect(model.doStreamCalls[0]?.toolChoice).toEqual(wantsFlashcards ? { type: 'tool', toolName: 'generate_flashcards' } : { type: 'auto' });
+    }
+  });
+
   it('tells the model why cards are denied, and removes the tool after a denial instead of spending the steps', async () => {
     for (const [turnAnalysis, reason] of [
       [analysis(), "L'élève n'a pas demandé de cartes"],

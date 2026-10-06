@@ -9,6 +9,7 @@ import { createMockLogger } from './_helpers/mock-logger';
 import { analysis } from './_helpers/turn-analysis';
 import { noExercise } from './_helpers/output-check';
 import type { ExerciseSheet } from '../modules/tutor/exercise-sheet';
+import type { TurnAnalysis } from '../modules/tutor/turn-analysis.service';
 
 // ============================================
 // MOCKS (must be before any import of the real module under test)
@@ -67,6 +68,7 @@ const turnInstruction = mock((): string | null => null);
 mock.module('../modules/tutor/turn-analysis.service', () => ({
   analyseTurn,
   turnInstruction,
+  flashcardsUnavailable: (read: TurnAnalysis) => (read.wantsFlashcards ? 'CARDS-COMPLET' : null),
 }));
 
 const record = mock(async (_owner: unknown, _call: unknown) => {});
@@ -110,7 +112,7 @@ function tutorTurn(context: Prepared) {
   return context;
 }
 
-const studentTurn = { userId: 'user-001', fileIds: [], schoolLevel: 'quatrieme' as const };
+const studentTurn = { userId: 'user-001', fileIds: [], schoolLevel: 'quatrieme' as const, flashcards: true };
 
 describe('ChatOrchestrationService.prepareTurn — distress and input moderation', () => {
   beforeEach(() => {
@@ -207,7 +209,7 @@ describe('ChatOrchestrationService.prepareTurn — exercise', () => {
     prepareExerciseTurn.mockClear();
   });
 
-  const request = { userId: 'user-001', content: 'Résous 3x + 5 = 20.', fileIds: [], schoolLevel: 'quatrieme' as const };
+  const request = { userId: 'user-001', content: 'Résous 3x + 5 = 20.', fileIds: [], schoolLevel: 'quatrieme' as const, flashcards: true };
   const underContract: Turn = {
     exercise: { id: 'ex-1', sheet: sheet('Résous 3x + 5 = 20.'), uncertain: false, hintLevel: 1, stepsDone: 0, hints: [{ level: 0, text: 'Que cherches-tu ?' }], solved: false },
     diagnosis: null,
@@ -266,6 +268,16 @@ describe('ChatOrchestrationService.prepareTurn — exercise', () => {
     expect(context.turnInstruction).toBe('<critical_instruction>X</critical_instruction>');
     expect(context.exerciseSheet).toBeNull();
     expect(context.exerciseProgress).toBeNull();
+  });
+
+  it('adds to the contract, on a plan without cards, the notice for a request of cards', async () => {
+    prepareExerciseTurn.mockImplementationOnce(async () => underContract);
+    analyseTurn.mockImplementationOnce(async () => analysis({ wantsFlashcards: true }));
+    expect(tutorTurn(await chatOrchestrationService.prepareTurn({ ...request, flashcards: false })).turnInstruction)
+      .toBe('<contrat>\nPalier 3\n</contrat>\n\nCARDS-COMPLET');
+
+    analyseTurn.mockImplementationOnce(async () => analysis({ wantsFlashcards: true }));
+    expect(tutorTurn(await chatOrchestrationService.prepareTurn(request)).turnInstruction ?? '').not.toContain('CARDS-COMPLET');
   });
 });
 
