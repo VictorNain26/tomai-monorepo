@@ -26,8 +26,6 @@ declare module 'bun' {
     DATABASE_URL?: string;
     MISTRAL_API_KEY?: string;
     APP_VERSION?: string;
-    DATABASE_URL_EXTERNAL?: string;
-    DOCKER_CONTAINER?: string;
     GIT_COMMIT_SHA?: string;
     LOG_LEVEL?: string;
     OTEL_DEPLOYMENT_ENVIRONMENT?: string;

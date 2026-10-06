@@ -19,5 +19,4 @@ paths = [
   '''docker-compose.*\.yml$''',
   '''CLAUDE\.md$''',
   '''README\.md$''',
-  '''google-services\.json$''',
 ]

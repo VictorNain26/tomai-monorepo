@@ -1,5 +1,5 @@
 /**
- * Database Connection - Clean Drizzle + Supabase Integration
+ * Database Connection - Drizzle over postgres.js
  * Production-ready with lazy initialization for testability
  */
 
@@ -7,7 +7,7 @@ import { drizzle, type PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import postgres, { type Sql } from 'postgres';
 import * as schema from './schema';
 import { logger } from '../platform/observability/logger';
-import { resolveDatabaseUrl } from '../platform/config/database-url.js';
+import { databaseSsl, resolveDatabaseUrl } from '../platform/config/database-url.js';
 import { env } from '../platform/config/env.js';
 
 // ============================================================================
@@ -19,28 +19,6 @@ let _db: PostgresJsDatabase<typeof schema> | null = null;
 let _initialized = false;
 
 /**
- * Get database connection string from environment
- * Delegates to resolveDatabaseUrl() for Docker-aware resolution
- */
-function getConnectionString(): string {
-  return resolveDatabaseUrl();
-}
-
-/**
- * Detect Supabase using proper URL hostname validation (CWE-20 compliant)
- */
-function isSupabaseHost(url: string): boolean {
-  try {
-    const parsed = new URL(url);
-    return parsed.hostname.endsWith('.supabase.com') ||
-           parsed.hostname.endsWith('.supabase.co') ||
-           parsed.hostname === 'supabase.com';
-  } catch {
-    return false;
-  }
-}
-
-/**
  * Initialize database connection lazily
  * Only creates connection when first accessed
  */
@@ -48,16 +26,14 @@ function initializeConnection(): void {
   if (_initialized) return;
 
   const environment = env.NODE_ENV;
-  const connectionString = getConnectionString();
-  const isSupabase = isSupabaseHost(connectionString);
+  const connectionString = resolveDatabaseUrl();
 
   // Production-optimized postgres client
   _sql = postgres(connectionString, {
     max: environment === 'production' ? 20 : 5,
     idle_timeout: 0,
-    connect_timeout: isSupabase ? 20 : 10,
-    prepare: !isSupabase,
-    ssl: environment === 'production' || isSupabase ? 'require' : false,
+    connect_timeout: 10,
+    ...databaseSsl(environment),
     transform: {
       undefined: null,
     },
@@ -92,7 +68,6 @@ function initializeConnection(): void {
     operation: 'db:init',
     metadata: {
       environment,
-      isSupabase,
       maxConnections: environment === 'production' ? 20 : 5
     }
   });

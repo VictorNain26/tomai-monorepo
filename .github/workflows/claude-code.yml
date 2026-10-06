@@ -31,22 +31,23 @@ jobs:
       - uses: anthropics/claude-code-action@cfc3eb22bfed5c26ef66e3223c982af27e4524de # v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          model: claude-sonnet-4-6
-          max_turns: 25
-          allowed_tools: |
-            Bash(bun run typecheck)
-            Bash(bun run lint)
-            Bash(bun run test)
-            Bash(bun run build)
-            Bash(bun test)
-            Bash(bun run db:generate)
-            Bash(bun run db:check)
-            Bash(git status)
-            Bash(git diff)
-            Bash(git log)
-            Bash(ls)
-            Read
-            Edit
-            Write
-            Glob
-            Grep
+          claude_args: |
+            --model claude-sonnet-4-6
+            --max-turns 25
+            --allowedTools
+              "Bash(bun run typecheck)"
+              "Bash(bun run lint)"
+              "Bash(bun run test)"
+              "Bash(bun run build)"
+              "Bash(bun test)"
+              "Bash(bun run db:generate)"
+              "Bash(bun run db:check)"
+              "Bash(git status)"
+              "Bash(git diff)"
+              "Bash(git log)"
+              "Bash(ls)"
+              Read
+              Edit
+              Write
+              Glob
+              Grep

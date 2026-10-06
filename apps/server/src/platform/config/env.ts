@@ -8,21 +8,9 @@
 
 import { z } from 'zod';
 import { LOG_LEVELS } from '../observability/log-levels.js';
-import { existsSync } from 'node:fs';
 import { resolveDatabaseUrl } from './database-url.js';
 
-/**
- * Détecte si on est dans un container Docker
- */
-function isRunningInDocker(): boolean {
-  if (Bun.env.DOCKER_CONTAINER === 'true') {
-    return true;
-  }
-  return existsSync('/.dockerenv');
-}
-
 const isProd = Bun.env.NODE_ENV === 'production';
-const inDocker = isRunningInDocker();
 
 /**
  * Zod schema for environment validation.
@@ -63,7 +51,6 @@ const EnvSchema = z.object({
 
   // Database (resolved via resolveDatabaseUrl() which handles Docker detection)
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
-  DATABASE_URL_EXTERNAL: z.string().optional(),
   // Note: getDatabaseUrl() delegates to resolveDatabaseUrl() to avoid duplication
 
   // Authentication
@@ -139,18 +126,7 @@ export const isProduction = (): boolean => env.NODE_ENV === 'production';
  */
 export const isDevelopment = (): boolean => env.NODE_ENV === 'development';
 
-/**
- * Helper to check if running in Docker
- */
-export const isInDocker = (): boolean => inDocker;
-
-/**
- * Resolve DATABASE_URL based on Docker context
- * In Docker containers: use DATABASE_URL (internal hostname)
- * Locally: use DATABASE_URL_EXTERNAL (localhost) if provided, else DATABASE_URL
- *
- * Note: delegates to resolveDatabaseUrl() to avoid duplication with migrate.ts
- */
+/** The database URL, read by the shared resolver (migrate.ts runs before this schema). */
 export function getDatabaseUrl(): string {
   return resolveDatabaseUrl();
 }

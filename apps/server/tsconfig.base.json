@@ -10,16 +10,6 @@
     /* Bun Environment */
     "types": ["bun-types"],
     "lib": ["ESNext", "DOM"],
-    "target": "ESNext",
-
-    /* Path Mapping — TS 6.0 requires relative paths (no baseUrl).
-       https://devblogs.microsoft.com/typescript/announcing-typescript-6-0/ */
-    "paths": {
-      "@/*": ["./src/*"],
-      "@/routes/*": ["./src/routes/*"],
-      "@/services/*": ["./src/services/*"],
-      "@/types/*": ["./src/types/*"],
-      "@/config/*": ["./src/config/*"]
-    }
+    "target": "ESNext"
   }
 }

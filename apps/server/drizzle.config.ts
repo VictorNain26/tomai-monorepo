@@ -2,22 +2,9 @@ import { defineConfig } from 'drizzle-kit';
 
 // Bun charge automatiquement les fichiers .env — pas besoin de dotenv.
 
-// Configuration adaptative selon l'environnement d'exécution
+// drizzle-kit generate needs no connection: a placeholder lets it run without a database.
 function getDatabaseUrl(): string {
-  // Si DATABASE_URL_EXTERNAL existe et qu'on est en dehors de Docker, l'utiliser
-  if (process.env.DATABASE_URL_EXTERNAL && !process.env.DOCKER_CONTAINER) {
-    console.log('🔗 Using external DATABASE_URL for local development');
-    return process.env.DATABASE_URL_EXTERNAL;
-  }
-
-  // Sinon, utiliser DATABASE_URL (container ou production)
-  if (process.env.DATABASE_URL) {
-    console.log('🔗 Using internal DATABASE_URL for container/production');
-    return process.env.DATABASE_URL;
-  }
-
-  // Placeholder for drizzle-kit generate (no DB connection needed)
-  return 'postgresql://placeholder:placeholder@localhost:5432/placeholder';
+  return process.env.DATABASE_URL ?? 'postgresql://placeholder:placeholder@localhost:5432/placeholder';
 }
 
 export default defineConfig({

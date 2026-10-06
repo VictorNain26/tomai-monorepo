@@ -4,7 +4,7 @@ import pluginReact from "eslint-plugin-react";
 import globals from "globals";
 import { config as baseConfig } from "./base.js";
 
-// eslint-plugin-react@7.x not yet ESLint 10 compatible — see react.js
+// eslint-plugin-react@7.x not yet ESLint 10 compatible
 const fixedReact = fixupPluginRules(pluginReact);
 const fixedReactHooks = fixupPluginRules(pluginReactHooks);
 

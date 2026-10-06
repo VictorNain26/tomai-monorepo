@@ -5,15 +5,12 @@ node_modules
 .pnp
 .pnp.js
 
-# Local env files
-.env
+# Env files and keys: only the template is committed
+.env*
+!.env.example
 *.pem
 *.key
 *.p12
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
 
 # Playwright MCP artifacts (screenshots, snapshots, console logs)
 .playwright-mcp/

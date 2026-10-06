@@ -1,46 +1,21 @@
 /**
- * Database URL resolution utility (pré-boot, validates independently)
- *
- * This module is imported by connection.ts and migrate.ts to resolve DATABASE_URL
- * without triggering the full env schema validation (which requires prod secrets).
- *
- * Used in two contexts:
- * 1. migrate.ts: Runs before app boot, doesn't have BETTER_AUTH_SECRET, MISTRAL_API_KEY, etc.
- * 2. connection.ts: Uses the singleton env, but delegates here to avoid duplication
+ * The database connection settings shared by the app's pool, the migrations and the eval, read
+ * before the full env schema: migrate.ts runs before boot, without the app's secrets.
  */
 
-import { existsSync } from 'node:fs';
-
-/**
- * Detects if running in Docker container
- */
-function isRunningInDocker(): boolean {
-  if (Bun.env.DOCKER_CONTAINER === 'true') {
-    return true;
-  }
-
-  return existsSync('/.dockerenv');
-}
-
-/**
- * Resolve DATABASE_URL based on Docker context
- * In Docker: use DATABASE_URL (internal hostname)
- * Locally: use DATABASE_URL_EXTERNAL (localhost) if provided, else DATABASE_URL
- *
- * @throws Error if DATABASE_URL is not set
- */
+/** @throws Error if DATABASE_URL is not set */
 export function resolveDatabaseUrl(): string {
   const databaseUrl = Bun.env.DATABASE_URL;
-
   if (!databaseUrl) {
     throw new Error('DATABASE_URL is required');
   }
+  return databaseUrl;
+}
 
-  if (isRunningInDocker()) {
-    return databaseUrl;
-  }
-
-  // Local development: prefer external URL if available
-  const externalUrl = Bun.env.DATABASE_URL_EXTERNAL;
-  return externalUrl ?? databaseUrl;
+/**
+ * Production requires TLS. Elsewhere the option is left out so that the URL's own `sslmode`
+ * decides: postgres.js 3.4 lets an explicit `ssl` option override it.
+ */
+export function databaseSsl(environment: string): { ssl: 'require' } | Record<string, never> {
+  return environment === 'production' ? { ssl: 'require' } : {};
 }

@@ -225,8 +225,7 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
   ouvert, aucun correctif, la 1.4.2 est la dernière version. Il touchait environ trois passages
   sur quatre en local, aussi le pre-push. Les tests tournent donc un processus par fichier
   (`apps/server/scripts/run-tests.ts`) : aucun contexte retiré, le chemin qui plante ne s'exécute
-  pas. Revenir à `bun test --isolate` dès qu'une release corrige #44161 ; `test:watch` y est
-  resté.
+  pas. Revenir à `bun test --isolate` dès qu'une release corrige #44161.
 - **Override de `source-map-js`** (`package.json`, #398) : `postcss` et `@tailwindcss/node`
   figent la 1.2.1, touchée par GHSA-68fv-2mgg-jv7q (haute) ; l'override les force en `^1.2.2`.
   Le retirer quand les deux déclarent 1.2.2 ou plus. Même audit, dépendances de
@@ -604,3 +603,9 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
   prix en dollars × 1,1 (endpoint UE) × 0,85, vérifié au chiffre près sur la lecture vocale et la
   transcription. Le calcul convertissait à 0,92 et surestimait chaque coût d'environ 8 % ; les budgets
   provisoires, inchangés, laissent donc environ 8 % d'usage de plus.
+
+  Environnement de travail nettoyé (`chore/clean-environment`) : tout `.env*` ignoré sauf les
+  gabarits ; l'action Claude reçoit enfin modèle, tours et outils par `claude_args` ; Docker réduit
+  à postgres et à l'image de production (port 3000) ; scripts morts, clés de `bunfig.toml`,
+  alias et options TypeScript inutiles, smoke test vers un hébergement inexistant, détection
+  Supabase et mentions Koyeb supprimés.

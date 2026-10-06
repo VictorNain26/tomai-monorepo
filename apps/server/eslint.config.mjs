@@ -3,7 +3,7 @@ import { nodeConfig } from '@repo/eslint-config/node';
 /** @type {import("eslint").Linter.Config[]} */
 export default [
   {
-    ignores: ['dist/**', 'coverage/**', 'build/**', 'patches/**'],
+    ignores: ['dist/**', 'coverage/**', 'build/**'],
   },
   ...nodeConfig,
   {
