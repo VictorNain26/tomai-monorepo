@@ -27,7 +27,6 @@ mock.module('../platform/config/env', () => ({
   isProduction: () => true,
   isDevelopment: () => false,
   getDatabaseUrl: () => 'postgresql://test:test@localhost/test',
-  getTrustedOrigins: () => [],
 }));
 
 mock.module('../db/connection', () => ({ db: {} }));
@@ -38,6 +37,6 @@ describe('Better Auth configuration in production', () => {
   it('keeps the session cookie on the one origin of the API and the web client', () => {
     expect(auth.options.advanced).not.toHaveProperty('crossSubDomainCookies');
     expect(auth.options.advanced.defaultCookieAttributes).not.toHaveProperty('domain');
-    expect(auth.options.trustedOrigins).toEqual([]);
+    expect(auth.options).not.toHaveProperty('trustedOrigins');
   });
 });

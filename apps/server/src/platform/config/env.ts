@@ -137,11 +137,3 @@ export const isDevelopment = (): boolean => env.NODE_ENV === 'development';
 export function getDatabaseUrl(): string {
   return resolveDatabaseUrl();
 }
-
-/**
- * Origins better-auth trusts beyond its own base URL: in development, the Vite dev server, whose
- * proxy forwards the browser's Origin to the API.
- */
-export function getTrustedOrigins(): string[] {
-  return isDevelopment() ? ['http://localhost:3002'] : [];
-}

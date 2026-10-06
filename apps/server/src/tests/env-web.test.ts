@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'bun:test';
-import { mkdtempSync, writeFileSync } from 'node:fs';
+import { afterAll, describe, expect, it } from 'bun:test';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -8,12 +8,7 @@ const ENV_MODULE = new URL('../platform/config/env.ts', import.meta.url).pathnam
 // env.ts parses Bun.env once, at load: each case loads it in a fresh process.
 function loadEnv(extra: Record<string, string>) {
   const result = Bun.spawnSync(
-    [
-      'bun',
-      '--no-env-file',
-      '-e',
-      `const m = await import(${JSON.stringify(ENV_MODULE)}); console.log(JSON.stringify({ webDistDir: m.env.WEB_DIST_DIR ?? null, trusted: m.getTrustedOrigins() }))`,
-    ],
+    ['bun', '--no-env-file', '-e', `const m = await import(${JSON.stringify(ENV_MODULE)}); console.log(JSON.stringify(m.env.WEB_DIST_DIR ?? null))`],
     {
       cwd: tmpdir(),
       env: {
@@ -28,14 +23,25 @@ function loadEnv(extra: Record<string, string>) {
   return {
     exitCode: result.exitCode,
     stderr: result.stderr.toString(),
-    value: result.exitCode === 0 ? (JSON.parse(result.stdout.toString()) as { webDistDir: string | null; trusted: string[] }) : null,
+    value: result.exitCode === 0 ? (JSON.parse(result.stdout.toString()) as string | null) : undefined,
   };
 }
 
+const root = mkdtempSync(join(tmpdir(), 'env-web-'));
+afterAll(() => {
+  rmSync(root, { recursive: true, force: true });
+});
+
+function dir(name: string): string {
+  const path = join(root, name);
+  mkdirSync(path);
+  return path;
+}
+
 function webBuild(): string {
-  const dir = mkdtempSync(join(tmpdir(), 'web-dist-'));
-  writeFileSync(join(dir, 'index.html'), '<!doctype html>');
-  return dir;
+  const path = dir('dist');
+  writeFileSync(join(path, 'index.html'), '<!doctype html>');
+  return path;
 }
 
 const PRODUCTION = { NODE_ENV: 'production', BETTER_AUTH_URL: 'https://tom.example' };
@@ -48,19 +54,17 @@ describe('env — web client', () => {
   });
 
   it('refuses a directory without index.html', () => {
-    const { exitCode, stderr } = loadEnv({ ...PRODUCTION, WEB_DIST_DIR: mkdtempSync(join(tmpdir(), 'empty-')) });
+    const { exitCode, stderr } = loadEnv({ ...PRODUCTION, WEB_DIST_DIR: dir('empty') });
     expect(exitCode).not.toBe(0);
     expect(stderr).toContain('index.html');
   });
 
-  it('accepts a web build in production, and trusts no origin beyond the base URL', () => {
-    const dir = webBuild();
-    const { value } = loadEnv({ ...PRODUCTION, WEB_DIST_DIR: dir });
-    expect(value).toEqual({ webDistDir: dir, trusted: [] });
+  it('accepts a web build in production', () => {
+    const build = webBuild();
+    expect(loadEnv({ ...PRODUCTION, WEB_DIST_DIR: build }).value).toBe(build);
   });
 
-  it('runs without a web build in development, and trusts the Vite dev server', () => {
-    const { value } = loadEnv({ NODE_ENV: 'development' });
-    expect(value).toEqual({ webDistDir: null, trusted: ['http://localhost:3002'] });
+  it('runs without a web build in development, where Vite serves it', () => {
+    expect(loadEnv({ NODE_ENV: 'development' }).value).toBeNull();
   });
 });

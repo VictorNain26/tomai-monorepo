@@ -44,7 +44,6 @@ mock.module('../platform/config/env', () => ({
   isProduction: () => false,
   isDevelopment: () => true,
   getDatabaseUrl: () => 'postgresql://test:test@localhost/test',
-  getTrustedOrigins: () => ['http://localhost:3002'],
 }));
 
 mock.module('../db/connection', () => ({
@@ -119,9 +118,8 @@ describe('Better Auth Configuration', () => {
   });
 
   describe('Web-only client surface', () => {
-    it('trusts the Vite dev origin and nothing else beyond its base URL', () => {
-      const options = auth['options'] as { trustedOrigins: string[] };
-      expect(options.trustedOrigins).toEqual(['http://localhost:3002']);
+    it('trusts no origin beyond its base URL, in development too', () => {
+      expect(auth['options']).not.toHaveProperty('trustedOrigins');
     });
 
     it('does not mount the Expo authorization proxy', () => {

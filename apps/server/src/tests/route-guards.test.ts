@@ -18,7 +18,6 @@ mock.module('../platform/config/env', () => ({
   env: {},
   isProduction: () => false,
   isDevelopment: () => true,
-  getTrustedOrigins: () => [],
 }));
 mock.module('../db/connection', () => ({ db: {} }));
 mock.module('../modules/billing/index', () => ({

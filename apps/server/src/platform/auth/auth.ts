@@ -12,7 +12,7 @@ import { openAPI, username } from 'better-auth/plugins';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { db } from '../../db/connection';
 import { user, session, account, verification } from '../../db/schema';
-import { env, isProduction, isDevelopment, getTrustedOrigins } from '../config/env';
+import { env, isProduction, isDevelopment } from '../config/env';
 import { logger } from '../observability/logger';
 
 // Validation des services requis pour l'authentification
@@ -23,11 +23,8 @@ if (!env.BETTER_AUTH_URL) {
   throw new Error('BETTER_AUTH_URL is required');
 }
 
-const trustedOrigins = getTrustedOrigins();
-
 logger.info('Better Auth Configuration', {
   baseURL: env.BETTER_AUTH_URL,
-  trustedOrigins,
   environment: env.NODE_ENV,
   operation: 'auth:config',
 });
@@ -36,8 +33,6 @@ logger.info('Better Auth Configuration', {
 export const auth = betterAuth({
   secret: env.BETTER_AUTH_SECRET,
   baseURL: env.BETTER_AUTH_URL,
-
-  trustedOrigins,
 
   // No cookieCache: a cached session outlives a deleted account for its whole maxAge.
   session: {

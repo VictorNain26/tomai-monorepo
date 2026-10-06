@@ -7,6 +7,9 @@ import { VitePWA } from 'vite-plugin-pwa';
 // Manifest colors can't read CSS variables: --color-background in packages/tokens/theme.css.
 const PAPER = '#FAF7F0';
 
+const DEV_PORT = 3002;
+const API = 'http://localhost:3000';
+
 export default defineConfig({
   plugins: [
     tailwindcss(),
@@ -40,5 +43,21 @@ export default defineConfig({
   // No data: URI in the build: the server's CSP allows this origin only.
   build: { assetsInlineLimit: 0 },
   // Same origin as in production: the browser sees one origin, the session cookie stays first-party.
-  server: { proxy: { '/api/': 'http://localhost:3000' } },
+  server: {
+    port: DEV_PORT,
+    strictPort: true,
+    proxy: {
+      '/api/': {
+        target: API,
+        // The API trusts its own origin only, as in production: a request from this page reaches it
+        // with that origin. One from any other origin keeps its own, and better-auth refuses it.
+        configure: (proxy) => {
+          proxy.on('proxyReq', (request) => {
+            if (request.getHeader('origin') === `http://localhost:${DEV_PORT}`) request.setHeader('origin', API);
+          });
+        },
+      },
+      '/health': API,
+    },
+  },
 });
