@@ -14,7 +14,8 @@ test('the brand applies: cream background and Nunito, loaded', async ({ page }) 
 
   const body = page.locator('body');
   await expect(body).toHaveCSS('background-color', 'rgb(250, 247, 240)');
-  await expect(body).toHaveCSS('font-family', /^"Nunito Variable"/);
+  // WebKit serialises the computed family unquoted, Chromium quoted.
+  await expect(body).toHaveCSS('font-family', /^"?Nunito Variable"?,/);
   const loaded = await page.evaluate(async () => {
     await document.fonts.ready;
     return document.fonts.check('16px "Nunito Variable"');
