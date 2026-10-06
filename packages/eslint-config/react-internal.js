@@ -1,39 +1,37 @@
-import { fixupPluginRules } from "@eslint/compat";
+import eslintReact from "@eslint-react/eslint-plugin";
 import pluginReactHooks from "eslint-plugin-react-hooks";
-import pluginReact from "eslint-plugin-react";
 import globals from "globals";
 import { config as baseConfig } from "./base.js";
 
-// eslint-plugin-react@7.x not yet ESLint 10 compatible — see react.js
-const fixedReact = fixupPluginRules(pluginReact);
-const fixedReactHooks = fixupPluginRules(pluginReactHooks);
+const reactStrict = eslintReact.configs["strict-type-checked"];
+
+// eslint-plugin-react-hooks, the React team's, owns the hook and compiler rules. ESLint React
+// copies some of them: its conflict preset lists them on the hooks side, they stay off here.
+const hookRulesOwnedByReactHooks = Object.fromEntries(
+  Object.keys(eslintReact.configs["disable-conflict-eslint-plugin-react-hooks"].rules)
+    .map((rule) => rule.replace("react-hooks/", "@eslint-react/"))
+    .filter((rule) => rule in reactStrict.rules)
+    .map((rule) => [rule, "off"]),
+);
 
 /**
- * A custom ESLint configuration for libraries that use React.
+ * ESLint configuration for React code: ESLint React's strict type-checked preset and the
+ * React team's hooks rules.
  *
  * @type {import("eslint").Linter.Config[]} */
 export const config = [
   ...baseConfig,
   {
-    plugins: { react: fixedReact },
-    rules: pluginReact.configs.flat.recommended.rules,
+    ...reactStrict,
+    files: ["**/*.{ts,tsx}"],
+    rules: { ...reactStrict.rules, ...hookRulesOwnedByReactHooks },
+  },
+  pluginReactHooks.configs.flat.recommended,
+  {
     languageOptions: {
-      ...pluginReact.configs.flat.recommended.languageOptions,
       globals: {
-        ...globals.serviceworker,
         ...globals.browser,
       },
-    },
-  },
-  {
-    plugins: {
-      "react-hooks": fixedReactHooks,
-    },
-    settings: { react: { version: "detect" } },
-    rules: {
-      ...pluginReactHooks.configs.recommended.rules,
-      // React scope no longer necessary with new JSX transform.
-      "react/react-in-jsx-scope": "off",
     },
   },
 ];

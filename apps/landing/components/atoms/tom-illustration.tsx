@@ -20,14 +20,14 @@ function Sources({ name }: { name: string }) {
 
 export function TomIllustration({ className }: { className?: string }) {
   const reducedMotion = useReducedMotion();
-  const salut = useRef<HTMLVideoElement>(null);
-  const respiration = useRef<HTMLVideoElement>(null);
+  const salutRef = useRef<HTMLVideoElement>(null);
+  const respirationRef = useRef<HTMLVideoElement>(null);
   const [clip, setClip] = useState<Clip>("still");
 
   useEffect(() => {
     // Hidden on small screens, Tom must not download his clips; autoplay can also be refused
     // (iOS Low Power Mode): either way he stays still.
-    if (reducedMotion === false && salut.current?.checkVisibility()) salut.current.play().catch(() => undefined);
+    if (reducedMotion === false && salutRef.current?.checkVisibility()) salutRef.current.play().catch(() => undefined);
   }, [reducedMotion]);
 
   return (
@@ -39,19 +39,19 @@ export function TomIllustration({ className }: { className?: string }) {
     >
       <Image src={tom} alt="" sizes="176px" className={cn("size-full", clip !== "still" && "invisible")} />
       <video
-        ref={salut}
+        ref={salutRef}
         aria-hidden="true"
         muted
         playsInline
         preload="none"
         onPlaying={() => { setClip("salut"); }}
-        onEnded={() => { respiration.current?.play().catch(() => undefined); }}
+        onEnded={() => { respirationRef.current?.play().catch(() => undefined); }}
         className={cn("absolute inset-0 size-full", clip !== "salut" && "invisible")}
       >
         <Sources name="salut" />
       </video>
       <video
-        ref={respiration}
+        ref={respirationRef}
         aria-hidden="true"
         muted
         playsInline

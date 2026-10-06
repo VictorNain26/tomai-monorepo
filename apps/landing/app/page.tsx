@@ -6,6 +6,7 @@ import { HowItWorks } from "@/components/sections/how-it-works";
 import { Pricing } from "@/components/sections/pricing";
 import { FAQ } from "@/components/sections/faq";
 import { FAQS } from "@/components/sections/faq-data";
+import { JsonLd } from "@/components/json-ld";
 
 const faqJsonLd = {
   "@context": "https://schema.org",
@@ -20,10 +21,7 @@ const faqJsonLd = {
 export default function HomePage() {
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
-      />
+      <JsonLd data={faqJsonLd} />
       <Hero />
       <Problem />
       <HowItWorks />

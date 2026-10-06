@@ -4,6 +4,7 @@ import "./globals.css";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { MotionProvider } from "@/components/motion-provider";
+import { JsonLd } from "@/components/json-ld";
 import { BRAND_NAME } from "@/lib/brand";
 
 const nunito = Nunito({
@@ -103,12 +104,8 @@ export default function RootLayout({
           {/* data-reveal must mark only elements whose hidden state is Motion's entry state */}
           <style>{"[data-reveal]{opacity:1!important;transform:none!important}path[data-reveal]{stroke-dasharray:none!important}"}</style>
         </noscript>
-        {jsonLd.map((schema, i) => (
-          <script
-            key={i}
-            type="application/ld+json"
-            dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
-          />
+        {jsonLd.map((schema) => (
+          <JsonLd key={schema["@type"]} data={schema} />
         ))}
         <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-full">
           Aller au contenu principal

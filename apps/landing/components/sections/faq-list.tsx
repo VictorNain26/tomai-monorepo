@@ -12,7 +12,7 @@ export function FaqList() {
     <div className="space-y-4 max-w-3xl mx-auto">
       {FAQS.map((faq, index) => (
         <div
-          key={index}
+          key={faq.question}
           className="bg-card rounded-2xl overflow-hidden shadow-sm ring-1 ring-border transition-shadow duration-base hover:ring-primary"
         >
           <button
