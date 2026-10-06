@@ -29,13 +29,10 @@ bloquant levé).
   S4 repassé : aucune fuite sur 6. Point 7 terminé : appels annexes (#393), logs sans contenu
   d'élève (#394), mémoire (#395). Nettoyage demandé par Victor le 2026-10-06, en trois PR :
   mémoire entre séances (#396), colonnes et tables jamais lues (#397), restes hors vision et
-  migration de base unique (#399) : les trois faites. Point 8 commencé : chaque appel IA tracé
+  migration de base unique (#399) : les trois faites. Point 8 terminé : chaque appel IA tracé
   en micro-euros par le client (#400) ; quota au coût réel de la journée (#401), budgets provisoires
-  à fixer par Victor sur le coût mesuré au passage de fin. Prochaine : les fiches de l'outil du chat
-  réservées au Complet et l'outil imposé par le code, puis le passage de fin.
-  - Décidé le 2026-10-06, sur délégation de Victor, à porter par les PR du point 8 : le quota
-    compte le coût réel (cache à 10 %, lecture vocale comprise) ; l'outil de fiches est imposé
-    par le code quand l'analyse du tour relève une demande ou un accord. Plan d'abord dans `docs/plans/`.
+  à fixer par Victor sur le coût mesuré au passage de fin ; fiches du chat réservées au Complet et
+  outil imposé par le code (#402). Prochaine : le passage de fin.
   - Une relecture humaine d'une partie des conversations lues par Claude reste due avant
     toute publication (lot 4).
 - **PR ouvertes :** aucune.
@@ -156,10 +153,6 @@ contraire.
 - **Outil de calcul** (même étude, § 6) : mathjs, déjà adopté par le harnais (#373), pour
   vérifier les calculs de la solution de référence ; sa résolution d'équations et
   l'équivalence restent à lire dans sa documentation avant tout usage.
-- **Défauts de coût** relevés par `etudes/2026-10-01/couts.md` sur le code du 2026-10-01 :
-  - l'outil `generate_flashcards` du chat (`modules/tutor/chat-tools.ts`) n'a ni contrôle
-    de plan ni quota de cartes, alors que la route `/api/learning/generate` réserve les
-    fiches au Complet (PR suivante du point 8).
 - **TTS** : une seule voix, française (`fr_marie_*`) ; `/api/tts` n'accepte et n'annonce
   plus que `fr` (#349). Décider s'il faut d'autres voix pour les cours de langue.
 - **Cartes** en `json_schema` non strict : le mode strict de Mistral refuse `format: uri`
@@ -172,12 +165,6 @@ contraire.
   notion connue (`keepKnownNotions`, échec du 2026-10-05) ; le test du juge échoue aussi par
   moments. Une assertion sur une sortie de modèle doit tenir à chaque tirage, ou le test
   mesurer un taux.
-
-- **Fiches refusées par le modèle** (S4 repassé, 2026-10-05) : en 3-P1, l'élève demande puis
-  confirme les fiches, l'analyse le voit (`wantsFlashcards`), et Small 4 répond « Je ne peux
-  pas te donner les fiches avant que tu aies terminé l'exercice », règle qu'aucune consigne ne
-  donne. Piste : l'appel de l'outil imposé par le code quand l'analyse relève la demande
-  (`toolChoice` au premier pas), à trancher avec le coût d'une fausse demande.
 
 ### Lot 3 — client web
 
@@ -606,3 +593,9 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
   l'appel, une lecture à la fois), à la transcription d'un audio et aux cartes. La formule devient une colonne de
   `user_subscriptions` : `subscription_plans`, jamais remplie, disparaît avec le bug « Free plan not
   found » qui empêchait de compter la consommation.
+
+  Fiches du chat (#402) : l'outil n'est donné qu'au Complet ; en Gratuit, une demande reçoit une
+  consigne du tour qui dit la formule. Au Complet, une demande relevée par l'analyse impose l'appel de
+  l'outil au premier pas (`toolChoice`), au lieu de laisser le modèle refuser des fiches demandées et
+  confirmées (S4, 2026-10-05). Les compteurs de paquets (5 par jour, 50 par mois) partent : le budget
+  en euros borne déjà le coût des cartes.

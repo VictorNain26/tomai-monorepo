@@ -169,7 +169,7 @@ modèle sans prévenir et invalide l'évaluation. Chaque prompt porte une versio
 | Détresse | Classifieur indépendant du prompt (catégorie Self-Harm + règles en français, testés sur des phrases d'élèves) ; réponse fixe rédigée et approuvée par un humain, avec le 3114 et un adulte de confiance, puis fin de la conversation (Crawford et Glatard, CMAJ 2026) ; numéros d'aide vérifiés sur service-public.fr. Ni fiche ni tuteur (l'analyse du tour, lancée en parallèle, est écartée) : la réponse est gardée avec le message, la séance close (tout message suivant reçoit la même réponse), l'événement enregistré, un par séance (`distress_events`), pour l'alerte au parent du lot 3, la seule qu'il reçoive. Ni quota, ni limite de flux, ni écriture en échec ne retiennent la réponse (`modules/tutor/distress.ts`) | Même point d'entrée |
 | Fuite de réponse | Palier d'aide imposé par le serveur (§4) ; contrôle de fuite du lot 1 réutilisé en production si son coût le permet | Assembleur de tour |
 | Aucune solution montrée par accident | Le raisonnement du modèle ne quitte jamais le serveur (`sendReasoning: false` de `toUIMessageStream`, `modules/tutor/chat-message.routes.ts`) ; aucune balise interne, étape de calcul cachée, résultat d'outil brut ni bloc de contexte n'arrive dans ce que voit ou entend l'élève. Le contrôle de fuite porte sur tout ce qui l'atteint : texte, lecture vocale, fiches, titre de séance, messages d'erreur | Sortie du flux, outils, TTS |
-| Confirmation avant création de cartes | `toolApproval` de `streamText`, une fonction par outil qui rend `'approved'` quand l'élève vient de demander des fiches, `'user-approval'` sinon ; `needsApproval` est déprécié dans `ai` 7 | `chat-tools.ts` |
+| Confirmation avant création de cartes | `toolApproval` de `streamText`, une fonction par outil qui rend `'approved'` quand l'élève vient de demander des fiches, `'user-approval'` sinon ; `needsApproval` est déprécié dans `ai` 7 ; une demande impose l'appel au premier pas (`prepareStep`, `toolChoice`), l'outil réservé au Complet | `chat-tools.ts`, `ai-chat.service.ts` |
 | Injection | Texte élève et contenu de documents délimités comme données ; aucun outil sensible déclenchable par du contenu importé | Assembleur, outils |
 
 La recherche justifie ce passage au code : sur plusieurs tours, les modèles
@@ -439,7 +439,8 @@ succès). Coûts mesurés : `etudes/2026-10-01/couts.md` ; défauts du code 
 - La lecture vocale (TTS) entre dans le quota : c'est le premier poste de coût. Fait (#401) : le quota
   est un budget du jour en micro-euros, lu dans `cost_tracking` (`modules/billing/quota.ts`).
 - Les fiches de révision sont réservées au Complet, qu'elles viennent de la route de
-  génération ou de l'outil du chat.
+  génération ou de l'outil du chat. Fait (#402) : l'outil n'est donné qu'au Complet,
+  et une demande relevée par l'analyse du tour en impose l'appel.
 - Le résumé de conversation est incrémental : il ne se relance qu'après un nombre fixe de
   nouveaux messages, comptés hors de la fenêtre gardée en clair.
 - Chaque appel IA (chat, analyse du tour, titre, résumé, lecture d'image, cartes, STT, TTS)
