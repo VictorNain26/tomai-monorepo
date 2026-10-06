@@ -230,8 +230,7 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
   ouvert, aucun correctif, la 1.4.2 est la dernière version. Il touchait environ trois passages
   sur quatre en local, aussi le pre-push. Les tests tournent donc un processus par fichier
   (`apps/server/scripts/run-tests.ts`) : aucun contexte retiré, le chemin qui plante ne s'exécute
-  pas. Revenir à `bun test --isolate` dès qu'une release corrige #44161 ; `test:watch` y est
-  resté.
+  pas. Revenir à `bun test --isolate` dès qu'une release corrige #44161.
 - **Override de `source-map-js`** (`package.json`, #398) : `postcss` et `@tailwindcss/node`
   figent la 1.2.1, touchée par GHSA-68fv-2mgg-jv7q (haute) ; l'override les force en `^1.2.2`.
   Le retirer quand les deux déclarent 1.2.2 ou plus. Même audit, dépendances de

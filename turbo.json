@@ -27,6 +27,13 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build", "^build:types"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        ".env.production",
+        ".env.staging",
+        "!.env.local",
+        "!.env.*.local"
+      ],
       "outputs": [
         ".next/**",
         "!.next/cache/**",
