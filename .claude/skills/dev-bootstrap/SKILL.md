@@ -29,7 +29,7 @@ racine, `bun run` depuis `apps/server`) :
 
 ```bash
 docker compose up -d --wait postgres
-bun run db:migrate    # crée l'extension vector, __drizzle_migrations, puis applique le SQL
+bun run db:migrate    # crée __drizzle_migrations, puis applique le SQL
 bun run dev
 ```
 

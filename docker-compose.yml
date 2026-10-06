@@ -143,7 +143,7 @@ services:
 # ===========================================
 volumes:
   postgres_dev_data:
-    name: tomai_postgres18_dev_data
+    name: tomai_postgres_dev_data
 
 # ===========================================
 # Réseau isolé development
