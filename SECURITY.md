@@ -20,9 +20,9 @@ We will acknowledge within 48 hours and provide a fix timeline within 7 days.
   once CI is green after a 3-day release age, majors reviewed by a human); Dependabot
   only raises vulnerability alerts
 - Secret scanning (Gitleaks), SAST (Semgrep) and `bun audit` (prod, high+) on every
-  push/PR to `main` (`.github/workflows/security.yml`)
+  push/PR to `main` (`.github/workflows/ci.yml`)
 - SHA-pinned GitHub Actions (supply chain protection)
-- Non-root Docker containers (user `tomai`, UID 1001)
+- Non-root server image (the base image's `bun` user)
 - Security headers on the landing page (`apps/landing/vercel.json`: nosniff,
   X-Frame-Options, Referrer-Policy, Permissions-Policy) and the server. No CSP yet: planned
   for the web app (`apps/web`, served by the server) in lot 3, for the landing in lot 4

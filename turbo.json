@@ -11,8 +11,7 @@
     "OTEL_SERVICE_NAME",
     "OTEL_DEPLOYMENT_ENVIRONMENT",
     "APP_VERSION",
-    "SENTRY_DSN",
-    "GIT_COMMIT_SHA"
+    "SENTRY_DSN"
   ],
   "tasks": {
     "transit": {
