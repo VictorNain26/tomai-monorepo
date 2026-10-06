@@ -260,6 +260,48 @@ describe('flashcards confirmed by the code', () => {
     }
   });
 
+  it('makes one deck per turn: after the forced call, the tool is gone and the model writes freely', async () => {
+    let made = 0;
+    let callIndex = 0;
+    const model = new MockLanguageModelV4({
+      doStream: async () => {
+        callIndex += 1;
+        if (callIndex > 2) {
+          return { stream: simulateReadableStream({ chunkDelayInMs: 0, initialDelayInMs: 0, chunks: [{ type: 'stream-start', warnings: [] }, finishStreamPart()] }) };
+        }
+        return {
+          stream: simulateReadableStream({
+            chunkDelayInMs: 0,
+            initialDelayInMs: 0,
+            chunks: [
+              { type: 'stream-start', warnings: [] },
+              { type: 'tool-call', toolCallId: `call-${callIndex}`, toolName: 'generate_flashcards', input: '{}' },
+              { type: 'finish', usage, finishReason: toolCallsFinishReason },
+            ],
+          }),
+        };
+      },
+    });
+    const tools: ToolSet = { ...noopTools, generate_flashcards: tool({ inputSchema: z.object({}), execute: async () => { made += 1; return 'deck'; } }) };
+
+    await streamChat({ ...baseParams, tools, model, turnAnalysis: analysis({ wantsFlashcards: true }) }).text;
+
+    expect(made).toBe(1);
+    const second = model.doStreamCalls[1];
+    expect(second?.toolChoice).toEqual({ type: 'auto' });
+    expect(second?.tools?.map((t) => t.name)).toEqual(['noop_tool']);
+  });
+
+  it('forces nothing without the cards tool (Gratuit, or a regeneration)', async () => {
+    const model = new MockLanguageModelV4({
+      doStream: async () => ({ stream: simulateReadableStream({ chunkDelayInMs: 0, initialDelayInMs: 0, chunks: [{ type: 'stream-start', warnings: [] }, finishStreamPart()] }) }),
+    });
+
+    await streamChat({ ...baseParams, tools: noopTools, model, turnAnalysis: analysis({ wantsFlashcards: true }) }).text;
+
+    expect(model.doStreamCalls[0]?.toolChoice).toEqual({ type: 'auto' });
+  });
+
   it('tells the model why cards are denied, and removes the tool after a denial instead of spending the steps', async () => {
     for (const [turnAnalysis, reason] of [
       [analysis(), "L'élève n'a pas demandé de cartes"],

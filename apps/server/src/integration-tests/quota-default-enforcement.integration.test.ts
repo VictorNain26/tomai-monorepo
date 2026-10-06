@@ -28,7 +28,7 @@ describe.skipIf(!dbReachable)('checkQuota (enforcement enabled by default)', () 
 
   it('gives a brand-new user the Gratuit budget at zero spend', async () => {
     expect(await checkQuota(`new_${stamp}`)).toMatchObject({
-      allowed: true, plan: 'free', usage: { spentMicroEur: 0, budgetMicroEur: QUOTA_CONFIG.free.dailyBudgetMicroEur },
+      allowed: true, flashcards: false, usage: { plan: 'free', spentMicroEur: 0, budgetMicroEur: QUOTA_CONFIG.free.dailyBudgetMicroEur },
     });
   });
 

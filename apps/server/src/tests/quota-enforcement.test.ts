@@ -58,7 +58,7 @@ describe('checkQuota (enforcement ON)', () => {
     dbSelectResult = [{ plan: 'free' }];
     spent = 12_000;
     const result = await checkQuota('user-001');
-    expect(result).toMatchObject({ allowed: true, plan: 'free', usage: { spentMicroEur: 12_000, budgetMicroEur: 20_000, usagePercent: 60 } });
+    expect(result).toMatchObject({ allowed: true, flashcards: false, usage: { plan: 'free', spentMicroEur: 12_000, budgetMicroEur: 20_000, usagePercent: 60 } });
     expect(spentSince.mock.calls[0]?.[1]).toEqual(lastDailyReset(new Date()));
   });
 
@@ -75,22 +75,32 @@ describe('checkQuota (enforcement ON)', () => {
     expect((await checkQuota('user-001', 5_000)).allowed).toBe(true);
   });
 
-  it('gives the Complet plan its own budget', async () => {
-    dbSelectResult = [{ plan: 'premium' }];
+  it('gives an active Complet plan its own budget and the cards', async () => {
+    dbSelectResult = [{ plan: 'premium', status: 'active', expiresAt: null }];
     spent = 20_000;
-    expect(await checkQuota('user-001')).toMatchObject({ allowed: true, plan: 'premium', usage: { budgetMicroEur: 100_000 } });
+    expect(await checkQuota('user-001')).toMatchObject({ allowed: true, flashcards: true, usage: { plan: 'premium', budgetMicroEur: 100_000 } });
+  });
+
+  it('counts a cancelled or expired Complet plan as Gratuit: its budget, no cards', async () => {
+    for (const row of [
+      { plan: 'premium', status: 'cancelled', expiresAt: null },
+      { plan: 'premium', status: 'active', expiresAt: new Date(Date.now() - 60_000) },
+    ]) {
+      dbSelectResult = [row];
+      expect(await checkQuota('user-001')).toMatchObject({ flashcards: false, usage: { plan: 'free', budgetMicroEur: 20_000 } });
+    }
   });
 
   it('treats a user without a subscription row as Gratuit', async () => {
-    expect(await checkQuota('brand-new-user')).toMatchObject({ allowed: true, plan: 'free', usage: { spentMicroEur: 0 } });
+    expect(await checkQuota('brand-new-user')).toMatchObject({ allowed: true, flashcards: false, usage: { plan: 'free', spentMicroEur: 0 } });
   });
 
-  it('fails OPEN when the DB read throws: allowed, the plan not held against the user, no usage claimed', async () => {
+  it('fails OPEN on the budget when the DB read throws, but grants no cards and claims no usage', async () => {
     // Deliberate billing-safety choice: a DB blip must not block paying users.
     // This locks the direction of the fallback so a refactor can't silently
     // flip it to fail-closed.
     dbShouldThrow = new Error('connection terminated unexpectedly');
-    expect(await checkQuota('user-001')).toEqual({ allowed: true, plan: 'premium', usage: null });
+    expect(await checkQuota('user-001')).toEqual({ allowed: true, flashcards: null, usage: null });
   });
 });
 

@@ -172,7 +172,7 @@ class ChatOrchestrationService {
       lastTutorText,
       attachedFilesBlock: files.length > 0 ? wrapAttachedFiles(files) : null,
     });
-    const notices = [contract ?? instructionFor(turnAnalysis), request.flashcards ? null : flashcardsUnavailable(turnAnalysis)].filter((notice) => notice !== null);
+    const notices = [contract ?? instructionFor(turnAnalysis), request.flashcards === false ? flashcardsUnavailable(turnAnalysis) : null].filter((notice) => notice !== null);
     const turnInstruction = notices.length > 0 ? notices.join('\n\n') : null;
 
     logger.info('Chat context assembled', {

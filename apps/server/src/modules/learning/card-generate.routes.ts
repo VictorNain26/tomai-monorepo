@@ -36,11 +36,13 @@ export const cardGenerateRoutes = new Hono<AuthEnv>()
       const level = getUserLevel(user.id, user.schoolLevel);
 
       const quota = await checkQuota(user.id);
-      if (quota.plan === 'free') {
+      if (quota.flashcards === null) {
+        return c.json({ error: "La formule n'a pas pu être lue. Réessaie dans un moment.", code: 'PLAN_UNREADABLE' }, 503);
+      }
+      if (!quota.flashcards) {
         logger.info('Deck generation blocked - free user', {
           operation: 'learning:generate:subscription-required',
           userId: user.id,
-          plan: quota.plan,
         });
         return c.json({
           error: 'Abonnement requis',

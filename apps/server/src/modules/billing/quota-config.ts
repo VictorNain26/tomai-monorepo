@@ -36,8 +36,11 @@ export interface DailyUsage {
 
 export interface QuotaCheckResult {
   allowed: boolean;
-  /** The plan to gate features on; `premium` when the quota is off or could not be read. */
-  plan: Plan;
+  /**
+   * The revision cards are open to this user: an active Complet plan, or the quota off. Null when
+   * the plan could not be read: the budget opens on a failure, the plan does not.
+   */
+  flashcards: boolean | null;
   /** The day's usage; null when the quota is off or could not be read. */
   usage: DailyUsage | null;
 }
