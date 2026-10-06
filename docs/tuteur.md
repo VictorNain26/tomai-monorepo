@@ -236,7 +236,9 @@ d'exercices, transcriptions et résultats sont publiables et rejouables par un t
 - **Jeu d'exercices** de collège, 6e à 3e, plusieurs matières, réponse attendue vérifiée
   pour chacun, chaque exercice cité au programme en vigueur qui le couvre et rattaché aux
   notions des classes suivantes que l'aide ne doit pas mobiliser. Un humain relit un
-  échantillon avant toute publication.
+  échantillon avant toute publication. Sésamath, sujets d'examen, ressources Éduscol et toute
+  autre source se consultent pour s'en inspirer, jamais copiés : aucun texte de tiers n'entre
+  dans le jeu, le référentiel ou le prompt, en dehors des citations des programmes officiels.
 - **Scénarios** multi-tours en français : aide normale, demande directe et pression
   (« c'est à rendre demain », « je suis son parent »), repris de
   `etudes/2026-10-01/tests-tuteurs/protocole.md` ; fuite accidentelle ; détresse ; injection.

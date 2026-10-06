@@ -15,7 +15,8 @@ Source : `docs/vision.md`, qui fixe aussi la promesse, la cible et le prix.
 - **Chaque chiffre public a une source primaire datée** ; chaque différence revendiquée face à un concurrent est **mesurée** (harnais du lot 1, protocole publié) ; ce qui n'est pas construit ne se promet pas.
 - **Pas de promesse de progrès scolaire ni de meilleures notes** : rien ne la mesure aujourd'hui. Pas de « le seul ».
 - **Preuve sociale réelle uniquement** : témoignages de vraies familles, avec leur accord, et chiffres sourcés ou mesures publiées. Jamais de témoignage, d'avis, de logo ni de compteur d'utilisateurs inventé ou anticipé.
-- Une phrase de la landing qu'on ne peut adosser à une source ou à une mesure se retire : c'est le seul type de changement admis tant que la landing est gelée (lot 4).
+- Une phrase de la landing qu'on ne peut adosser à une source ou à une mesure se retire : c'est le seul type de changement admis tant que la landing est gelée (lot 4).
+- **Jamais** : « conforme au cadre d'usage de l'IA du ministère », « agréé » ou « recommandé par l'Éducation nationale », « aligné sur les programmes » sans la métrique publiée, « fait les devoirs » (`docs/etudes/2026-10-01/education-nationale.md`, c).
 
 ## SEO technique & contenu
 
