@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { educationLevelSchema } from '../lib/education-levels.js';
-import { SUBJECT_SLUGS } from '../lib/subjects.js';
+import { schoolLevelSchema } from '../domain/levels.js';
+import { SUBJECT_SLUGS } from '../domain/subjects.js';
 
 export const STATEMENT_PLACEHOLDER = '{statement}';
 
@@ -31,7 +31,7 @@ const writtenAnswerSchema = z.strictObject({
 const exerciseSchema = z.strictObject({
   id: text,
   origin: z.enum(['protocol-2026-10-01', 'original']),
-  level: educationLevelSchema,
+  level: schoolLevelSchema,
   subject: z.enum(SUBJECT_SLUGS),
   topic: text,
   /** Programme in force in 2026-2027 that covers the exercise, quoted verbatim. */

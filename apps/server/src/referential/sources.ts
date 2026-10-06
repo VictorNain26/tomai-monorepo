@@ -1,9 +1,9 @@
-import type { EducationLevelType } from '../types/index.js';
-import type { SUBJECT_SLUGS } from '../lib/subjects.js';
+import type { SchoolLevel } from '../domain/levels.js';
+import type { SubjectSlug } from '../domain/subjects.js';
 
 export interface ProgrammeSource {
   id: string;
-  subject: (typeof SUBJECT_SLUGS)[number];
+  subject: SubjectSlug;
   title: string;
   /** Arrêté, NOR and Bulletin officiel that publish the text. */
   reference: string;
@@ -11,9 +11,9 @@ export interface ProgrammeSource {
   /** Fingerprint of the PDF the entries were extracted from; a new BO changes it. */
   sha256: string;
   /** First school year (its September) in which the text applies, per class. */
-  appliesFrom: Partial<Record<EducationLevelType, number>>;
+  appliesFrom: Partial<Record<SchoolLevel, number>>;
   /** For a text that covers one class only: its headings carry domains, not classes. */
-  level?: EducationLevelType;
+  level?: SchoolLevel;
 }
 
 const BO_16_2025 = 'Arrêté du 10-4-2025, NOR MENE2504620A, BO n° 16 du 17 avril 2025';
