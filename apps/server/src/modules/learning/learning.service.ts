@@ -18,10 +18,10 @@ import type {
   LearningDeck,
   NewLearningDeck,
   LearningCard,
-  CardType,
   NewLearningCard,
   FSRSData,
 } from './decks.schema.js';
+import type { CardType } from './card-content.schema.js';
 import { logger } from '../../platform/observability/logger.js';
 import { fsrsService, Rating } from './fsrs.service.js';
 import type { ReviewResult } from './fsrs-types.js';
@@ -60,7 +60,6 @@ interface AddCardsInput {
 }
 
 interface UpdateCardInput {
-  cardType?: CardType | undefined;
   content?: unknown;
   position?: number | undefined;
 }
@@ -217,7 +216,7 @@ class LearningService {
       throw new DeckOwnershipError(userId, deckId);
     }
 
-    input.cards.forEach((card, index) => {
+    const contents = input.cards.map((card, index) => {
       const validation = validateCardContent(
         card.cardType,
         card.content as Record<string, unknown>,
@@ -225,6 +224,7 @@ class LearningService {
       if (!validation.valid) {
         throw new CardValidationError(`Card ${index}: ${validation.error}`);
       }
+      return validation.content;
     });
 
     return db.transaction(async (tx) => {
@@ -236,7 +236,7 @@ class LearningService {
       const cardsToInsert: NewLearningCard[] = input.cards.map((card, index) => ({
         deckId,
         cardType: card.cardType,
-        content: card.content,
+        content: contents[index],
         position: card.position ?? startPosition + index,
         fsrsData: fsrsService.initializeCardFsrsData(),
       }));
@@ -275,25 +275,20 @@ class LearningService {
       throw new CardNotFoundError(cardId);
     }
 
+    // A card's `cardType` is immutable: new content is checked against the stored type. Build
+    // the patch from defined fields only, so an empty patch is a no-op rather
+    // than relying on the ORM silently dropping `undefined` columns.
+    const fields: Partial<NewLearningCard> = {};
     if (patch.content !== undefined) {
-      // Validate against the effective type: `cardType` in the patch acts as a
-      // validation hint when provided, otherwise the card's current type.
-      const effectiveType = patch.cardType ?? existing.card.cardType;
       const validation = validateCardContent(
-        effectiveType,
+        existing.card.cardType,
         patch.content as Record<string, unknown>,
       );
       if (!validation.valid) {
         throw new CardValidationError(validation.error);
       }
+      fields.content = validation.content;
     }
-
-    // Persist content/position only — a card's `cardType` is immutable here;
-    // changing it would require re-validating the existing content too. Build
-    // the patch from defined fields only, so an empty patch is a no-op rather
-    // than relying on the ORM silently dropping `undefined` columns.
-    const fields: Partial<NewLearningCard> = {};
-    if (patch.content !== undefined) fields.content = patch.content;
     if (patch.position !== undefined) fields.position = patch.position;
 
     const updated = await learningCardsRepository.updateById(cardId, fields);

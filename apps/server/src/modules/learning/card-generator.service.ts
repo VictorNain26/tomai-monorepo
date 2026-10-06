@@ -26,7 +26,7 @@
 
 import { NoObjectGeneratedError } from 'ai';
 import { generateStructured } from '../../platform/ai/mistral-client.js';
-import { CardGenerationSchema } from './cards.schema.js';
+import { CardGenerationSchema, CardSchema, type Card } from './card-content.schema.js';
 import {
   getSubjectInstructions,
   getRecommendedCardTypes,
@@ -34,14 +34,13 @@ import {
   getEducationCycle,
   getCycleAdaptationInstructions,
   getPedagogyPromptBlock,
-  getTemplatesForTypes,
   KATEX_INSTRUCTIONS
 } from './prompts/index.js';
 import { logger } from '../../platform/observability/logger.js';
-import type { CardGenerationParams, ParsedCard } from './card-generation.types.js';
+import type { CardGenerationParams } from './card-generation.types.js';
 
 // Prompt cache sur l'instruction de base + adaptations cycle/sujet.
-const CARD_GENERATOR_PROMPT_VERSION = '2026-10-05';
+const CARD_GENERATOR_PROMPT_VERSION = '2026-10-06';
 const CARD_GENERATOR_CACHE_KEY = `card-generator-${CARD_GENERATOR_PROMPT_VERSION}`;
 
 // ============================================================================
@@ -49,7 +48,7 @@ const CARD_GENERATOR_CACHE_KEY = `card-generator-${CARD_GENERATOR_PROMPT_VERSION
 // ============================================================================
 
 export interface CardGenerationResult {
-  cards: ParsedCard[];
+  cards: Card[];
   count: number;
   tokensUsed: number;
   provider: string;
@@ -68,8 +67,6 @@ interface CardGenerationError {
 /**
  * Construit le prompt optimisé pour la génération de cartes
  * Architecture modulaire utilisant les fichiers prompts/*.ts
- *
- * Tokens estimés: ~1000-1200
  */
 function buildPrompt(params: CardGenerationParams): string {
   const { topic, subject, level, cardCount, domaine } = params;
@@ -90,11 +87,10 @@ ${getPedagogyPromptBlock()}`);
   // 3. Adaptation au cycle scolaire
   parts.push(getCycleAdaptationInstructions(cycle));
 
-  // 4. Templates des types recommandés (module templates.ts)
+  // 4. Types recommandés ; la forme de chaque type est celle du schéma de sortie
   parts.push(`## TYPES DE CARTES
 Utilise principalement: ${recommendedTypes.slice(0, 5).join(', ')}
-
-${getTemplatesForTypes(recommendedTypes)}`);
+Autres types possibles: ${recommendedTypes.slice(5).join(', ')}`);
 
   // 5. KaTeX si matière scientifique
   if (requiresKaTeX) {
@@ -143,13 +139,23 @@ export async function generateCards(
       maxTokens: 4096,
       schema: CardGenerationSchema,
       schemaName: 'card_generation',
-      // Mistral strict mode rejects `format: uri` (.url()) and `propertyNames` (z.record) with 400/3051.
-      strict: false,
       promptCacheKey: CARD_GENERATOR_CACHE_KEY,
     });
-    const cards = object.cards as ParsedCard[];
+    const cards = object.cards.flatMap((card) => {
+      const parsed = CardSchema.safeParse(card);
+      return parsed.success ? [parsed.data] : [];
+    });
     const tokensUsed = usage.inputTokens + usage.outputTokens;
     const durationMs = Date.now() - startTime;
+    if (cards.length === 0) {
+      logger.error('Every generated card had a misplaced index', {
+        operation: 'learning:generate:validation_error',
+        hasTopic: Boolean(params.topic),
+        durationMs,
+        severity: 'high' as const
+      });
+      return { success: false, error: 'Cartes invalides', code: 'INVALID_OUTPUT' };
+    }
 
     logger.info('Card generation completed', {
       operation: 'learning:generate:complete',
@@ -157,6 +163,7 @@ export async function generateCards(
       subject: params.subject,
       schoolLevel: params.level,
       cardsGenerated: cards.length,
+      cardsSetAside: object.cards.length - cards.length,
       requestedCards: params.cardCount,
       tokensUsed,
       durationMs

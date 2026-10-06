@@ -380,7 +380,7 @@ describe('LearningService', () => {
       mockDeckUpdateById.mockImplementationOnce(async () => ({ ...deck, cardCount: 3 }));
 
       const result = await learningService.addCardsToDeckOrThrow('user-1', 'deck-1', {
-        cards: [{ cardType: 'flashcard', content: { front: 'q', back: 'a' } }],
+        cards: [{ cardType: 'flashcard', content: { front: 'q', back: 'a', blob: 'x' } }],
       });
 
       expect(mockTransaction).toHaveBeenCalledTimes(1);
@@ -397,6 +397,9 @@ describe('LearningService', () => {
       expect(insertTx).toBe(updateTx);
       expect(insertTx).toBe(countTx);
       expect((result as typeof inserted)).toEqual(inserted);
+      // The parsed content is stored, without the keys the schema does not know
+      const insertedRows = (mockCardInsertMany.mock.calls[0] as unknown[])[0] as { content: unknown }[];
+      expect(insertedRows[0]?.content).toEqual({ front: 'q', back: 'a' });
     });
 
     it('rolls back when the card insert throws', async () => {
@@ -471,7 +474,7 @@ describe('LearningService', () => {
       ).rejects.toBeInstanceOf(CardNotFoundError);
     });
 
-    it('validates new content against the existing card type when cardType is omitted', async () => {
+    it('validates new content against the stored card type', async () => {
       mockCardFindByIdWithOwner.mockImplementationOnce(async () => ({
         card: { id: 'card-1', deckId: 'deck-1', cardType: 'flashcard' },
         deckUserId: 'user-1',
@@ -485,25 +488,24 @@ describe('LearningService', () => {
       expect(mockCardUpdateById).not.toHaveBeenCalled();
     });
 
-    it('persists only content/position, never the cardType', async () => {
+    it('persists the parsed content and the position, never the cardType', async () => {
       mockCardFindByIdWithOwner.mockImplementationOnce(async () => ({
-        card: { id: 'card-1', deckId: 'deck-1', cardType: 'flashcard' },
+        card: { id: 'card-1', deckId: 'deck-1', cardType: 'qcm' },
         deckUserId: 'user-1',
       }));
       mockCardUpdateById.mockImplementationOnce(async () => ({
         id: 'card-1',
-        cardType: 'flashcard',
+        cardType: 'qcm',
       }));
+      const content = { question: 'Q', options: ['a', 'b'], correctIndex: 0, explanation: 'E' };
 
       await learningService.updateCardOrThrow('user-1', 'card-1', {
-        cardType: 'qcm',
-        content: { question: 'Q', options: ['a', 'b'], correctIndex: 0 },
+        content: { ...content, imageUrl: 'http://example.com/x.png' },
         position: 3,
       });
 
       const persisted = (mockCardUpdateById.mock.calls[0] as unknown[])[1] as Record<string, unknown>;
-      expect(persisted).not.toHaveProperty('cardType');
-      expect(persisted).toMatchObject({ position: 3 });
+      expect(persisted).toEqual({ content, position: 3 });
     });
   });
 

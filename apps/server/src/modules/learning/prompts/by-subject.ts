@@ -7,7 +7,8 @@
  * - L'IA choisit les types les plus adaptés au contenu
  */
 
-import type { CardType, EducationCycle } from '../card-generation.types.js';
+import type { EducationCycle } from '../card-generation.types.js';
+import { CARD_TYPES, type CardType } from '../card-content.schema.js';
 import { SUBJECTS, type SubjectFamily, type SubjectSlug } from '../../../lib/subjects.js';
 import type { EducationLevelType } from '../../../types/index.js';
 
@@ -16,20 +17,6 @@ type CardFamily = Exclude<SubjectFamily, 'general'>;
 // ============================================================================
 // TOUS LES TYPES DE CARTES DISPONIBLES
 // ============================================================================
-
-/**
- * Liste complète des types (15) - l'IA peut utiliser n'importe lequel
- */
-const ALL_CARD_TYPES: CardType[] = [
-  'concept', // Pédagogique - théorie avant pratique
-  'flashcard', 'qcm', 'vrai_faux',
-  'matching', 'fill_blank', 'word_order',
-  'calculation',
-  'timeline', 'matching_era', 'cause_effect',
-  'classification', 'process_order',
-  'grammar_transform',
-  'reformulation' // Sciences Cognitives 2025 - Élaboration active
-];
 
 // ============================================================================
 // TYPES SUGGÉRÉS PAR CATÉGORIE (guidance, pas restriction)
@@ -120,7 +107,7 @@ export function getSubjectInstructions(subject: SubjectSlug): string {
 export function getRecommendedCardTypes(subject: SubjectSlug): CardType[] {
   // Retourne tous les types avec les suggérés en premier
   const suggested = SUGGESTED_CARD_TYPES[SUBJECTS[subject].family];
-  const others = ALL_CARD_TYPES.filter(t => !suggested.includes(t));
+  const others = CARD_TYPES.filter(t => !suggested.includes(t));
   return [...suggested, ...others];
 }
 
