@@ -17,15 +17,31 @@ pre-commit:
     - name: lint-landing
       root: "apps/landing/"
       glob: "**/*.{ts,tsx}"
-      run: bunx --no-install eslint --max-warnings 0 {staged_files}
+      run: bunx --no-install eslint --max-warnings 0 --no-warn-ignored {staged_files}
 
     - name: lint-web
       root: "apps/web/"
       glob: "**/*.{ts,tsx}"
       run: bunx --no-install eslint --max-warnings 0 --no-warn-ignored {staged_files}
 
-    - name: typecheck
-      run: bunx --no-install turbo run typecheck --affected --output-logs=errors-only
+    - name: lint-ui
+      root: "packages/ui/"
+      glob: "**/*.{ts,tsx}"
+      run: bunx --no-install eslint --max-warnings 0 --no-warn-ignored {staged_files}
+
+    # The typed lint of @repo/api reads the server's built declarations
+    # (tomai-server/dist/types), which the typecheck run rebuilds first.
+    - name: typecheck-then-lint-api
+      group:
+        piped: true
+        jobs:
+          - name: typecheck
+            run: bunx --no-install turbo run typecheck --affected --output-logs=errors-only
+
+          - name: lint-api
+            root: "packages/api/"
+            glob: "**/*.ts"
+            run: bunx --no-install eslint --max-warnings 0 --no-warn-ignored {staged_files}
 
 pre-push:
   parallel: true
