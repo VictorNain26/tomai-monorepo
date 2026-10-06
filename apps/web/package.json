@@ -8,7 +8,6 @@
     "preview": "vite preview --port 3002 --strictPort",
     "lint": "eslint . --max-warnings 0",
     "typecheck": "tsc -b",
-    "test:e2e": "playwright test",
     "clean": "rm -rf dist node_modules/.tmp"
   },
   "dependencies": {
@@ -19,7 +18,6 @@
     "react-dom": "^19.3.0"
   },
   "devDependencies": {
-    "@playwright/test": "^1.63.0",
     "@repo/eslint-config": "workspace:*",
     "@tailwindcss/vite": "^4.3.3",
     "@tanstack/router-plugin": "^1.168.42",

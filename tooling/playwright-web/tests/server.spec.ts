@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 
-// The build as the server serves it in production (playwright.config.ts): its CSP, its fallback.
+// The built web as the built server serves it (playwright.config.ts): its CSP, its fallback.
 
 async function recordCspViolations(page: Page) {
   await page.addInitScript(() => {
