@@ -9,7 +9,7 @@ conversations. Pré-lancement : aucun utilisateur en production.
 ```bash
 bun install    # Bun 1.4.2+ ; Node 24+ pour la landing
 bun run setup  # .env, BETTER_AUTH_SECRET, postgres, migrations Drizzle
-bun run dev    # infra Docker + server :3000 + landing :3001
+bun run dev    # infra Docker + server :3000 + landing :3001 + web :3002
 ```
 
 Arrêt de l'infra : `bun run dev:down`.
@@ -23,7 +23,8 @@ le détail, `bun run doctor:e2e` la version stricte où un `SKIP` compte comme u
 ```
 apps/
 ├── server/       # Bun + Hono — API backend (3000)
-└── landing/      # Next.js — vitrine SEO (3001)
+├── landing/      # Next.js — vitrine SEO (3001)
+└── web/          # Vite + React + TanStack Router — application, téléphone d'abord (3002)
 
 packages/
 ├── api/             # Client typé (hono/client) — le contrat serveur → clients
@@ -38,6 +39,7 @@ packages/
 |--------|-------------|
 | Backend | Bun 1.4, Hono 4, PostgreSQL 18, Drizzle ORM 0.45 |
 | Landing | Next.js 16, TailwindCSS 4, Motion 13, `@repo/ui` (shadcn) |
+| Web | Vite 8, React 19, TanStack Router, TailwindCSS 4 ; tests Playwright à largeur de téléphone (`docs/etudes/2026-10-06/client-web.md`) |
 | Auth | Better Auth 1.7 + Google OAuth, comptes élèves par username |
 | Chat | Vercel AI SDK 7 (`streamText` + `useChat`), un seul protocole client/serveur |
 | IA | Mistral Small 4 — chat, vision multimodale, OCR, TTS et STT Voxtral. Stack 100 % EU |
