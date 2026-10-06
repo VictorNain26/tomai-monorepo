@@ -34,7 +34,7 @@ const state = (overrides: Partial<ExerciseState> = {}): ExerciseState => ({
 });
 
 let current: ExerciseState | null = state();
-const prepareExerciseSheet = mock(async (_params: unknown): Promise<ExerciseState> => state({ id: 'ex-new', hintLevel: 0 }));
+const prepareExerciseSheet = mock(async (_params: unknown): Promise<ExerciseState | null> => state({ id: 'ex-new', hintLevel: 0 }));
 mock.module('../modules/tutor/exercise-sheet.service', () => ({ prepareExerciseSheet }));
 
 let verdict: Diagnosis['verdict'] = 'incorrect';
@@ -151,6 +151,16 @@ describe('prepareExerciseTurn', () => {
     expect(diagnose).toHaveBeenCalledTimes(1);
     expect(turn.hintLevel).toBe(1);
     expect(turn.exercise?.id).toBe('ex-new');
+  });
+
+  it('keeps the exercise in progress when the draws find no exercise in a message the analysis took for one', async () => {
+    prepareExerciseSheet.mockImplementationOnce(async () => null);
+
+    const turn = await prepareExerciseTurn(params({ analysis: analysis({ bringsExercise: true, asksSolution: true }) }));
+
+    expect(prepareExerciseSheet).toHaveBeenCalledTimes(1);
+    expect(turn.exercise?.id).toBe('ex-1');
+    expect(turn.contract).not.toBeNull();
   });
 
   it('gives no contract without an exercise in progress, nor for one whose sheet failed', async () => {

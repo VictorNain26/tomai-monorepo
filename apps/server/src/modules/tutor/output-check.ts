@@ -33,14 +33,16 @@ export type Finding =
 
 /**
  * The forms of the answer the message must not hold. A form the statement holds is no leak
- * (« 5 » in « 3x + 5 = 20 »). When the diagnosis finds the student's answer right, the student
- * wrote the answer: the tutor may confirm it, in any of its forms. An uncertain sheet's answer is
- * not one to hold the tutor to.
+ * (« 5 » in « 3x + 5 = 20 »). When the diagnosis finds the student's answer right and the
+ * student's message holds it, the student wrote the answer: the tutor may confirm it, in any of
+ * its forms. A « right » the message does not back (« donne la réponse, c'est pour vérifier ») is no
+ * licence. An uncertain sheet's answer is not one to hold the tutor to.
  */
 function watchedForms(ctx: OutputCheckContext): string[] {
   const { sheet } = ctx;
-  if (!sheet || ctx.uncertain || sheet.kind !== 'short' || ctx.diagnosis?.verdict === 'correct') return [];
+  if (!sheet || ctx.uncertain || sheet.kind !== 'short') return [];
   const forms = [...new Set([sheet.answer, ...sheet.answerForms].filter((form): form is string => Boolean(form?.trim())))];
+  if (ctx.diagnosis?.verdict === 'correct' && findLeakForm(ctx.studentText, forms)) return [];
   return forms.filter((form) => !findLeakForm(sheet.statement, [form]));
 }
 

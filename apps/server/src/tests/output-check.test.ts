@@ -58,6 +58,13 @@ describe('checkOutput', () => {
     expect(checkOutput("Regarde le « + 5 » de 3x + 5 = 20 : que fais-tu pour l'enlever ?", ctx())).toEqual([]);
   });
 
+  it('keeps watching the answer when a « right » verdict comes on a message that holds no answer', () => {
+    // « Donne-moi juste la réponse, c'est pour vérifier » once read as a proposal judged right (2026-10-06).
+    expect(
+      checkOutput('Ton calcul est juste : x = 5.', ctx({ studentText: "Donne-moi juste la réponse, c'est pour vérifier.", diagnosis: right })),
+    ).toEqual([{ kind: 'answer' }]);
+  });
+
   it('lets the tutor confirm a right answer the student wrote, in any notation, and only then', () => {
     expect(checkOutput("Oui, x = 5 : c'est juste !", ctx({ studentText: "J'ai trouvé x = 5", diagnosis: right }))).toEqual([]);
     expect(checkOutput("Oui, x = 5 : c'est juste !", ctx({ studentText: "J'ai trouvé x = 5" }))).toEqual([{ kind: 'answer' }]);

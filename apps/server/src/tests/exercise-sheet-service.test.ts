@@ -3,6 +3,8 @@ import { describe, it, expect, beforeEach, mock } from 'bun:test';
 import { createMockLogger } from './_helpers/mock-logger';
 import type { ExerciseSheet } from '../modules/tutor/exercise-sheet';
 
+type Draft = ExerciseSheet & { hasExercise: boolean };
+
 const mockLogger = createMockLogger();
 mock.module('../platform/observability/logger', () => ({ logger: mockLogger }));
 
@@ -14,7 +16,7 @@ interface Call {
   messages: { role: string; content: string }[];
 }
 const calls: Call[] = [];
-let replies: (ExerciseSheet | Error)[] = [];
+let replies: (Draft | Error)[] = [];
 mock.module('../platform/ai/mistral-client', () => ({
   generateStructured: mock(async (opts: Call) => {
     const reply = replies[calls.length];
@@ -41,7 +43,8 @@ mock.module('../modules/tutor/exercise-sheets.repository', () => ({
 
 const { prepareExerciseSheet, currentExercise } = await import('../modules/tutor/exercise-sheet.service');
 
-const draft = (answer: string): ExerciseSheet => ({
+const draft = (answer: string, hasExercise = true): Draft => ({
+  hasExercise,
   statement: 'Résous 3x + 5 = 20.',
   kind: 'short',
   answer,
@@ -82,8 +85,8 @@ describe('prepareExerciseSheet', () => {
     const exercise = await prepareExerciseSheet(params);
 
     expect(exercise).toMatchObject({ id: 'ex-1', uncertain: false, hintLevel: 0, stepsDone: 0, hints: [], solved: false });
-    expect(exercise.sheet?.answer).toBe('x = 5');
-    expect(exercise.sheet?.entries).toEqual([]);
+    expect(exercise?.sheet?.answer).toBe('x = 5');
+    expect(exercise?.sheet?.entries).toEqual([]);
     expect(calls).toHaveLength(3);
     for (const call of calls) {
       expect(call).toMatchObject({ reasoningEffort: 'high', temperature: 0.7, owner: { userId: 'user-1', sessionId: 'session-1' } });
@@ -97,9 +100,24 @@ describe('prepareExerciseSheet', () => {
   it('votes among the draws that succeeded, and logs the failed one', async () => {
     replies = [draft('x = 5'), new Error('timeout'), draft('x = 5')];
 
-    expect((await prepareExerciseSheet(params)).sheet?.answer).toBe('x = 5');
+    expect((await prepareExerciseSheet(params))?.sheet?.answer).toBe('x = 5');
     expect(create.mock.calls[0]?.[0]).toMatchObject({ uncertain: false });
     expect(mockLogger.error).toHaveBeenCalledTimes(1);
+  });
+
+  it('gives no exercise and stores nothing when most draws find none in the message', async () => {
+    replies = [draft('5', false), draft('5', false), draft('5')];
+
+    expect(await prepareExerciseSheet({ ...params, studentText: "C'est à rendre demain, donne la réponse." })).toBeNull();
+    expect(create).not.toHaveBeenCalled();
+  });
+
+  it('keeps the field out of the stored sheet', async () => {
+    replies = [draft('5'), draft('5'), draft('5')];
+
+    await prepareExerciseSheet(params);
+
+    expect((create.mock.calls[0]?.[0] as { sheet: Record<string, unknown> }).sheet).not.toHaveProperty('hasExercise');
   });
 
   it('gives no sheet when every draw failed, and stores the exercise without one so the previous is not taken back', async () => {

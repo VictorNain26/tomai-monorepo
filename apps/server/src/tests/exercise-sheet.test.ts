@@ -126,6 +126,24 @@ describe('vote', () => {
     expect(result).toMatchObject({ sheet: { answer: '« Le sujet »' }, uncertain: false, mathCheck: 'not-applicable' });
   });
 
+  it('agrees on an answer two draws write differently but share a writing of', () => {
+    const result = vote([
+      short({ answer: 'Hier, nous sommes allés au cinéma.', answerForms: ['nous sommes allés'], mathAnswer: null, mathEquation: null }),
+      short({ answer: 'sommes allés', answerForms: ['sommes allés', 'nous sommes allés'], mathAnswer: null, mathEquation: null }),
+      short({ answer: 'nous sommes allés au cinéma', answerForms: ['nous sommes allés au cinéma'], mathAnswer: null, mathEquation: null }),
+    ]);
+    expect(result).toMatchObject({ sheet: { answer: 'Hier, nous sommes allés au cinéma.' }, uncertain: false });
+  });
+
+  it('keeps apart draws that share no writing of the answer', () => {
+    const result = vote([
+      short({ answer: 'le sujet', answerForms: ['sujet'], mathAnswer: null, mathEquation: null }),
+      short({ answer: 'le verbe', answerForms: ['verbe'], mathAnswer: null, mathEquation: null }),
+      short({ answer: 'le complément', answerForms: ['complément'], mathAnswer: null, mathEquation: null }),
+    ]);
+    expect(result?.uncertain).toBe(true);
+  });
+
   it('marks the sheet uncertain without a majority, or with a single draw', () => {
     expect(
       vote([short({ answer: '1', mathAnswer: '1' }), short({ answer: '2', mathAnswer: '2' }), short({ answer: '3', mathAnswer: '3' })])?.uncertain,

@@ -8,11 +8,11 @@ import { generateStructured } from '../../platform/ai/mistral-client.js';
 import { logger } from '../../platform/observability/logger.js';
 import type { EducationLevelType } from '../../types/index.js';
 import type { SubjectFamily } from '../../lib/subjects.js';
-import { ExerciseSheetSchema, keepKnownNotions, notionsFor, schoolYearOf, sheetMessages, vote, type ExerciseSheet } from './exercise-sheet.js';
+import { ExerciseDraftSchema, keepKnownNotions, notionsFor, schoolYearOf, sheetMessages, vote, type ExerciseSheet } from './exercise-sheet.js';
 import { exerciseSheetsRepository } from './exercise-sheets.repository.js';
 import { KEPT_HINTS, type Hint } from './hint-ladder.js';
 
-const EXERCISE_SHEET_PROMPT_VERSION = '2026-10-06.2';
+const EXERCISE_SHEET_PROMPT_VERSION = '2026-10-06.4';
 const DRAWS = 3;
 const SHEET_TIMEOUT_MS = 20_000;
 // Small 4's model card: « 0.7 for reasoning_effort="high" » (huggingface.co/mistralai/Mistral-Small-4-119B-2603).
@@ -43,7 +43,8 @@ export interface ExerciseState {
 }
 
 /** The exercise the student brings, its sheet voted and stored. */
-export async function prepareExerciseSheet(params: PrepareSheetParams): Promise<ExerciseState> {
+/** The new exercise of the turn, or null when the draws find none in what the student sent. */
+export async function prepareExerciseSheet(params: PrepareSheetParams): Promise<ExerciseState | null> {
   const startTime = Date.now();
   const notions = notionsFor(params.level, params.subject, schoolYearOf(new Date()));
   const messages = sheetMessages(params.level, notions, params.studentText, params.attachedFilesBlock);
@@ -54,7 +55,7 @@ export async function prepareExerciseSheet(params: PrepareSheetParams): Promise<
         functionId: 'exercise-sheet',
         owner: { userId: params.userId, sessionId: params.sessionId },
         messages,
-        schema: ExerciseSheetSchema,
+        schema: ExerciseDraftSchema,
         schemaName: 'exercise_sheet',
         reasoningEffort: 'high',
         temperature: REASONING_TEMPERATURE,
@@ -75,7 +76,12 @@ export async function prepareExerciseSheet(params: PrepareSheetParams): Promise<
     }
   }
   const results = draws.flatMap((draw) => (draw.status === 'fulfilled' ? [draw.value] : []));
-  const kept = results.map(({ object }) => keepKnownNotions(object, notions));
+  const withExercise = results.filter(({ object }) => object.hasExercise);
+  if (results.length > 0 && withExercise.length * 2 <= results.length) {
+    logger.info('No exercise in the message', { operation: 'exercise-sheet:none', sessionId: params.sessionId, draws: results.length });
+    return null;
+  }
+  const kept = withExercise.map(({ object: { hasExercise: _, ...sheet } }) => keepKnownNotions(sheet, notions));
   const droppedNotions = kept.reduce((sum, { dropped }) => sum + dropped, 0);
   const outputTokens = results.reduce((sum, { usage }) => sum + usage.outputTokens, 0);
 

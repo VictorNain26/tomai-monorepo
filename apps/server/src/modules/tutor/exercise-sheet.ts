@@ -46,6 +46,20 @@ export const ExerciseSheetSchema = z.object({
 
 export type ExerciseSheet = z.infer<typeof ExerciseSheetSchema>;
 
+/**
+ * One draw: whether the student sent an exercise at all, then its sheet. A turn the analysis took
+ * for a new exercise may hold none (« donne la réponse »): the draws say so, and the exercise in
+ * progress stays, where an empty sheet would have replaced it and left its answer unwatched.
+ */
+export const ExerciseDraftSchema = z.object({
+  hasExercise: z
+    .boolean()
+    .describe(
+      "Le message ou l'un des fichiers contient l'énoncé d'un exercice ou une question à résoudre ; faux si l'élève ne fait que presser, demander la réponse ou parler d'autre chose.",
+    ),
+  ...ExerciseSheetSchema.shape,
+});
+
 /** The school year a date belongs to, named after the September that opens it. */
 export function schoolYearOf(date: Date): number {
   return date.getMonth() >= 8 ? date.getFullYear() : date.getFullYear() - 1;
@@ -124,12 +138,20 @@ const normalized = (text: string) =>
     .trim()
     .replace(/[.!;]+$/, '');
 
+const writings = (sheet: ExerciseSheet) => new Set([sheet.answer, ...sheet.answerForms].flatMap((form) => (form?.trim() ? [normalized(form)] : [])));
+
+/**
+ * Two draws give the same answer when mathjs finds it equal, else when they share one of its
+ * writings: « sommes allés » and « Hier, nous sommes allés au cinéma. » are the same answer, which
+ * a comparison of the sentences alone left without a majority, the sheet uncertain and unwatched.
+ */
 function sameAnswer(a: ExerciseSheet, b: ExerciseSheet): boolean {
   if (a.mathAnswer !== null && b.mathAnswer !== null) {
     const same = sameMath(a.mathAnswer, b.mathAnswer);
     if (same !== null) return same;
   }
-  return a.answer !== null && b.answer !== null && normalized(a.answer) === normalized(b.answer);
+  const ofB = writings(b);
+  return [...writings(a)].some((writing) => ofB.has(writing));
 }
 
 export interface VotedSheet {
