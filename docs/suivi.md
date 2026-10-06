@@ -28,12 +28,12 @@ bloquant levé).
   corrigée (#391). Appels du SDK Mistral retentés, modération comprise sur un appel bloqué (#392).
   S4 repassé : aucune fuite sur 6. Point 7 terminé : appels annexes (#393), logs sans contenu
   d'élève (#394), mémoire (#395). Nettoyage demandé par Victor le 2026-10-06, en trois PR : la
-  mémoire entre séances, faite (#396) ; les colonnes et tables jamais lues ; les restes hors
+  mémoire entre séances, faite (#396) ; les colonnes et tables jamais lues, en revue (#397) ; les restes hors
   vision et une migration de base unique, qui emporte pgvector. Puis le point 8, quotas et coûts,
   et le passage de fin. Plan d'abord dans `docs/plans/`.
   - Une relecture humaine d'une partie des conversations lues par Claude reste due avant
     toute publication (lot 4).
-- **PR ouvertes :** aucune.
+- **PR ouvertes :** #397, colonnes et tables sans usage.
 - **Landing en ligne gelée** jusqu'au lot 4 : seuls des correctifs d'honnêteté ou techniques y entrent.
   L'identité visuelle est rejetée et se refait au lot 4.
 
@@ -211,10 +211,6 @@ contraire.
   (`platform/http/error-handler.ts`) renvoie toujours le même message générique,
   sans dire quel champ est faux. Les formulaires d'enfant en auront besoin : exposer les
   champs en erreur dans l'enveloppe, pour toutes les routes.
-- **Tableaux de bord** : aucun code n'écrit la table `progress`, donc `conceptsLearned` de
-  `/api/progress/dashboard` vaut toujours 0 ; l'alimenter ou supprimer table, dépôt et champ
-  avec le tableau de bord du client web. La table `parent_restore_token` (bascule rapide du
-  mobile) n'est plus lue ni écrite : la supprimer par migration (#353).
 - **Facturation** : colonnes `revenuecat_customer_id` et `revenuecat_subscription_id` de
   `family_billing`, enum `billing_status` et commentaires RevenueCat de
   `modules/billing/billing.schema.ts`, restes du mobile, refaits avec le paiement web. Ses
@@ -583,3 +579,11 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
   90 et 180 jours) ; le profil cognitif gardait, sans durée ni accès, des notes libres du
   modèle sur un enfant. La page de confidentialité de la landing, qui décrivait ce profil et
   une mémoire de 90 jours, dit ce qui est : aucun profil, une séance ne sert pas à la suivante.
+
+  Colonnes et tables sans usage supprimées (#397), relevées colonne par colonne dans le code :
+  dix-neuf colonnes de `study_sessions` (frustration, métriques socratiques, coût, appareil,
+  note…), neuf de `messages`, neuf de `user` et `session.impersonated_by` (plugin admin de Better
+  Auth, non activé), les tables `progress` et `parent_restore_token`, `files.storage_*` ; avec
+  elles `/progress/dashboard` et les champs toujours nuls du tableau de bord parent (durée,
+  frustration).
+
