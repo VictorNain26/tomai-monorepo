@@ -13,15 +13,8 @@
     "emitDeclarationOnly": true,
     "skipLibCheck": true,
     "outDir": "dist/types",
-    "rootDir": "src",
-    "tsBuildInfoFile": "dist/types/.tsbuildinfo"
+    "rootDir": "src"
   },
   "include": ["src/**/*.ts"],
-  "exclude": [
-    "node_modules",
-    "dist",
-    "coverage",
-    "src/tests/**",
-    "src/scripts/archive/**/*"
-  ]
+  "exclude": ["src/tests/**"]
 }

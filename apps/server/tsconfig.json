@@ -6,20 +6,12 @@
     /* SERVER - DEV & TYPECHECK CONFIG      */
     /* No emit for development              */
     /* ===================================== */
-    "noEmit": true,
-    "tsBuildInfoFile": ".tsbuildinfo"
+    "noEmit": true
   },
   "include": [
     "src/**/*.ts",
     "src/**/*.d.ts",
     "scripts/**/*.ts",
     "drizzle.config.ts"
-  ],
-  "exclude": [
-    "node_modules",
-    "dist",
-    "coverage",
-    "patches/**/*",
-    "src/scripts/archive/**/*"
   ]
 }
