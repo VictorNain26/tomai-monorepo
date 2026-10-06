@@ -609,3 +609,9 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
   prix en dollars × 1,1 (endpoint UE) × 0,85, vérifié au chiffre près sur la lecture vocale et la
   transcription. Le calcul convertissait à 0,92 et surestimait chaque coût d'environ 8 % ; les budgets
   provisoires, inchangés, laissent donc environ 8 % d'usage de plus.
+
+  Environnement de travail nettoyé (`chore/clean-environment`) : tout `.env*` ignoré sauf les
+  gabarits ; l'action Claude reçoit enfin modèle, tours et outils par `claude_args` ; Docker réduit
+  à postgres et à l'image de production (port 3000) ; scripts morts, clés de `bunfig.toml`,
+  alias et options TypeScript inutiles, smoke test vers un hébergement inexistant, détection
+  Supabase et mentions Koyeb supprimés.
