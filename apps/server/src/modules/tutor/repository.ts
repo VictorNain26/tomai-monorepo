@@ -139,15 +139,16 @@ export function createTutorRepository(db: Db) {
     },
 
     /**
-     * The student's exercises with a sheet since `since`, before the one at `before` (all of them
-     * when null), oldest first, with the error types of their turns: what the learner memory reads.
-     * Through the student's own sessions only.
+     * The student's exercises since `since`, before the one at `before` (all of them when null), on
+     * one of `notions` (any when null), oldest first, with their notions and the error types of
+     * their turns: what the learner memory reads. Through the student's own sessions only.
      */
-    async pastExercises(studentId: string, since: Date, before: number | null): Promise<PastExercise[]> {
+    async pastExercises(studentId: string, since: Date, before: number | null, notions: readonly string[] | null): Promise<PastExercise[]> {
+      const entries = sql`(${exercise.sheet} -> 'entries')`;
       const rows = await db
         .select({
           createdAt: exercise.createdAt,
-          sheet: exercise.sheet,
+          entries: sql<string[]>`coalesce(${entries}, '[]'::jsonb)`,
           hintLevel: exercise.hintLevel,
           solvedAt: exercise.solvedAt,
           errorTypes: sql<
@@ -162,12 +163,20 @@ export function createTutorRepository(db: Db) {
             gte(exercise.createdAt, since),
             isNotNull(exercise.sheet),
             ...(before === null ? [] : [lt(exercise.position, before)]),
+            ...(notions === null
+              ? []
+              : [
+                  sql`${entries} ?| array[${sql.join(
+                    notions.map((notion) => sql`${notion}`),
+                    sql`, `,
+                  )}]::text[]`,
+                ]),
           ),
         )
         .orderBy(asc(exercise.position));
-      return rows.map(({ createdAt, sheet, hintLevel, solvedAt, errorTypes }) => ({
+      return rows.map(({ createdAt, entries: notionIds, hintLevel, solvedAt, errorTypes }) => ({
         createdAt,
-        entries: sheet?.entries ?? [],
+        entries: notionIds,
         hintLevel,
         solved: solvedAt !== null,
         errorTypes,
@@ -183,12 +192,12 @@ export function createTutorRepository(db: Db) {
       return new Map(rows.map(({ notionId, resetAt }) => [notionId, resetAt]));
     },
 
+    /** At the database's clock, which dates the exercises the memory compares with it. */
     async resetNotion(studentId: string, notionId: string) {
-      const resetAt = new Date();
       await db
         .insert(learnerNotionReset)
-        .values({ studentId, notionId, resetAt })
-        .onConflictDoUpdate({ target: [learnerNotionReset.studentId, learnerNotionReset.notionId], set: { resetAt } });
+        .values({ studentId, notionId })
+        .onConflictDoUpdate({ target: [learnerNotionReset.studentId, learnerNotionReset.notionId], set: { resetAt: sql`now()` } });
     },
 
     /**

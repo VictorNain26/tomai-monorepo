@@ -5,6 +5,7 @@
  * list.
  */
 
+import type { Diagnosis } from './diagnosis';
 import { notionText, schoolYearOf } from './sheet';
 
 /** The first of September that opened the school year, at midnight in Paris (summer time, UTC+2). */
@@ -19,13 +20,15 @@ export interface PastExercise {
   errorTypes: readonly string[];
 }
 
-const ERROR_LABELS: Partial<Record<string, string>> = {
+// Every error the diagnosis names, but its « not sure » and « none »: a renamed type fails the typecheck here.
+const ERROR_TYPES = {
   guess: 'répond au hasard ou sans comprendre',
   misinterpret: 'comprend mal la consigne',
   careless: "fait des erreurs d'inattention",
   'right-idea': "a la bonne idée sans aller jusqu'au bout",
   imprecise: 'manque de précision',
-};
+} satisfies Record<Exclude<Diagnosis['errorType'], 'not-sure' | 'n/a'>, string>;
+const ERROR_LABELS: Partial<Record<string, string>> = ERROR_TYPES;
 
 export interface NotionMemory {
   notionId: string;

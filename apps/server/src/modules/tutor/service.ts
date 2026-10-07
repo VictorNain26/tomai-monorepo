@@ -23,7 +23,7 @@ import { learnerMemoryBlock, notionMemories, schoolYearStart } from './core/memo
 import type { OutputCheckContext } from './core/output-check';
 import { studentBlock, subjectBlock, systemPrompt } from './core/prompt';
 import { routeReasoningEffort } from './core/reasoning';
-import { exerciseBlock, SHEET_PROMPT_VERSION } from './core/sheet';
+import { exerciseBlock, notionText, SHEET_PROMPT_VERSION } from './core/sheet';
 import { RECENT_MESSAGES, SUMMARY_BACKLOG, summarize } from './core/summary';
 import { titleFor } from './core/title';
 import { TURN_PROMPT_VERSION } from './core/version';
@@ -87,14 +87,19 @@ export function createTutorService({ repository, students, ai, moderation, logge
     return memory.resetAt && memory.resetAt > start ? memory.resetAt : start;
   };
 
+  /** What the student's exercises before `before` say of `notions` (of every notion when null): what Tom reads, what the student sees. */
+  async function memoriesOf(learner: Student, notions: readonly string[] | null, before: number | null) {
+    const [past, resets] = await Promise.all([
+      repository.pastExercises(learner.id, memorySince(learner), before, notions),
+      repository.notionResets(learner.id),
+    ]);
+    return notionMemories(past, resets);
+  }
+
   /** The learner memory of the exercise's notions, from the exercises before it; null while it is not active. */
   async function memoryOf(learner: Student, notions: readonly string[], before: number | null) {
     if (learner.memory.state !== 'active' || notions.length === 0) return null;
-    const [past, resets] = await Promise.all([
-      repository.pastExercises(learner.id, memorySince(learner), before),
-      repository.notionResets(learner.id),
-    ]);
-    return learnerMemoryBlock(notions, notionMemories(past, resets));
+    return learnerMemoryBlock(notions, await memoriesOf(learner, notions, before));
   }
 
   /** The student's message moderated; null when moderation could not answer, the rules then judging distress alone. */
@@ -281,12 +286,7 @@ export function createTutorService({ repository, students, ai, moderation, logge
     async memory(userId: string) {
       const learner = await student(userId);
       const { state, mayAnswer } = learner.memory;
-      if (state !== 'active') return { state, mayAnswer, notions: [] };
-      const [past, resets] = await Promise.all([
-        repository.pastExercises(learner.id, memorySince(learner), null),
-        repository.notionResets(learner.id),
-      ]);
-      return { state, mayAnswer, notions: notionMemories(past, resets) };
+      return { state, mayAnswer, notions: state === 'active' ? await memoriesOf(learner, null, null) : [] };
     },
 
     async answerMemory(userId: string, answer: MemoryAnswer) {
@@ -301,7 +301,9 @@ export function createTutorService({ repository, students, ai, moderation, logge
 
     /** The student understood a notion: its earlier exercises no longer count. */
     async resetNotion(userId: string, notionId: string) {
-      await repository.resetNotion((await student(userId)).id, notionId);
+      const learner = await student(userId);
+      if (!notionText(notionId)) throw new Problem('NOT_FOUND');
+      await repository.resetNotion(learner.id, notionId);
     },
 
     async startSession(userId: string) {

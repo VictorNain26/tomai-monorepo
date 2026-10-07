@@ -4,12 +4,12 @@
  * 15, the child alone (loi Informatique et Libertés, art. 45).
  */
 
-export const SELF_CONSENT_AGE = 15;
+const SELF_CONSENT_AGE = 15;
 
 export type MemoryAnswer = 'accepted' | 'declined';
 
 /** off: nothing asked of the child; asked: the child may answer; active: Tom reads the memory. */
-export type MemoryState = 'off' | 'asked' | 'active';
+type MemoryState = 'off' | 'asked' | 'active';
 
 export interface MemoryConsent {
   /** The month of birth, `YYYY-MM-DD` on its first day. */
@@ -18,16 +18,20 @@ export interface MemoryConsent {
   answer: MemoryAnswer | null;
 }
 
-/** The age in full years at `now`, the day of birth taken as the first of its month. */
+/**
+ * The age in full years at `now`. The day of birth is not collected: the birthday is counted at the
+ * end of its month, so that a child is never taken for older than they are.
+ */
 export function ageAt(birthMonth: string, now: Date): number {
   const [year = 0, month = 1] = birthMonth.split('-').map(Number);
   const age = now.getUTCFullYear() - year;
-  return now.getUTCMonth() + 1 >= month ? age : age - 1;
+  return now.getUTCMonth() + 1 > month ? age : age - 1;
 }
 
-export function memoryState({ birthMonth, proposedAt, answer }: MemoryConsent, now: Date): MemoryState {
+/** The state of the memory, whether the child may answer it, and whether they decide alone. */
+export function memoryConsent({ birthMonth, proposedAt, answer }: MemoryConsent, now: Date) {
   const decidesAlone = ageAt(birthMonth, now) >= SELF_CONSENT_AGE;
-  if (!decidesAlone && proposedAt === null) return 'off';
-  if (answer === 'accepted') return 'active';
-  return answer === 'declined' ? 'off' : 'asked';
+  const mayAnswer = decidesAlone || proposedAt !== null;
+  const state: MemoryState = !mayAnswer || answer === 'declined' ? 'off' : answer === 'accepted' ? 'active' : 'asked';
+  return { state, mayAnswer, decidesAlone };
 }

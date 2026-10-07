@@ -8,7 +8,7 @@
 import { createPlaceholderEmail } from '@better-auth/core/utils/email';
 import { generateId } from '@better-auth/core/utils/id';
 import type { SchoolLevel } from '../../domain/levels';
-import { ageAt, memoryState, SELF_CONSENT_AGE, type MemoryAnswer } from '../../domain/memory-consent';
+import { memoryConsent, type MemoryAnswer } from '../../domain/memory-consent';
 
 export type { MemoryAnswer };
 import { Problem } from '../../platform/http/problem';
@@ -33,25 +33,17 @@ export function learnerMemory(
   profile: { birthMonth: string; memoryProposedAt: Date | null; memoryAnswer: MemoryAnswer | null; memoryResetAt: Date | null },
   now: Date,
 ) {
-  return {
-    state: memoryState({ birthMonth: profile.birthMonth, proposedAt: profile.memoryProposedAt, answer: profile.memoryAnswer }, now),
-    mayAnswer: profile.memoryProposedAt !== null || ageAt(profile.birthMonth, now) >= SELF_CONSENT_AGE,
-    resetAt: profile.memoryResetAt,
-  };
+  const { state, mayAnswer } = memoryConsent(
+    { birthMonth: profile.birthMonth, proposedAt: profile.memoryProposedAt, answer: profile.memoryAnswer },
+    now,
+  );
+  return { state, mayAnswer, resetAt: profile.memoryResetAt };
 }
 
 // The date column holds the first day of the month; the API speaks in YYYY-MM.
 const toStudent = ({ birthMonth, memoryProposedAt, memoryAnswer, ...student }: StudentRow) => {
-  const now = new Date();
-  return {
-    ...student,
-    birthMonth: birthMonth.slice(0, 7),
-    memory: {
-      proposed: memoryProposedAt !== null,
-      state: memoryState({ birthMonth, proposedAt: memoryProposedAt, answer: memoryAnswer }, now),
-      decidesAlone: ageAt(birthMonth, now) >= SELF_CONSENT_AGE,
-    },
-  };
+  const { state, decidesAlone } = memoryConsent({ birthMonth, proposedAt: memoryProposedAt, answer: memoryAnswer }, new Date());
+  return { ...student, birthMonth: birthMonth.slice(0, 7), memory: { proposed: memoryProposedAt !== null, state, decidesAlone } };
 };
 
 export function createHouseholdService({ repository, createPairingCode }: Deps) {
@@ -101,6 +93,8 @@ export function createHouseholdService({ repository, createPairingCode }: Deps) 
       studentId: string,
       patch: { name?: string | undefined; level?: SchoolLevel | undefined; memoryProposed?: boolean | undefined },
     ) {
+      // From 15 the child decides alone: the guardian neither proposes nor erases it.
+      if (patch.memoryProposed !== undefined && (await found(guardianId, studentId)).memory.decidesAlone) throw new Problem('FORBIDDEN');
       if (!(await repository.updateStudent(guardianId, studentId, patch))) throw new Problem('NOT_FOUND');
       return found(guardianId, studentId);
     },

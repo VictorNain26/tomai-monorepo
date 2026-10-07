@@ -123,7 +123,11 @@ export const turnRecord = pgTable(
     outcome: turnOutcome('outcome').notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
-  (table) => [index('turn_record_session_id_created_at_idx').on(table.sessionId, table.createdAt)],
+  (table) => [
+    index('turn_record_session_id_created_at_idx').on(table.sessionId, table.createdAt),
+    // The learner memory reads the error types of each exercise.
+    index('turn_record_exercise_id_idx').on(table.exerciseId),
+  ],
 );
 
 export const distressEvent = pgTable(

@@ -136,8 +136,8 @@ const propose = (studentId: string, memoryProposed: boolean, cookie = guardian) 
   api.request('PATCH', `/api/household/students/${studentId}`, { cookie, body: { memoryProposed } });
 const answer = (cookie: string, value: 'accepted' | 'declined') => api.request('POST', '/api/memory/answer', { cookie, body: { answer: value } });
 
+// Done before any consent: never counted.
 await pastExercise(asLea, lea.id, 'careless');
-await pastExercise(asNoe, noe.id, 'misinterpret');
 
 describe('the learner memory', () => {
   it('stays off before 15 until the parent proposes it, and the child cannot answer before', async () => {
@@ -152,8 +152,13 @@ describe('the learner memory', () => {
     expect(await writerReads(asLea)).not.toContain('learner_memory');
   });
 
-  it('once accepted, gives the writer what the student’s past exercises say, in the referential’s words, never theirs', async () => {
+  it('starts at the child’s yes: what was done before it never counts', async () => {
     expect((await answer(asLea, 'accepted')).status).toBe(200);
+    expect(await memoryOf(asLea)).toEqual({ state: 'active', mayAnswer: true, notions: [] });
+  });
+
+  it('once accepted, gives the writer what the student’s later exercises say, in the referential’s words, never theirs', async () => {
+    await pastExercise(asLea, lea.id, 'careless');
     const reads = await writerReads(asLea);
     expect(reads).toContain('<learner_memory>');
     expect(reads).toContain(notion.text);
@@ -162,10 +167,10 @@ describe('the learner memory', () => {
   });
 
   it('never gives one student’s memory to another', async () => {
-    const reads = await writerReads(asLea);
-    expect(reads).not.toContain('comprend mal la consigne');
     expect((await propose(noe.id, true, otherGuardian)).status).toBe(200);
     expect((await answer(asNoe, 'accepted')).status).toBe(200);
+    await pastExercise(asNoe, noe.id, 'misinterpret');
+    expect(await writerReads(asLea)).not.toContain('comprend mal la consigne');
     expect((await memoryOf(asNoe)).notions).toEqual([expect.objectContaining({ notionId: notion.id, worked: 1 })]);
   });
 
@@ -180,6 +185,7 @@ describe('the learner memory', () => {
   });
 
   it('forgets a notion the student understood, then all of it on their reset, from the next turn on', async () => {
+    expect((await api.request('DELETE', '/api/memory/notions/pas-une-notion', { cookie: asLea })).status).toBe(404);
     expect((await api.request('DELETE', `/api/memory/notions/${notion.id}`, { cookie: asLea })).status).toBe(204);
     expect((await memoryOf(asLea)).notions).toEqual([]);
     expect(await writerReads(asLea)).not.toContain('learner_memory');
@@ -190,23 +196,26 @@ describe('the learner memory', () => {
     expect((await memoryOf(asLea)).notions).toEqual([]);
   });
 
-  it('is off once the parent withdraws it, and erased: proposed again, it starts from nothing', async () => {
+  it('is off once the parent withdraws it, and erased: proposed again, the child is asked again', async () => {
     await pastExercise(asLea, lea.id, 'careless');
     expect((await memoryOf(asLea)).notions).toHaveLength(1);
     expect((await propose(lea.id, false)).status).toBe(200);
     expect((await memoryOf(asLea)).state).toBe('off');
     expect(await writerReads(asLea)).not.toContain('learner_memory');
 
-    // Only the exercise of the turn above, made after the withdrawal, counts.
     await propose(lea.id, true);
-    expect(await memoryOf(asLea)).toMatchObject({ state: 'active', notions: [expect.objectContaining({ notionId: notion.id, worked: 1 })] });
+    expect((await memoryOf(asLea)).state).toBe('asked');
+    await answer(asLea, 'accepted');
+    expect(await memoryOf(asLea)).toMatchObject({ state: 'active', notions: [] });
   });
 
-  it('lets a student of 15 decide alone, and erases it when they decline', async () => {
+  it('lets a student of 15 decide alone, the guardian neither proposing nor erasing it, and erases it when they decline', async () => {
     const tom = await api.student(guardian, { name: 'Tom', level: 'troisieme', birthMonth: '2011-01' });
     const asTom = await api.pair(guardian, tom.id);
     expect(await memoryOf(asTom)).toMatchObject({ state: 'asked', mayAnswer: true });
     expect((await answer(asTom, 'accepted')).status).toBe(200);
+    expect((await memoryOf(asTom)).state).toBe('active');
+    expect((await propose(tom.id, false)).status).toBe(403);
     expect((await memoryOf(asTom)).state).toBe('active');
     expect((await answer(asTom, 'declined')).status).toBe(200);
     expect((await memoryOf(asTom)).state).toBe('off');

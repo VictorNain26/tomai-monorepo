@@ -1,5 +1,5 @@
 {
-  "id": "dfa54664-1bce-4ddc-baa1-da434b4429d6",
+  "id": "8cf7945a-1fd4-4c62-8e5c-f9bfe65ca2ba",
   "prevId": "f84aabe5-6f52-4bc4-a4f7-74d231509695",
   "version": "7",
   "dialect": "postgresql",
@@ -1294,6 +1294,21 @@
             },
             {
               "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "turn_record_exercise_id_idx": {
+          "name": "turn_record_exercise_id_idx",
+          "columns": [
+            {
+              "expression": "exercise_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"

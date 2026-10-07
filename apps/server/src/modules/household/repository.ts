@@ -132,12 +132,12 @@ export function createHouseholdRepository(db: Db) {
           .set({
             updatedAt: now,
             ...(patch.level === undefined ? {} : { level: patch.level }),
-            // Withdrawn, the memory is erased too.
+            // Withdrawn, the memory is erased, and the child's answer with it: proposed again, it is asked again.
             ...(patch.memoryProposed === undefined
               ? {}
               : patch.memoryProposed
                 ? { memoryProposedAt: sql`coalesce(${studentProfile.memoryProposedAt}, now())` }
-                : { memoryProposedAt: null, memoryResetAt: now }),
+                : { memoryProposedAt: null, memoryAnswer: null, memoryResetAt: sql`now()` }),
           })
           .where(eq(studentProfile.userId, studentId));
         return true;
@@ -200,19 +200,24 @@ export function createHouseholdRepository(db: Db) {
       return deleted.length > 0;
     },
 
-    /** The student's answer to the learner memory; declined, it is erased too. */
+    /**
+     * The student's answer to the learner memory, which starts from it either way: accepted, nothing
+     * done before counts; declined, what it kept is erased.
+     */
     async answerMemory(studentId: string, answer: MemoryAnswer) {
-      const now = new Date();
+      // The database's clock, which dates the exercises the memory compares with it.
       await db
         .update(studentProfile)
-        .set({ memoryAnswer: answer, updatedAt: now, ...(answer === 'declined' ? { memoryResetAt: now } : {}) })
+        .set({ memoryAnswer: answer, memoryResetAt: sql`now()`, updatedAt: new Date() })
         .where(eq(studentProfile.userId, studentId));
     },
 
     /** The learner memory starts again from now: no earlier exercise counts. */
     async resetMemory(studentId: string) {
-      const now = new Date();
-      await db.update(studentProfile).set({ memoryResetAt: now, updatedAt: now }).where(eq(studentProfile.userId, studentId));
+      await db
+        .update(studentProfile)
+        .set({ memoryResetAt: sql`now()`, updatedAt: new Date() })
+        .where(eq(studentProfile.userId, studentId));
     },
   };
 }
