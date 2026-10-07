@@ -27,6 +27,7 @@ export interface AppDeps {
 }
 
 export function createApp({ config, logger, db, auth, lifecycle }: AppDeps) {
+  const household = householdModule({ db, auth });
   // One budget for the API and the probes: /health/ready runs a query on every call. The web's
   // files don't count, a page load fetches a dozen of them.
   const budget = rateLimit({ points: 100, durationSeconds: 60 });
@@ -46,8 +47,9 @@ export function createApp({ config, logger, db, auth, lifecycle }: AppDeps) {
       await next();
       c.header('Cache-Control', 'no-store');
     })
+    .use('/api/auth/*', household.authGuard)
     .on(['GET', 'POST'], '/api/auth/*', (c) => auth.handler(c.req.raw))
-    .route('/api/household', householdModule({ db, auth }))
+    .route('/api/household', household.routes)
     .route('/health', healthRoutes({ db, lifecycle, logger }))
     .onError(problemHandler(logger))
     .notFound(notFound);

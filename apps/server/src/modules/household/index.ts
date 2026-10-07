@@ -1,9 +1,9 @@
-/** The household module, wired from its dependencies: what app.ts mounts. */
+/** The household module, wired from its dependencies: its routes, and the guard app.ts puts before better-auth. */
 
 import type { Auth } from '../../platform/auth/auth';
 import type { Db } from '../../platform/db/client';
 import { createHouseholdRepository } from './repository';
-import { householdRoutes } from './routes';
+import { householdRoutes, studentAuthGuard } from './routes';
 import { createHouseholdService } from './service';
 
 export function householdModule({ db, auth }: { db: Db; auth: Auth }) {
@@ -11,5 +11,5 @@ export function householdModule({ db, auth }: { db: Db; auth: Auth }) {
     repository: createHouseholdRepository(db),
     hashPassword: async (password) => (await auth.$context).password.hash(password),
   });
-  return householdRoutes({ auth, service });
+  return { routes: householdRoutes({ auth, service }), authGuard: studentAuthGuard({ auth, service }) };
 }

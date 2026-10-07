@@ -138,32 +138,30 @@ describe('access matrix', () => {
 
 const creation = client();
 const creator = await creation.guardian('createur@example.com');
+const leo = await creation.student(creator, { name: 'Léo', username: 'Leo.Martin', level: 'sixieme', birthMonth: '2015-09' });
 
 describe('a guardian creates a student', () => {
   const api = creation;
   const guardian = creator;
 
   it('returns the student, who signs in by username whatever its case', async () => {
-    const student = await api.student(guardian, { name: 'Léo', username: 'Leo.Martin', level: 'sixieme', birthMonth: '2015-09' });
-    expect(student).toMatchObject({ name: 'Léo', username: 'Leo.Martin', level: 'sixieme', birthMonth: '2015-09' });
-
+    expect(leo).toMatchObject({ name: 'Léo', username: 'Leo.Martin', level: 'sixieme', birthMonth: '2015-09' });
     const signIn = await api.signInStudent('leo.martin');
     expect(signIn.status).toBe(200);
-    expect((await api.sessionUser(signIn.cookie))?.id).toBe(student.id);
+    expect((await api.sessionUser(signIn.cookie))?.id).toBe(leo.id);
   });
 
   it('gives the student a non-routable address and no family name', async () => {
-    const [student] = await db.select({ email: user.email, name: user.name }).from(user).where(eq(user.username, 'leo.martin'));
-    expect(student?.email).toEndWith('.invalid');
-    expect(student?.name).toBe('Léo');
+    const [row] = await db.select({ email: user.email, name: user.name }).from(user).where(eq(user.id, leo.id));
+    expect(row?.email).toEndWith('.invalid');
+    expect(row?.name).toBe('Léo');
   });
 
   it('puts every student in one household with their guardian', async () => {
     const second = await api.student(guardian);
-    const [first] = await db.select({ id: user.id }).from(user).where(eq(user.username, 'leo.martin'));
     const home = await householdOf(second.id);
     expect(home).toBeDefined();
-    expect(await householdOf(first?.id ?? '')).toBe(home);
+    expect(await householdOf(leo.id)).toBe(home);
     expect(await householdOf((await api.sessionUser(guardian))?.id ?? '')).toBe(home);
   });
 
@@ -192,6 +190,7 @@ describe('a guardian creates a student', () => {
     ['password', 'court'],
     ['level', 'seconde'],
     ['birthMonth', '2999-01'],
+    ['birthMonth', new Date().toISOString().slice(0, 7)],
     ['birthMonth', '1990-01'],
     ['birthMonth', '2014-13'],
     ['birthMonth', '2014-3'],
@@ -276,17 +275,42 @@ describe("a student, through better-auth's own routes", () => {
   const student = ownStudent;
   const cookie = ownCookie;
 
-  it('cannot change their username', async () => {
-    await api.request('POST', '/api/auth/update-user', { cookie, body: { username: 'autre_nom' } });
-    const [row] = await db.select({ username: user.username }).from(user).where(eq(user.id, student.id));
-    expect(row?.username).toBe(student.username.toLowerCase());
+  it('cannot change their name, username or display name, nor their password', async () => {
+    for (const body of [{ name: 'Autre' }, { username: 'autre_nom' }, { displayUsername: 'Papa_admin' }]) {
+      const res = await api.request('POST', '/api/auth/update-user', { cookie, body });
+      expect(res.status).toBe(403);
+    }
+    const change = await api.request('POST', '/api/auth/change-password', {
+      cookie,
+      body: { currentPassword: 'motdepasse', newPassword: 'un autre mot de passe' },
+    });
+    expect(change.status).toBe(403);
+    const [row] = await db
+      .select({ name: user.name, username: user.username, displayUsername: user.displayUsername })
+      .from(user)
+      .where(eq(user.id, student.id));
+    expect(row).toEqual({ name: student.name, username: student.username.toLowerCase(), displayUsername: student.username });
+    expect((await api.signInStudent(student.username)).status).toBe(200);
+  });
+
+  it('still reads their session and signs out', async () => {
+    const { cookie: fresh } = await api.signInStudent(student.username);
+    expect((await api.sessionUser(fresh))?.id).toBe(student.id);
+    expect((await api.request('POST', '/api/auth/sign-out', { cookie: fresh, body: {} })).status).toBe(200);
+    expect(await api.sessionUser(fresh)).toBeUndefined();
+  });
+
+  it('leaves a guardian free to change their own name', async () => {
+    const parent = await api.guardian('libre@example.com');
+    const res = await api.request('POST', '/api/auth/update-user', { cookie: parent, body: { name: 'Victor' } });
+    expect(res.status).toBe(200);
   });
 
   it('cannot change their email nor delete their account', async () => {
     const change = await api.request('POST', '/api/auth/change-email', { cookie, body: { newEmail: 'eleve@example.com' } });
     const remove = await api.request('POST', '/api/auth/delete-user', { cookie, body: {} });
-    expect(change.ok).toBe(false);
-    expect(remove.ok).toBe(false);
+    expect(change.status).toBe(403);
+    expect(remove.status).toBe(403);
     const [row] = await db.select({ email: user.email }).from(user).where(eq(user.id, student.id));
     expect(row?.email).toEndWith('.invalid');
   });
