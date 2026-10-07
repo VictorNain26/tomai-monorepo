@@ -107,9 +107,10 @@ surveillance de l'enfant. Pas de classement, pas de points, pas de séries.
 Le parent ouvre le foyer et conclut le contrat, gratuit compris ; un second parent peut le
 rejoindre et s'opposer. Trois façons d'accompagner l'élève, du CP à la terminale : accompagné au
 primaire (le parent ouvre la séance et reste là, la voix d'abord), guidé au collège (l'élève relie
-son appareil par un code du parent), autonome au lycée ou dès 15 ans (son propre identifiant, et il
-peut couper le résumé, le parent en étant prévenu). À 18 ans, le lien parental prend fin. Rien ne
-bascule sans prévenir l'élève et le parent (`etudes/2026-10-07/foyer-eleve-age.md`).
+son appareil par un code du parent), autonome au lycée (son propre identifiant). Le mode suit le
+niveau ; l'élève voit le résumé de son parent et peut en demander l'arrêt, une demande qui
+s'applique d'elle-même à partir de 15 ans. À 18 ans, le lien parental prend fin. Rien ne bascule
+sans prévenir l'élève et le parent (`etudes/2026-10-07/foyer-eleve-age.md`).
 
 ## Périmètre V1
 

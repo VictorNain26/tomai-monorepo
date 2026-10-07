@@ -137,17 +137,18 @@ La détresse est une donnée de santé, même déduite ([CNIL](https://www.cnil.
 
 ## 7. Le modèle proposé
 
-Un seul foyer, un seul système de comptes, et **trois façons d'accompagner l'élève**, qui suivent
-le niveau scolaire pour la pédagogie et l'âge pour les droits (15 et 18 ans). Le parent ouvre le
+Un seul foyer, un seul système de comptes, et **trois façons d'accompagner l'élève**. Le mode suit
+le niveau scolaire, et lui seul ; l'âge ouvre des droits (15 ans) et met fin au lien parental
+(18 ans), dans n'importe quel mode. Le parent ouvre le
 foyer et conclut le contrat, gratuit compris ; il déclare le niveau et le mois de naissance, sans
 autre vérification. Un second parent peut rejoindre le foyer et s'opposer.
 
-| | Accompagné (CP à CM2) | Guidé (6e à 3e) | Autonome (lycée, ou 15 ans et plus) |
+| | Accompagné (CP à CM2) | Guidé (6e à 3e) | Autonome (seconde à terminale) |
 |---|---|---|---|
 | Qui ouvre la séance | Le parent, sur un appareil familial ; il est présent | L'élève, sur un appareil relié par un code à usage unique ; ou un profil protégé par le code de l'enfant sur l'appareil du parent | L'élève, avec son propre identifiant (e-mail et clé d'accès) ; invité par le parent ou rattaché par lui |
 | Ce que le parent connaît de la connexion | Il ouvre lui-même la séance | Rien : il peut déconnecter un appareil, jamais s'y connecter | Rien |
 | Interaction | La voix d'abord, séances courtes (20 à 40 minutes au plus) | Texte, photo, voix | Texte, photo, voix |
-| Ce que voit le parent | Le résumé ; il est présent pendant la séance | Le résumé, que l'élève voit au même moment | Le résumé, que l'élève voit et peut couper ; le parent en est prévenu |
+| Ce que voit le parent | Le résumé ; il est présent pendant la séance | Le résumé, que l'élève voit au même moment | Le résumé, que l'élève voit au même moment |
 | Détresse | Réponse immédiate à l'enfant, revue humaine, parent prévenu après revue | Réponse immédiate, revue humaine, l'élève prévenu avant le parent, aucun contenu transmis | Même règle, annoncée à l'inscription |
 
 Fixe à tous les âges : jamais les conversations au parent ; l'élève sait ce que voit son parent,
@@ -155,8 +156,14 @@ expliqué à l'oral pour les plus jeunes ; « vous parlez à une IA » dès la p
 Tom ne se présente pas comme un ami ; pas de mémoire d'une séance à l'autre, pas de mécanique
 d'engagement ; aucune bascule silencieuse, chaque changement prévient l'élève et le parent.
 
+Droits de l'élève, à tout âge : il les exerce lui-même (accès, effacement, opposition), le parent
+pouvant aussi agir pour lui ([CNIL, recommandation 2](https://www.cnil.fr/fr/recommandation-2-encourager-les-mineurs-exercer-leurs-droits)) ;
+il peut demander l'arrêt du résumé (RGPD art. 21). À partir de 15 ans, sa demande s'applique, le
+parent prévenu ; avant 15 ans, elle se traite avec le parent, ni l'un ni l'autre ne passant outre,
+selon une conduite à faire valider par un conseil (§ 8, point 2).
+
 Transitions : le passage d'un mode au suivant suit le changement de niveau, prévenu des deux côtés ;
-à 15 ans, l'élève exerce seul ses droits (accès, effacement, opposition au résumé) ; **à 18 ans,
+un élève de collège qui a 15 ans reste en mode guidé, avec les droits de ses 15 ans ; **à 18 ans,
 le lien parental prend fin**, prévenu une semaine avant : plus de résumé, l'abonnement peut passer
 au jeune ou s'arrêter, et le jeune peut faire effacer ses données de mineur.
 
