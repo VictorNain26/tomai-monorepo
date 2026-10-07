@@ -23,11 +23,13 @@ import type { OutputCheckContext } from './core/output-check';
 import { studentBlock, subjectBlock, systemPrompt } from './core/prompt';
 import { routeReasoningEffort } from './core/reasoning';
 import { exerciseBlock, SHEET_PROMPT_VERSION } from './core/sheet';
+import { RECENT_MESSAGES, SUMMARY_BACKLOG, summarize } from './core/summary';
+import { titleFor } from './core/title';
 import { TURN_PROMPT_VERSION } from './core/version';
 import type { TutorRepository } from './repository';
 
-/** The messages of the session the tutor reads back; the summary of the older ones comes later. */
-const WINDOW = 20;
+/** The messages after the summary the tutor reads back: room for one summary late or failed, so that none falls between it and the window. */
+const WINDOW = 2 * SUMMARY_BACKLOG;
 
 interface Deps {
   repository: TutorRepository;
@@ -35,6 +37,8 @@ interface Deps {
   ai: Ai;
   moderation: Moderation;
   logger: Logger;
+  /** Work after the reply, which the shutdown waits for: the title, the summary. */
+  background: (task: Promise<unknown>) => void;
 }
 
 export interface TurnInput {
@@ -42,17 +46,31 @@ export interface TurnInput {
   inputMode: 'text' | 'voice';
 }
 
+/** The turn's reply, and what runs after it, the session still locked. */
+interface TurnReply {
+  text: string;
+  after: (() => Promise<void>) | null;
+}
+
 /** A turn opened by `openTurn`: the student, their session as the lock read it, and when the turn started. */
 export interface OpenTurn {
   student: { id: string; name: string; level: SchoolLevel };
-  session: { id: string; subject: TurnAnalysis['subject'] | null; closedAt: Date | null; turnStartedAt: Date };
+  session: {
+    id: string;
+    title: string | null;
+    subject: TurnAnalysis['subject'] | null;
+    summary: string | null;
+    summaryUntil: number | null;
+    closedAt: Date | null;
+    turnStartedAt: Date;
+  };
   /** A distress already seen past the quota: the turn answers it, and nothing else. */
   distress: { source: DistressSource; flagged: string[] | null } | null;
 }
 
 const analysisRecord = ({ error, ...analysis }: TurnAnalysis) => (error === undefined ? analysis : null);
 
-export function createTutorService({ repository, students, ai, moderation, logger }: Deps) {
+export function createTutorService({ repository, students, ai, moderation, logger, background }: Deps) {
   const { model } = ai;
   const student = async (userId: string) => {
     const profile = await students.find(userId);
@@ -84,7 +102,31 @@ export function createTutorService({ repository, students, ai, moderation, logge
     return DISTRESS_REPLY;
   }
 
-  async function turn({ student: learner, session, distress }: OpenTurn, input: TurnInput): Promise<string> {
+  /** After the reply: the title of a session's first turn, and the summary once enough messages wait. */
+  /** After the reply: the title of the session's first turn, and the summary once enough messages wait. */
+  async function afterTurn(
+    studentId: string,
+    session: OpenTurn['session'],
+    turn: { studentText: string; tutorText: string; check: OutputCheckContext; first: boolean },
+  ) {
+    try {
+      // The first turn only: a title held back is not asked again of every later turn.
+      if (!session.title && turn.first) {
+        const title = await titleFor({ ai, moderation, logger }, { studentId, ...turn });
+        if (title) await repository.setTitle(session.id, title);
+      }
+      if ((await repository.countAfter(session.id, session.summaryUntil)) < SUMMARY_BACKLOG) return;
+      const covered = (await repository.messagesAfter(session.id, session.summaryUntil)).slice(0, -RECENT_MESSAGES);
+      const last = covered.at(-1);
+      if (!last) return;
+      const summary = await summarize({ ai, logger }, { studentId, previous: session.summary, messages: covered });
+      if (summary) await repository.replaceSummary(session.id, session.summaryUntil, summary, last.position);
+    } catch (err) {
+      logger.error({ err }, 'After the turn: title or summary not stored');
+    }
+  }
+
+  async function turn({ student: learner, session, distress }: OpenTurn, input: TurnInput): Promise<TurnReply> {
     const studentText = input.text;
 
     // The conversation stopped at a distress: any later message gets the fixed reply again.
@@ -101,12 +143,15 @@ export function createTutorService({ repository, students, ai, moderation, logge
         .catch((err: unknown) => {
           logger.error({ err }, 'Closed session turn not stored');
         });
-      return DISTRESS_REPLY;
+      return { text: DISTRESS_REPLY, after: null };
     }
 
-    if (distress) return answerDistress(learner.id, session.id, studentText, distress);
+    if (distress) return { text: await answerDistress(learner.id, session.id, studentText, distress), after: null };
 
-    const [history, current] = await Promise.all([repository.window(session.id, WINDOW), repository.currentExercise(learner.id, session.id)]);
+    const [history, current] = await Promise.all([
+      repository.window(session.id, WINDOW, session.summaryUntil),
+      repository.currentExercise(learner.id, session.id),
+    ]);
     const lastTutorText = history.findLast((row) => row.role === 'tutor')?.text ?? null;
     // Started together; the distress waits for the moderation only, and drops the analysis.
     const analysed = analyseTurn(
@@ -117,7 +162,8 @@ export function createTutorService({ repository, students, ai, moderation, logge
 
     // Distress before anything else: no sheet, no tutor, the fixed reply.
     const source = detectDistress(studentText, inputModeration?.flagged.includes('selfharm') ?? false);
-    if (source) return answerDistress(learner.id, session.id, studentText, { source, flagged: inputModeration?.flagged ?? null });
+    if (source)
+      return { text: await answerDistress(learner.id, session.id, studentText, { source, flagged: inputModeration?.flagged ?? null }), after: null };
     const analysis = await analysed;
 
     // The detected subject, else the session's: the first one named stays the session's.
@@ -151,6 +197,7 @@ export function createTutorService({ repository, students, ai, moderation, logge
         systemPrompt: system,
         studentBlock: studentBlock(learner.name),
         exerciseBlock: exercise?.sheet ? exerciseBlock(exercise.sheet) : null,
+        conversationSummary: session.summary,
         history: window,
         subjectBlock: subjectBlock(subject),
         turnInstruction: [instruction, extra].filter((block): block is string => block !== null).join('\n\n') || null,
@@ -204,7 +251,8 @@ export function createTutorService({ repository, students, ai, moderation, logge
         outcome: reply.outcome,
       },
     });
-    return reply.text;
+    const first = history.length === 0;
+    return { text: reply.text, after: () => afterTurn(learner.id, session, { studentText, tutorText: reply.text, check, first }) };
   }
 
   return {
@@ -237,14 +285,22 @@ export function createTutorService({ repository, students, ai, moderation, logge
       if (!turnStartedAt) throw new Error('Turn started without its time');
       const opened: OpenTurn = {
         student: learner,
-        session: { id: sessionId, subject: started.subject, closedAt: started.closedAt, turnStartedAt },
+        session: {
+          id: sessionId,
+          title: started.title,
+          subject: started.subject,
+          summary: started.summary,
+          summaryUntil: started.summaryUntil,
+          closedAt: started.closedAt,
+          turnStartedAt,
+        },
         distress: null,
       };
       try {
         // A closed session's fixed reply calls no model.
         if (started.closedAt || (await repository.spentSince(learner.id, quotaDayStart(new Date()))) < DAILY_BUDGET_MICRO_EUR) return opened;
         // Moderated with the tutor's last message, as every turn is: context tells a distress apart.
-        const lastTutorText = (await repository.window(sessionId, 2)).findLast((row) => row.role === 'tutor')?.text ?? null;
+        const lastTutorText = (await repository.window(sessionId, 2, null)).findLast((row) => row.role === 'tutor')?.text ?? null;
         const moderated = await moderateInput(lastTutorText, input.text);
         const source = detectDistress(input.text, moderated?.flagged.includes('selfharm') ?? false);
         if (!source) throw new Problem('QUOTA_EXCEEDED', `Le quota du jour revient à ${String(QUOTA_RESET_HOUR)} h.`);
@@ -260,11 +316,20 @@ export function createTutorService({ repository, students, ai, moderation, logge
 
     /** The turn's reply; the session is free for the next turn whatever happens. */
     async runTurn(opened: OpenTurn, input: TurnInput): Promise<string> {
+      const free = () => repository.endTurn(opened.session.id, opened.session.turnStartedAt);
+      let reply: TurnReply;
       try {
-        return await turn(opened, input);
-      } finally {
-        await repository.endTurn(opened.session.id, opened.session.turnStartedAt);
+        reply = await turn(opened, input);
+      } catch (error) {
+        await free();
+        throw error;
       }
+      // The title and the summary run under the turn's lock: a quick next turn would summarize the
+      // same messages again, and pay for it.
+      const { after } = reply;
+      if (after) background(after().finally(free));
+      else await free();
+      return reply.text;
     },
   };
 }

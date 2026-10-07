@@ -16,9 +16,10 @@ interface Deps {
   ai: Ai;
   moderation: Moderation;
   logger: Logger;
+  background: (task: Promise<unknown>) => void;
 }
 
-export function tutorModule({ db, auth, ai, moderation, logger }: Deps) {
-  const service = createTutorService({ repository: createTutorRepository(db), students: studentDirectory(db), ai, moderation, logger });
+export function tutorModule({ db, auth, ai, moderation, logger, background }: Deps) {
+  const service = createTutorService({ repository: createTutorRepository(db), students: studentDirectory(db), ai, moderation, logger, background });
   return { routes: tutorRoutes({ auth, service, logger }) };
 }

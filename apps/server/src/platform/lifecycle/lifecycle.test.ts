@@ -69,6 +69,30 @@ describe('shutdown', () => {
     expect(code).toBe(1);
   });
 
+  it('closes the resources one after the other, in order: the tasks still need the database', async () => {
+    const steps: string[] = [];
+    const lifecycle = createLifecycle();
+    const code = await shutdown({
+      lifecycle,
+      stopServer: () => Promise.resolve(),
+      close: [
+        async () => {
+          await Bun.sleep(20);
+          steps.push('tasks');
+        },
+        () => {
+          steps.push('database');
+          return Promise.resolve();
+        },
+      ],
+      logger: pino({ level: 'silent' }),
+      drainMs: 0,
+      deadlineMs: 1_000,
+    });
+    expect(code).toBe(0);
+    expect(steps).toEqual(['tasks', 'database']);
+  });
+
   it('exits 1 when a resource fails to close', async () => {
     const code = await shutdown({
       lifecycle: createLifecycle(),

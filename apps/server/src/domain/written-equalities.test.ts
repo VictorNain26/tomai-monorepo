@@ -93,7 +93,7 @@ describe('wrongEqualities', () => {
   });
 });
 
-describe('review of #431', () => {
+describe('colons, decimals, and the student’s work shown back', () => {
   const found = (text: string) => writtenEqualities(text).map((e) => [e.left, e.right, isWrong(e)]);
 
   it('reads the colon as the division of French schools, or as punctuation after a word', () => {

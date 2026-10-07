@@ -25,6 +25,7 @@ import { distressEvent, exercise, message, studySession, turnRecord } from './sc
 
 const { db } = await testDatabase();
 const mistral = fakeMistral();
+const tasks = createBackgroundTasks();
 const mail = memoryMailer();
 const silent = pino({ level: 'silent' });
 const auth = createAuth(
@@ -40,6 +41,7 @@ const api = httpClient(
     ...mistral.deps(db, silent),
     auth,
     lifecycle: createLifecycle(),
+    background: tasks.run,
   }),
   mail,
 );
@@ -56,6 +58,8 @@ const newSession = async () => ((await (await api.request('POST', '/api/sessions
 async function say(sessionId: string, text: string, cookie = asStudent) {
   const res = await api.request('POST', `/api/sessions/${sessionId}/messages`, { cookie, body: { text } });
   const body = await res.text();
+  // The title and the summary run after the reply: done before the test queues the next replies.
+  await tasks.settled();
   const chunks = body
     .split('\n')
     .filter((line) => line.startsWith('data: {'))
@@ -137,7 +141,8 @@ describe('a turn', () => {
     mistral.chat.push(analysis(), { text: 'Que cherches-tu ?' });
     mistral.received.length = 0;
     await say(sessionId, 'Bonjour');
-    const writer = mistral.received.filter((r) => r.path === '/v1/chat/completions').at(-1)?.body;
+    // The writer's call, among the analysis' and the title's.
+    const writer = mistral.received.find((r) => JSON.stringify(r.body).includes('Tu es Tom, tuteur'))?.body;
     const messages = (writer?.['messages'] ?? []) as { role: string; content: unknown }[];
     expect(JSON.stringify(messages.find((m) => m.role === 'system'))).not.toContain('Léa');
     expect(JSON.stringify(messages.find((m) => m.role === 'user'))).toContain("<student>\\nL'élève s'appelle Léa.\\n</student>");

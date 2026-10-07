@@ -36,6 +36,13 @@
       "when": 1791366392509,
       "tag": "0004_tutor_turn",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1791368663437,
+      "tag": "0005_session_summary",
+      "breakpoints": true
     }
   ]
 }

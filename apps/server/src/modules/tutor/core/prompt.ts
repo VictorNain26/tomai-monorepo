@@ -1,6 +1,6 @@
 /**
  * The writer's prompt: the system prompt, stable for a class, then the blocks of the conversation.
- * Ported from #415 (`docs/etudes/2026-10-04/refonte-agent.md`); the pedagogy rests on the CSEN's
+ * From the rework study (`docs/etudes/2026-10-04/refonte-agent.md`); the pedagogy rests on the CSEN's
  * recommendations (Dehaene 2018; CSEN 2019, 2021). No text from the client sits in the system
  * prompt: the student's first name, which their guardian typed, opens the conversation fenced.
  * Each turn records the version of what it sent, a fingerprint of the rendered text.

@@ -3,7 +3,7 @@
  * `ownSession`, a clause of the query itself: another student's session is simply not found.
  */
 
-import { and, asc, desc, eq, gte, isNull, sql, sum } from 'drizzle-orm';
+import { and, asc, count, desc, eq, gt, gte, isNull, sql, sum } from 'drizzle-orm';
 import type { DistressSource } from '../../domain/distress';
 import type { MathCheck } from '../../domain/exercise-math';
 import type { SubjectFamily } from '../../domain/subjects';
@@ -140,7 +140,14 @@ export function createTutorRepository(db: Db) {
           // To the millisecond, as a JavaScript Date holds it: endTurn compares it back.
           .set({ turnStartedAt: sql`date_trunc('milliseconds', now())` })
           .where(ownSession(studentId, sessionId))
-          .returning({ subject: studySession.subject, closedAt: studySession.closedAt, turnStartedAt: studySession.turnStartedAt });
+          .returning({
+            title: studySession.title,
+            subject: studySession.subject,
+            summary: studySession.summary,
+            summaryUntil: studySession.summaryUntil,
+            closedAt: studySession.closedAt,
+            turnStartedAt: studySession.turnStartedAt,
+          });
         return started;
       });
     },
@@ -162,15 +169,56 @@ export function createTutorRepository(db: Db) {
       return row?.spent ?? 0;
     },
 
-    /** The last messages of the session, oldest first, with what the tutor's replay. */
-    async window(sessionId: string, limit: number) {
+    /** The last messages of the session after the summary's, oldest first, with what the tutor's replay. */
+    async window(sessionId: string, limit: number, after: number | null) {
       const rows = await db
         .select({ role: message.role, text: message.text, modelMessages: message.modelMessages })
         .from(message)
-        .where(eq(message.sessionId, sessionId))
+        .where(and(eq(message.sessionId, sessionId), after === null ? undefined : gt(message.position, after)))
         .orderBy(desc(message.position))
         .limit(limit);
       return rows.reverse();
+    },
+
+    /** How many messages of the session follow the summary's: a summary is due past a backlog. */
+    async countAfter(sessionId: string, after: number | null) {
+      const [row] = await db
+        .select({ count: count() })
+        .from(message)
+        .where(and(eq(message.sessionId, sessionId), after === null ? undefined : gt(message.position, after)));
+      return row?.count ?? 0;
+    },
+
+    /** Every message of the session after the summary's, oldest first. */
+    messagesAfter(sessionId: string, after: number | null) {
+      return db
+        .select({ position: message.position, role: message.role, text: message.text })
+        .from(message)
+        .where(and(eq(message.sessionId, sessionId), after === null ? undefined : gt(message.position, after)))
+        .orderBy(asc(message.position));
+    },
+
+    /** The new summary, unless another one was written since `previousUntil` was read: two runs write one. */
+    async replaceSummary(sessionId: string, previousUntil: number | null, summary: string, until: number) {
+      const replaced = await db
+        .update(studySession)
+        .set({ summary, summaryUntil: until })
+        .where(
+          and(
+            eq(studySession.id, sessionId),
+            previousUntil === null ? isNull(studySession.summaryUntil) : eq(studySession.summaryUntil, previousUntil),
+          ),
+        )
+        .returning({ id: studySession.id });
+      return replaced.length > 0;
+    },
+
+    /** The session's title, unless it already has one. */
+    async setTitle(sessionId: string, title: string) {
+      await db
+        .update(studySession)
+        .set({ title })
+        .where(and(eq(studySession.id, sessionId), isNull(studySession.title)));
     },
 
     /**

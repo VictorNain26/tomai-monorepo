@@ -37,12 +37,13 @@ bloquant levé). L'historique vit dans git et les PR.
   (#425) ; l'e-mail des gardiens chez Scaleway TEM (`etudes/2026-10-07/email-transactionnel.md`) :
   adresse vérifiée avant toute connexion, réinitialisation qui ferme toutes les sessions,
   suppression confirmée par le mot de passe qui emporte le foyer d'un gardien seul.
-- **Étape 5 en cours**, le tuteur porté : la plateforme IA et le faux Mistral (#430), les
-  contrôles purs (#431), les étapes du tour, qui échouent fermées (#432), les séances et leurs
-  tables (#434), le tour et son enregistrement (#435), le quota par élève (2 c par jour pour tous
-  tant que le paiement n'existe pas) ; restent le résumé de séance et le titre. L'étude des hébergeurs
-  UE avance en parallèle.
-  L'ordre complet est dans l'étude. Test complet dans Chrome à la fin de chaque étape, la première
+- **Étape 5 faite**, le tuteur porté : la plateforme IA et le faux Mistral (#430), les contrôles
+  purs (#431), les étapes du tour, qui échouent fermées (#432), les séances (#434), le tour et son
+  enregistrement (#435), le quota par élève (#436, 2 c par jour pour tous tant que le paiement
+  n'existe pas), le résumé de séance et le titre. Le tuteur répond par
+  `POST /api/sessions/:id/messages` ; aucun écran ne l'appelle encore.
+- **Prochaine action** : étape 6, le chat et la connexion dans le web. L'étude des hébergeurs UE
+  avance en parallèle. L'ordre complet est dans l'étude. Test complet dans Chrome à la fin de chaque étape, la première
   à l'étape 6 avec les écrans.
 - **Rentabilité et quotas** (`etudes/2026-10-07/rentabilite.md`) : le gratuit décide de la
   rentabilité, la distribution est le vrai risque ; quotas proposés de 2 c (Gratuit) et 10 c

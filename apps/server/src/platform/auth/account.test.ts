@@ -35,6 +35,7 @@ const app = createApp({
   ...mistral.deps(db, pino({ level: 'silent' })),
   auth,
   lifecycle: createLifecycle(),
+  background: createBackgroundTasks().run,
 });
 
 const request = (method: string, path: string, { cookie, body }: { cookie?: string; body?: unknown } = {}) =>
