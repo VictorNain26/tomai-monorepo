@@ -16,7 +16,7 @@ le proxy de Vite envoie `/api/` et `/health` au serveur sur 3000, pour une seule
   (suite `tooling/playwright-web`).
 - Jamais de script ni de style en ligne, ni d'asset en `data:` (`assetsInlineLimit: 0`), ni
   d'origine tierce sans l'ajouter à la CSP du serveur dans la même PR
-  (`apps/server/src/platform/http/security-headers.ts`, vérifiée par `tests/server.spec.ts`).
+  (`apps/server/src/platform/http/security-headers.ts`, vérifiée par `tooling/playwright-web/tests/server.spec.ts`).
 - Jamais de `runtimeCaching` sur `/api` dans le service worker : ce sont des données d'élève ;
   les navigations `/api` restent hors de son fallback.
 - Jamais une primitive interactive refaite ici : elle vient de `@repo/ui`.

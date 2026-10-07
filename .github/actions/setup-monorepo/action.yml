@@ -2,7 +2,7 @@
 # Used by all CI jobs to avoid repeating 5 setup steps
 
 name: Setup Monorepo
-description: Install Bun and Node.js (Next.js builds), restore caches, and install dependencies with bun
+description: Install Bun and Node.js (Astro and Playwright run on it), restore caches, and install dependencies with bun
 
 inputs:
   turbo-cache-key:
@@ -17,7 +17,7 @@ runs:
       with:
         bun-version-file: package.json
 
-    # Node stays for the Next.js landing build.
+    # Node stays: the astro and playwright binaries run on it.
     - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
       with:
         node-version-file: .nvmrc

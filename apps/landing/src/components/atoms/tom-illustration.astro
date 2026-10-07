@@ -1,0 +1,68 @@
+---
+import { Image } from 'astro:assets';
+import { cn } from '@repo/ui/classes';
+import tom from '@/assets/tom.png';
+
+interface Props {
+  class?: string;
+}
+
+const { class: className } = Astro.props;
+const CLIPS = ['salut', 'respiration'] as const;
+---
+
+<tom-illustration
+  role="img"
+  aria-label="Tom, une loutre en pull bleu avec un stylo dans la poche"
+  data-testid="tom"
+  class={cn('relative block aspect-square w-full max-w-sm', className)}
+>
+  <Image src={tom} alt="" width={176} height={176} densities={[1, 2]} class="size-full" />
+  {CLIPS.map((clip) => (
+    <video
+      data-clip={clip}
+      aria-hidden="true"
+      muted
+      playsinline
+      loop={clip === 'respiration'}
+      preload="none"
+      class="invisible absolute inset-0 size-full"
+    >
+      {/* Safari drops VP9 alpha, so it must meet its HEVC source first. */}
+      <source src={`/tom/${clip}.mov`} type='video/mp4; codecs="hvc1"' />
+      <source src={`/tom/${clip}.webm`} type="video/webm" />
+    </video>
+  ))}
+</tom-illustration>
+
+<script>
+  class TomIllustration extends HTMLElement {
+    connectedCallback() {
+      const picture = this.querySelector('img');
+      const salut = this.querySelector<HTMLVideoElement>('video[data-clip="salut"]');
+      const respiration = this.querySelector<HTMLVideoElement>('video[data-clip="respiration"]');
+      if (!picture || !salut || !respiration) return;
+
+      const show = (shown: HTMLElement) => {
+        for (const frame of [picture, salut, respiration]) frame.classList.toggle('invisible', frame !== shown);
+      };
+      salut.addEventListener('playing', () => {
+        show(salut);
+      });
+      salut.addEventListener('ended', () => {
+        respiration.play().catch(() => undefined);
+      });
+      respiration.addEventListener('playing', () => {
+        show(respiration);
+      });
+
+      // Hidden on small screens, Tom must not download his clips; autoplay can also be refused
+      // (iOS Low Power Mode): either way he stays still.
+      if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches && salut.checkVisibility()) {
+        salut.play().catch(() => undefined);
+      }
+    }
+  }
+
+  customElements.define('tom-illustration', TomIllustration);
+</script>

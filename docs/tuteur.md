@@ -50,7 +50,7 @@ d'agent reste la nôtre ([regional inference](https://docs.mistral.ai/inference/
 | Rôle | Modèle | Réglage |
 |---|---|---|
 | Chat élève, texte et image | **Mistral Small 4** `mistral-small-2603` | sans raisonnement sous un contrat de tour, l'exactitude passant par la fiche d'exercice ; sans fiche, `routeReasoningEffort` (`modules/tutor/core/reasoning.ts`) passe en `high` sur une réponse proposée, ou en 4e-3e en maths et sciences sur une demande de solution ou d'explication ; température 0,7, dans la plage de la fiche Hugging Face de Small 4 pour `none` ; `promptCacheKey` par session |
-| Lecture d'une image jointe (`documents/mistral-vision.ts`, transcription seule), génération de cartes | Mistral Small 4 `mistral-small-2603` | `reasoningEffort: 'none'` ; sortie structurée stricte |
+| Lecture d'une image jointe (transcription seule, avec l'étape des photos), génération de cartes | Mistral Small 4 `mistral-small-2603` | `reasoningEffort: 'none'` ; sortie structurée stricte |
 | Analyse du tour (`modules/tutor/core/analysis.ts`) | Mistral Small 4 `mistral-small-2603` | `reasoningEffort: 'high'`, température 0,7 : sans raisonnement, une question de fait était lue comme une demande d'explication (`etudes/2026-10-06/passage-de-fin.md`) ; sortie structurée stricte |
 | Résumé de séance, titre | Mistral Small 4 `mistral-small-2603` | `reasoningEffort: 'none'` ; texte |
 | Fiche d'exercice (`modules/tutor/core/sheet.ts`) | Mistral Small 4 `mistral-small-2603` | `reasoningEffort: 'high'` sans plafond de tokens, borné par un timeout de 20 s ; température 0,7 (« 0.7 for `reasoning_effort="high"` », fiche Hugging Face) ; trois tirages votés ; sortie structurée stricte |
@@ -81,14 +81,9 @@ modèle sans prévenir et invalide l'évaluation. Chaque prompt porte une versio
 - `safePrompt` est déprécié par Mistral au profit des Custom Guardrails
   ([source](https://docs.mistral.ai/resources/deprecated/guardrailing/safe_prompt)) : on ne
   l'utilise pas ; ce qui atteint l'élève passe par la modération d'entrée et de sortie.
-- En streaming, l'usage n'arrive que si `stream_options.include_usage` est envoyé
-  (known limitations). `@ai-sdk/mistral` ne l'envoie pas, et l'usage et `cacheRead`
-  arrivent pourtant (`live/mistral-eu.test.ts`). Un tour compte l'usage exact de chaque appel au
-  modèle terminé (`onLanguageModelCallEnd`), même quand un timeout le coupe ensuite, pendant un
-  outil. Un appel coupé en cours ne rapporte jamais son usage : s'il a déjà produit du texte,
-  il est estimé avec l'heuristique de `token-budget.service.ts` (4 caractères par token), sa
-  sortie sur ce qu'il a produit et son entrée sur l'appel précédent ou le prompt ; le tour
-  est tracé et marqué comme coupé (`modules/tutor/turn-usage.ts`).
+- Chaque appel au modèle est entier, sans flux (`generateText`) : son usage, `cacheRead` compris,
+  arrive avec sa réponse et se compte au coût (`platform/ai/client.ts`) ; un appel coupé par son
+  délai ne rapporte pas d'usage.
 
 ## 3. Équivalents Mistral des mécanismes Claude
 
@@ -158,7 +153,7 @@ modèle sans prévenir et invalide l'évaluation. Chaque prompt porte une versio
 | Détresse | Classifieur indépendant du prompt (catégorie Self-Harm + règles en français, testés sur des phrases d'élèves) ; réponse fixe rédigée et approuvée par un humain, avec le 3114 et un adulte de confiance, et, à construire au lot 3, le 119 quand le message laisse penser que le danger vient de la maison, puis fin de la conversation (Crawford et Glatard, CMAJ 2026) ; numéros d'aide vérifiés sur service-public.gouv.fr F33954. Ni fiche ni tuteur (l'analyse du tour, lancée en parallèle, est écartée) : la réponse est gardée avec le message, la séance close (tout message suivant reçoit la même réponse), l'événement enregistré, un par séance, rattaché à l'élève et sans score (`distress_event`, `modules/tutor/schema.ts`), pour la revue humaine du lot 3 : un humain relit chaque événement et décide d'un message au parent, qui n'en reçoit que le motif et des ressources, l'élève prévenu d'abord (`etudes/2026-10-07/foyer-eleve-age.md`). Ni quota, ni limite de flux, ni écriture en échec ne retiennent la réponse (`modules/tutor/service.ts`, règles dans `domain/distress.ts`) | Même point d'entrée |
 | Fuite de réponse | Palier d'aide imposé par le serveur (§4) ; la recherche de la réponse dans le texte (`findLeakForm`, `domain/leak.ts`), partagée avec le harnais, tourne dans le contrôle avant l'élève | Assembleur de tour, contrôle avant l'élève |
 | Aucune solution montrée par accident | Le raisonnement du modèle ne quitte jamais le serveur : seul le texte contrôlé part dans le flux (`modules/tutor/routes.ts`) ; aucune balise interne, étape de calcul cachée, résultat d'outil brut ni bloc de contexte n'arrive dans ce que voit ou entend l'élève. Le contrôle de fuite porte sur tout ce qui l'atteint : texte, lecture vocale, fiches, titre de séance, messages d'erreur | Sortie du flux, outils, TTS |
-| Confirmation avant création de cartes | `toolApproval` de `streamText` : `'approved'` quand l'analyse du tour relève une demande ou une acceptation de cartes, sinon un refus motivé que le modèle reçoit, et il les propose sans les créer ; une demande impose l'appel au premier pas (`prepareStep`, `toolChoice`), un seul appel par tour ; l'outil réservé au Complet. `needsApproval` est déprécié dans `ai` 7 | `chat-tools.ts`, `ai-chat.service.ts` |
+| Confirmation avant création de cartes | `toolApproval` de `streamText` : `'approved'` quand l'analyse du tour relève une demande ou une acceptation de cartes, sinon un refus motivé que le modèle reçoit, et il les propose sans les créer ; une demande impose l'appel au premier pas (`prepareStep`, `toolChoice`), un seul appel par tour ; l'outil réservé au Complet. `needsApproval` est déprécié dans `ai` 7 | À porter avec les fiches de révision (§6) |
 | Injection | Texte élève et contenu de documents délimités comme données ; aucun outil sensible déclenchable par du contenu importé | Assembleur, outils |
 
 La recherche justifie ce passage au code : sur plusieurs tours, les modèles
@@ -171,14 +166,14 @@ en zone intermédiaire (McBain 2025).
 Pas encore portés par la refonte : le tour écrit sans outil, en un seul appel. Ce qui suit décrit
 l'outil des cartes, qui revient avec les fiches de révision.
 
-Un seul outil, `generate_flashcards` (`chat-tools.ts`), réservé au Complet comme la route de
+Un seul outil, `generate_flashcards`, réservé au Complet comme la route de
 génération de cartes, et compté dans son quota (§13). Quatre ou cinq outils sont un plafond,
 pas une cible ; tous en `strict: true`.
 
 - Descriptions : format d'entrée, exemple, cas limite, quand l'utiliser plutôt qu'un autre
   outil.
 - Erreurs structurées `{ isError, errorCategory: transient|validation|business|permission, isRetryable, message }` ;
-  un résultat vide n'est jamais une erreur (`tool-errors.ts`).
+  un résultat vide n'est jamais une erreur.
 - Appels et résultats d'outils persistés dans l'historique avec le raisonnement
   (`message.model_messages`, `responseMessages` de `generateText`), rejoués au tour suivant
   quand ils finissent sur l'assistant et que le tour n'a pas été coupé ; seul le dernier
@@ -187,7 +182,7 @@ pas une cible ; tous en `strict: true`.
 ## 7. Prompt et contexte
 
 Ordre du prompt, du plus stable au plus variable (`assembleChatPrompt`,
-`modules/tutor/chat-message-assembler.ts`) :
+`modules/tutor/core/assembler.ts`) :
 
 1. Système statique versionné : identité (dont la divulgation « je suis une IA »),
    pédagogie, sécurité, format. Aucune donnée d'élève.
@@ -246,7 +241,7 @@ absente de la source. Le coût vient de `result.usage`, pas d'une estimation.
 ## 9. Évaluation
 
 Repères détaillés : `etudes/2026-10-06/refonte-evaluation.md`. Le code vit dans
-`apps/server/src/eval/` (`bun run eval`) ; les mesures et leurs limites dans les études datées.
+`apps/server/src/eval/`, dont le harnais revient à l'étape 8 ; les mesures et leurs limites dans les études datées.
 Le harnais sert aussi la preuve publique : protocole, jeu et résultats rejouables par un tiers.
 
 - **Ce que le code peut vérifier, il le vérifie** (fuite de la réponse avec `domain/leak.ts`, la même

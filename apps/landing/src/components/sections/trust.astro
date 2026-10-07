@@ -1,0 +1,27 @@
+---
+import FadeIn from '@/components/atoms/fade-in.astro';
+import HandNote from '@/components/annotations/hand-note.astro';
+import Highlight from '@/components/annotations/highlight.astro';
+
+const COMMITMENTS = [
+  'Une IA européenne : les modèles de Mistral AI, appelés sur leur infrastructure européenne.',
+  'Aucune publicité, aucune revente de données.',
+  'Consultation, correction et suppression des données sur simple demande.',
+];
+---
+
+<section class="py-16 lg:py-24">
+  <FadeIn class="container grid max-w-5xl gap-10 md:grid-cols-[1fr_2fr] md:items-start">
+    <HandNote class="md:mt-2">Ce qu&apos;on s&apos;engage à faire, et à ne pas faire.</HandNote>
+    <div>
+      <h2 class="mb-6 text-4xl text-foreground sm:text-5xl">
+        Les données d&apos;un enfant <Highlight>ne sont pas un produit</Highlight>
+      </h2>
+      <ul class="space-y-4 text-lg text-muted-foreground">
+        {COMMITMENTS.map((item) => (
+          <li class="border-l-2 border-success pl-4">{item}</li>
+        ))}
+      </ul>
+    </div>
+  </FadeIn>
+</section>

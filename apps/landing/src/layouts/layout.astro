@@ -1,0 +1,132 @@
+---
+import { Font } from 'astro:assets';
+import '@/styles/global.css';
+import Header from '@/components/layout/header.astro';
+import Footer from '@/components/layout/footer.astro';
+import JsonLd from '@/components/json-ld.astro';
+import { BRAND_NAME } from '@/lib/brand';
+import { OG_IMAGE } from '@/lib/open-graph';
+
+interface Props {
+  title?: string;
+  description?: string;
+  noindex?: boolean;
+}
+
+const TITLE = `${BRAND_NAME} – Une aide aux devoirs pour le collège, en préparation`;
+const DESCRIPTION =
+  "Aide aux devoirs en préparation pour les collégiens, de la 6e à la 3e : Tom est conçu pour guider votre enfant par des questions, sans faire l'exercice à sa place.";
+const KEYWORDS = [
+  BRAND_NAME,
+  'tutorat',
+  'éducation',
+  'IA',
+  'aide aux devoirs',
+  'aide devoirs IA',
+  'soutien scolaire',
+  'soutien scolaire IA',
+  'tuteur IA français',
+  'collège',
+  '6e',
+  '5e',
+  '4e',
+  '3e',
+  'application éducative',
+  'app scolaire',
+  'IA européenne',
+  'Mistral',
+];
+
+const { title, description = DESCRIPTION, noindex = false } = Astro.props;
+const site = Astro.site?.href ?? '';
+const ogImage = new URL('/opengraph-image.png', site).href;
+
+const jsonLd = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: BRAND_NAME,
+    url: site,
+    logo: new URL('/icon-512.png', site).href,
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    url: site,
+    name: BRAND_NAME,
+    inLanguage: 'fr',
+  },
+];
+---
+
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title ? `${title} | ${BRAND_NAME}` : TITLE}</title>
+    <meta name="description" content={description} />
+    <meta name="application-name" content={BRAND_NAME} />
+    <meta name="author" content={BRAND_NAME} />
+    <meta name="keywords" content={KEYWORDS.join(',')} />
+    <meta name="creator" content={BRAND_NAME} />
+    {noindex ? (
+      <meta name="robots" content="noindex" />
+    ) : (
+      <>
+        <meta name="robots" content="index, follow" />
+        <meta name="googlebot" content="index, follow, max-video-preview:-1, max-image-preview:large, max-snippet:-1" />
+      </>
+    )}
+    <meta name="category" content="education" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    {!noindex && <link rel="canonical" href={new URL(Astro.routePattern, site).href} />}
+    <meta property="og:title" content={TITLE} />
+    <meta property="og:description" content={DESCRIPTION} />
+    <meta property="og:site_name" content={BRAND_NAME} />
+    <meta property="og:locale" content="fr_FR" />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content={String(OG_IMAGE.width)} />
+    <meta property="og:image:height" content={String(OG_IMAGE.height)} />
+    <meta property="og:image:alt" content={TITLE} />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={TITLE} />
+    <meta name="twitter:description" content={DESCRIPTION} />
+    <meta name="twitter:image" content={ogImage} />
+    <meta name="twitter:image:alt" content={TITLE} />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" href="/favicon.ico" sizes="32x32" type="image/x-icon" />
+    <link rel="icon" href="/icon.png" sizes="64x64" type="image/png" />
+    <link rel="apple-touch-icon" href="/apple-icon.png" sizes="180x180" type="image/png" />
+    <link rel="sitemap" href="/sitemap-index.xml" />
+    <Font cssVariable="--font-nunito" preload />
+    {/* Not preloaded: only the home page writes by hand. */}
+    <Font cssVariable="--font-caveat" />
+    {jsonLd.map((schema) => (
+      <JsonLd data={schema} />
+    ))}
+  </head>
+  <body>
+    <a
+      href="#main-content"
+      class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-full"
+    >
+      Aller au contenu principal
+    </a>
+    <div class="relative flex min-h-screen flex-col">
+      <Header />
+      <main id="main-content" class="flex-1">
+        <slot />
+      </main>
+      <Footer />
+    </div>
+    <script>
+      import '@/scripts/reveal';
+
+      // Last in the page, so every component's script has run: the e2e suite waits on this flag.
+      document.documentElement.dataset['hydrated'] = '';
+    </script>
+  </body>
+</html>

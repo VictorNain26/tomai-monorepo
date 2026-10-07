@@ -1,9 +1,9 @@
 ---
 description: Design system — chargé uniquement sur les fichiers d'interface
 paths:
-  - "apps/landing/**/*.{ts,tsx,css}"
+  - "apps/landing/**/*.{ts,astro,css}"
   - "apps/web/**/*.{ts,tsx,css}"
-  - "packages/ui/**/*.{ts,tsx,css}"
+  - "packages/ui/**/*.{ts,tsx}"
   - "packages/tokens/**/*.css"
 ---
 
@@ -16,8 +16,9 @@ construit sur les tokens actuels, que le lot 4 remplacera sans toucher aux compo
 
 - Aucune nouvelle direction visuelle avant le lot 4.
 - Aucune couleur, durée, rayon ou taille littérale dans un composant : une classe issue de
-  `@repo/tokens`, ou un token ajouté à `theme.css`. Seules exceptions : les valeurs que `motion`
-  anime dans `style`, et les images `next/og` (`ImageResponse` ne lit que `style`).
+  `@repo/tokens`, ou un token ajouté à `theme.css`. Seule exception : les valeurs que Motion
+  anime (`motion/react` dans le web, `animate()` dans la landing), et l'état d'entrée qui les
+  attend.
 - Aucune paire de tokens associée sans son test de contraste
   (`packages/tokens/contrast.test.mjs`) : texte dans `PAIRS` à 4,5:1
   ([WCAG 2.2, 1.4.3](https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html)),

@@ -1,0 +1,23 @@
+---
+import { cn } from '@repo/ui/classes';
+
+interface Props {
+  as?: 'h1' | 'h2';
+  eyebrow?: string;
+  title?: string;
+  description?: string;
+  align?: 'center' | 'left';
+  class?: string;
+}
+
+const { as: Heading = 'h2', eyebrow, title, description, align = 'center', class: className } = Astro.props;
+---
+
+<div class={cn('mb-12 max-w-3xl', align === 'center' ? 'mx-auto text-center' : 'text-left', className)}>
+  {eyebrow && <p class="mb-4 text-sm font-bold text-primary">{eyebrow}</p>}
+  <Heading class="text-4xl font-extrabold text-balance text-foreground sm:text-5xl">
+    {title}
+    <slot name="title" />
+  </Heading>
+  {description && <p class="mt-4 text-lg text-muted-foreground">{description}</p>}
+</div>

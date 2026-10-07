@@ -1,0 +1,50 @@
+---
+import { Image } from 'astro:assets';
+import { cn } from '@repo/ui/classes';
+import tomTete from '@/assets/tom-tete.png';
+import FadeIn from '@/components/atoms/fade-in.astro';
+import HandNote from '@/components/annotations/hand-note.astro';
+
+interface Message {
+  from: 'eleve' | 'tom';
+  // {x} marks the unknown, set in italics.
+  text: string;
+}
+
+const MESSAGES: Message[] = [
+  { from: 'eleve', text: "3{x} + 5 = 20. J'ai trouvé {x} = 20/3, mais c'est faux." },
+  { from: 'tom', text: "Tu as divisé 20 par 3 directement. Qu'est-ce qui accompagne encore le 3{x}, à gauche du signe égal ?" },
+  { from: 'eleve', text: 'Le + 5 ?' },
+  { from: 'tom', text: 'Oui. Que fais-tu de ce 5, des deux côtés, pour garder 3{x} seul ?' },
+  { from: 'eleve', text: "J'enlève 5 : 3{x} = 15, donc {x} = 5." },
+  { from: 'tom', text: 'Vérifie : combien font 3 × 5 + 5 ?' },
+  { from: 'eleve', text: "20. C'est bon !" },
+];
+
+const STAGGER_SECONDS = 0.15;
+---
+
+<figure class="rounded-2xl bg-secondary p-5 sm:p-6">
+  <figcaption class="text-sm font-bold text-muted-foreground">Exemple fictif de séance</figcaption>
+  <ol class="mt-4 space-y-3">
+    {MESSAGES.map(({ from, text }, index) => (
+      <li class={cn('flex gap-2', from === 'eleve' && 'justify-end')}>
+        <FadeIn delay={index * STAGGER_SECONDS} class="flex max-w-sm items-end gap-2">
+          {from === 'tom' && <Image src={tomTete} alt="" width={32} height={32} densities={[1, 2]} class="size-8 shrink-0" />}
+          <p
+            class={cn(
+              'rounded-2xl px-4 py-2',
+              from === 'tom' ? 'bg-card text-card-foreground ring-1 ring-border' : 'bg-primary text-primary-foreground',
+            )}
+          >
+            <span class="sr-only">{from === 'tom' ? 'Tom : ' : "L'élève : "}</span>
+            {text.split('{x}').map((part, i) => (i === 0 ? part : [<i>x</i>, part]))}
+          </p>
+        </FadeIn>
+      </li>
+    ))}
+  </ol>
+  <FadeIn delay={MESSAGES.length * STAGGER_SECONDS} class="mt-3 ml-10">
+    <HandNote>c&apos;est toi qui l&apos;as trouvé !</HandNote>
+  </FadeIn>
+</figure>

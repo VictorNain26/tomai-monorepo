@@ -1,0 +1,57 @@
+# Served by Clever Cloud's static runtime (Caddy 2.11.4, port 8080), and by the e2e suite in the same Caddy.
+{
+	admin off
+}
+
+(security_headers) {
+	header {
+		Strict-Transport-Security "max-age=63072000"
+		X-Content-Type-Options nosniff
+		X-Frame-Options DENY
+		Referrer-Policy strict-origin-when-cross-origin
+		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+		# What a <meta> CSP cannot carry; script-src and style-src are in each page's <meta>.
+		Content-Security-Policy "frame-ancestors 'none'; object-src 'none'; base-uri 'none'"
+		-Server
+	}
+}
+
+:8080 {
+	root * dist
+	encode zstd gzip
+	import security_headers
+
+	# Clever Cloud's load balancer ends TLS and says which scheme the visitor used.
+	# https://www.clever.cloud/developers/doc/find-help/faq/
+	@plainHttp header X-Forwarded-Proto http
+	redir @plainHttp https://{host}{uri} 308
+
+	redir /home / 308
+	redir /sitemap.xml /sitemap-index.xml 308
+	# As Next.js did: a trailing slash redirects to the path without it. The path must start with a
+	# single slash and hold no backslash: browsers read "/\" as "//", a redirect to another host.
+	@trailingSlash path_regexp trailingSlash ^(/[^/\\][^\\]*)/$
+	redir @trailingSlash {re.trailingSlash.1}{?query} 308
+
+	route {
+		# The build's file names are not URLs: each page has one, without its extension.
+		@buildFile path *.html /index /404
+		error @buildFile 404
+		header /_astro/* Cache-Control "public, max-age=31536000, immutable"
+		try_files {path} {path}.html
+		file_server
+	}
+
+	# Error handling starts a fresh response: the headers are set again, and no error is cached.
+	handle_errors 404 {
+		import security_headers
+		header Cache-Control no-store
+		rewrite * /404.html
+		file_server
+	}
+	handle_errors {
+		import security_headers
+		header Cache-Control no-store
+		respond "{err.status_code} {err.status_text}"
+	}
+}

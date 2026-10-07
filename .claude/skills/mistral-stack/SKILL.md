@@ -28,7 +28,7 @@ modèle et de prix sans prévenir (docs.mistral.ai/inference/model-lifecycle).
 
 ## Appeler l'API
 
-- Le client se crée à la racine de composition (`src/main.ts`, quand le tour s'y branche) et se
+- Le client se crée à la racine de composition (`src/main.ts`) et se
   passe en paramètre : `createAi`
   (`src/platform/ai/client.ts`) pour `generateText` et `generateStructured`, `createModeration`
   (`src/platform/ai/moderation.ts`). Jamais un SDK appelé depuis un service, jamais
@@ -47,8 +47,8 @@ modèle et de prix sans prévenir (docs.mistral.ai/inference/model-lifecycle).
 
 Chaque appel facturé de `createAi` écrit son coût dans `ai_cost`, en micro-euros, au nom de
 l'élève (`owner`, `null` hors d'un élève : rien n'est écrit), une réponse hors schéma comprise.
-La modération, gratuite, n'est pas tracée. Un appel qui ne passe pas par `createAi` (chat en flux,
-voix) écrit son coût lui aussi : jamais un appel facturé hors du quota.
+La modération, gratuite, n'est pas tracée. Un appel qui ne passe pas par `createAi` (la voix)
+écrit son coût lui aussi : jamais un appel facturé hors du quota.
 
 - **Tarif** : `PRICES_USD` (`src/platform/ai/cost.ts`), prix publics en dollars par ID daté. Tokens
   en cache à 10 % du prix d'entrée, endpoint UE +10 %, conversion au taux que Mistral facture

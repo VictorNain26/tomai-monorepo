@@ -23,6 +23,7 @@ We will acknowledge within 48 hours and provide a fix timeline within 7 days.
   push/PR to `main` (`.github/workflows/ci.yml`)
 - SHA-pinned GitHub Actions (supply chain protection)
 - Non-root server image (the base image's `bun` user)
-- Security headers on the landing page (`apps/landing/vercel.json`: nosniff,
-  X-Frame-Options, Referrer-Policy, Permissions-Policy) and the server. No CSP yet: planned
-  for the web app (`apps/web`, served by the server) in lot 3, for the landing in lot 4
+- Security headers on the landing page (`apps/landing/Caddyfile`: HSTS and a redirect to HTTPS,
+  nosniff, X-Frame-Options, Referrer-Policy, Permissions-Policy, `frame-ancestors`) and the server. The
+  landing has a hash-based CSP (`security.csp` in `apps/landing/astro.config.mjs`); the web app
+  (`apps/web`, served by the server) gets its own in lot 3

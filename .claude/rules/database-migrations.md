@@ -38,8 +38,9 @@ de l'image Docker, `docker-entrypoint.sh` applique les migrations (`dist/migrate
 
 ## Changements destructifs
 
-- Nouvelle colonne obligatoire → `nullable` d'abord, contrainte après la migration des données.
-- Backup avant toute migration destructive (DROP, ALTER TYPE) sur une base qui garde des
+- Jamais une colonne obligatoire ajoutée d'emblée à une table qui a des lignes : `nullable`
+  d'abord, la contrainte après la migration des données.
+- Jamais une migration destructive (DROP, ALTER TYPE) sans sauvegarde, sur une base qui garde des
   données.
 - `migrate()` de `drizzle-orm` applique les migrations dans une transaction
   (`drizzle-orm/pg-core/dialect.js`) : `CREATE INDEX CONCURRENTLY`, que Postgres refuse dans

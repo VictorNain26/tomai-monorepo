@@ -17,7 +17,7 @@
   "prHourlyLimit": 0,
   "prConcurrentLimit": 8,
   "branchConcurrentLimit": 8,
-  "ignorePaths": ["**/node_modules/**", "**/dist/**", "**/.next/**", "**/build/**", "**/coverage/**", "**/.turbo/**"],
+  "ignorePaths": ["**/node_modules/**", "**/dist/**", "**/coverage/**", "**/.turbo/**"],
   "major": {
     "dependencyDashboardApproval": true,
     "automerge": false,
@@ -73,7 +73,7 @@
       "allowedVersions": "<6.1.0"
     },
     {
-      "description": "@types/node follows the Node runtime (.nvmrc, engines, Vercel). Raise together with the runtime.",
+      "description": "@types/node follows the Node runtime (.nvmrc, engines). Raise together with the runtime.",
       "matchPackageNames": ["@types/node"],
       "allowedVersions": "<25.0.0"
     },
@@ -111,7 +111,6 @@
       "matchPackageNames": ["react", "react-dom", "@types/react", "@types/react-dom"],
       "groupName": "react"
     },
-    { "description": "Sentry SDKs together.", "matchPackageNames": ["@sentry/**"], "groupName": "sentry" },
     {
       "description": "GitHub Actions: pinned to digest, grouped.",
       "matchManagers": ["github-actions"],
