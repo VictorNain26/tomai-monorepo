@@ -14,7 +14,8 @@ export interface Equality {
 }
 
 // The characters a written calculation is made of, horizontal spaces only: a line break ends it.
-const NUMERIC = '[\\d. +\\-*/^()]';
+// The colon is the division sign of French schools (« 8 : 4 = 2 »), or a sentence's punctuation.
+const NUMERIC = '[\\d. +\\-*/^():]';
 const NUMERIC_TAIL = new RegExp(`${NUMERIC}+$`);
 const NUMERIC_HEAD = new RegExp(`^${NUMERIC}+`);
 
@@ -61,16 +62,22 @@ function arithmetic(expression: string): MathNode | null {
 // an unknown (« x - 3 »), which the code cannot read: such a calculation is left alone.
 const STANDALONE = /(?:^|[:;,(.!?]|(?<!\p{L})(?:soit|donc|alors|et|puis|ainsi|car))\s*$/iu;
 
+/** A calculation as mathjs reads it: the colon of a division as a slash. */
+const division = (calculation: string) => calculation.replace(/:/g, '/');
+
 /** The calculation that ends a piece of text, or null when it belongs to something else. */
 function trailingCalculation(text: string): string | null {
   const match = NUMERIC_TAIL.exec(text);
   if (!match) return null;
-  // A sentence's final dot is punctuation, not part of the calculation (« Bravo. 2 + 3 »).
-  const dots = /^[.\s]*/.exec(match[0])?.[0] ?? '';
-  const before = text.slice(0, match.index + dots.length);
-  const calculation = match[0].slice(dots.length).trim();
-  if (!STANDALONE.test(before) || /^[+*/^)]/.test(calculation)) return null;
-  return calculation;
+  // A sentence's dot or colon is punctuation, not part of the calculation (« Bravo. 2 + 3 »,
+  // « Calcul : 2 + 3 »); a decimal one (« .5 ») is.
+  const lead = /^(?:[.:](?!\d)|\s)*/.exec(match[0])?.[0] ?? '';
+  const before = text.slice(0, match.index + lead.length);
+  const calculation = match[0].slice(lead.length).trim();
+  if (STANDALONE.test(before)) return /^[+*/^):]/.test(calculation) ? null : division(calculation);
+  // « Étape 1 : 2 + 3 »: after a word, the last colon was punctuation, which stands a calculation alone.
+  const after = calculation.slice(calculation.lastIndexOf(':') + 1).trim();
+  return calculation.includes(':') && after && !/^[+*/^)]/.test(after) ? after : null;
 }
 
 /** The calculation that starts a piece of text, or null when a letter is glued to it (« 15x »). */
@@ -79,7 +86,7 @@ function leadingCalculation(text: string): string | null {
   if (!match) return null;
   // « 15x » is a term; « 12 cm » a number and its unit.
   if (!/\s$/.test(match[0]) && /^\p{L}/u.test(text.slice(match[0].length))) return null;
-  return match[0].trim().replace(/\.+$/, '');
+  return division(match[0].trim().replace(/[.:\s]+$/, ''));
 }
 
 /** Numeric equalities written out in a text (« 2 + 3 × 4 = 20 », chains included), found without the model. */
@@ -118,13 +125,23 @@ export function isWrong({ left, right }: Pick<Equality, 'left' | 'right'>): bool
 
 const key = ({ left, right }: Equality) => `${left}=${right}`.replace(/\s/g, '');
 
+/** Whether a student line holds the equality whole: « 12+2=56 » does not hold « 2+2=5 ». */
+function holds(line: string, equality: string): boolean {
+  return new RegExp(`(?<![\\d.])${equality.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&')}(?![\\d.])`).test(line);
+}
+
 /**
  * The wrong equalities a text writes, once each; one the student wrote is their work shown back,
- * not an error, « 3 fois 4 » of theirs standing for « 3 × 4 ».
+ * not an error, their « 3 fois 4 », « 3 x 4 » and « 8 : 4 » read as products and a division.
  */
 export function wrongEqualities(text: string, studentTexts: readonly string[]): Equality[] {
-  const studentLines = studentTexts.flatMap(plainLines).map((line) => line.replace(/(\d)\s*fois\s*(?=\d)/g, '$1*').replace(/\s/g, ''));
+  const studentLines = studentTexts.flatMap(plainLines).map((line) =>
+    line
+      .replace(/(\d)\s*(?:fois|x|X)\s*(?=\d)/g, '$1*')
+      .replace(/(\d)\s*:\s*(?=\d)/g, '$1/')
+      .replace(/\s/g, ''),
+  );
   return [...new Map(writtenEqualities(text).map((e) => [key(e), e]))]
-    .filter(([k, e]) => !studentLines.some((line) => line.includes(k)) && isWrong(e))
+    .filter(([k, e]) => !studentLines.some((line) => holds(line, k)) && isWrong(e))
     .map(([, e]) => e);
 }

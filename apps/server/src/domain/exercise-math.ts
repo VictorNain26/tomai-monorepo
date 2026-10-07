@@ -68,13 +68,33 @@ function valueAt(node: MathNode, scope: Record<string, number>): number | null {
   }
 }
 
+/**
+ * An upper bound of the degree a node expands to. The bounds above keep each power at 3, not a
+ * product of powers: « (x+1)^3*(x+1)^3 » kept `rationalize` busy past 20 s, the event loop with it.
+ */
+function degree(node: MathNode): number {
+  if (isConstantNode(node)) return 0;
+  if (isSymbolNode(node)) return 1;
+  if (isParenthesisNode(node)) return degree(node.content);
+  if (!isOperatorNode(node)) return Infinity;
+  const degrees = node.args.map(degree);
+  if (node.op === '^') {
+    const [base = Infinity] = degrees;
+    const exponent = node.args[1];
+    return exponent && isConstantNode(exponent) ? base * exponent.value : Infinity;
+  }
+  // A product, and a quotient once its denominator is multiplied through, add their degrees.
+  if (node.op === '*' || node.op === '/') return degrees.reduce((sum, d) => sum + d, 0);
+  return Math.max(0, ...degrees);
+}
+
 function sides(equation: string): [MathNode, MathNode] | null {
   const parts = equation.split('=');
   const [left, right] = parts;
   if (parts.length !== 2 || left === undefined || right === undefined) return null;
   const l = readable(left);
   const r = readable(right);
-  return l && r ? [l, r] : null;
+  return l && r && degree(l) <= MAX_POWER && degree(r) <= MAX_POWER ? [l, r] : null;
 }
 
 function realRoot(root: number | Complex): number | null {
@@ -126,24 +146,29 @@ function sameExpression(a: MathNode, b: MathNode): boolean | null {
   return true;
 }
 
+type Roots = NonNullable<ReturnType<typeof equationRoots>>;
+
+/** Whether an answer has the given roots: an equation with the same unknown and roots, or the value of the only root. */
+function matchesRoots(roots: Roots, answer: string): boolean | null {
+  if (answer.includes('=')) {
+    const other = equationRoots(answer);
+    return other ? roots.unknown === other.unknown && sameRoots(roots.roots, other.roots) : null;
+  }
+  const node = readable(answer);
+  const value = node && unknownsOf(node).length === 0 ? valueAt(node, {}) : null;
+  return value === null ? null : sameRoots(roots.roots, [value]);
+}
+
 /**
  * Whether two answers are the same for mathjs: two equations with the same unknown and roots, an
  * equation and the value of its only root, or two expressions equal at every point. Null when
  * mathjs cannot tell.
  */
 export function sameMath(a: string, b: string): boolean | null {
-  const aIsEquation = a.includes('=');
-  if (aIsEquation !== b.includes('=')) {
-    const roots = equationRoots(aIsEquation ? a : b);
-    const valueNode = readable(aIsEquation ? b : a);
-    const value = valueNode && unknownsOf(valueNode).length === 0 ? valueAt(valueNode, {}) : null;
-    return roots && value !== null ? sameRoots(roots.roots, [value]) : null;
-  }
-  if (aIsEquation) {
-    const ra = equationRoots(a);
-    const rb = equationRoots(b);
-    if (!ra || !rb) return null;
-    return ra.unknown === rb.unknown && sameRoots(ra.roots, rb.roots);
+  const equation = a.includes('=') ? a : b.includes('=') ? b : null;
+  if (equation !== null) {
+    const roots = equationRoots(equation);
+    return roots ? matchesRoots(roots, equation === a ? b : a) : null;
   }
   const na = readable(a);
   const nb = readable(b);
@@ -152,9 +177,10 @@ export function sameMath(a: string, b: string): boolean | null {
 
 export type MathCheck = 'passed' | 'failed' | 'not-applicable';
 
-/** The answer checked against the statement's equation: an equation must have its roots, a value must be its only root. */
+/** The answer checked against the statement's equation, its roots computed once: an equation must have its roots, a value must be its only root. */
 export function checkAnswer(equation: string, answer: string): MathCheck {
-  if (!equationRoots(equation)) return 'not-applicable';
-  const same = sameMath(equation, answer);
+  const roots = equationRoots(equation);
+  if (!roots) return 'not-applicable';
+  const same = matchesRoots(roots, answer);
   return same === null ? 'not-applicable' : same ? 'passed' : 'failed';
 }

@@ -92,3 +92,30 @@ describe('wrongEqualities', () => {
     expect(wrongEqualities('Tu as écrit : 3 × 4 = 13.', ['5 × 4 = 21']).map((e) => e.quote)).toEqual(['3 * 4 = 13']);
   });
 });
+
+describe('review of #431', () => {
+  const found = (text: string) => writtenEqualities(text).map((e) => [e.left, e.right, isWrong(e)]);
+
+  it('reads the colon as the division of French schools, or as punctuation after a word', () => {
+    expect(found('8 : 4 = 2')).toEqual([['8 / 4', '2', false]]);
+    expect(found('Donc 12 : 3 = 4.')).toEqual([['12 / 3', '4', false]]);
+    expect(found('Calcul : 3 + 4 = 8')).toEqual([['3 + 4', '8', true]]);
+    expect(found('Étape 1 : 3 + 4 = 7')).toEqual([['3 + 4', '7', false]]);
+    expect(found('Le résultat est 7 : bravo.')).toEqual([]);
+  });
+
+  it('keeps the dot of a decimal written without its zero', () => {
+    expect(found('.5 + .5 = 1')).toEqual([['.5 + .5', '1', false]]);
+  });
+
+  it('counts as shown back only an equality the student wrote whole', () => {
+    expect(wrongEqualities('2 + 2 = 5', ['12+2=56']).map((e) => e.quote)).toEqual(['2 + 2 = 5']);
+    expect(wrongEqualities('1 + 1 = 3', ['11+1=34']).map((e) => e.quote)).toEqual(['1 + 1 = 3']);
+  });
+
+  it('reads the student x of a product, and their colon of a division', () => {
+    expect(wrongEqualities('Tu as écrit : 3 × 4 = 13.', ['3x4=13'])).toEqual([]);
+    expect(wrongEqualities('Tu as écrit : 3 × 4 = 13.', ['3 x 4 = 13'])).toEqual([]);
+    expect(wrongEqualities('Tu as écrit : 8 : 4 = 3.', ['8 : 4 = 3'])).toEqual([]);
+  });
+});

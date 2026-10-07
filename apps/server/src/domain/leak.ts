@@ -29,7 +29,10 @@ export function normalizeForLeak(text: string): string {
   const typography = plainTypography(
     spoken
       .replace(/\\[dt]?frac\s*\{([^{}]*)\}\s*\{([^{}]*)\}/g, '$1/$2')
-      .replace(/\^\{\s*(\d+)\s*\}|\^(\d)/g, (_match, braced: string | undefined, bare: string | undefined) => braced ?? bare ?? ''),
+      // A unit's or a letter's power reads as the dataset writes it (« cm2 », « x2 »); between
+      // numbers it stays a power: « 2^5 » is no « 25 ».
+      .replace(/\^\{\s*(\d+)\s*\}/g, '^$1')
+      .replace(/(\p{L})\^(\d)/gu, '$1$2'),
   );
   return typography
     .replace(/(\d) (?=\d{3}(?!\d))/g, '$1')

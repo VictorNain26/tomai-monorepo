@@ -18,19 +18,24 @@ J'arrête notre conversation ici pour que tu puisses le faire.`;
 // Accents dropped, so a rule need not spell « disparaître » both ways.
 const normalized = (text: string) => text.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().replace(/[’‘`]/g, "'").replace(/\s+/g, ' ');
 
-// « mourir de rire », « de honte »… are figures of speech, not wishes.
-const DYING = 'mourir(?! de (?:rire|honte|faim|froid|chaud|peur|ennui))';
+// « mourir de rire », « crever de faim »… are figures of speech, not wishes.
+const FIGURE = '(?! de (?:rire|honte|faim|froid|chaud|peur|ennui))';
 // The student speaking of themself, as they type it: a character's wish is a school text.
 const I_HAVE = "\\b(?:j'ai|j ai|jai|je n'ai|je nai|j'avais|javais)";
 const I_WANT = "\\b(?:je veux|j'veux|jveux|je voudrais|j'voudrais|j'aimerais|jaimerais)";
-const WISH = `(?:${DYING}|disparaitre|crever|en finir|me tuer|me suicider|me faire du mal|ne plus exister|plus exister|ne plus etre la|plus etre la|ne plus vivre|plus vivre)`;
+const WISH = `(?:mourir${FIGURE}|disparaitre|crever${FIGURE}|en finir|me tuer|me suicider|me pendre|me jeter (?:par la fenetre|sous un (?:train|bus|metro)|d'un pont)|me faire du mal|ne plus exister|plus exister|ne plus etre la|plus etre la|ne plus vivre|plus vivre)`;
+// Up to two words between « j'ai » and « envie » (« vraiment trop »), never a negation:
+// « j'ai pas envie de mourir » is no wish.
+const BEFORE_WISH = '(?:(?!(?:pas|plus|jamais|aucune|point)\\b)\\w+ ){0,2}';
 const BODY = '(?:expres|les veines|les poignets|le poignet|le bras|les bras)';
 
 /** First-person wishes to die or disappear, and self-harm. */
 const RULES: readonly RegExp[] = [
-  new RegExp(`${I_HAVE} (?:\\w+ )?envie (?:de |d')${WISH}`),
+  new RegExp(`${I_HAVE} ${BEFORE_WISH}envie (?:de |d')${WISH}`),
   new RegExp(`${I_HAVE} (?:vraiment )?(?:plus|pas|aucune|plus aucune) envie de vivre`),
   new RegExp(`${I_WANT} ${WISH}`),
+  /\bje (?:ne )?(?:veux|voudrais) (?:plus|pas) vivre/,
+  /\bje me suicide\b|\bje pense (?:souvent |beaucoup |tout le temps )?au suicide/,
   /\b(?:je |j')(?:vais|veux|voudrais|pense a|pense|vais finir par) me (?:tuer|suicider|faire du mal|scarifier|pendre)/,
   /\bme (?:suicider|scarifier|ouvrir les veines)/,
   new RegExp(`\\bje me (?:fais du mal|scarifie|blesse expres|coupe ${BODY})`),

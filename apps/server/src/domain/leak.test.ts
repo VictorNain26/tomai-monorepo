@@ -19,6 +19,14 @@ describe('normalizeForLeak', () => {
     expect(normalizeForLeak('$0{,}05$')).toBe('0.05');
   });
 
+  it('keeps a power between numbers, and reads a unit or a letter squared as the dataset writes it', () => {
+    expect(normalizeForLeak('$2^{5}$')).toBe('2^5');
+    expect(normalizeForLeak('3^2')).toBe('3^2');
+    expect(normalizeForLeak('25 cm^{2}')).toBe('25 cm2');
+    expect(findLeakForm('Calcule $2^5$ puis compare.', ['25'])).toBeNull();
+    expect(findLeakForm('Tu obtiens $x^{2}$.', ['x²'])).toBe('x²');
+  });
+
   it('unifies minus signs, thin spaces, digit groups and decimal commas', () => {
     expect(normalizeForLeak('−3')).toBe('-3');
     expect(normalizeForLeak('200\u202f000')).toBe('200000');

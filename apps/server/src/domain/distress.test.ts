@@ -25,6 +25,13 @@ describe('matchesDistressRules', () => {
       'jveux mourir',
       'je me suis coupée exprès',
       "ma vie n'a aucun sens",
+      'je ne veux plus vivre',
+      'je veux pas vivre',
+      "j'ai envie de me pendre",
+      'je me suicide',
+      'je pense au suicide',
+      'je veux me jeter par la fenêtre',
+      "j'ai vraiment trop envie de mourir",
     ]) {
       expect({ text, distress: matchesDistressRules(text) }).toEqual({ text, distress: true });
     }
@@ -50,6 +57,10 @@ describe('matchesDistressRules', () => {
       'je me suis coupé en cuisine',
       'je vais me jeter à l’eau et lever la main',
       'pour Meursault, la vie n’a pas de sens',
+      "j'ai pas envie de mourir",
+      "j'ai jamais envie de disparaître",
+      'je veux crever de rire',
+      "j'ai envie de crever de faim tellement j'ai faim",
     ]) {
       expect({ text, distress: matchesDistressRules(text) }).toEqual({ text, distress: false });
     }

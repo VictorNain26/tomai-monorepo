@@ -48,6 +48,16 @@ describe('sameMath', () => {
     expect(equationRoots('(x + 1)^400 = 0')).toBeNull();
   });
 
+  it('refuses a product of powers past degree 3 before expanding it, which would block the server', () => {
+    const start = Date.now();
+    expect(equationRoots('(x+1)^3*(x+1)^3=0')).toBeNull();
+    expect(equationRoots('(x+1)^3*(x+1)^2=0')).toBeNull();
+    expect(equationRoots('(x+y)^3*(x+y)^3=0')).toBeNull();
+    expect(equationRoots('x^2 / x^2 = 1')).toBeNull();
+    expect(Date.now() - start).toBeLessThan(100);
+    expect(equationRoots('(x+1)*(x-2)*(x+3) = 0')?.roots.map((r) => Math.round(r * 1e6) / 1e6)).toEqual([-3, -1, 2]);
+  });
+
   it('compares large roots relatively', () => {
     expect(sameMath('x^3 = 8000000', 'x = 200')).toBe(true);
   });
