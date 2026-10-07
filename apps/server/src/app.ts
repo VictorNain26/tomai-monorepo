@@ -29,11 +29,13 @@ export interface AppDeps {
   ai: Ai;
   moderation: Moderation;
   lifecycle: Lifecycle;
+  /** Work after a response, which the shutdown waits for. */
+  background: (task: Promise<unknown>) => void;
 }
 
-export function createApp({ config, logger, db, auth, ai, moderation, lifecycle }: AppDeps) {
+export function createApp({ config, logger, db, auth, ai, moderation, lifecycle, background }: AppDeps) {
   const household = householdModule({ db, auth });
-  const tutor = tutorModule({ db, auth, ai, moderation, logger });
+  const tutor = tutorModule({ db, auth, ai, moderation, logger, background });
   // One budget for the API and the probes: /health/ready runs a query on every call. The web's
   // files don't count, a page load fetches a dozen of them.
   const budget = rateLimit({ points: 100, durationSeconds: 60 });

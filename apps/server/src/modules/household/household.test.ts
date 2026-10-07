@@ -39,6 +39,7 @@ function client() {
       ...mistral.deps(db, pino({ level: 'silent' })),
       auth,
       lifecycle: createLifecycle(),
+      background: createBackgroundTasks().run,
     }),
     mail,
   );

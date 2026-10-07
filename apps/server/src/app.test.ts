@@ -38,6 +38,7 @@ const app = createApp({
     { mailer: mail.mailer, logger: pino({ level: 'silent' }), background: createBackgroundTasks().run, deleteUser: accountDeletion(db) },
   ),
   lifecycle: createLifecycle(),
+  background: createBackgroundTasks().run,
 });
 
 const post = (path: string, body: unknown, headers: Record<string, string> = {}) =>

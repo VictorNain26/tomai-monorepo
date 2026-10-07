@@ -50,7 +50,7 @@ const tasks = createBackgroundTasks();
 const auth = createAuth(database.db, config, { mailer, logger, background: tasks.run, deleteUser: accountDeletion(database.db) });
 const ai = createAi({ mistral: config.mistral, db: database.db, logger });
 const moderation = createModeration({ mistral: config.mistral, logger });
-const app = createApp({ config, logger, db: database.db, auth, ai, moderation, lifecycle });
+const app = createApp({ config, logger, db: database.db, auth, ai, moderation, lifecycle, background: tasks.run });
 
 // Bun closes an idle connection after 10 s by default, which would cut a streamed answer.
 const server = Bun.serve({ port: config.port, fetch: app.fetch, idleTimeout: 30 });

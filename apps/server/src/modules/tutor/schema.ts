@@ -26,6 +26,10 @@ export const studySession = pgTable(
       .notNull()
       .references(() => user.id, { onDelete: 'cascade' }),
     title: text('title'),
+    /** The summary of the messages up to `summaryUntil`, which the tutor reads first; out of the student's sight. */
+    summary: text('summary'),
+    /** The position of the last message the summary covers. */
+    summaryUntil: bigint('summary_until', { mode: 'number' }),
     /** The subject of the first turn that names one: the next turns fall back on it. */
     subject: subjectFamily('subject'),
     /** Set by a distress: every later message gets the fixed reply. */

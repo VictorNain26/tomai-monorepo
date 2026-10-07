@@ -36,6 +36,7 @@ const api = httpClient(
     ...mistral.deps(db, pino({ level: 'silent' })),
     auth,
     lifecycle: createLifecycle(),
+    background: createBackgroundTasks().run,
   }),
   mail,
 );
@@ -229,6 +230,13 @@ describe('the exercise in progress', () => {
     expect(await repository.startTurn(studentA.id, session.id)).toBeUndefined();
     await repository.endTurn(session.id, second.turnStartedAt);
     expect(await repository.startTurn(studentA.id, session.id)).toBeDefined();
+  });
+
+  it('writes one summary of two runs that read the same previous one', async () => {
+    const session = await start(asStudentA);
+    expect(await repository.replaceSummary(session.id, null, 'premier', 10)).toBe(true);
+    expect(await repository.replaceSummary(session.id, null, 'second', 12)).toBe(false);
+    expect(await repository.replaceSummary(session.id, 10, 'suivant', 20)).toBe(true);
   });
 
   it('takes the exercise written last, two of them written at the same instant', async () => {
