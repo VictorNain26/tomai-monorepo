@@ -4,7 +4,7 @@ import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query
 import type { InferResponseType } from 'hono/client';
 import { api, isProblem, parseResponse } from './api';
 
-export type Memory = InferResponseType<typeof api.memory.$get, 200>;
+type Memory = InferResponseType<typeof api.memory.$get, 200>;
 type Notion = Memory['notions'][number];
 
 export const memoryQuery = queryOptions({
