@@ -2,7 +2,7 @@ import { describe, expect, it } from 'bun:test';
 import { Hono } from 'hono';
 import { hc } from 'hono/client';
 import { parseResponse } from './api';
-import { householdMessage, isLevel, newStudentSchema } from './household';
+import { householdMessage, isLevel, memoryStatus, newStudentSchema } from './household';
 
 const problem = (code: string, status: 400 | 404 | 429 | 500) =>
   new Hono().get('/', (c) => c.json({ status, code }, status, { 'Content-Type': 'application/problem+json' }));
@@ -52,5 +52,22 @@ describe('newStudentSchema', () => {
     expect(newStudentSchema.safeParse({ name: ' ', level: 'sixieme', birthMonth: '2014-03', memoryProposed: false }).success).toBe(false);
     expect(newStudentSchema.safeParse({ name: 'Léa', level: '', birthMonth: '2014-03', memoryProposed: false }).success).toBe(false);
     expect(newStudentSchema.safeParse({ name: 'Léa', level: 'sixieme', birthMonth: '2014-13', memoryProposed: false }).success).toBe(false);
+  });
+});
+
+describe('memoryStatus', () => {
+  const status = (memory: { proposed: boolean; state: 'off' | 'asked' | 'active'; decidesAlone: boolean }) => memoryStatus({ name: 'Léa', memory });
+
+  it('says what the guardian has done and what the child answered, before 15', () => {
+    expect(status({ proposed: false, state: 'off', decidesAlone: false })).toBe('Pas proposée : Tom ne retient rien d’une séance à l’autre.');
+    expect(status({ proposed: true, state: 'asked', decidesAlone: false })).toBe('Proposée : Léa répondra à sa prochaine visite.');
+    expect(status({ proposed: true, state: 'active', decidesAlone: false })).toStartWith('Léa l’a acceptée');
+    expect(status({ proposed: true, state: 'off', decidesAlone: false })).toBe('Léa l’a refusée.');
+  });
+
+  it('from 15, says the child decides alone, and whether it is active', () => {
+    expect(status({ proposed: false, state: 'asked', decidesAlone: true })).toBe('À partir de 15 ans, Léa décide seul : la question lui est posée.');
+    expect(status({ proposed: false, state: 'off', decidesAlone: true })).toBe('À partir de 15 ans, Léa décide seul.');
+    expect(status({ proposed: false, state: 'active', decidesAlone: true })).toStartWith('Léa l’a acceptée');
   });
 });

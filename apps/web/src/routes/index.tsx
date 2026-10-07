@@ -1,5 +1,5 @@
 import { Button } from '@repo/ui';
-import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { Link, createFileRoute, redirect, useNavigate } from '@tanstack/react-router';
 import { MemoryAnswer } from '../components/memory-answer';
 import { SignOut } from '../components/sign-out';
@@ -26,18 +26,18 @@ export const Route = createFileRoute('/')({
     if (!me) throw redirect({ to: '/connexion' });
     if (me.role === 'guardian') throw redirect({ to: '/foyer' });
   },
-  loader: ({ context }) =>
-    Promise.all([context.queryClient.query(sessionsQuery), context.queryClient.query(pairedDevicesQuery), context.queryClient.query(memoryQuery)]),
+  loader: ({ context }) => Promise.all([context.queryClient.query(sessionsQuery), context.queryClient.query(pairedDevicesQuery)]),
   component: StudentHome,
 });
 
 function StudentHome() {
   const { data: me } = useSuspenseQuery(meQuery);
-  const { data: memory } = useSuspenseQuery(memoryQuery);
+  // Not awaited: the memory is optional, a failure of it leaves the sessions open.
+  const { data: memory } = useQuery(memoryQuery);
 
   return (
     <Page title={`Bonjour ${me?.name ?? ''}`}>
-      {memory.state === 'asked' && <MemoryAnswer />}
+      {memory?.state === 'asked' && <MemoryAnswer />}
       <Sessions />
       <Link to="/memoire" className="min-h-11 py-3 text-sm text-primary underline">
         Ce que Tom retient

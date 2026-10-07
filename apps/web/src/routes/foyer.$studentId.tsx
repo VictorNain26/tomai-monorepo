@@ -8,7 +8,7 @@ import type { z } from '../lib/zod';
 import { Field, SelectField } from '../components/field';
 import { Notice } from '../components/notice';
 import { Page } from '../components/page';
-import { api, parseResponse } from '../lib/api';
+import { api, isProblem, parseResponse } from '../lib/api';
 import { deviceName, formatDay, formatHour } from '../lib/device';
 import { formatCode } from '../lib/pairing';
 import { LEVEL_LABELS, devicesQuery, householdMessage, memoryStatus, studentSchema, studentsQuery, type Student } from '../lib/household';
@@ -116,9 +116,15 @@ function Devices({ child }: { child: Student }) {
 
 function Memory({ child }: { child: Student }) {
   const queryClient = useQueryClient();
+  const [withdrawing, setWithdrawing] = useState(false);
   const propose = useMutation({
     mutationFn: (memoryProposed: boolean) => parseResponse(student.$patch({ param: { id: child.id }, json: { memoryProposed } })),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: studentsQuery.queryKey }),
+    onSuccess: () => {
+      setWithdrawing(false);
+      return queryClient.invalidateQueries({ queryKey: studentsQuery.queryKey });
+    },
+    // Refused, the child may have turned 15 meanwhile: the page reads it again.
+    onError: () => queryClient.invalidateQueries({ queryKey: studentsQuery.queryKey }),
   });
 
   return (
@@ -127,18 +133,44 @@ function Memory({ child }: { child: Student }) {
         Ce que Tom retient
       </h2>
       <p className="text-muted-foreground">{memoryStatus(child)}</p>
-      {propose.error && <Notice tone="error">{householdMessage(propose.error)}</Notice>}
-      {!child.memory.decidesAlone && (
-        <Button
-          variant="outline"
-          disabled={propose.isPending}
-          onClick={() => {
-            propose.mutate(!child.memory.proposed);
-          }}
-        >
-          {child.memory.proposed ? 'Retirer et effacer la mémoire' : `Proposer la mémoire à ${child.name}`}
-        </Button>
+      {propose.error && (
+        <Notice tone="error">
+          {isProblem(propose.error, 'FORBIDDEN') ? `À partir de 15 ans, ${child.name} décide seul.` : householdMessage(propose.error)}
+        </Notice>
       )}
+      {!child.memory.decidesAlone &&
+        (withdrawing ? (
+          <>
+            <Notice tone="error">Tom oubliera ce qu’il retient de {child.name}, et lui reposera la question si vous la proposez de nouveau.</Notice>
+            <Button
+              disabled={propose.isPending}
+              onClick={() => {
+                propose.mutate(false);
+              }}
+            >
+              Retirer et effacer
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setWithdrawing(false);
+              }}
+            >
+              Annuler
+            </Button>
+          </>
+        ) : (
+          <Button
+            variant="outline"
+            disabled={propose.isPending}
+            onClick={() => {
+              if (child.memory.proposed) setWithdrawing(true);
+              else propose.mutate(true);
+            }}
+          >
+            {child.memory.proposed ? 'Retirer la mémoire' : `Proposer la mémoire à ${child.name}`}
+          </Button>
+        ))}
     </section>
   );
 }

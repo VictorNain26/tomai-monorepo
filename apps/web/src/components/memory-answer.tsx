@@ -1,18 +1,10 @@
 import { Button } from '@repo/ui';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { api, parseResponse } from '../lib/api';
-import { memoryMessage, memoryQuery } from '../lib/memory';
+import { memoryMessage, useMemoryAnswer } from '../lib/memory';
 import { Notice } from './notice';
 
 /** What the memory is, and the student's yes or no. */
 export function MemoryAnswer() {
-  const queryClient = useQueryClient();
-  const answer = useMutation({
-    mutationFn: (value: 'accepted' | 'declined') => parseResponse(api.memory.answer.$post({ json: { answer: value } })),
-    onSuccess: (memory) => {
-      queryClient.setQueryData(memoryQuery.queryKey, memory);
-    },
-  });
+  const answer = useMemoryAnswer();
 
   return (
     <section aria-labelledby="memory-offer" className="flex flex-col gap-3 rounded-lg border border-border bg-card p-4 text-card-foreground">

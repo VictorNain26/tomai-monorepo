@@ -6,7 +6,9 @@ test('a guardian proposes the memory when adding the child, sees its state, and 
   await addChild(page, 'Lou', { memory: true });
   await expect(page.getByText('Proposée : Lou répondra à sa prochaine visite.')).toBeVisible();
 
-  await page.getByRole('button', { name: 'Retirer et effacer la mémoire' }).click();
+  await page.getByRole('button', { name: 'Retirer la mémoire' }).click();
+  await expect(page.getByRole('alert')).toContainText('Tom oubliera ce qu’il retient de Lou');
+  await page.getByRole('button', { name: 'Retirer et effacer' }).click();
   await expect(page.getByText('Pas proposée : Tom ne retient rien d’une séance à l’autre.')).toBeVisible();
   await page.getByRole('button', { name: 'Proposer la mémoire à Lou' }).click();
   await expect(page.getByText('Proposée : Lou répondra à sa prochaine visite.')).toBeVisible();
@@ -24,6 +26,8 @@ test('the child is asked on their home, accepts, sees what Tom keeps, then stops
   await expect(page.getByText('Rien pour l’instant')).toBeVisible();
 
   await page.getByRole('button', { name: 'Arrêter la mémoire' }).click();
+  await expect(page.getByRole('alert')).toContainText('ne retiendra plus rien');
+  await page.getByRole('button', { name: 'Arrêter et tout effacer' }).click();
   await expect(page.getByRole('region', { name: 'Tom peut retenir ce qui a résisté' })).toBeVisible();
 });
 

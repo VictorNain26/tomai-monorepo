@@ -7,7 +7,7 @@ import { Notice } from '../components/notice';
 import { Page } from '../components/page';
 import { api, parseResponse } from '../lib/api';
 import { meQuery } from '../lib/me';
-import { memoryMessage, memoryQuery, notionSummary } from '../lib/memory';
+import { memoryMessage, memoryQuery, notionSummary, useMemoryAnswer } from '../lib/memory';
 
 /** What Tom keeps of the student, notion by notion: theirs to see, correct and erase. */
 export const Route = createFileRoute('/memoire')({
@@ -22,14 +22,14 @@ export const Route = createFileRoute('/memoire')({
 function Memory() {
   const queryClient = useQueryClient();
   const { data: memory } = useSuspenseQuery(memoryQuery);
-  const [erasing, setErasing] = useState(false);
+  const [confirming, setConfirming] = useState<'erase' | 'stop' | null>(null);
   const refresh = () => queryClient.invalidateQueries({ queryKey: memoryQuery.queryKey });
   const understood = useMutation({
     mutationFn: (notionId: string) => parseResponse(api.memory.notions[':notionId'].$delete({ param: { notionId } })),
     onSuccess: refresh,
   });
   const erase = useMutation({ mutationFn: () => parseResponse(api.memory.$delete()), onSuccess: refresh });
-  const stop = useMutation({ mutationFn: () => parseResponse(api.memory.answer.$post({ json: { answer: 'declined' } })), onSuccess: refresh });
+  const stop = useMemoryAnswer();
   const failure = understood.error ?? erase.error ?? stop.error;
 
   return (
@@ -41,7 +41,8 @@ function Memory() {
       {memory.state === 'active' ? (
         <>
           <p className="text-muted-foreground">
-            Tom ne garde que les notions de tes exercices depuis la rentrée, jamais ce que tu écris. Ton parent n’en voit que le résumé de la semaine.
+            Tom ne garde que les notions de tes exercices depuis la rentrée, jamais ce que tu écris. Ton parent voit seulement si la mémoire est
+            active.
           </p>
           {memory.notions.length === 0 ? (
             <p className="text-muted-foreground">Rien pour l’instant : Tom retiendra les notions de tes prochains exercices.</p>
@@ -64,49 +65,56 @@ function Memory() {
               ))}
             </ul>
           )}
-          {erasing ? (
+          {confirming ? (
             <>
-              <Notice tone="error">Tom oubliera tout ce qu’il retient de toi. Tes séances restent.</Notice>
+              <Notice tone="error">
+                {confirming === 'erase'
+                  ? 'Tom oubliera tout ce qu’il retient de toi. Tes séances restent.'
+                  : 'Tom oubliera tout ce qu’il retient de toi et ne retiendra plus rien. Tes séances restent.'}
+              </Notice>
               <Button
-                disabled={erase.isPending}
+                disabled={erase.isPending || stop.isPending}
                 onClick={() => {
-                  erase.mutate(undefined, {
+                  const done = {
                     onSuccess: () => {
-                      setErasing(false);
+                      setConfirming(null);
                     },
-                  });
+                  };
+                  if (confirming === 'erase') erase.mutate(undefined, done);
+                  else stop.mutate('declined', done);
                 }}
               >
-                Tout effacer
+                {confirming === 'erase' ? 'Tout effacer' : 'Arrêter et tout effacer'}
               </Button>
               <Button
                 variant="outline"
                 onClick={() => {
-                  setErasing(false);
+                  setConfirming(null);
                 }}
               >
                 Annuler
               </Button>
             </>
           ) : (
-            <Button
-              variant="outline"
-              onClick={() => {
-                setErasing(true);
-              }}
-            >
-              Effacer ce que Tom retient
-            </Button>
+            <>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setConfirming('erase');
+                }}
+              >
+                Effacer ce que Tom retient
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setConfirming('stop');
+                }}
+              >
+                Arrêter la mémoire
+              </Button>
+            </>
           )}
-          <Button
-            variant="outline"
-            disabled={stop.isPending}
-            onClick={() => {
-              stop.mutate();
-            }}
-          >
-            Arrêter la mémoire
-          </Button>
         </>
       ) : memory.mayAnswer ? (
         <MemoryAnswer />

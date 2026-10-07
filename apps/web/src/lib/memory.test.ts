@@ -4,20 +4,19 @@ import { hc } from 'hono/client';
 import { parseResponse } from './api';
 import { memoryMessage, notionSummary } from './memory';
 
-const notion = { notionId: 'n', label: 'Équations', worked: 2, lastHintLevel: 3, lastSolved: false, frequentError: 'misinterpret' };
+const notion = { notionId: 'n', label: 'Équations', worked: 2, lastSolved: false, lastHelp: 'Indice ciblé' as const, watch: 'mal lire la consigne' };
 
 describe('notionSummary', () => {
-  it('says how often, how it ended last time, and what to watch', () => {
+  it('says how often, how it ended last time with what help, and what to watch', () => {
     expect(notionSummary(notion)).toBe(
-      "Travaillée 2 fois. La dernière fois : pas résolue, aide jusqu'au palier 3. À surveiller : mal lire la consigne.",
+      'Travaillée 2 fois. La dernière fois : pas résolue, aide jusqu’à « Indice ciblé ». À surveiller : mal lire la consigne.',
     );
   });
 
-  it('says nothing to watch without a frequent error, or with one it does not know', () => {
-    expect(notionSummary({ ...notion, lastSolved: true, frequentError: null })).toBe(
-      "Travaillée 2 fois. La dernière fois : résolue, aide jusqu'au palier 3.",
+  it('says nothing to watch without a frequent error', () => {
+    expect(notionSummary({ ...notion, lastSolved: true, watch: null })).toBe(
+      'Travaillée 2 fois. La dernière fois : résolue, aide jusqu’à « Indice ciblé ».',
     );
-    expect(notionSummary({ ...notion, frequentError: 'new-kind' })).not.toContain('surveiller');
   });
 });
 
@@ -30,8 +29,8 @@ describe('memoryMessage', () => {
     );
   };
 
-  it('tells a student whose parent did not propose it to ask them', async () => {
-    expect(memoryMessage(await refused('FORBIDDEN', 403))).toStartWith('Ton parent ne te l’a pas proposée');
+  it('tells a student whose parent does not, or no longer, propose it to ask them', async () => {
+    expect(memoryMessage(await refused('FORBIDDEN', 403))).toBe('Ton parent ne te la propose pas, ou plus : demande-lui.');
   });
 
   it('falls back for anything else', async () => {
