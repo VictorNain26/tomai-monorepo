@@ -23,11 +23,13 @@
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.10",
+    "@fontsource/nunito": "^5.3.0",
     "@playwright/test": "^1.63.0",
     "@repo/eslint-config": "workspace:*",
     "@tailwindcss/vite": "^4.3.3",
     "@types/node": "^24.13.6",
     "eslint": "^10.11.0",
+    "satori": "^0.35.1",
     "sharp": "^0.35.5",
     "tailwindcss": "^4.3.3",
     "typescript": "6.0.3"

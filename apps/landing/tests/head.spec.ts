@@ -7,3 +7,11 @@ for (const path of PAGES) {
     await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', new URL(path, 'https://tomia.fr').href);
   });
 }
+
+test('the Open Graph image every page names is served', async ({ page, request }) => {
+  await page.goto('/');
+  const image = new URL((await page.locator('meta[property="og:image"]').getAttribute('content')) ?? '');
+  const response = await request.get(image.pathname);
+  expect(response.status()).toBe(200);
+  expect(response.headers()['content-type']).toBe('image/png');
+});

@@ -5,6 +5,7 @@ import Header from '@/components/layout/header.astro';
 import Footer from '@/components/layout/footer.astro';
 import JsonLd from '@/components/json-ld.astro';
 import { BRAND_NAME } from '@/lib/brand';
+import { OG_IMAGE } from '@/lib/open-graph';
 
 interface Props {
   title?: string;
@@ -86,8 +87,8 @@ const jsonLd = [
     <meta property="og:locale" content="fr_FR" />
     <meta property="og:image" content={ogImage} />
     <meta property="og:image:type" content="image/png" />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
+    <meta property="og:image:width" content={String(OG_IMAGE.width)} />
+    <meta property="og:image:height" content={String(OG_IMAGE.height)} />
     <meta property="og:image:alt" content={TITLE} />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
