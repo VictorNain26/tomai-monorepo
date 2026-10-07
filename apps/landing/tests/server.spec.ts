@@ -2,6 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 import { HEIGHT, PAGES, settle, waitForHydration } from './support';
 
 const HEADERS = {
+  'strict-transport-security': 'max-age=63072000',
   'x-content-type-options': 'nosniff',
   'x-frame-options': 'DENY',
   'referrer-policy': 'strict-origin-when-cross-origin',
@@ -28,6 +29,31 @@ for (const [from, to] of [
     expect(response.headers()['location']).toBe(to);
   });
 }
+
+test('a trailing slash never redirects to another host', async ({ request }) => {
+  for (const path of ['/%5Cevil.com/', '//evil.com/']) {
+    const response = await request.get(path, { maxRedirects: 0 });
+    expect(new URL(response.headers()['location'] ?? '/', 'http://localhost').host, path).toBe('localhost');
+  }
+});
+
+test('a visitor on plain HTTP is sent to HTTPS, as the load balancer reports it', async ({ request }) => {
+  const response = await request.get('/aide?x=1', { maxRedirects: 0, headers: { 'x-forwarded-proto': 'http' } });
+  expect(response.status()).toBe(308);
+  expect(response.headers()['location']).toMatch(/^https:\/\/[^/]+\/aide\?x=1$/);
+});
+
+for (const path of ['/aide.html', '/index', '/404']) {
+  test(`${path}, a file of the build, is not a URL`, async ({ request }) => {
+    expect((await request.get(path)).status()).toBe(404);
+  });
+}
+
+test('a missing asset is a 404 no cache keeps', async ({ request }) => {
+  const response = await request.get('/_astro/missing.js');
+  expect(response.status()).toBe(404);
+  expect(response.headers()['cache-control']).toBe('no-store');
+});
 
 test('the 404 page asks not to be indexed, where every page asks to be', async ({ page }) => {
   await page.goto('/cette-page-n-existe-pas');

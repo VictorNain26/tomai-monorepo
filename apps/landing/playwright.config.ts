@@ -1,6 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
 const PORT = 3011;
+const CONTAINER = 'landing-e2e';
 const baseURL = `http://localhost:${PORT}`;
 
 export default defineConfig({
@@ -14,7 +15,8 @@ export default defineConfig({
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   // The Caddy that Clever Cloud runs, with the same Caddyfile: headers, redirects and the 404 are tested as served.
   webServer: {
-    command: `docker run --rm --init -p ${PORT}:8080 -v ${import.meta.dirname}/dist:/srv/dist:ro -v ${import.meta.dirname}/Caddyfile:/srv/Caddyfile:ro -w /srv caddy:2.11.4-alpine caddy run --config Caddyfile`,
+    // Named and removed first: a run killed outright leaves its container holding the port.
+    command: `docker rm -f ${CONTAINER} >/dev/null 2>&1; docker run --rm --init --name ${CONTAINER} -p ${PORT}:8080 -v "${import.meta.dirname}/dist:/srv/dist:ro" -v "${import.meta.dirname}/Caddyfile:/srv/Caddyfile:ro" -w /srv caddy:2.11.4-alpine caddy run --config Caddyfile`,
     url: baseURL,
     reuseExistingServer: false,
     timeout: 120_000,
