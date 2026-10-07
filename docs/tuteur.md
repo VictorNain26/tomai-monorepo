@@ -152,7 +152,7 @@ modèle sans prévenir et invalide l'évaluation. Chaque prompt porte une versio
 | Modération d'entrée | `mistral-moderation-2603` par `moderateStudentTurn` (`platform/ai/moderation.ts`), qui classe le message de l'élève avec le dernier message du tuteur en contexte ; catégories `sexual`, `selfharm`, `jailbreaking`, `pii`, `violence_and_threats`, `dangerous`, `criminal` gardées avec le message ; `selfharm` décide la détresse, les autres se mesurent sans bloquer (un devoir d'histoire touche à la violence) ; modération indisponible : les règles seules jugent la détresse, l'échec journalisé (`modules/tutor/chat-orchestration.service.ts`) | En parallèle de l'analyse du tour, avant le premier mot |
 | Contrôle avant l'élève | Le message entier est généré, contrôlé, puis envoyé ; celui qui est envoyé est celui qui est persisté (`controlled-turn.ts`, `output-check.ts`). Déterministe : réponse et ses formes comparées à la fiche d'exercice, une forme déjà écrite par l'élève et jugée juste restant permise pour la confirmer ; balises et gabarits ; égalités recalculées par mathjs. Sur un échec, une régénération sous contrainte, puis une réponse de repli fixe, l'événement tracé | Entre `streamText` et l'élève ; aussi sur les fiches de révision générées et le titre de séance, avant leur enregistrement |
 | Modération de sortie | Même modèle sur le message entier, en parallèle du contrôle ; catégories bloquantes `OUTPUT_BLOCKING` ; même action sur un blocage | Avant l'élève |
-| Détresse | Classifieur indépendant du prompt (catégorie Self-Harm + règles en français, testés sur des phrases d'élèves) ; réponse fixe rédigée et approuvée par un humain, avec le 3114 et un adulte de confiance, puis fin de la conversation (Crawford et Glatard, CMAJ 2026) ; numéros d'aide vérifiés sur service-public.gouv.fr F33954. Ni fiche ni tuteur (l'analyse du tour, lancée en parallèle, est écartée) : la réponse est gardée avec le message, la séance close (tout message suivant reçoit la même réponse), l'événement enregistré, un par séance (`distress_events`), pour l'alerte au parent du lot 3, la seule qu'il reçoive. Ni quota, ni limite de flux, ni écriture en échec ne retiennent la réponse (`modules/tutor/distress.ts`) | Même point d'entrée |
+| Détresse | Classifieur indépendant du prompt (catégorie Self-Harm + règles en français, testés sur des phrases d'élèves) ; réponse fixe rédigée et approuvée par un humain, avec le 3114 et un adulte de confiance, et le 119 quand le message laisse penser que le danger vient de la maison, puis fin de la conversation (Crawford et Glatard, CMAJ 2026) ; numéros d'aide vérifiés sur service-public.gouv.fr F33954. Ni fiche ni tuteur (l'analyse du tour, lancée en parallèle, est écartée) : la réponse est gardée avec le message, la séance close (tout message suivant reçoit la même réponse), l'événement enregistré, un par séance (`distress_events`), pour la revue humaine du lot 3 : un humain relit chaque événement et décide d'un message au parent, qui n'en reçoit que le motif et des ressources, l'élève prévenu d'abord (`etudes/2026-10-07/foyer-eleve-age.md`). Ni quota, ni limite de flux, ni écriture en échec ne retiennent la réponse (`modules/tutor/distress.ts`) | Même point d'entrée |
 | Fuite de réponse | Palier d'aide imposé par le serveur (§4) ; la recherche de la réponse dans le texte (`findLeakForm`, `lib/leak.ts`), partagée avec le harnais, tourne dans le contrôle avant l'élève | Assembleur de tour, contrôle avant l'élève |
 | Aucune solution montrée par accident | Le raisonnement du modèle ne quitte jamais le serveur (`sendReasoning: false` de `toUIMessageStream`, `modules/tutor/controlled-turn.ts`) ; aucune balise interne, étape de calcul cachée, résultat d'outil brut ni bloc de contexte n'arrive dans ce que voit ou entend l'élève. Le contrôle de fuite porte sur tout ce qui l'atteint : texte, lecture vocale, fiches, titre de séance, messages d'erreur | Sortie du flux, outils, TTS |
 | Confirmation avant création de cartes | `toolApproval` de `streamText` : `'approved'` quand l'analyse du tour relève une demande ou une acceptation de cartes, sinon un refus motivé que le modèle reçoit, et il les propose sans les créer ; une demande impose l'appel au premier pas (`prepareStep`, `toolChoice`), un seul appel par tour ; l'outil réservé au Complet. `needsApproval` est déprécié dans `ai` 7 | `chat-tools.ts`, `ai-chat.service.ts` |
@@ -249,9 +249,12 @@ Le harnais sert aussi la preuve publique : protocole, jeu et résultats rejouabl
 ## 10. Élève et parents
 
 - Aucun profil de l'élève gardé d'une séance à l'autre (§7).
-- **Le parent voit un résumé de la semaine et l'alerte de détresse, jamais les
-  conversations** : ce qui a été travaillé, ce qui résiste. La détresse est la seule
-  alerte (§5). L'élève sait ce que voit son parent.
+- **Le parent voit un résumé de la semaine, jamais les conversations** : ce qui a été
+  travaillé, ce qui résiste, écrit comme des pistes de conversation. L'élève voit le même
+  résumé, au même moment ; au lycée ou dès 15 ans, il peut le couper, le parent en étant prévenu.
+- **La détresse n'alerte pas le parent d'office** : un humain relit l'événement et décide (§5).
+- La façon d'accompagner suit le niveau et l'âge (accompagné, guidé, autonome) :
+  `etudes/2026-10-07/foyer-eleve-age.md`.
 
 ## 11. Conformité
 
@@ -262,7 +265,10 @@ Cartographie de risque, à valider par un conseil avant l'ouverture.
 | AI Act art. 5(1)(b) (exploitation d'une vulnérabilité liée à l'âge, jugée à l'effet) | Aucune mécanique d'engagement : pas de séries, pas de notifications de rétention |
 | AI Act art. 50(1), applicable depuis le 2026-08-02 | Divulgation IA dans le prompt et dans l'interface dès la première interaction (lot 3) |
 | AI Act art. 50(2), marquage machine des sorties texte | Question ouverte (dialogue privé couvert ou non) à faire trancher par un conseil ; fin du délai le 2026-12-02 |
-| Loi 78-17 art. 45 | Double consentement sous 15 ans (lot 3) |
+| Loi 78-17 art. 45 | Double consentement sous 15 ans pour ce qui repose sur le consentement ; le parent conclut le contrat (lot 3) |
+| Conditions commerciales de Mistral, usages interdits (c) : pas de données personnelles d'enfants sous l'âge du consentement numérique (15 ans en France) | Clarification écrite demandée à Mistral avec le ZDR, avant tout utilisateur réel ; d'ici là, rien d'identifiant (prénom, nom) dans ce qui part chez Mistral |
+| RGPD art. 9 (la détresse est une donnée de santé) ; Code pénal art. 434-3 | Base légale et conduite à tenir à faire trancher par un conseil (`etudes/2026-10-07/foyer-eleve-age.md`, § 8) |
+| Cadre d'usage de l'IA du ministère (2025) : usage autonome à partir de la 4e | Pèse sur une recommandation par un collège en 6e et 5e ; texte complet à lire |
 | CNIL, données d'élèves non réutilisées | Endpoint UE ; ZDR avant tout utilisateur réel |
 | Annexe III (haut risque éducation) | Hors champ tant que le produit est vendu aux familles et n'évalue pas les acquis pour orienter ; bascule si vente à des établissements |
 
