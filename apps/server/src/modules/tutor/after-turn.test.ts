@@ -111,15 +111,18 @@ describe('after the reply', () => {
     expect(chatCalls()).toBe(2);
   });
 
-  it('keeps the session locked while the title or the summary runs', async () => {
+  it('frees the session once the reply is stored: the student answers while the title is written', async () => {
     const sessionId = await newSession();
-    mistral.chat.push(analysis(), { text: 'Que cherches-tu ?' }, 'hang');
+    const before = chatCalls();
+    mistral.chat.push(analysis(), { text: 'Que cherches-tu ?' }, 'hang', analysis(), { text: 'Me voilà.' });
     const first = await api.request('POST', `/api/sessions/${sessionId}/messages`, { cookie: asStudent, body: { text: 'Bonjour' } });
     await first.text();
-    expect((await api.request('POST', `/api/sessions/${sessionId}/messages`, { cookie: asStudent, body: { text: 'Encore' } })).status).toBe(409);
+    // The title's call has reached Mistral, where it hangs: the next turn's calls take the next replies.
+    for (let tries = 0; chatCalls() < before + 3 && tries < 500; tries++) await Bun.sleep(10);
+    const next = await api.request('POST', `/api/sessions/${sessionId}/messages`, { cookie: asStudent, body: { text: 'Encore' } });
+    expect(next.status).toBe(200);
+    expect(await next.text()).toContain('Me voilà.');
     await tasks.settled();
-    mistral.chat.push(analysis(), { text: 'Me voilà.' });
-    expect((await say(sessionId, 'Encore')).reply).toBe('Me voilà.');
   });
 
   it('loses no message when a summary fails: the window reads all that follow the last one', async () => {

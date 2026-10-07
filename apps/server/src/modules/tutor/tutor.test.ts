@@ -105,6 +105,13 @@ describe('sessions', () => {
     ]);
     expect(JSON.stringify(messages)).not.toContain('secret');
   });
+
+  it('opens the latest session again while nothing was said in it, and a new one once something was', async () => {
+    const empty = await start(asStudentB);
+    expect((await start(asStudentB)).id).toBe(empty.id);
+    await db.insert(message).values({ sessionId: empty.id, role: 'student', text: 'Bonjour' });
+    expect((await start(asStudentB)).id).not.toBe(empty.id);
+  });
 });
 
 describe('the exercise in progress', () => {

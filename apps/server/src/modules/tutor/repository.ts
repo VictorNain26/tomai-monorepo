@@ -3,7 +3,7 @@
  * `ownSession`, a clause of the query itself: another student's session is simply not found.
  */
 
-import { and, asc, count, desc, eq, gt, gte, isNull, sql, sum } from 'drizzle-orm';
+import { and, asc, count, desc, eq, gt, gte, isNull, notExists, sql, sum } from 'drizzle-orm';
 import type { DistressSource } from '../../domain/distress';
 import type { MathCheck } from '../../domain/exercise-math';
 import type { SubjectFamily } from '../../domain/subjects';
@@ -77,7 +77,25 @@ async function updateExercise(executor: Executor, exerciseId: string, progress: 
 
 export function createTutorRepository(db: Db) {
   return {
+    /** A new session, or the latest one nothing was said in yet: tapping again piles up no empty one. */
     async createSession(studentId: string) {
+      const [empty] = await db
+        .select(sessionColumns)
+        .from(studySession)
+        .where(
+          and(
+            eq(studySession.studentId, studentId),
+            notExists(
+              db
+                .select({ one: sql`1` })
+                .from(message)
+                .where(eq(message.sessionId, studySession.id)),
+            ),
+          ),
+        )
+        .orderBy(desc(studySession.createdAt))
+        .limit(1);
+      if (empty) return empty;
       const [created] = await db.insert(studySession).values({ studentId }).returning(sessionColumns);
       if (!created) throw new Error('Session not created');
       return created;
