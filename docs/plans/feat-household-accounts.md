@@ -28,7 +28,8 @@ peut se connecter comme son enfant et lire ses conversations, ce que le modèle 
 - [ ] L'appareil de l'élève échange le code contre sa propre session (cookie de better-auth) ;
       un code faux, expiré ou déjà servi est refusé ; l'échange est limité en débit.
 - [ ] Le gardien liste les appareils de son élève et en déconnecte un ; l'élève liste ses
-      appareils ; aucune route ne donne au gardien une session de l'élève.
+      appareils. Revue : qui tient le code peut l'échanger, le gardien compris ; la garantie est que
+      tout appareil relié est une session que l'élève voit dans sa liste, pas une impossibilité.
 - [ ] La matrice d'accès couvre les nouvelles routes ; le garde de l'élève autorise
       `get-session`, `sign-out`, `list-sessions` et l'échange du code.
 
