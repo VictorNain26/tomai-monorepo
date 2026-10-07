@@ -22,7 +22,7 @@ import { healthRoutes } from './platform/lifecycle/health';
 import type { Lifecycle } from './platform/lifecycle/shutdown';
 
 export interface AppDeps {
-  config: Pick<Config, 'production' | 'webDistDir'>;
+  config: Pick<Config, 'production' | 'webDistDir' | 'apiRateLimit'>;
   logger: Logger;
   db: Db;
   auth: Auth;
@@ -38,7 +38,7 @@ export function createApp({ config, logger, db, auth, ai, moderation, lifecycle,
   const tutor = tutorModule({ db, auth, ai, moderation, logger, background });
   // One budget for the API and the probes: /health/ready runs a query on every call. The web's
   // files don't count, a page load fetches a dozen of them.
-  const budget = rateLimit({ points: 100, durationSeconds: 60 });
+  const budget = rateLimit({ points: config.apiRateLimit, durationSeconds: 60 });
   const app = new Hono<AppEnv>()
     .use(contextStorage())
     // Always generated here: an incoming X-Request-Id would let a client forge log correlation.

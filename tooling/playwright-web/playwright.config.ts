@@ -33,6 +33,7 @@ export default defineConfig({
       BETTER_AUTH_URL: baseURL,
       WEB_DIST_DIR: resolve(import.meta.dirname, '../../apps/web/dist'),
       LOG_LEVEL: 'warn',
+      API_RATE_LIMIT: '10000',
     },
     reuseExistingServer: false,
     timeout: 120_000,

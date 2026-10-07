@@ -18,6 +18,8 @@ const fields = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().min(1).max(65535).default(3000),
   LOG_LEVEL: z.enum(LOG_LEVELS).default('info'),
+  // Requests per minute a client address may send to the API; the e2e suite, whose browsers share one address, raises it.
+  API_RATE_LIMIT: z.coerce.number().int().positive().default(100),
   DATABASE_URL: z.url({ protocol: /^postgres(ql)?$/ }),
   // The one public origin, of the API and the web alike. In development, the Vite dev server,
   // whose proxy forwards /api here: better-auth's redirects land on the web.
@@ -78,6 +80,7 @@ export interface Config {
   readonly production: boolean;
   readonly port: number;
   readonly logLevel: LogLevel;
+  readonly apiRateLimit: number;
   readonly databaseUrl: string;
   readonly publicUrl: string;
   readonly authSecret: string;
@@ -114,6 +117,7 @@ export function loadConfig(environment: Environment): Config {
     production: env.NODE_ENV === 'production',
     port: env.PORT,
     logLevel: env.LOG_LEVEL,
+    apiRateLimit: env.API_RATE_LIMIT,
     databaseUrl: env.DATABASE_URL,
     publicUrl: env.BETTER_AUTH_URL ?? 'http://localhost:3002',
     authSecret: env.BETTER_AUTH_SECRET,
