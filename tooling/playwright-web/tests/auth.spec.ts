@@ -1,24 +1,6 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 import { confirmEmail } from '../database';
-
-// iPhone and Android run side by side on one database: each test has its own address.
-const address = (name: string) => `${name}-${crypto.randomUUID().slice(0, 8)}@example.com`;
-
-async function signUp(page: Page, email: string) {
-  await page.goto('/inscription');
-  await page.getByLabel('Votre prénom').fill('Claire');
-  await page.getByLabel('Adresse e-mail').fill(email);
-  await page.getByLabel('Mot de passe').fill('un mot de passe solide');
-  await page.getByRole('button', { name: 'Créer le compte' }).click();
-  await expect(page.getByRole('heading', { name: 'Vérifiez votre e-mail' })).toBeVisible();
-}
-
-async function signIn(page: Page, email: string) {
-  await page.goto('/connexion');
-  await page.getByLabel('Adresse e-mail').fill(email);
-  await page.getByLabel('Mot de passe').fill('un mot de passe solide');
-  await page.getByRole('button', { name: 'Se connecter' }).click();
-}
+import { address, guardian, signIn, signUp } from '../guardian';
 
 test('a parent signs up, is asked to confirm, is refused before, then reaches the household and signs out', async ({ page }) => {
   const email = address('parent');
@@ -75,11 +57,7 @@ test.describe('with the server failing', () => {
   test.use({ serviceWorkers: 'block' });
 
   test('a sign-out the server refuses says so, and keeps the parent signed in', async ({ page }) => {
-    const email = address('sortie');
-    await signUp(page, email);
-    await confirmEmail(email);
-    await signIn(page, email);
-    await expect(page).toHaveURL(/\/foyer$/);
+    await guardian(page, 'sortie');
 
     await page.route('**/api/auth/sign-out', (route) => route.fulfill({ status: 429, json: { code: 'TOO_MANY_REQUESTS' } }));
     await page.getByRole('button', { name: 'Se déconnecter' }).click();

@@ -1,5 +1,5 @@
 import { Link, createFileRoute } from '@tanstack/react-router';
-import { z } from 'zod';
+import { z } from '../lib/zod';
 import { Notice } from '../components/notice';
 import { Page } from '../components/page';
 
