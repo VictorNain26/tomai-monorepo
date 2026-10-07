@@ -1,5 +1,5 @@
 {
-  "id": "543a9440-83ce-487b-8565-cbd71db7d026",
+  "id": "667b5591-53cd-41ac-a134-f5b41467c8eb",
   "prevId": "9ba78e94-059e-42fa-95ad-538bc4848447",
   "version": "7",
   "dialect": "postgresql",
@@ -658,7 +658,8 @@
         },
         "detected_by": {
           "name": "detected_by",
-          "type": "text",
+          "type": "distress_source",
+          "typeSchema": "public",
           "primaryKey": false,
           "notNull": true
         },
@@ -753,6 +754,23 @@
           "notNull": true,
           "default": "gen_random_uuid()"
         },
+        "position": {
+          "name": "position",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true,
+          "identity": {
+            "type": "always",
+            "name": "exercise_position_seq",
+            "schema": "public",
+            "increment": "1",
+            "startWith": "1",
+            "minValue": "1",
+            "maxValue": "9223372036854775807",
+            "cache": "1",
+            "cycle": false
+          }
+        },
         "session_id": {
           "name": "session_id",
           "type": "uuid",
@@ -779,7 +797,8 @@
         },
         "math_check": {
           "name": "math_check",
-          "type": "text",
+          "type": "math_check",
+          "typeSchema": "public",
           "primaryKey": false,
           "notNull": true
         },
@@ -832,8 +851,8 @@
         }
       },
       "indexes": {
-        "exercise_session_id_created_at_idx": {
-          "name": "exercise_session_id_created_at_idx",
+        "exercise_session_id_position_idx": {
+          "name": "exercise_session_id_position_idx",
           "columns": [
             {
               "expression": "session_id",
@@ -842,7 +861,7 @@
               "nulls": "last"
             },
             {
-              "expression": "created_at",
+              "expression": "position",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -1086,6 +1105,24 @@
         "cinquieme",
         "quatrieme",
         "troisieme"
+      ]
+    },
+    "public.distress_source": {
+      "name": "distress_source",
+      "schema": "public",
+      "values": [
+        "moderation",
+        "rules",
+        "both"
+      ]
+    },
+    "public.math_check": {
+      "name": "math_check",
+      "schema": "public",
+      "values": [
+        "passed",
+        "failed",
+        "not-applicable"
       ]
     },
     "public.message_role": {

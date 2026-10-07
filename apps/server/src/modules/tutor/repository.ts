@@ -6,7 +6,7 @@
 import { and, asc, desc, eq, sql } from 'drizzle-orm';
 import type { MathCheck } from '../../domain/exercise-math';
 import type { Db } from '../../platform/db/client';
-import type { ExerciseState } from './core/exercise-turn';
+import type { ExerciseChange, ExerciseState } from './core/exercise-turn';
 import type { Hint } from './core/ladder';
 import { exercise, message, studySession } from './schema';
 
@@ -17,17 +17,8 @@ const ownSession = (studentId: string, sessionId: string) => and(eq(studySession
 
 const sessionColumns = { id: studySession.id, title: studySession.title, closedAt: studySession.closedAt, createdAt: studySession.createdAt };
 
-export interface NewExercise {
-  state: ExerciseState;
-  mathCheck: MathCheck;
-  promptVersion: string;
-}
-
-export interface ExerciseProgress {
-  hintLevel: number;
-  stuckTurns: number;
-  stepDone: boolean;
-  solved: boolean | undefined;
+export interface ExerciseProgress extends ExerciseChange {
+  /** The tutor's message, cut, that the contract lists so as not to repeat it. */
   hint: Hint;
 }
 
@@ -61,33 +52,43 @@ export function createTutorRepository(db: Db) {
         .orderBy(asc(message.position));
     },
 
-    /** The session's last exercise, solved or not: its statement stays before the tutor. */
-    async currentExercise(sessionId: string): Promise<(ExerciseState & { id: string }) | undefined> {
-      const [row] = await db.select().from(exercise).where(eq(exercise.sessionId, sessionId)).orderBy(desc(exercise.createdAt)).limit(1);
+    /** The last exercise of the student's session, solved or not: its statement stays before the tutor. */
+    async currentExercise(studentId: string, sessionId: string): Promise<(ExerciseState & { id: string }) | undefined> {
+      const [row] = await db
+        .select({ exercise })
+        .from(exercise)
+        .innerJoin(studySession, eq(studySession.id, exercise.sessionId))
+        .where(ownSession(studentId, sessionId))
+        .orderBy(desc(exercise.position))
+        .limit(1);
       if (!row) return undefined;
-      return {
-        id: row.id,
-        sheet: row.sheet,
-        uncertain: row.uncertain,
-        drawnForms: row.drawnForms,
-        hintLevel: row.hintLevel,
-        stepsDone: row.stepsDone,
-        stuckTurns: row.stuckTurns,
-        hints: row.hints.slice(-KEPT_HINTS),
-        solved: row.solvedAt !== null,
-      };
+      const { id, sheet, uncertain, drawnForms, hintLevel, stepsDone, stuckTurns, hints, solvedAt } = row.exercise;
+      return { id, sheet, uncertain, drawnForms, hintLevel, stepsDone, stuckTurns, hints, solved: solvedAt !== null };
     },
 
-    async createExercise(sessionId: string, { state, mathCheck, promptVersion }: NewExercise) {
-      const [created] = await db
-        .insert(exercise)
-        .values({ sessionId, sheet: state.sheet, uncertain: state.uncertain, drawnForms: state.drawnForms, mathCheck, promptVersion })
-        .returning({ id: exercise.id });
-      if (!created) throw new Error('Exercise not created');
-      return created.id;
+    /** A new exercise in the student's session, at the first level; undefined when the session is not theirs. */
+    async createExercise(
+      studentId: string,
+      sessionId: string,
+      fresh: Pick<ExerciseState, 'sheet' | 'uncertain' | 'drawnForms'> & { mathCheck: MathCheck; promptVersion: string },
+    ) {
+      return db.transaction(async (tx) => {
+        // The session read in the same transaction, and locked against its deletion until the insert.
+        const [owned] = await tx.select({ id: studySession.id }).from(studySession).where(ownSession(studentId, sessionId)).for('share');
+        if (!owned) return undefined;
+        const [created] = await tx
+          .insert(exercise)
+          .values({ sessionId: owned.id, ...fresh })
+          .returning({ id: exercise.id });
+        return created?.id;
+      });
     },
 
-    /** What a turn the student has seen changes on the exercise, in one statement: two turns at once both count. */
+    /**
+     * What a turn the student has seen changes on an exercise this module read for them. The level
+     * and the stuck turns are the turn's decision, from the state it read: the turn service lets one
+     * turn at a time run in a session. A step done counts in SQL, and only the last hints are kept.
+     */
     async recordExerciseTurn(exerciseId: string, progress: ExerciseProgress) {
       await db
         .update(exercise)
@@ -96,7 +97,7 @@ export function createTutorRepository(db: Db) {
           stuckTurns: progress.stuckTurns,
           ...(progress.stepDone ? { stepsDone: sql`${exercise.stepsDone} + 1` } : {}),
           ...(progress.solved === undefined ? {} : { solvedAt: progress.solved ? new Date() : null }),
-          hints: sql`${exercise.hints} || ${JSON.stringify([progress.hint])}::jsonb`,
+          hints: sql`(select coalesce(jsonb_agg(kept.hint order by kept.i), '[]'::jsonb) from (select hint, i from jsonb_array_elements(${exercise.hints} || ${JSON.stringify([progress.hint])}::jsonb) with ordinality as all_hints(hint, i) order by i desc limit ${KEPT_HINTS}) as kept)`,
         })
         .where(eq(exercise.id, exerciseId));
     },

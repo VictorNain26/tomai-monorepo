@@ -20,8 +20,6 @@ export function createTutorService({ repository, students }: Deps) {
   };
 
   return {
-    student,
-
     async startSession(userId: string) {
       await student(userId);
       return repository.createSession(userId);

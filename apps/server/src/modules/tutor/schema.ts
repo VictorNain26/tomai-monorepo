@@ -6,8 +6,8 @@
 
 import { sql } from 'drizzle-orm';
 import { bigint, boolean, index, integer, jsonb, pgEnum, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
-import type { DistressSource } from '../../domain/distress';
-import type { MathCheck } from '../../domain/exercise-math';
+import { DISTRESS_SOURCES } from '../../domain/distress';
+import { MATH_CHECKS } from '../../domain/exercise-math';
 import { SUBJECT_FAMILIES } from '../../domain/subjects';
 import { user } from '../../platform/auth/schema';
 import type { Hint } from './core/ladder';
@@ -15,6 +15,8 @@ import type { ExerciseSheet } from './core/sheet';
 
 export const subjectFamily = pgEnum('subject_family', SUBJECT_FAMILIES);
 export const messageRole = pgEnum('message_role', ['student', 'tutor']);
+export const mathCheck = pgEnum('math_check', MATH_CHECKS);
+export const distressSource = pgEnum('distress_source', DISTRESS_SOURCES);
 
 export const studySession = pgTable(
   'study_session',
@@ -58,6 +60,8 @@ export const exercise = pgTable(
   'exercise',
   {
     id: uuid('id').primaryKey().defaultRandom(),
+    // The last one written is in progress: created_at would tie within a transaction.
+    position: bigint('position', { mode: 'number' }).generatedAlwaysAsIdentity(),
     sessionId: uuid('session_id')
       .notNull()
       .references(() => studySession.id, { onDelete: 'cascade' }),
@@ -65,7 +69,7 @@ export const exercise = pgTable(
     sheet: jsonb('sheet').$type<ExerciseSheet>(),
     uncertain: boolean('uncertain').notNull(),
     drawnForms: jsonb('drawn_forms').$type<string[]>().notNull(),
-    mathCheck: text('math_check').$type<MathCheck>().notNull(),
+    mathCheck: mathCheck('math_check').notNull(),
     promptVersion: text('prompt_version').notNull(),
     hintLevel: integer('hint_level').notNull().default(0),
     stepsDone: integer('steps_done').notNull().default(0),
@@ -77,7 +81,7 @@ export const exercise = pgTable(
     solvedAt: timestamp('solved_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
-  (table) => [index('exercise_session_id_created_at_idx').on(table.sessionId, table.createdAt)],
+  (table) => [index('exercise_session_id_position_idx').on(table.sessionId, table.position)],
 );
 
 export const distressEvent = pgTable(
@@ -88,7 +92,7 @@ export const distressEvent = pgTable(
       .notNull()
       .references(() => user.id, { onDelete: 'cascade' }),
     sessionId: uuid('session_id').references(() => studySession.id, { onDelete: 'set null' }),
-    detectedBy: text('detected_by').$type<DistressSource>().notNull(),
+    detectedBy: distressSource('detected_by').notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [

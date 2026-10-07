@@ -34,7 +34,7 @@ export interface ExerciseState {
 }
 
 /** What the turn changes on the exercise in progress, recorded once the student has seen the answer. */
-interface ExerciseChange {
+export interface ExerciseChange {
   hintLevel: number;
   stuckTurns: number;
   stepDone: boolean;

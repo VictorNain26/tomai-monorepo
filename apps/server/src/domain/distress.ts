@@ -52,7 +52,9 @@ export function matchesDistressRules(text: string): boolean {
   return RULES.some((rule) => rule.test(plain));
 }
 
-export type DistressSource = 'moderation' | 'rules' | 'both';
+export const DISTRESS_SOURCES = ['moderation', 'rules', 'both'] as const;
+
+export type DistressSource = (typeof DISTRESS_SOURCES)[number];
 
 /** Distress in the student's message, and who saw it; null when neither did. */
 export function detectDistress(text: string, selfharmFlagged: boolean): DistressSource | null {

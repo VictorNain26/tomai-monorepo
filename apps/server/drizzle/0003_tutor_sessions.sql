@@ -1,20 +1,23 @@
+CREATE TYPE "public"."distress_source" AS ENUM('moderation', 'rules', 'both');--> statement-breakpoint
+CREATE TYPE "public"."math_check" AS ENUM('passed', 'failed', 'not-applicable');--> statement-breakpoint
 CREATE TYPE "public"."message_role" AS ENUM('student', 'tutor');--> statement-breakpoint
 CREATE TYPE "public"."subject_family" AS ENUM('mathematiques', 'francais', 'langues', 'sciences', 'histoire-geo', 'general');--> statement-breakpoint
 CREATE TABLE "distress_event" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"student_id" text NOT NULL,
 	"session_id" uuid,
-	"detected_by" text NOT NULL,
+	"detected_by" "distress_source" NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "exercise" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"position" bigint GENERATED ALWAYS AS IDENTITY (sequence name "exercise_position_seq" INCREMENT BY 1 MINVALUE 1 MAXVALUE 9223372036854775807 START WITH 1 CACHE 1),
 	"session_id" uuid NOT NULL,
 	"sheet" jsonb,
 	"uncertain" boolean NOT NULL,
 	"drawn_forms" jsonb NOT NULL,
-	"math_check" text NOT NULL,
+	"math_check" "math_check" NOT NULL,
 	"prompt_version" text NOT NULL,
 	"hint_level" integer DEFAULT 0 NOT NULL,
 	"steps_done" integer DEFAULT 0 NOT NULL,
@@ -50,6 +53,6 @@ ALTER TABLE "message" ADD CONSTRAINT "message_session_id_study_session_id_fk" FO
 ALTER TABLE "study_session" ADD CONSTRAINT "study_session_student_id_user_id_fk" FOREIGN KEY ("student_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 CREATE UNIQUE INDEX "distress_event_session_id_idx" ON "distress_event" USING btree ("session_id");--> statement-breakpoint
 CREATE INDEX "distress_event_student_id_created_at_idx" ON "distress_event" USING btree ("student_id","created_at");--> statement-breakpoint
-CREATE INDEX "exercise_session_id_created_at_idx" ON "exercise" USING btree ("session_id","created_at");--> statement-breakpoint
+CREATE INDEX "exercise_session_id_position_idx" ON "exercise" USING btree ("session_id","position");--> statement-breakpoint
 CREATE INDEX "message_session_id_position_idx" ON "message" USING btree ("session_id","position");--> statement-breakpoint
 CREATE INDEX "study_session_student_id_created_at_idx" ON "study_session" USING btree ("student_id","created_at");
