@@ -65,7 +65,7 @@ for (const signal of ['SIGTERM', 'SIGINT'] as const) {
     void shutdown({
       lifecycle,
       stopServer: () => server.stop(),
-      // The emails still being sent, and the database.
+      // The background tasks (emails, a session's title and summary), then the database they use.
       close: [tasks.settled, database.close],
       logger,
       drainMs: DRAIN_MS,

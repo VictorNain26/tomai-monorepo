@@ -3,7 +3,7 @@
  * `ownSession`, a clause of the query itself: another student's session is simply not found.
  */
 
-import { and, asc, desc, eq, gt, gte, isNull, sql, sum } from 'drizzle-orm';
+import { and, asc, count, desc, eq, gt, gte, isNull, sql, sum } from 'drizzle-orm';
 import type { DistressSource } from '../../domain/distress';
 import type { MathCheck } from '../../domain/exercise-math';
 import type { SubjectFamily } from '../../domain/subjects';
@@ -178,6 +178,15 @@ export function createTutorRepository(db: Db) {
         .orderBy(desc(message.position))
         .limit(limit);
       return rows.reverse();
+    },
+
+    /** How many messages of the session follow the summary's: a summary is due past a backlog. */
+    async countAfter(sessionId: string, after: number | null) {
+      const [row] = await db
+        .select({ count: count() })
+        .from(message)
+        .where(and(eq(message.sessionId, sessionId), after === null ? undefined : gt(message.position, after)));
+      return row?.count ?? 0;
     },
 
     /** Every message of the session after the summary's, oldest first. */

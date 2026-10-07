@@ -41,10 +41,17 @@ describe('titleFor', () => {
     expect(sent().user.match(/<\/student_message>/g)).toHaveLength(1);
   });
 
+  it('removes typographic quotes and a final question mark, colon or ellipsis', async () => {
+    mistral.chat.push({ text: '“Théorème de Pythagore ?”' });
+    expect(await titleFor(deps, turn)).toBe('Théorème de Pythagore');
+    mistral.chat.push({ text: 'Révision des fractions…' });
+    expect(await titleFor(deps, turn)).toBe('Révision des fractions');
+  });
+
   it('cuts a long title on a character, and drops one too short to say anything', async () => {
     mistral.chat.push({ text: 'Équations du premier degré et leurs résolutions pas à pas en classe de quatrième' });
     expect(Array.from((await titleFor(deps, turn)) ?? '')).toHaveLength(50);
-    mistral.chat.push({ text: 'Aide' });
+    mistral.chat.push({ text: 'Fractions' });
     expect(await titleFor(deps, turn)).toBeNull();
   });
 

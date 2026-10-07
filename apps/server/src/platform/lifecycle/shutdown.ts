@@ -2,7 +2,7 @@
  * Graceful shutdown: readiness fails first, and stays failed for `drainMs`, long enough for the
  * host's probe to see it and stop routing here; then the server stops taking connections and
  * waits for the requests in flight (https://bun.com/docs/runtime/http/server), then the
- * resources close. Past the deadline the process exits anyway, before the host's grace period.
+ * resources close, one after the other: the background tasks still need the database. Past the deadline the process exits anyway, before the host's grace period.
  */
 
 import type { Logger } from 'pino';
@@ -18,6 +18,7 @@ export function createLifecycle(): Lifecycle {
 interface ShutdownDeps {
   lifecycle: Lifecycle;
   stopServer: () => Promise<void>;
+  /** Closed in this order. */
   close: (() => Promise<void>)[];
   logger: Logger;
   drainMs: number;
@@ -37,7 +38,7 @@ export async function shutdown({ lifecycle, stopServer, close, logger, drainMs, 
   const graceful = (async () => {
     await Bun.sleep(drainMs);
     await stopServer();
-    await Promise.all(close.map((fn) => fn()));
+    for (const fn of close) await fn();
     return 0;
   })().catch((error: unknown) => {
     logger.error({ err: error }, 'Shutdown failed');

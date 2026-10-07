@@ -10,7 +10,7 @@ import { stripPromptTags, wrapUserMessage } from './fences';
 import { checkOutput, type OutputCheckContext } from './output-check';
 
 const TITLE_PROMPT_VERSION = '2026-10-07';
-const MIN_CHARS = 8;
+const MIN_CHARS = 10;
 const MAX_CHARS = 50;
 const PREVIEW_CHARS = 300;
 
@@ -52,7 +52,7 @@ export async function titleFor(
       maxOutputTokens: 64,
       promptCacheKey: `title-${TITLE_PROMPT_VERSION}`,
     });
-    const cleaned = text.trim().replace(/^["'«\s]+|["'»\s.!]+$/g, '');
+    const cleaned = text.trim().replace(/^["'«“‘\s]+|["'»”’\s.!?:;…]+$/g, '');
     const title = Array.from(cleaned).length > MAX_CHARS ? `${clip(cleaned, MAX_CHARS - 1)}…` : cleaned;
     if (Array.from(title).length < MIN_CHARS) return null;
     const [categories = []] = await moderation.texts([title]);

@@ -28,8 +28,8 @@ import { titleFor } from './core/title';
 import { TURN_PROMPT_VERSION } from './core/version';
 import type { TutorRepository } from './repository';
 
-/** The messages of the session the tutor reads back; the summary of the older ones comes later. */
-const WINDOW = 20;
+/** The messages after the summary the tutor reads back: room for one summary late or failed, so that none falls between it and the window. */
+const WINDOW = 2 * SUMMARY_BACKLOG;
 
 interface Deps {
   repository: TutorRepository;
@@ -44,6 +44,12 @@ interface Deps {
 export interface TurnInput {
   text: string;
   inputMode: 'text' | 'voice';
+}
+
+/** The turn's reply, and what runs after it, the session still locked. */
+interface TurnReply {
+  text: string;
+  after: (() => Promise<void>) | null;
 }
 
 /** A turn opened by `openTurn`: the student, their session as the lock read it, and when the turn started. */
@@ -97,28 +103,30 @@ export function createTutorService({ repository, students, ai, moderation, logge
   }
 
   /** After the reply: the title of a session's first turn, and the summary once enough messages wait. */
+  /** After the reply: the title of the session's first turn, and the summary once enough messages wait. */
   async function afterTurn(
     studentId: string,
     session: OpenTurn['session'],
-    turn: { studentText: string; tutorText: string; check: OutputCheckContext },
+    turn: { studentText: string; tutorText: string; check: OutputCheckContext; first: boolean },
   ) {
     try {
-      if (!session.title) {
+      // The first turn only: a title held back is not asked again of every later turn.
+      if (!session.title && turn.first) {
         const title = await titleFor({ ai, moderation, logger }, { studentId, ...turn });
         if (title) await repository.setTitle(session.id, title);
       }
-      const pending = await repository.messagesAfter(session.id, session.summaryUntil);
-      if (pending.length < SUMMARY_BACKLOG) return;
-      const covered = pending.slice(0, -RECENT_MESSAGES);
-      const until = covered.at(-1)?.position;
-      const summary = until === undefined ? null : await summarize({ ai, logger }, { studentId, previous: session.summary, messages: covered });
-      if (summary !== null && until !== undefined) await repository.replaceSummary(session.id, session.summaryUntil, summary, until);
+      if ((await repository.countAfter(session.id, session.summaryUntil)) < SUMMARY_BACKLOG) return;
+      const covered = (await repository.messagesAfter(session.id, session.summaryUntil)).slice(0, -RECENT_MESSAGES);
+      const last = covered.at(-1);
+      if (!last) return;
+      const summary = await summarize({ ai, logger }, { studentId, previous: session.summary, messages: covered });
+      if (summary) await repository.replaceSummary(session.id, session.summaryUntil, summary, last.position);
     } catch (err) {
       logger.error({ err }, 'After the turn: title or summary not stored');
     }
   }
 
-  async function turn({ student: learner, session, distress }: OpenTurn, input: TurnInput): Promise<string> {
+  async function turn({ student: learner, session, distress }: OpenTurn, input: TurnInput): Promise<TurnReply> {
     const studentText = input.text;
 
     // The conversation stopped at a distress: any later message gets the fixed reply again.
@@ -135,10 +143,10 @@ export function createTutorService({ repository, students, ai, moderation, logge
         .catch((err: unknown) => {
           logger.error({ err }, 'Closed session turn not stored');
         });
-      return DISTRESS_REPLY;
+      return { text: DISTRESS_REPLY, after: null };
     }
 
-    if (distress) return answerDistress(learner.id, session.id, studentText, distress);
+    if (distress) return { text: await answerDistress(learner.id, session.id, studentText, distress), after: null };
 
     const [history, current] = await Promise.all([
       repository.window(session.id, WINDOW, session.summaryUntil),
@@ -154,7 +162,8 @@ export function createTutorService({ repository, students, ai, moderation, logge
 
     // Distress before anything else: no sheet, no tutor, the fixed reply.
     const source = detectDistress(studentText, inputModeration?.flagged.includes('selfharm') ?? false);
-    if (source) return answerDistress(learner.id, session.id, studentText, { source, flagged: inputModeration?.flagged ?? null });
+    if (source)
+      return { text: await answerDistress(learner.id, session.id, studentText, { source, flagged: inputModeration?.flagged ?? null }), after: null };
     const analysis = await analysed;
 
     // The detected subject, else the session's: the first one named stays the session's.
@@ -242,8 +251,8 @@ export function createTutorService({ repository, students, ai, moderation, logge
         outcome: reply.outcome,
       },
     });
-    background(afterTurn(learner.id, session, { studentText, tutorText: reply.text, check }));
-    return reply.text;
+    const first = history.length === 0;
+    return { text: reply.text, after: () => afterTurn(learner.id, session, { studentText, tutorText: reply.text, check, first }) };
   }
 
   return {
@@ -307,11 +316,20 @@ export function createTutorService({ repository, students, ai, moderation, logge
 
     /** The turn's reply; the session is free for the next turn whatever happens. */
     async runTurn(opened: OpenTurn, input: TurnInput): Promise<string> {
+      const free = () => repository.endTurn(opened.session.id, opened.session.turnStartedAt);
+      let reply: TurnReply;
       try {
-        return await turn(opened, input);
-      } finally {
-        await repository.endTurn(opened.session.id, opened.session.turnStartedAt);
+        reply = await turn(opened, input);
+      } catch (error) {
+        await free();
+        throw error;
       }
+      // The title and the summary run under the turn's lock: a quick next turn would summarize the
+      // same messages again, and pay for it.
+      const { after } = reply;
+      if (after) background(after().finally(free));
+      else await free();
+      return reply.text;
     },
   };
 }

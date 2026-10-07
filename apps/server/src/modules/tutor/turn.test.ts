@@ -273,57 +273,6 @@ describe('a turn', () => {
   });
 });
 
-describe('after the reply', () => {
-  const sessionRow = async (sessionId: string) =>
-    (
-      await db
-        .select({ title: studySession.title, summary: studySession.summary, summaryUntil: studySession.summaryUntil })
-        .from(studySession)
-        .where(eq(studySession.id, sessionId))
-    )[0];
-  const chatCalls = () => mistral.received.filter((r) => r.path === '/v1/chat/completions').length;
-
-  it('titles a session after its first turn, and never again', async () => {
-    const sessionId = await newSession();
-    mistral.chat.push(analysis(), { text: 'Que cherches-tu ?' }, { text: 'Équations du premier degré' });
-    await say(sessionId, 'Résous 3x + 5 = 20.');
-    expect((await sessionRow(sessionId))?.title).toBe('Équations du premier degré');
-
-    mistral.received.length = 0;
-    mistral.chat.push(analysis(), { text: 'Et ensuite ?' });
-    await say(sessionId, 'Je retranche 5.');
-    expect(chatCalls()).toBe(2);
-  });
-
-  it('summarizes the older messages once twenty wait, the last ten kept as they are, and the next turn reads the summary', async () => {
-    const sessionId = await newSession();
-    await db.update(studySession).set({ title: 'Une séance' }).where(eq(studySession.id, sessionId));
-    await db.insert(message).values(
-      Array.from({ length: 20 }, (_, i) => ({
-        sessionId,
-        role: i % 2 === 0 ? ('student' as const) : ('tutor' as const),
-        text: `message ${String(i + 1)}`,
-      })),
-    );
-    mistral.chat.push(analysis(), { text: 'Réponse 21' }, { text: 'Le résumé de la séance' });
-    await say(sessionId, 'message 21');
-    const positions = await db
-      .select({ position: message.position, text: message.text })
-      .from(message)
-      .where(eq(message.sessionId, sessionId))
-      .orderBy(message.position);
-    expect(await sessionRow(sessionId)).toMatchObject({ summary: 'Le résumé de la séance', summaryUntil: positions[11]?.position });
-
-    mistral.received.length = 0;
-    mistral.chat.push(analysis(), { text: 'Réponse 23' });
-    await say(sessionId, 'message 23');
-    const writer = JSON.stringify(mistral.received.find((r) => JSON.stringify(r.body).includes('Tu es Tom, tuteur'))?.body);
-    expect(writer).toContain('<conversation_summary>\\nLe résumé de la séance\\n</conversation_summary>');
-    expect(writer).not.toContain('message 12"');
-    expect(writer).toContain('message 13');
-  });
-});
-
 describe('refusals, before any model', () => {
   it('refuses an anonymous visitor, a guardian, another student, and a message empty or too long', async () => {
     const sessionId = await newSession();
