@@ -13,11 +13,12 @@ import { notionText, schoolYearOf } from './sheet';
 export const schoolYearStart = (now: Date) => new Date(Date.UTC(schoolYearOf(now), 7, 31, 22));
 
 export interface PastExercise {
-  createdAt: Date;
+  /** Its order among all exercises: positions only grow. */
+  position: number;
   entries: readonly string[];
   hintLevel: number;
   solved: boolean;
-  /** The error types of its turns, in order. */
+  /** The error types of its turns, in no particular order. */
   errorTypes: readonly string[];
 }
 
@@ -56,15 +57,15 @@ export interface NotionMemory {
 
 /**
  * Each notion of the past exercises, oldest first in, the exercises before a correction of the
- * student (`resets`, a notion and its date) left out. A notion the referential no longer knows is
+ * student (`resets`, a notion and the last position it covers) left out. A notion the referential no longer knows is
  * dropped.
  */
-export function notionMemories(past: readonly PastExercise[], resets: ReadonlyMap<string, Date>): NotionMemory[] {
+export function notionMemories(past: readonly PastExercise[], resets: ReadonlyMap<string, number>): NotionMemory[] {
   const byNotion = new Map<string, PastExercise[]>();
   for (const exercise of past) {
     for (const notionId of exercise.entries) {
       const reset = resets.get(notionId);
-      if (reset && exercise.createdAt <= reset) continue;
+      if (reset !== undefined && exercise.position <= reset) continue;
       byNotion.set(notionId, [...(byNotion.get(notionId) ?? []), exercise]);
     }
   }
@@ -85,11 +86,15 @@ export function notionMemories(past: readonly PastExercise[], resets: ReadonlyMa
   });
 }
 
+/** The error type seen at least twice, the most often; a tie goes to the type listed first, whatever the order of the turns. */
 function frequentError(types: readonly string[]): string | null {
-  const counts = new Map<string, number>();
-  for (const type of types) if (ERROR_LABELS[type]) counts.set(type, (counts.get(type) ?? 0) + 1);
-  const [top] = [...counts].sort(([, a], [, b]) => b - a);
-  return top && top[1] >= 2 ? top[0] : null;
+  let top: string | null = null;
+  let topCount = 1;
+  for (const type of Object.keys(ERROR_TYPES)) {
+    const count = types.filter((seen) => seen === type).length;
+    if (count > topCount) [top, topCount] = [type, count];
+  }
+  return top;
 }
 
 const line = ({ label, worked, lastHintLevel, lastSolved, frequentError: error }: NotionMemory) =>

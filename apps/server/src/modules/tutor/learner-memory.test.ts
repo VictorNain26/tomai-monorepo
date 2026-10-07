@@ -196,6 +196,34 @@ describe('the learner memory', () => {
     expect((await memoryOf(asLea)).notions).toEqual([]);
   });
 
+  it('leaves out of a reset the exercise a turn is still writing', async () => {
+    const { id: sessionId } = (await (await api.request('POST', '/api/sessions', { cookie: asLea })).json()) as { id: string };
+    await db.transaction(async (tx) => {
+      await tx
+        .insert(exercise)
+        .values({ sessionId, sheet: sheet([notion.id]), uncertain: false, drawnForms: ['5'], mathCheck: 'passed', promptVersion: 'v' });
+      // The reset runs while the exercise is not committed yet, on another connection.
+      expect((await api.request('DELETE', '/api/memory', { cookie: asLea })).status).toBe(204);
+    });
+    expect((await memoryOf(asLea)).notions).toEqual([]);
+  });
+
+  it('counts what follows a reset even when the clock stepped back since, and nothing before it', async () => {
+    const before = await pastExercise(asLea, lea.id, 'careless');
+    expect((await api.request('DELETE', '/api/memory', { cookie: asLea })).status).toBe(204);
+    const after = await pastExercise(asLea, lea.id, 'careless');
+    // The clock stepped back between the two: the later exercise is dated before the earlier one.
+    const [earlier] = await db.select({ createdAt: exercise.createdAt }).from(exercise).where(eq(exercise.id, before));
+    await db
+      .update(exercise)
+      .set({ createdAt: new Date((earlier?.createdAt.getTime() ?? 0) - 60_000) })
+      .where(eq(exercise.id, after));
+    expect((await memoryOf(asLea)).notions).toEqual([expect.objectContaining({ notionId: notion.id, worked: 1 })]);
+
+    expect((await api.request('DELETE', `/api/memory/notions/${notion.id}`, { cookie: asLea })).status).toBe(204);
+    expect((await memoryOf(asLea)).notions).toEqual([]);
+  });
+
   it('is off once the parent withdraws it, and erased: proposed again, the child is asked again', async () => {
     await pastExercise(asLea, lea.id, 'careless');
     expect((await memoryOf(asLea)).notions).toHaveLength(1);

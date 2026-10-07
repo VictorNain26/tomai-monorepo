@@ -81,16 +81,10 @@ export function createTutorService({ repository, students, ai, moderation, logge
     return profile;
   };
 
-  /** Since the school year opened, or the student's last reset if later. */
-  const memorySince = ({ memory }: Student) => {
-    const start = schoolYearStart(new Date());
-    return memory.resetAt && memory.resetAt > start ? memory.resetAt : start;
-  };
-
   /** What the student's exercises before `before` say of `notions` (of every notion when null): what Tom reads, what the student sees. */
   async function memoriesOf(learner: Student, notions: readonly string[] | null, before: number | null) {
     const [past, resets] = await Promise.all([
-      repository.pastExercises(learner.id, memorySince(learner), before, notions),
+      repository.pastExercises(learner.id, { yearStart: schoolYearStart(new Date()), after: learner.memory.resetAfter }, before, notions),
       repository.notionResets(learner.id),
     ]);
     return notionMemories(past, resets);
@@ -292,11 +286,12 @@ export function createTutorService({ repository, students, ai, moderation, logge
     async answerMemory(userId: string, answer: MemoryAnswer) {
       const learner = await student(userId);
       if (!learner.memory.mayAnswer) throw new Problem('FORBIDDEN');
-      await students.answerMemory(learner.id, answer);
+      // Accepted or declined, the memory starts afresh with the answer: no exercise begun before counts.
+      await students.answerMemory(learner.id, answer, await repository.allocatedPosition());
     },
 
     async resetMemory(userId: string) {
-      await students.resetMemory((await student(userId)).id);
+      await students.resetMemory((await student(userId)).id, await repository.allocatedPosition());
     },
 
     /** The student understood a notion: its earlier exercises no longer count. */

@@ -28,11 +28,11 @@ export function studentDirectory(db: Db) {
     async find(userId: string) {
       const profile = await repository.findProfile(userId);
       if (!profile) return null;
-      const { birthMonth, memoryProposedAt, memoryAnswer, memoryResetAt, ...student } = profile;
-      return { ...student, memory: learnerMemory({ birthMonth, memoryProposedAt, memoryAnswer, memoryResetAt }, new Date()) };
+      const { birthMonth, memoryProposedAt, memoryAnswer, memoryResetAfter, ...student } = profile;
+      return { ...student, memory: learnerMemory({ birthMonth, memoryProposedAt, memoryAnswer, memoryResetAfter }, new Date()) };
     },
-    answerMemory: (studentId: string, answer: MemoryAnswer) => repository.answerMemory(studentId, answer),
-    resetMemory: (studentId: string) => repository.resetMemory(studentId),
+    answerMemory: (studentId: string, answer: MemoryAnswer, afterPosition: number) => repository.answerMemory(studentId, answer, afterPosition),
+    resetMemory: (studentId: string, afterPosition: number) => repository.resetMemory(studentId, afterPosition),
   };
 }
 

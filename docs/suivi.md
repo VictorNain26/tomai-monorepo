@@ -84,11 +84,6 @@ supprime ou que l'étude couvre n'y figure plus.
 
 ### Refonte — préproduction (étape 7)
 
-- **Test intermittent du serveur** : `modules/tutor/learner-memory.test.ts` échoue environ une fois
-  sur dix en local (3 sur 20 le 2026-10-07 : une notion oubliée ou une mémoire remise à zéro compte
-  encore des exercices antérieurs), jamais vu en CI. Écartés : un cache de session (better-auth sans
-  `cookieCache`), une course entre la réponse et l'enregistrement du tour (enregistré avant la
-  réponse), un recul de l'horloge de Postgres (aucun mesuré). À trouver dans une PR dédiée.
 - **Observabilité** : les erreurs du serveur vers Bugsink, auto-hébergé avec sa base, celles des navigateurs par le serveur (`tunnel`) ; les traces OpenTelemetry attendent un besoin mesuré (`etudes/2026-10-07/hebergement.md`).
 - **Cookies de session** : le préfixe `__Host-` pour ceux de better-auth, l'app et la landing étant du même site (à vérifier dans la config de better-auth).
 - **Postgres de l'hébergeur** : `verify-full` vérifie le certificat contre les CA du système ; une CA privée demande l'option `ssl` avec `ca` (`platform/db/client.ts`).

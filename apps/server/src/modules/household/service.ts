@@ -30,14 +30,14 @@ type StudentRow = NonNullable<Awaited<ReturnType<HouseholdRepository['findStuden
 
 /** The student's learner memory as the tutor reads it; the child answers once the parent proposed it, or alone from 15. */
 export function learnerMemory(
-  profile: { birthMonth: string; memoryProposedAt: Date | null; memoryAnswer: MemoryAnswer | null; memoryResetAt: Date | null },
+  profile: { birthMonth: string; memoryProposedAt: Date | null; memoryAnswer: MemoryAnswer | null; memoryResetAfter: number | null },
   now: Date,
 ) {
   const { state, mayAnswer } = memoryConsent(
     { birthMonth: profile.birthMonth, proposedAt: profile.memoryProposedAt, answer: profile.memoryAnswer },
     now,
   );
-  return { state, mayAnswer, resetAt: profile.memoryResetAt };
+  return { state, mayAnswer, resetAfter: profile.memoryResetAfter ?? 0 };
 }
 
 // The date column holds the first day of the month; the API speaks in YYYY-MM.

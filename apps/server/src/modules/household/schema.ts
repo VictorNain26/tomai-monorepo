@@ -5,7 +5,7 @@
  */
 
 import { sql } from 'drizzle-orm';
-import { check, date, index, pgEnum, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { bigint, check, date, index, pgEnum, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 import { SCHOOL_LEVELS } from '../../domain/levels';
 import { user } from '../../platform/auth/schema';
 
@@ -43,10 +43,11 @@ export const studentProfile = pgTable(
     // The first day of the month: the day of birth is not collected.
     birthMonth: date('birth_month', { mode: 'string' }).notNull(),
     // The learner memory (domain/memory-consent.ts): the parent's proposal, the child's answer, and
-    // the last reset, before which no exercise counts.
+    // the last exercise the memory leaves out, set with the answer or a reset: the position the
+    // exercises had reached then. A position, not a date: the clock can step back, an identity cannot.
     memoryProposedAt: timestamp('memory_proposed_at', { withTimezone: true }),
     memoryAnswer: memoryAnswer('memory_answer'),
-    memoryResetAt: timestamp('memory_reset_at', { withTimezone: true }),
+    memoryResetAfter: bigint('memory_reset_after', { mode: 'number' }),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [check('student_profile_birth_month_first_day', sql`extract(day from ${table.birthMonth}) = 1`)],
