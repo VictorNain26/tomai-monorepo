@@ -6,6 +6,7 @@
  */
 
 import type { Diagnosis } from './diagnosis';
+import { LADDER } from './ladder';
 import { notionText, schoolYearOf } from './sheet';
 
 /** The first of September that opened the school year, at midnight in Paris (summer time, UTC+2). */
@@ -29,6 +30,19 @@ const ERROR_TYPES = {
   imprecise: 'manque de précision',
 } satisfies Record<Exclude<Diagnosis['errorType'], 'not-sure' | 'n/a'>, string>;
 const ERROR_LABELS: Partial<Record<string, string>> = ERROR_TYPES;
+
+// The same errors, as the student reads them on what Tom keeps.
+const TO_WATCH = {
+  guess: 'répondre au hasard',
+  misinterpret: 'mal lire la consigne',
+  careless: "les erreurs d'inattention",
+  'right-idea': "la bonne idée, pas menée jusqu'au bout",
+  imprecise: 'le manque de précision',
+} satisfies Record<keyof typeof ERROR_TYPES, string>;
+const WATCH_LABELS: Partial<Record<string, string>> = TO_WATCH;
+
+/** The level of help by its name on the ladder, as the turn's contract names it. */
+const helpName = (level: number) => (LADDER[level] ?? LADDER[0]).name;
 
 export interface NotionMemory {
   notionId: string;
@@ -81,7 +95,7 @@ function frequentError(types: readonly string[]): string | null {
 const line = ({ label, worked, lastHintLevel, lastSolved, frequentError: error }: NotionMemory) =>
   [
     `- ${label} : travaillée ${String(worked)} fois`,
-    `la dernière fois, ${lastSolved ? 'résolue' : 'pas résolue'}, avec de l'aide jusqu'au palier ${String(lastHintLevel)}`,
+    `la dernière fois, ${lastSolved ? 'résolue' : 'pas résolue'}, avec de l'aide jusqu'à : ${helpName(lastHintLevel).toLowerCase()}`,
     ...(error ? [`erreur fréquente : ${ERROR_LABELS[error] ?? error}`] : []),
   ].join(' ; ');
 
@@ -97,3 +111,13 @@ export function learnerMemoryBlock(notions: readonly string[], memories: readonl
     '</learner_memory>',
   ].join('\n');
 }
+
+/** A notion as the student reads it on what Tom keeps: the help by its name, the error to watch in their words. */
+export const notionView = ({ notionId, label, worked, lastHintLevel, lastSolved, frequentError: error }: NotionMemory) => ({
+  notionId,
+  label,
+  worked,
+  lastSolved,
+  lastHelp: helpName(lastHintLevel),
+  watch: (error && WATCH_LABELS[error]) ?? null,
+});

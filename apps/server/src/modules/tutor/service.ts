@@ -19,7 +19,7 @@ import { assembleChatPrompt, replayable, type HistoryTurn } from './core/assembl
 import { writeChecked } from './core/controlled-turn';
 import { prepareExerciseTurn } from './core/exercise-turn';
 import { hintOf } from './core/ladder';
-import { learnerMemoryBlock, notionMemories, schoolYearStart } from './core/memory';
+import { learnerMemoryBlock, notionMemories, notionView, schoolYearStart } from './core/memory';
 import type { OutputCheckContext } from './core/output-check';
 import { studentBlock, subjectBlock, systemPrompt } from './core/prompt';
 import { routeReasoningEffort } from './core/reasoning';
@@ -286,7 +286,7 @@ export function createTutorService({ repository, students, ai, moderation, logge
     async memory(userId: string) {
       const learner = await student(userId);
       const { state, mayAnswer } = learner.memory;
-      return { state, mayAnswer, notions: state === 'active' ? await memoriesOf(learner, null, null) : [] };
+      return { state, mayAnswer, notions: state === 'active' ? (await memoriesOf(learner, null, null)).map(notionView) : [] };
     },
 
     async answerMemory(userId: string, answer: MemoryAnswer) {
