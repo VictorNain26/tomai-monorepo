@@ -43,8 +43,8 @@ bloquant levé). L'historique vit dans git et les PR.
   n'existe pas), le résumé de séance et le titre. Le tuteur répond par
   `POST /api/sessions/:id/messages`.
 - **Étape 6 faite**, le web : le client typé et la connexion du gardien (#438), le foyer et le
-  jumelage de l'appareil (#439), le chat de l'élève avec `useChat` (#441). Reste son test
-  complet dans Chrome.
+  jumelage de l'appareil (#439), le chat de l'élève avec `useChat` (#441), l'appareil partagé de
+  la famille (#442). Testée de bout en bout dans Chrome le 2026-10-07, avec le vrai Mistral.
 - **Mémoire d'une séance à l'autre** (`etudes/2026-10-07/memoire-entre-seances.md`), décidée par
   Victor le 2026-10-07 : une mémoire d'apprentissage tirée des exercices, acceptée par le parent
   et l'enfant, visible et effaçable par l'élève, remise à zéro à la rentrée ; promise seulement
@@ -52,8 +52,7 @@ bloquant levé). L'historique vit dans git et les PR.
 - **Le prénom et la mémoire chez Mistral** (Victor, 2026-10-07) : ils partent dans le prompt ;
   aucun vrai élève avant la réponse écrite de Mistral sur sa clause des moins de 15 ans ; s'il
   refuse, ils en sortent (`tuteur.md` § 11).
-- **Prochaine action** : le premier test complet dans Chrome, puis la mémoire d'une séance à
-  l'autre, puis l'étape 7 (la préproduction UE). L'étude des hébergeurs UE avance en parallèle.
+- **Prochaine action** : la mémoire d'une séance à l'autre, puis l'étape 7 (la préproduction UE). L'étude des hébergeurs UE avance en parallèle.
 - **Rentabilité et quotas** (`etudes/2026-10-07/rentabilite.md`) : le gratuit décide de la
   rentabilité, la distribution est le vrai risque ; quotas proposés de 2 c (Gratuit) et 10 c
   (Complet) par élève et par jour, voix comprise, remis à zéro à 4 h, et l'année scolaire à 69 €

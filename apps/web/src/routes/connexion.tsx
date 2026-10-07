@@ -1,17 +1,21 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@repo/ui';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from '../lib/zod';
+import { DeviceSignOut } from '../components/device-sign-out';
 import { Field } from '../components/field';
 import { Notice } from '../components/notice';
 import { Page } from '../components/page';
 import { authClient, authMessage } from '../lib/auth';
 import { meQuery } from '../lib/me';
 
-export const Route = createFileRoute('/connexion')({ component: SignIn });
+export const Route = createFileRoute('/connexion')({
+  loader: ({ context }) => context.queryClient.query(meQuery),
+  component: SignIn,
+});
 
 const schema = z.object({
   email: z.email('Une adresse e-mail valide.'),
@@ -19,6 +23,23 @@ const schema = z.object({
 });
 
 function SignIn() {
+  const { data: me } = useSuspenseQuery(meQuery);
+  // A device paired to a student takes no other sign-in: the server's guard refuses it.
+  if (me?.role === 'student') {
+    return (
+      <Page title="Connexion">
+        <Notice tone="info">
+          Cet appareil est relié au compte de {me.name}. Pour vous connecter en parent, déconnectez d’abord {me.name} : il lui faudra un nouveau code
+          pour revenir.
+        </Notice>
+        <DeviceSignOut label={`Déconnecter ${me.name} de cet appareil`} />
+      </Page>
+    );
+  }
+  return <SignInForm />;
+}
+
+function SignInForm() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [failure, setFailure] = useState<string | null>(null);

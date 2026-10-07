@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { addChild, childPhone, guardian } from '../guardian';
+import { addChild, childPhone, guardian, pairedStudent } from '../guardian';
 
 test('a guardian adds a child, changes their class, then deletes their account', async ({ page }) => {
   await guardian(page, 'foyer');
@@ -65,4 +65,23 @@ test.describe('with the session gone', () => {
     await page.getByRole('button', { name: 'Ajouter' }).click();
     await expect(page).toHaveURL(/\/connexion$/);
   });
+});
+
+test('a shared device: the parent is told whose it is, signs the child out, then signs in', async ({ page, browser }, testInfo) => {
+  await pairedStudent(page, browser, testInfo, 'Zoé');
+  await page.goto('/connexion');
+  await expect(page.getByRole('status')).toContainText('Cet appareil est relié au compte de Zoé');
+  await page.getByRole('button', { name: 'Déconnecter Zoé de cet appareil' }).click();
+  await expect(page.getByLabel('Adresse e-mail')).toBeVisible();
+
+  await guardian(page, 'partage');
+  await expect(page.getByRole('heading', { name: 'Bonjour Claire' })).toBeVisible();
+});
+
+test('a student signs out of a device, which then opens nothing of theirs', async ({ page, browser }, testInfo) => {
+  await pairedStudent(page, browser, testInfo, 'Tim');
+  await page.getByRole('button', { name: 'Me déconnecter de cet appareil' }).click();
+  await expect(page).toHaveURL(/\/connexion$/);
+  await page.goto('/');
+  await expect(page).toHaveURL(/\/connexion$/);
 });
