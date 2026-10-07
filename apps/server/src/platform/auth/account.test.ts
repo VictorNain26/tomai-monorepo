@@ -60,6 +60,14 @@ const signIn = async (email: string, password: string) => request('POST', '/api/
 const sessionUser = async (cookie: string) =>
   ((await (await request('GET', '/api/auth/get-session', { cookie })).json()) as { user: { id: string } } | null)?.user;
 
+describe('the error page', () => {
+  it("is the web's, not better-auth's own, whose inline style the CSP blocks", async () => {
+    const res = await request('GET', '/api/auth/error?error=boom');
+    expect(res.status).toBe(302);
+    expect(res.headers.get('location')).toBe(`${ORIGIN}/erreur-connexion?error=boom`);
+  });
+});
+
 describe('password reset', () => {
   it('sends a link; the new password works, the old one no longer does, and every session ends', async () => {
     const email = 'oubli@example.com';

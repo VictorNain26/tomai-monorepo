@@ -103,6 +103,21 @@ const creation = client();
 const creator = await creation.guardian('createur@example.com');
 const leo = await creation.student(creator, { name: 'Léo', level: 'sixieme', birthMonth: '2015-09' });
 
+describe('/api/me', () => {
+  it('tells who is signed in and as what, a guardian without a household yet included', async () => {
+    const api = client();
+    const fresh = await api.guardian('nouveau@example.com');
+    expect(await (await api.request('GET', '/api/me', { cookie: fresh })).json()).toMatchObject({ name: 'Parent', role: 'guardian', level: null });
+    expect(await (await api.request('GET', '/api/me', { cookie: asStudentA })).json()).toEqual({
+      id: studentOfA.id,
+      name: 'Léa',
+      role: 'student',
+      level: 'cinquieme',
+    });
+    expect((await api.request('GET', '/api/me')).status).toBe(401);
+  });
+});
+
 describe('a guardian creates a student', () => {
   const api = creation;
   const guardian = creator;

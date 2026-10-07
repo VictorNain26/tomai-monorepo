@@ -1,13 +1,12 @@
 import { resolve } from 'node:path';
 import { defineConfig, devices } from '@playwright/test';
+import { DATABASE_URL } from './database';
 
 const PORT = 3012;
 const baseURL = `http://localhost:${String(PORT)}`;
 
 // The suite runs against the built server, which serves the built web, as in production
 // (https://turborepo.dev/docs/guides/tools/playwright), on its own database, recreated each run.
-// Locally, the Postgres of docker-compose.yml; in CI, the job's.
-const DATABASE_URL = process.env['E2E_DATABASE_URL'] ?? 'postgresql://tomai_dev:tomai_dev_password@localhost:5432/tom_e2e';
 const environment = Object.fromEntries(Object.entries(process.env).filter((entry): entry is [string, string] => entry[1] !== undefined));
 
 // Phone first: every path is proven at phone width, on WebKit as on Chromium.

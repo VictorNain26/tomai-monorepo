@@ -1,7 +1,8 @@
 import { expect, test } from '@playwright/test';
 
-test('the home page renders in French at phone width, with one h1 and no horizontal scroll', async ({ page }) => {
+test('the page a visitor lands on renders in French at phone width, with one h1 and no horizontal scroll', async ({ page }) => {
   await page.goto('/');
+  await expect(page).toHaveURL(/\/connexion$/);
 
   await expect(page.locator('html')).toHaveAttribute('lang', 'fr');
   await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);
@@ -10,7 +11,8 @@ test('the home page renders in French at phone width, with one h1 and no horizon
 });
 
 test('the brand applies: cream background and Nunito, loaded', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/connexion');
+  await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
 
   const body = page.locator('body');
   await expect(body).toHaveCSS('background-color', 'rgb(250, 247, 240)');

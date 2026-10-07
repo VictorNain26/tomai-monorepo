@@ -19,11 +19,11 @@
       "persistent": true
     },
     "lint": {
-      "dependsOn": ["transit"],
+      "dependsOn": ["transit", "^build:types"],
       "outputs": []
     },
     "typecheck": {
-      "dependsOn": ["transit"],
+      "dependsOn": ["transit", "^build:types"],
       "outputs": []
     },
     "clean": {
@@ -44,6 +44,9 @@
     "test": {
       "outputs": [],
       "passThroughEnv": ["DATABASE_URL"]
+    },
+    "build:types": {
+      "outputs": ["dist/types/**"]
     }
   }
 }

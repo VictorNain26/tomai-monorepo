@@ -15,7 +15,7 @@ const elements = [
 // Single files are classified by file descriptors, folders by elements (jsboundaries.dev, « Elements »).
 const files = [
   { pattern: '**/*.test.ts', category: 'test' },
-  { pattern: ['src/main.ts', 'src/migrate.ts', 'src/app.ts'], category: 'root' },
+  { pattern: ['src/main.ts', 'src/migrate.ts', 'src/app.ts', 'src/contract.ts'], category: 'root' },
   { pattern: 'src/config.ts', category: 'config' },
   // In a module, routes → service → repository, and only the repository and the schema touch the database.
   { pattern: 'src/modules/*/index.ts', category: 'module-index' },

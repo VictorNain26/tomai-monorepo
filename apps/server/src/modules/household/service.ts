@@ -40,6 +40,14 @@ export function createHouseholdService({ repository, createPairingCode }: Deps) 
       if ((await repository.roleOf(userId)) === 'student') throw new Problem('FORBIDDEN');
     },
 
+    /** Who is signed in: a student, or else a guardian, whose household may not exist yet. */
+    async me(userId: string, name: string) {
+      const student = await repository.findProfile(userId);
+      return student
+        ? { id: userId, name, role: 'student' as const, level: student.level }
+        : { id: userId, name, role: 'guardian' as const, level: null };
+    },
+
     async listStudents(guardianId: string) {
       return (await repository.listStudents(guardianId)).map(toStudent);
     },

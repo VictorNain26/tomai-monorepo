@@ -7,7 +7,7 @@ import type { Auth } from '../../platform/auth/auth';
 import { createPairingCode } from '../../platform/auth/pairing';
 import type { Db } from '../../platform/db/client';
 import { createHouseholdRepository } from './repository';
-import { householdRoutes, studentAuthGuard } from './routes';
+import { householdRoutes, meRoutes, studentAuthGuard } from './routes';
 import { createHouseholdService } from './service';
 
 export function householdModule({ db, auth }: { db: Db; auth: Auth }) {
@@ -15,7 +15,7 @@ export function householdModule({ db, auth }: { db: Db; auth: Auth }) {
     repository: createHouseholdRepository(db),
     createPairingCode: (userId) => createPairingCode(auth, userId),
   });
-  return { routes: householdRoutes({ auth, service }), authGuard: studentAuthGuard({ auth, service }) };
+  return { routes: householdRoutes({ auth, service }), me: meRoutes({ auth, service }), authGuard: studentAuthGuard({ auth, service }) };
 }
 
 /** The signed-in student's profile, for the tutor; null for anyone who is not a student. */

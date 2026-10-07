@@ -10,7 +10,7 @@ import { Problem } from '../http/problem';
 import type { Auth } from './auth';
 
 export interface SessionEnv extends AppEnv {
-  Variables: AppEnv['Variables'] & { userId: string };
+  Variables: AppEnv['Variables'] & { userId: string; userName: string };
 }
 
 export function requireSession(auth: Auth) {
@@ -18,6 +18,7 @@ export function requireSession(auth: Auth) {
     const session = await auth.api.getSession({ headers: c.req.raw.headers, query: { disableRefresh: true } });
     if (!session) throw new Problem('UNAUTHENTICATED');
     c.set('userId', session.user.id);
+    c.set('userName', session.user.name);
     await next();
   });
 }

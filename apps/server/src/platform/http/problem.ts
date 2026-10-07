@@ -28,7 +28,7 @@ const HTTP_ERROR = 'HTTP_ERROR';
 type DeclaredCode = keyof typeof PROBLEMS;
 
 /** The `code` of every problem response; a route throws one of the declared ones. */
-type ProblemCode = DeclaredCode | typeof HTTP_ERROR;
+export type ProblemCode = DeclaredCode | typeof HTTP_ERROR;
 
 export class Problem extends Error {
   constructor(
