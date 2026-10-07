@@ -280,6 +280,13 @@ jobs:
     steps:
       - name: Deploy the image
         run: |
+          # Two merges close together can finish their CI out of order: only main's head deploys,
+          # so that an older image never replaces a newer one.
+          head="$(git ls-remote "https://github.com/$GITHUB_REPOSITORY" refs/heads/main | cut -f1)"
+          if [ "$head" != "$GITHUB_SHA" ]; then
+            echo "::notice::$GITHUB_SHA is no longer main's head ($head): the run of the head deploys"
+            exit 0
+          fi
           mkdir release && cd release
           echo "FROM $IMAGE" > Dockerfile
           git init -q
