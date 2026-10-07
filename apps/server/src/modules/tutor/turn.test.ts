@@ -8,6 +8,7 @@ import { eq, sql } from 'drizzle-orm';
 import pino from 'pino';
 import { createApp } from '../../app';
 import { DISTRESS_REPLY } from '../../domain/distress';
+import { DAILY_BUDGET_MICRO_EUR, quotaDayStart } from '../../domain/quota';
 import { aiCost } from '../../platform/ai/schema';
 import { createAuth } from '../../platform/auth/auth';
 import { createBackgroundTasks } from '../../platform/lifecycle/background';
@@ -20,7 +21,7 @@ import { accountDeletion } from '../household';
 import type { TurnAnalysis } from './core/analysis';
 import { FALLBACK_REPLY } from './core/output-check';
 import { TURN_PROMPT_VERSION } from './core/version';
-import { distressEvent, exercise, studySession, turnRecord } from './schema';
+import { distressEvent, exercise, message, studySession, turnRecord } from './schema';
 
 const { db } = await testDatabase();
 const mistral = fakeMistral();
@@ -277,5 +278,79 @@ describe('refusals, before any model', () => {
     expect((await say(sessionId, '  \u0000 ')).status).toBe(400);
     expect((await say(sessionId, 'a'.repeat(4001))).status).toBe(400);
     expect(mistral.received).toEqual([]);
+  });
+});
+
+const spender = await api.student(guardian, { name: 'Noé', level: 'sixieme' });
+const asSpender = await api.pair(guardian, spender.id);
+
+describe('the daily quota', () => {
+  const sessionOf = async () => ((await (await api.request('POST', '/api/sessions', { cookie: asSpender })).json()) as { id: string }).id;
+  const today = quotaDayStart(new Date());
+  /** The student's spending reset to what the test states. */
+  const spent = async (...rows: { costMicroEur: number; createdAt: Date }[]) => {
+    await db.delete(aiCost).where(eq(aiCost.studentId, spender.id));
+    for (const row of rows) {
+      await db.insert(aiCost).values({
+        studentId: spender.id,
+        model: 'mistral-small-2603',
+        operation: 'chat',
+        inputTokens: 0,
+        cachedInputTokens: 0,
+        outputTokens: 0,
+        ...row,
+      });
+    }
+  };
+
+  it('lets a turn run under the budget, and does not count what was spent before 4 a.m.', async () => {
+    await spent(
+      { costMicroEur: DAILY_BUDGET_MICRO_EUR, createdAt: new Date(today.getTime() - 60_000) },
+      { costMicroEur: DAILY_BUDGET_MICRO_EUR - 1, createdAt: today },
+    );
+    mistral.chat.push(analysis(), { text: 'Bonjour Noé !' });
+    expect((await say(await sessionOf(), 'Bonjour', asSpender)).reply).toBe('Bonjour Noé !');
+  });
+
+  it('refuses a turn once the budget is spent, before any model writes, and frees the session', async () => {
+    await spent({ costMicroEur: DAILY_BUDGET_MICRO_EUR, createdAt: today });
+    const sessionId = await sessionOf();
+    mistral.received.length = 0;
+    const res = await api.request('POST', `/api/sessions/${sessionId}/messages`, { cookie: asSpender, body: { text: 'Encore une question' } });
+    expect(res.status).toBe(429);
+    expect(await res.json()).toMatchObject({ code: 'QUOTA_EXCEEDED', detail: 'Le quota du jour revient à 4 h.' });
+    expect(mistral.received.filter((r) => r.path === '/v1/chat/completions')).toEqual([]);
+    const [session] = await db.select({ turnStartedAt: studySession.turnStartedAt }).from(studySession).where(eq(studySession.id, sessionId));
+    expect(session?.turnStartedAt).toBeNull();
+  });
+
+  it('still answers a distress past the budget, moderated with the tutor’s last message, and records it', async () => {
+    await spent({ costMicroEur: DAILY_BUDGET_MICRO_EUR, createdAt: today });
+    const sessionId = await sessionOf();
+    await db.insert(message).values({ sessionId, role: 'tutor', text: 'Comment te sens-tu ce soir ?' });
+    mistral.received.length = 0;
+    mistral.moderations.push({ flagged: ['selfharm'] });
+    expect((await say(sessionId, 'pas bien du tout', asSpender)).reply).toBe(DISTRESS_REPLY);
+    expect(mistral.received.filter((r) => r.path === '/v1/chat/completions')).toEqual([]);
+    expect(JSON.stringify(mistral.received[0]?.body)).toContain('Comment te sens-tu ce soir ?');
+    expect(await db.select({ detectedBy: distressEvent.detectedBy }).from(distressEvent).where(eq(distressEvent.sessionId, sessionId))).toEqual([
+      { detectedBy: 'moderation' },
+    ]);
+    // The session closed, its fixed reply needs no budget.
+    expect((await say(sessionId, 'Bonjour', asSpender)).reply).toBe(DISTRESS_REPLY);
+  });
+
+  it('runs one turn of the student at a time, whatever the session: parallel sessions would all pass the same check', async () => {
+    await spent();
+    const running = await sessionOf();
+    const other = await sessionOf();
+    await db
+      .update(studySession)
+      .set({ turnStartedAt: sql`now()` })
+      .where(eq(studySession.id, running));
+    expect((await say(other, 'Bonjour', asSpender)).status).toBe(409);
+    await db.update(studySession).set({ turnStartedAt: null }).where(eq(studySession.id, running));
+    mistral.chat.push(analysis(), { text: 'Bonjour !' });
+    expect((await say(other, 'Bonjour', asSpender)).reply).toBe('Bonjour !');
   });
 });

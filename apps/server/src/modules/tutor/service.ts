@@ -7,7 +7,8 @@
  */
 
 import type { Logger } from 'pino';
-import { detectDistress, DISTRESS_REPLY } from '../../domain/distress';
+import { detectDistress, DISTRESS_REPLY, type DistressSource } from '../../domain/distress';
+import { DAILY_BUDGET_MICRO_EUR, QUOTA_RESET_HOUR, quotaDayStart } from '../../domain/quota';
 import type { SchoolLevel } from '../../domain/levels';
 import type { Ai } from '../../platform/ai/client';
 import type { InputModeration, Moderation } from '../../platform/ai/moderation';
@@ -45,6 +46,8 @@ export interface TurnInput {
 export interface OpenTurn {
   student: { id: string; name: string; level: SchoolLevel };
   session: { id: string; subject: TurnAnalysis['subject'] | null; closedAt: Date | null; turnStartedAt: Date };
+  /** A distress already seen past the quota: the turn answers it, and nothing else. */
+  distress: { source: DistressSource; flagged: string[] | null } | null;
 }
 
 const analysisRecord = ({ error, ...analysis }: TurnAnalysis) => (error === undefined ? analysis : null);
@@ -64,16 +67,31 @@ export function createTutorService({ repository, students, ai, moderation, logge
       return null;
     });
 
-  async function turn({ student: learner, session }: OpenTurn, input: TurnInput): Promise<string> {
+  const fixed = { model, promptVersion: TURN_PROMPT_VERSION, newExercise: false, findings: [] };
+  const fixedReply = (studentText: string) => ({ studentText, tutorText: DISTRESS_REPLY, replay: null });
+
+  /** The fixed reply to a distress, the event recorded and the session closed; no failure to store it keeps the reply from the student. */
+  async function answerDistress(studentId: string, sessionId: string, studentText: string, distress: NonNullable<OpenTurn['distress']>) {
+    await repository
+      .closeForDistress(studentId, sessionId, distress.source, fixedReply(studentText), {
+        ...fixed,
+        inputFlagged: distress.flagged,
+        outcome: 'distress',
+      })
+      .catch((err: unknown) => {
+        logger.error({ err }, 'Distress not stored');
+      });
+    return DISTRESS_REPLY;
+  }
+
+  async function turn({ student: learner, session, distress }: OpenTurn, input: TurnInput): Promise<string> {
     const studentText = input.text;
-    const fixed = { model, promptVersion: TURN_PROMPT_VERSION, newExercise: false, findings: [] };
-    const fixedReply = { studentText, tutorText: DISTRESS_REPLY, replay: null };
 
     // The conversation stopped at a distress: any later message gets the fixed reply again.
     if (session.closedAt) {
       await repository
         .saveTurn(session.id, {
-          exchange: fixedReply,
+          exchange: fixedReply(studentText),
           subject: null,
           newExercise: null,
           exerciseId: null,
@@ -86,6 +104,8 @@ export function createTutorService({ repository, students, ai, moderation, logge
       return DISTRESS_REPLY;
     }
 
+    if (distress) return answerDistress(learner.id, session.id, studentText, distress);
+
     const [history, current] = await Promise.all([repository.window(session.id, WINDOW), repository.currentExercise(learner.id, session.id)]);
     const lastTutorText = history.findLast((row) => row.role === 'tutor')?.text ?? null;
     // Started together; the distress waits for the moderation only, and drops the analysis.
@@ -95,21 +115,9 @@ export function createTutorService({ repository, students, ai, moderation, logge
     );
     const inputModeration = await moderateInput(lastTutorText, studentText);
 
-    // Distress before anything else: no sheet, no tutor, the fixed reply. No failure to store it
-    // keeps the reply from the student.
+    // Distress before anything else: no sheet, no tutor, the fixed reply.
     const source = detectDistress(studentText, inputModeration?.flagged.includes('selfharm') ?? false);
-    if (source) {
-      await repository
-        .closeForDistress(learner.id, session.id, source, fixedReply, {
-          ...fixed,
-          inputFlagged: inputModeration?.flagged ?? null,
-          outcome: 'distress',
-        })
-        .catch((err: unknown) => {
-          logger.error({ err }, 'Distress not stored');
-        });
-      return DISTRESS_REPLY;
-    }
+    if (source) return answerDistress(learner.id, session.id, studentText, { source, flagged: inputModeration?.flagged ?? null });
     const analysis = await analysed;
 
     // The detected subject, else the session's: the first one named stays the session's.
@@ -216,14 +224,38 @@ export function createTutorService({ repository, students, ai, moderation, logge
       return repository.listMessages(userId, sessionId);
     },
 
-    /** Before the stream: the student, their session, and one turn at a time in it. */
-    async openTurn(userId: string, sessionId: string): Promise<OpenTurn> {
+    /**
+     * Before the stream: the student, their session, one turn at a time in it, and the day's quota.
+     * Past the quota no model writes, but a distress still gets the fixed reply: no limit keeps it
+     * from the student. A quota that cannot be read refuses the turn.
+     */
+    async openTurn(userId: string, sessionId: string, input: TurnInput): Promise<OpenTurn> {
       const learner = await student(userId);
       const started = await repository.startTurn(userId, sessionId);
       if (!started) throw new Problem((await repository.findSession(userId, sessionId)) ? 'TURN_IN_PROGRESS' : 'NOT_FOUND');
       const { turnStartedAt } = started;
       if (!turnStartedAt) throw new Error('Turn started without its time');
-      return { student: learner, session: { id: sessionId, subject: started.subject, closedAt: started.closedAt, turnStartedAt } };
+      const opened: OpenTurn = {
+        student: learner,
+        session: { id: sessionId, subject: started.subject, closedAt: started.closedAt, turnStartedAt },
+        distress: null,
+      };
+      try {
+        // A closed session's fixed reply calls no model.
+        if (started.closedAt || (await repository.spentSince(learner.id, quotaDayStart(new Date()))) < DAILY_BUDGET_MICRO_EUR) return opened;
+        // Moderated with the tutor's last message, as every turn is: context tells a distress apart.
+        const lastTutorText = (await repository.window(sessionId, 2)).findLast((row) => row.role === 'tutor')?.text ?? null;
+        const moderated = await moderateInput(lastTutorText, input.text);
+        const source = detectDistress(input.text, moderated?.flagged.includes('selfharm') ?? false);
+        if (!source) throw new Problem('QUOTA_EXCEEDED', `Le quota du jour revient à ${String(QUOTA_RESET_HOUR)} h.`);
+        return { ...opened, distress: { source, flagged: moderated?.flagged ?? null } };
+      } catch (error) {
+        // The refusal reaches the student even when the session cannot be freed: the lock then expires.
+        await repository.endTurn(sessionId, turnStartedAt).catch((err: unknown) => {
+          logger.error({ err }, 'Session not freed');
+        });
+        throw error;
+      }
     },
 
     /** The turn's reply; the session is free for the next turn whatever happens. */

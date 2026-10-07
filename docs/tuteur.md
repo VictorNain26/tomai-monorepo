@@ -300,9 +300,11 @@ quotas et rentabilité : `etudes/2026-10-07/rentabilite.md`.
 - Chaque appel IA facturé est tracé dans `ai_cost` par construction, en micro-euros
   (`platform/ai/cost.ts`) : chat, analyse du tour, fiche, diagnostic, titre, résumé, lecture
   d'image, cartes, STT, TTS. La modération, gratuite, ne l'est pas.
-- Le quota est un budget du jour, lu dans `ai_cost` : le coût réel, tokens en cache à
-  leur prix (10 %), lecture vocale comprise, jamais des tokens bruts (`modules/billing/quota.ts`,
-  budgets dans `quota-config.ts`).
+- Le quota est un budget du jour par élève, lu dans `ai_cost` : le coût réel, tokens en cache à
+  leur prix (10 %), lecture vocale comprise, jamais des tokens bruts ; 2 c en Gratuit, 10 c en
+  Complet avec le paiement, le jour commençant à 4 h à Paris (`domain/quota.ts`). Vérifié à
+  l'ouverture d'un tour (`modules/tutor/service.ts`) : au-delà, le tour est refusé avant tout
+  modèle, sauf une détresse ; un quota illisible refuse le tour.
 - Les fiches de révision sont réservées au Complet, qu'elles viennent de la route de
   génération ou de l'outil du chat.
 - Le résumé de conversation est incrémental : il ne se relance qu'après un nombre fixe de
