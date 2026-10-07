@@ -1,6 +1,7 @@
 /**
  * The tables of better-auth 1.7, field for field as its core declares them
- * (@better-auth/core `getAuthTables`): required there is NOT NULL here.
+ * (@better-auth/core `getAuthTables`), with the fields of the username plugin
+ * (better-auth/plugins/username/schema): required there is NOT NULL here.
  */
 
 import { boolean, index, pgTable, text, timestamp } from 'drizzle-orm/pg-core';
@@ -16,6 +17,8 @@ export const user = pgTable('user', {
   email: text('email').notNull().unique(),
   emailVerified: boolean('email_verified').notNull().default(false),
   image: text('image'),
+  username: text('username').unique(),
+  displayUsername: text('display_username'),
   ...timestamps,
 });
 

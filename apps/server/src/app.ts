@@ -7,6 +7,7 @@ import { contextStorage } from 'hono/context-storage';
 import { requestId } from 'hono/request-id';
 import type { Logger } from 'pino';
 import type { Config } from './config';
+import { householdModule } from './modules/household';
 import type { Auth } from './platform/auth/auth';
 import type { Db } from './platform/db/client';
 import type { AppEnv } from './platform/http/env';
@@ -46,6 +47,7 @@ export function createApp({ config, logger, db, auth, lifecycle }: AppDeps) {
       c.header('Cache-Control', 'no-store');
     })
     .on(['GET', 'POST'], '/api/auth/*', (c) => auth.handler(c.req.raw))
+    .route('/api/household', householdModule({ db, auth }))
     .route('/health', healthRoutes({ db, lifecycle, logger }))
     .onError(problemHandler(logger))
     .notFound(notFound);
