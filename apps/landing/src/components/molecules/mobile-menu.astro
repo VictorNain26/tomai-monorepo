@@ -5,7 +5,13 @@ import NavLinks from './nav-links.astro';
 ---
 
 <mobile-menu>
-  <button type="button" data-open aria-haspopup="dialog" aria-label="Ouvrir le menu" class={buttonVariants({ variant: 'ghost', size: 'icon' })}>
+  <button
+    type="button"
+    data-open
+    aria-haspopup="dialog"
+    aria-label="Ouvrir le menu"
+    class={buttonVariants({ variant: 'ghost', size: 'icon', className: 'md:hidden' })}
+  >
     <Menu class="size-5" aria-hidden="true" />
   </button>
   <dialog
