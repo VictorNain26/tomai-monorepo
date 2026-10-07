@@ -288,7 +288,8 @@ Cartographie de risque, à valider par un conseil avant l'ouverture.
 
 Le gratuit doit couvrir une soirée de devoirs normale, et le coût d'un élève payant rester
 sous son revenu net dans le pire cas mesuré (vision, « Offre et prix » et critères de
-succès). Coûts mesurés : `etudes/2026-10-01/couts.md`, `etudes/2026-10-06/passage-de-fin.md`.
+succès). Coûts mesurés : `etudes/2026-10-01/couts.md`, `etudes/2026-10-06/passage-de-fin.md` ;
+quotas et rentabilité : `etudes/2026-10-07/rentabilite.md`.
 
 - Chaque appel IA facturé est tracé dans `cost_tracking` par construction, en micro-euros
   (`platform/ai/cost.ts`) : chat, analyse du tour, fiche, diagnostic, titre, résumé, lecture

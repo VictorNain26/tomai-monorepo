@@ -40,8 +40,12 @@ bloquant levé). L'historique vit dans git et les PR.
 - **Prochaine action** : étape 5, le tuteur porté ; l'étude des hébergeurs UE avance en parallèle.
   L'ordre complet est dans l'étude. Test complet dans Chrome à la fin de chaque étape, la première
   à l'étape 6 avec les écrans.
-- **Décisions de Victor en attente**, au moment de l'étape qui en dépend : budgets du quota
-  (étape 5) ; offre Mistral payante pour paralléliser l'évaluation et juge d'une autre famille,
+- **Rentabilité et quotas** (`etudes/2026-10-07/rentabilite.md`) : le gratuit décide de la
+  rentabilité, la distribution est le vrai risque ; quotas proposés de 2 c (Gratuit) et 10 c
+  (Complet) par élève et par jour, voix comprise, remis à zéro à 4 h.
+- **Décisions de Victor en attente**, au moment de l'étape qui en dépend : les quotas proposés par
+  l'étude de rentabilité (étape 5) ; l'année scolaire à 69 € payée d'avance, sans renouvellement
+  (paiement, lot 3) ; offre Mistral payante pour paralléliser l'évaluation et juge d'une autre famille,
   seulement s'il est très bon marché (étape 8).
 - **PR ouvertes :** `gh pr list`.
 - **Landing en ligne gelée** jusqu'au lot 4, hors de la refonte : seuls des correctifs d'honnêteté
@@ -160,7 +164,7 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
 | Ouvrir le compte de l'hébergeur UE recommandé par l'étude | Préproduction, lot 3 | à faire, après l'étude |
 | Langfuse : la description de la file d'annotation `tom-judge-agreement` renvoie encore à `docs/agent.md`, devenu `docs/tuteur.md` ; la corriger dans l'interface (l'API n'a pas de mise à jour de file) | Évaluation | à faire |
 | Demander le Zero Data Retention : réservé au paiement à l'usage (« only with pay-as-you-go », [centre d'aide Mistral](https://help.mistral.ai/en/articles/347612-can-i-activate-zero-data-retention-zdr)), or le compte est sur l'offre gratuite (8,50 € d'API inclus par mois, paiement à l'usage désactivé, constaté le 2026-10-02). Activer le paiement à l'usage avec un plafond, puis envoyer la demande avec sa justification (mineurs, RGPD), et dans le même envoi la question sur la clause (c) des conditions commerciales : un service pour des 10-15 ans, avec l'accord de leurs parents, est-il permis ; vérifier ensuite Admin › API › Confidentialité. L'entraînement sur les appels API et les modèles Labs y sont désactivés | Porte avant ouverture | à faire |
-| Trancher le statut juridique avec un expert-comptable : rester micro-entrepreneur ou créer une SASU (le GAR n'accepte que des personnes morales ; seuils de TVA et de la micro calculés en abonnés dans `etudes/2026-10-01/statut-juridique.md`) | Avant l'ouverture, au démarrage du lot 3 | à faire |
+| Trancher avec un expert-comptable, en une consultation : rester micro-entrepreneur (recommandé, `etudes/2026-10-07/rentabilite.md`) ou créer une SASU (le GAR n'accepte que des personnes morales, `etudes/2026-10-01/statut-juridique.md`) ; BIC ou BNC ; taux de TVA de Tom, normal ou 5,5 % ; CFP. Donner avant le chiffre d'affaires annuel de l'activité micro existante et le revenu fiscal de référence de 2024 (versement libératoire), que le modèle de l'étude attend (`EXISTING_CA`) | Avant l'ouverture, au démarrage du lot 3 | à faire |
 | Vérifier Tom dans le hero sur un iPhone (Safari : salut et respiration sans fond noir) | Landing en ligne | à faire |
 | Relecture des 32 exercices : confiée à Claude le 2026-10-02 et outillée (32 citations retrouvées mot pour mot dans leur PDF officiel, 14 sources de réponse en ligne, 14 réponses recalculées par le test) ; un regard pédagogique humain sur un échantillon reste à prévoir avant de publier les mesures | Lot 1, jeu rejouable par un tiers ; lot 4 pour la publication | fait |
 | Projet Langfuse « tomai » en région UE (`https://cloud.langfuse.com`, offre Hobby) et ses clés dans `apps/server/.env`, vérifiées par l'API (HTTP 200) le 2026-10-02 | Lot 1, point 2 | fait |
