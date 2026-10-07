@@ -10,6 +10,7 @@ import { createAuth } from '../../platform/auth/auth';
 import { createBackgroundTasks } from '../../platform/lifecycle/background';
 import { createLifecycle } from '../../platform/lifecycle/shutdown';
 import { testDatabase } from '../../testing/database';
+import { fakeMistral } from '../../testing/mistral';
 import { httpClient, ORIGIN } from '../../testing/http';
 import { memoryMailer } from '../../testing/mailer';
 import { accountDeletion } from '../household';
@@ -19,6 +20,7 @@ import { createTutorRepository } from './repository';
 import { exercise, message } from './schema';
 
 const { db } = await testDatabase();
+const mistral = fakeMistral();
 const mail = memoryMailer();
 const auth = createAuth(
   db,
@@ -26,7 +28,14 @@ const auth = createAuth(
   { mailer: mail.mailer, logger: pino({ level: 'silent' }), background: createBackgroundTasks().run, deleteUser: accountDeletion(db) },
 );
 const api = httpClient(
-  createApp({ config: { production: false, webDistDir: undefined }, logger: pino({ level: 'silent' }), db, auth, lifecycle: createLifecycle() }),
+  createApp({
+    config: { production: false, webDistDir: undefined },
+    logger: pino({ level: 'silent' }),
+    db,
+    ...mistral.deps(db, pino({ level: 'silent' })),
+    auth,
+    lifecycle: createLifecycle(),
+  }),
   mail,
 );
 

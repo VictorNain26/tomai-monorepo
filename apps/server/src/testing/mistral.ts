@@ -6,7 +6,11 @@
  */
 
 import { afterAll } from 'bun:test';
+import type { Logger } from 'pino';
 import type { MistralConfig } from '../config';
+import { createAi } from '../platform/ai/client';
+import { createModeration } from '../platform/ai/moderation';
+import type { Db } from '../platform/db/client';
 
 interface WireUsage {
   prompt_tokens: number;
@@ -99,5 +103,11 @@ export function fakeMistral() {
     ...overrides,
   });
 
-  return { chat, moderations, received, config };
+  /** The app's AI dependencies, against this server. */
+  const deps = (db: Db, logger: Logger) => ({
+    ai: createAi({ mistral: config(), db, logger }),
+    moderation: createModeration({ mistral: config(), logger }),
+  });
+
+  return { chat, moderations, received, config, deps };
 }

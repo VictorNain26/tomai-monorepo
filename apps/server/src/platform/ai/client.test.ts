@@ -50,11 +50,16 @@ describe('generateText', () => {
 
   it('answers, and bills the student for the tokens Mistral reports', async () => {
     mistral.chat.push({ text: 'Une fraction', usage: { prompt_tokens: 1000, completion_tokens: 100 } });
-    expect(await ai.generateText(call())).toBe('Une fraction');
+    expect((await ai.generateText(call())).text).toBe('Une fraction');
     // Outside the EU endpoint, no upcharge: 0,00021 $ × 0,85.
     expect(await costs()).toMatchObject([
       { operation: 'title', model: 'mistral-small-2603', inputTokens: 1000, outputTokens: 100, costMicroEur: 179 },
     ]);
+  });
+
+  it('gives the response messages as the model produced them, for a later turn to replay', async () => {
+    mistral.chat.push({ text: 'Que cherches-tu ?' });
+    expect((await ai.generateText(call())).responseMessages).toEqual([{ role: 'assistant', content: [{ type: 'text', text: 'Que cherches-tu ?' }] }]);
   });
 
   it('sends the system prompt first, no reasoning by default, the cache key and the output cap', async () => {
@@ -88,7 +93,7 @@ describe('generateText', () => {
 
   it('keeps the answer when the cost cannot be written, and logs it', async () => {
     mistral.chat.push({ text: 'ok' });
-    expect(await ai.generateText(call({ owner: { studentId: 'nobody' } }))).toBe('ok');
+    expect((await ai.generateText(call({ owner: { studentId: 'nobody' } }))).text).toBe('ok');
     expect(lines).toContainEqual(expect.objectContaining({ msg: 'AI cost not written', operation: 'title' }));
   });
 
@@ -122,7 +127,7 @@ describe('generateText', () => {
   it('retries an unavailable Mistral as many times as configured', async () => {
     const patient = createAi({ mistral: mistral.config({ retryAttempts: 1, timeoutMs: 10_000 }), db, logger });
     mistral.chat.push({ status: 503 }, { text: 'ok' });
-    expect(await patient.generateText(call())).toBe('ok');
+    expect((await patient.generateText(call())).text).toBe('ok');
     expect(mistral.received).toHaveLength(2);
   }, 10_000);
 

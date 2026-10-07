@@ -14,10 +14,12 @@ import { accountDeletion } from './modules/household';
 import { createAuth } from './platform/auth/auth';
 import { createLifecycle } from './platform/lifecycle/shutdown';
 import { testDatabase } from './testing/database';
+import { fakeMistral } from './testing/mistral';
 import { memoryMailer } from './testing/mailer';
 
 const ORIGIN = 'http://localhost:3002';
 const { db } = await testDatabase();
+const mistral = fakeMistral();
 const dist = mkdtempSync(join(tmpdir(), 'web-dist-'));
 writeFileSync(join(dist, 'index.html'), '<!doctype html><title>Tom</title>');
 afterAll(() => {
@@ -29,6 +31,7 @@ const app = createApp({
   config: { production: false, webDistDir: dist },
   logger: pino({ level: 'silent' }),
   db,
+  ...mistral.deps(db, pino({ level: 'silent' })),
   auth: createAuth(
     db,
     { publicUrl: ORIGIN, authSecret: 'x'.repeat(32) },

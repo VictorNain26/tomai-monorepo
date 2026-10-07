@@ -30,6 +30,8 @@ export const studySession = pgTable(
     subject: subjectFamily('subject'),
     /** Set by a distress: every later message gets the fixed reply. */
     closedAt: timestamp('closed_at', { withTimezone: true }),
+    /** One turn at a time: set when a turn starts, cleared when it ends; a stale one is taken over. */
+    turnStartedAt: timestamp('turn_started_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [index('study_session_student_id_created_at_idx').on(table.studentId, table.createdAt)],
@@ -82,6 +84,40 @@ export const exercise = pgTable(
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [index('exercise_session_id_position_idx').on(table.sessionId, table.position)],
+);
+
+export const turnOutcome = pgEnum('turn_outcome', ['passed', 'regenerated', 'fallback', 'distress', 'closed']);
+
+/**
+ * What the code decided at each turn, to explain a reply and compare prompt versions
+ * (`docs/etudes/2026-10-06/refonte-architecture.md`, « Tuteur »): no word of the student nor of
+ * the tutor, only the decisions and the versions.
+ */
+export const turnRecord = pgTable(
+  'turn_record',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    sessionId: uuid('session_id')
+      .notNull()
+      .references(() => studySession.id, { onDelete: 'cascade' }),
+    /** The analysis' booleans and subject; null when it failed. */
+    analysis: jsonb('analysis').$type<Record<string, boolean | string>>(),
+    /** The categories moderation recorded on the student's message; null when it could not answer. */
+    inputFlagged: jsonb('input_flagged').$type<string[]>(),
+    exerciseId: uuid('exercise_id').references(() => exercise.id, { onDelete: 'set null' }),
+    newExercise: boolean('new_exercise').notNull(),
+    hintLevel: integer('hint_level'),
+    verdict: text('verdict'),
+    decidedBy: text('decided_by'),
+    reasoningEffort: text('reasoning_effort'),
+    model: text('model').notNull(),
+    promptVersion: text('prompt_version').notNull(),
+    /** What the check held back from the first text. */
+    findings: jsonb('findings').$type<string[]>().notNull(),
+    outcome: turnOutcome('outcome').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index('turn_record_session_id_created_at_idx').on(table.sessionId, table.createdAt)],
 );
 
 export const distressEvent = pgTable(

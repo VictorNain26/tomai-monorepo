@@ -14,12 +14,14 @@ import { PAIRING_PREFIX } from '../../platform/auth/pairing';
 import { account, session, user, verification } from '../../platform/auth/schema';
 import { createLifecycle } from '../../platform/lifecycle/shutdown';
 import { testDatabase } from '../../testing/database';
+import { fakeMistral } from '../../testing/mistral';
 import { httpClient, ORIGIN, type Student } from '../../testing/http';
 import { memoryMailer } from '../../testing/mailer';
 import { accountDeletion } from './index';
 import { householdMember, studentProfile } from './schema';
 
 const { db } = await testDatabase();
+const mistral = fakeMistral();
 const mail = memoryMailer();
 const auth = createAuth(
   db,
@@ -34,6 +36,7 @@ function client() {
       config: { production: false, webDistDir: undefined },
       logger: pino({ level: 'silent' }),
       db,
+      ...mistral.deps(db, pino({ level: 'silent' })),
       auth,
       lifecycle: createLifecycle(),
     }),

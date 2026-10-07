@@ -12,6 +12,7 @@ import { createApp } from '../../app';
 import { accountDeletion } from '../../modules/household';
 import { household, householdMember } from '../../modules/household/schema';
 import { testDatabase } from '../../testing/database';
+import { fakeMistral } from '../../testing/mistral';
 import { memoryMailer } from '../../testing/mailer';
 import { createLifecycle } from '../lifecycle/shutdown';
 import { createAuth } from './auth';
@@ -20,6 +21,7 @@ import { session, user } from './schema';
 const ORIGIN = 'http://localhost:3002';
 const PASSWORD = 'un mot de passe solide';
 const { db } = await testDatabase();
+const mistral = fakeMistral();
 const mail = memoryMailer();
 const auth = createAuth(
   db,
@@ -30,6 +32,7 @@ const app = createApp({
   config: { production: false, webDistDir: undefined },
   logger: pino({ level: 'silent' }),
   db,
+  ...mistral.deps(db, pino({ level: 'silent' })),
   auth,
   lifecycle: createLifecycle(),
 });

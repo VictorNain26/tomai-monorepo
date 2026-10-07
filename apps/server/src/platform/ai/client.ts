@@ -5,13 +5,25 @@
  */
 
 import { createMistral, type MistralLanguageModelChatOptions } from '@ai-sdk/mistral';
-import { generateText as generate, NoObjectGeneratedError, Output, TypeValidationError, type LanguageModelUsage, type ModelMessage } from 'ai';
+import {
+  generateText as generate,
+  NoObjectGeneratedError,
+  Output,
+  TypeValidationError,
+  type LanguageModelUsage,
+  type AssistantModelMessage,
+  type ModelMessage,
+  type ToolModelMessage,
+} from 'ai';
 import type { Logger } from 'pino';
 import type { z } from 'zod';
 import type { MistralConfig } from '../../config';
 import type { Db } from '../db/client';
 import { pricing, type Usage } from './cost';
 import { insertCost } from './repository';
+
+/** What a model call answers, as `response.messages` gives it: the assistant's messages and tool results. */
+export type ResponseMessage = AssistantModelMessage | ToolModelMessage;
 
 /** Who a call is billed to: a student, or nobody outside a student (evaluation, live tests). */
 type Owner = { studentId: string } | null;
@@ -42,7 +54,10 @@ interface StructuredCall<T> extends TextCall {
 }
 
 export interface Ai {
-  generateText: (call: TextCall) => Promise<string>;
+  /** The dated model every call uses. */
+  model: string;
+  /** The text, and the response messages as the model produced them, reasoning included, for a later turn to replay. */
+  generateText: (call: TextCall) => Promise<{ text: string; responseMessages: ResponseMessage[] }>;
   generateStructured: <T>(call: StructuredCall<T>) => Promise<{ object: T; usage: Usage }>;
 }
 
@@ -107,10 +122,12 @@ export function createAi({ mistral, db, logger }: { mistral: MistralConfig; db: 
   }
 
   return {
+    model: mistral.model,
+
     async generateText(call) {
       const result = await generate({ ...settings(call, AbortSignal.timeout(deadline(call))), messages: call.messages });
       await record(call, usageOf(result.usage));
-      return result.text;
+      return { text: result.text, responseMessages: result.responseMessages };
     },
 
     async generateStructured<T>(call: StructuredCall<T>) {

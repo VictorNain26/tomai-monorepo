@@ -7,6 +7,7 @@
  */
 
 import type { Logger } from 'pino';
+import type { MathCheck } from '../../../domain/exercise-math';
 import { findLeakForm } from '../../../domain/leak';
 import type { SchoolLevel } from '../../../domain/levels';
 import type { SubjectFamily } from '../../../domain/subjects';
@@ -46,6 +47,8 @@ export interface ExerciseTurn {
   /** The exercise of this turn; `isNew` when the student brought it. */
   exercise: ExerciseState | null;
   isNew: boolean;
+  /** What mathjs said of a new sheet's answer; null for the exercise in progress. */
+  mathCheck: MathCheck | null;
   diagnosis: Diagnosis | null;
   /** The level of this turn's help, null without a contract. */
   hintLevel: number | null;
@@ -93,7 +96,9 @@ export async function prepareExerciseTurn(deps: { ai: Ai; logger: Logger }, requ
     : current;
   const isNew = prepared !== null;
   const attempt = analysis.proposesAnswer;
-  if (!exercise || (exercise.solved && !attempt)) return { exercise, isNew, diagnosis: null, hintLevel: null, contract: null, change: null };
+  const mathCheck = prepared?.mathCheck ?? null;
+  if (!exercise || (exercise.solved && !attempt))
+    return { exercise, isNew, mathCheck, diagnosis: null, hintLevel: null, contract: null, change: null };
 
   // An uncertain sheet cannot judge, nor a missing one: no diagnosis is asked of them.
   const diagnosis =
@@ -113,6 +118,7 @@ export async function prepareExerciseTurn(deps: { ai: Ai; logger: Logger }, requ
   return {
     exercise,
     isNew,
+    mathCheck,
     diagnosis,
     hintLevel,
     change: { hintLevel, stuckTurns, stepDone, solved: attempt ? diagnosis?.verdict === 'correct' : undefined },

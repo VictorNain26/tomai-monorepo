@@ -6,6 +6,8 @@
 import { createApp } from './app';
 import { loadConfig } from './config';
 import { accountDeletion } from './modules/household';
+import { createAi } from './platform/ai/client';
+import { createModeration } from './platform/ai/moderation';
 import { createAuth } from './platform/auth/auth';
 import { createDb } from './platform/db/client';
 import { logMailer, scalewayMailer } from './platform/email/mailer';
@@ -46,7 +48,9 @@ const lifecycle = createLifecycle();
 const mailer = config.mail ? scalewayMailer(config.mail) : logMailer(logger);
 const tasks = createBackgroundTasks();
 const auth = createAuth(database.db, config, { mailer, logger, background: tasks.run, deleteUser: accountDeletion(database.db) });
-const app = createApp({ config, logger, db: database.db, auth, lifecycle });
+const ai = createAi({ mistral: config.mistral, db: database.db, logger });
+const moderation = createModeration({ mistral: config.mistral, logger });
+const app = createApp({ config, logger, db: database.db, auth, ai, moderation, lifecycle });
 
 // Bun closes an idle connection after 10 s by default, which would cut a streamed answer.
 const server = Bun.serve({ port: config.port, fetch: app.fetch, idleTimeout: 30 });

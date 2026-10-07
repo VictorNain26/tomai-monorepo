@@ -37,7 +37,7 @@ const OUTPUT_BLOCKING = ['sexual', 'hate_and_discrimination', 'violence_and_thre
  */
 const INPUT_RECORDED = ['selfharm', 'sexual', 'jailbreaking', 'pii', 'violence_and_threats', 'dangerous', 'criminal'] as const;
 
-interface InputModeration {
+export interface InputModeration {
   /** The recorded categories Mistral flags. */
   flagged: string[];
   /** Null when Mistral returns no score: a missing score is not a low one. */

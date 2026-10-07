@@ -16,6 +16,7 @@ const PROBLEMS = {
   UNAUTHENTICATED: { status: 401, title: 'Connexion requise' },
   FORBIDDEN: { status: 403, title: 'Accès refusé' },
   NOT_FOUND: { status: 404, title: 'Ressource introuvable' },
+  TURN_IN_PROGRESS: { status: 409, title: 'Un tour est déjà en cours dans cette séance' },
   RATE_LIMITED: { status: 429, title: 'Trop de requêtes' },
   INTERNAL_ERROR: { status: 500, title: 'Erreur interne' },
 } as const satisfies Record<string, { status: ContentfulStatusCode; title: string }>;

@@ -1,5 +1,16 @@
 import { describe, expect, it } from 'bun:test';
-import { stripPromptTags, wrapAttachedFiles, wrapUserMessage } from './fences';
+import { sanitize, stripPromptTags, wrapAttachedFiles, wrapUserMessage } from './fences';
+
+describe('sanitize', () => {
+  it('removes NUL, the C0 controls and DEL', () => {
+    expect(sanitize('a\u0000b\u0007c\u000Bd\u000Ce\u001Ff\u007Fg')).toBe('abcdefg');
+  });
+
+  it('keeps tabs, line breaks, accents and emoji', () => {
+    const text = 'Énoncé\t1\n\r\nOK 🦦 é';
+    expect(sanitize(text)).toBe(text);
+  });
+});
 
 describe('stripPromptTags', () => {
   it('retire les fences de contenu non-maîtrisé', () => {

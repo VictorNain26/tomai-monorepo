@@ -81,7 +81,7 @@ export default [
             allow(file('root'), file(['root', 'config']), element(['platform', 'domain']), inModule(['module-index'])),
             // Another module is reached by its index.ts only.
             allow(inModule(['module-index']), sameModule(['routes', 'service', 'repository']), inModule(['module-index']), element('platform')),
-            allow(inModule(['routes']), sameModule(['service']), element(['platform', 'domain'])),
+            allow(inModule(['routes']), sameModule(['service', 'core']), element(['platform', 'domain'])),
             allow(inModule(['service']), sameModule(['repository', 'core']), inModule(['module-index']), element(['platform', 'domain'])),
             allow(inModule(['core']), sameModule(['core']), element(['platform', 'domain', 'referential'])),
             // The tables store the shapes core/ decides.
