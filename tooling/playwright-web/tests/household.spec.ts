@@ -1,18 +1,5 @@
-import { devices, expect, test, type Browser, type Page, type TestInfo } from '@playwright/test';
-import { guardian } from '../guardian';
-
-// The child's own phone, of the same kind as the guardian's.
-const childPhone = (browser: Browser, testInfo: TestInfo) =>
-  browser.newContext({ ...devices[testInfo.project.name === 'iphone' ? 'iPhone 15' : 'Pixel 7'] });
-
-async function addChild(page: Page, name: string) {
-  await page.getByLabel('Son prénom', { exact: true }).fill(name);
-  await page.getByLabel('Sa classe', { exact: true }).selectOption({ label: 'Cinquième' });
-  await page.getByLabel('Son mois de naissance').fill('2014-03');
-  await page.getByRole('button', { name: 'Ajouter' }).click();
-  await page.getByRole('link', { name: new RegExp(`^${name}`) }).click();
-  await expect(page.getByRole('heading', { level: 1, name })).toBeVisible();
-}
+import { expect, test } from '@playwright/test';
+import { addChild, childPhone, guardian } from '../guardian';
 
 test('a guardian adds a child, changes their class, then deletes their account', async ({ page }) => {
   await guardian(page, 'foyer');
