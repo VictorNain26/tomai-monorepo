@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'bun:test';
+import { APICallError } from 'ai';
 import { Hono } from 'hono';
 import { hc } from 'hono/client';
 import { isProblem, parseResponse } from './api';
@@ -28,5 +29,13 @@ describe('isProblem', () => {
   it('is false for a failure without a problem body: text, or no answer at all', async () => {
     expect(isProblem(await failure(client.text.$get()), 'INTERNAL_ERROR')).toBe(false);
     expect(isProblem(new TypeError('Failed to fetch'), 'INTERNAL_ERROR')).toBe(false);
+  });
+
+  it('reads the code of a refused turn, which the chat transport carries as text', () => {
+    const refused = (responseBody: string) =>
+      new APICallError({ message: 'refused', url: '/api/sessions/s/messages', requestBodyValues: {}, statusCode: 429, responseBody });
+    expect(isProblem(refused(JSON.stringify({ code: 'QUOTA_EXCEEDED' })), 'QUOTA_EXCEEDED')).toBe(true);
+    expect(isProblem(refused(JSON.stringify({ code: 'QUOTA_EXCEEDED' })), 'RATE_LIMITED')).toBe(false);
+    expect(isProblem(refused('Bad Gateway'), 'INTERNAL_ERROR')).toBe(false);
   });
 });

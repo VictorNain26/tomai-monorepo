@@ -1,10 +1,9 @@
 /** The student's sessions with Tom, as `/api/sessions` serves them, and their chat. */
 
 import { queryOptions } from '@tanstack/react-query';
-import { APICallError, type UIMessage } from 'ai';
+import type { UIMessage } from 'ai';
 import type { InferRequestType, InferResponseType } from 'hono/client';
-import type { ProblemCode } from 'tomai-server/contract';
-import { api, parseResponse } from './api';
+import { api, isProblem, parseResponse } from './api';
 
 const sessions = api.sessions;
 
@@ -32,26 +31,11 @@ export const toUIMessage = ({ id, role, text }: StoredMessage): UIMessage => ({
 /** The text a message carries, its parts joined. */
 export const textOf = (message: UIMessage | undefined) => (message?.parts ?? []).map((part) => (part.type === 'text' ? part.text : '')).join('');
 
-/** The code of the problem the server answered a turn with; null for a failure without one. */
-export function problemCodeOf(error: Error): string | null {
-  if (!APICallError.isInstance(error) || error.responseBody === undefined) return null;
-  try {
-    const body: unknown = JSON.parse(error.responseBody);
-    return typeof body === 'object' && body !== null && 'code' in body && typeof body.code === 'string' ? body.code : null;
-  } catch {
-    return null;
-  }
-}
-
-const CHAT_MESSAGES = {
-  QUOTA_EXCEEDED: 'Le temps avec Tom est fini pour aujourd’hui. Reviens demain !',
-  TURN_IN_PROGRESS: 'Tom répond encore à ton message précédent : attends sa réponse.',
-  RATE_LIMITED: 'Trop de messages d’un coup. Attends une minute avant de réécrire.',
-} satisfies Partial<Record<ProblemCode, string>>;
-const chatMessages: Partial<Record<string, string>> = CHAT_MESSAGES;
-
 /** A failed turn, in words a student reads; the server's own message never shows. */
 export function chatMessage(error: Error): string {
-  const code = problemCodeOf(error);
-  return (code === null ? undefined : chatMessages[code]) ?? 'Tom n’a pas pu répondre. Réessaie dans un instant.';
+  if (isProblem(error, 'QUOTA_EXCEEDED')) return 'Le temps avec Tom est fini pour aujourd’hui. Reviens demain !';
+  if (isProblem(error, 'TURN_IN_PROGRESS')) return 'Tom répond encore à ton message précédent : attends sa réponse.';
+  if (isProblem(error, 'RATE_LIMITED')) return 'Trop de messages d’un coup. Attends une minute avant de réécrire.';
+  if (isProblem(error, 'INVALID_REQUEST')) return 'Ton message est vide ou trop long.';
+  return 'Tom n’a pas pu répondre. Réessaie dans un instant.';
 }

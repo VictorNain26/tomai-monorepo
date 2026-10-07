@@ -56,4 +56,7 @@ test('a day past the quota is told in French, without the server’s message', a
   await page.getByLabel('Ton message').fill('Bonjour');
   await page.getByRole('button', { name: 'Envoyer' }).click();
   await expect(page.getByRole('alert')).toHaveText('Le temps avec Tom est fini pour aujourd’hui. Reviens demain !');
+  // Nothing was stored: the message leaves the conversation and comes back to the field.
+  await expect(page.getByRole('list', { name: 'Conversation' }).getByRole('listitem')).toHaveCount(0);
+  await expect(page.getByLabel('Ton message')).toHaveValue('Bonjour');
 });

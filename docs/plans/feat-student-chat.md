@@ -30,3 +30,7 @@ Photo et voix (lot 3), mention IA dès la première interaction (lot 3), la mém
 ## Vérification de bout en bout
 
 `bun run typecheck && bun run lint && bun run test`, la suite Playwright du web.
+
+## Décision humaine
+
+Étape 6 sur les composants de base, sans travail de style : Victor, 2026-10-07.

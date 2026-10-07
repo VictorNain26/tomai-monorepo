@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import { APICallError } from 'ai';
-import { chatMessage, problemCodeOf, textOf, toUIMessage } from './chat';
+import { chatMessage, textOf, toUIMessage } from './chat';
 
 const refused = (status: number, responseBody?: string) =>
   new APICallError({
@@ -16,6 +16,7 @@ describe('chatMessage', () => {
     expect(chatMessage(refused(429, JSON.stringify({ code: 'QUOTA_EXCEEDED' })))).toStartWith('Le temps avec Tom est fini');
     expect(chatMessage(refused(409, JSON.stringify({ code: 'TURN_IN_PROGRESS' })))).toStartWith('Tom répond encore');
     expect(chatMessage(refused(429, JSON.stringify({ code: 'RATE_LIMITED' })))).toStartWith('Trop de messages');
+    expect(chatMessage(refused(400, JSON.stringify({ code: 'INVALID_REQUEST' })))).toBe('Ton message est vide ou trop long.');
   });
 
   it('falls back for an unknown code, a body that is not a problem, or a failure of the stream', () => {
@@ -25,14 +26,6 @@ describe('chatMessage', () => {
     expect(chatMessage(refused(500))).toBe(fallback);
     expect(chatMessage(new Error('Tom n’a pas pu répondre. Réessaie dans un instant.'))).toBe(fallback);
     expect(chatMessage(new Error('an internal message'))).toBe(fallback);
-  });
-});
-
-describe('problemCodeOf', () => {
-  it('reads the code of a problem body, and nothing else', () => {
-    expect(problemCodeOf(refused(401, JSON.stringify({ code: 'UNAUTHENTICATED' })))).toBe('UNAUTHENTICATED');
-    expect(problemCodeOf(refused(400, JSON.stringify({ code: 7 })))).toBeNull();
-    expect(problemCodeOf(new TypeError('Failed to fetch'))).toBeNull();
   });
 });
 

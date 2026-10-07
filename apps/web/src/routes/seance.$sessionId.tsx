@@ -1,12 +1,13 @@
 import { useChat } from '@ai-sdk/react';
 import { Button, Input } from '@repo/ui';
-import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
-import { Link, createFileRoute, redirect, useNavigate } from '@tanstack/react-router';
+import { useSuspenseQuery } from '@tanstack/react-query';
+import { Link, createFileRoute, redirect } from '@tanstack/react-router';
 import { DefaultChatTransport } from 'ai';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Notice } from '../components/notice';
 import { Page } from '../components/page';
-import { chatMessage, messagesQuery, problemCodeOf, sessionsQuery, textOf, toUIMessage, type TurnBody } from '../lib/chat';
+import { api, isProblem } from '../lib/api';
+import { chatMessage, messagesQuery, textOf, toUIMessage, type TurnBody } from '../lib/chat';
 import { meQuery } from '../lib/me';
 
 /** A session with Tom: what was said, then the chat. */
@@ -21,34 +22,38 @@ export const Route = createFileRoute('/seance/$sessionId')({
 
 function Session() {
   const { sessionId } = Route.useParams();
-  const navigate = useNavigate();
-  const queryClient = useQueryClient();
+  const { sessionLost } = Route.useRouteContext();
   const { data: stored } = useSuspenseQuery(messagesQuery(sessionId));
   const [text, setText] = useState('');
-  // The server keeps the conversation: a turn sends the new message only.
+  // The server keeps the conversation: a turn sends the new message only, to the chat's session.
   const [transport] = useState(
     () =>
       new DefaultChatTransport({
-        api: `/api/sessions/${sessionId}/messages`,
-        prepareSendMessagesRequest: ({ messages }) => ({ body: { text: textOf(messages.at(-1)), inputMode: 'text' } satisfies TurnBody }),
+        prepareSendMessagesRequest: ({ id, messages }) => ({
+          api: api.sessions[':id'].messages.$path({ param: { id } }),
+          body: { text: textOf(messages.at(-1)), inputMode: 'text' } satisfies TurnBody,
+        }),
       }),
   );
-  const { messages, sendMessage, status, error } = useChat({
+  const { messages, setMessages, sendMessage, status, error } = useChat({
     id: sessionId,
     messages: stored.map(toUIMessage),
     transport,
-    // The first reply names the session, in the background: the list asks again.
-    onFinish: () => {
-      void queryClient.invalidateQueries({ queryKey: sessionsQuery.queryKey });
+    // A refused or failed turn stored nothing: its message leaves the conversation and comes back
+    // to the field, to be sent again.
+    onError: (failure) => {
+      if (isProblem(failure, 'UNAUTHENTICATED')) {
+        sessionLost();
+        return;
+      }
+      setMessages((shown) => {
+        const last = shown.at(-1);
+        if (last?.role !== 'user') return shown;
+        setText(textOf(last));
+        return shown.slice(0, -1);
+      });
     },
   });
-
-  useEffect(() => {
-    if (error && problemCodeOf(error) === 'UNAUTHENTICATED') {
-      queryClient.clear();
-      void navigate({ to: '/connexion' });
-    }
-  }, [error, navigate, queryClient]);
 
   const busy = status === 'submitted' || status === 'streaming';
   const send = () => {
@@ -95,7 +100,6 @@ function Session() {
           autoComplete="off"
           placeholder="Écris à Tom"
           value={text}
-          maxLength={4000}
           onChange={(event) => {
             setText(event.target.value);
           }}
