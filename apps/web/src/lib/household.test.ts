@@ -17,7 +17,8 @@ const failure = async (code: string, status: 400 | 404 | 429 | 500) => {
 
 describe('householdMessage', () => {
   it('says what to fix for each problem, in French', async () => {
-    expect(householdMessage(await failure('INVALID_REQUEST', 400))).toStartWith('Vérifiez le prénom');
+    expect(householdMessage(await failure('INVALID_REQUEST', 400))).toBe('Vérifiez ce que vous avez saisi.');
+    expect(householdMessage(await failure('INVALID_REQUEST', 400), 'Votre enfant a entre 5 et 20 ans.')).toBe('Votre enfant a entre 5 et 20 ans.');
     expect(householdMessage(await failure('NOT_FOUND', 404))).toStartWith('Cet enfant ou cet appareil');
     expect(householdMessage(await failure('RATE_LIMITED', 429))).toStartWith('Trop d’essais');
   });

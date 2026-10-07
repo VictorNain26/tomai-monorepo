@@ -76,8 +76,18 @@ function AddStudent() {
       <form noValidate onSubmit={(event) => void submit(event)} className="flex flex-col gap-4">
         <Field label="Son prénom" autoComplete="off" {...form.register('name')} error={form.formState.errors.name?.message} />
         <SelectField label="Sa classe" options={LEVEL_LABELS} {...form.register('level')} error={form.formState.errors.level?.message} />
-        <Field label="Son mois de naissance" type="month" {...form.register('birthMonth')} error={form.formState.errors.birthMonth?.message} />
-        {create.error && <Notice tone="error">{householdMessage(create.error)}</Notice>}
+        <Field
+          label="Son mois de naissance"
+          type="month"
+          placeholder="AAAA-MM"
+          {...form.register('birthMonth')}
+          error={form.formState.errors.birthMonth?.message}
+        />
+        {create.error && (
+          <Notice tone="error">
+            {householdMessage(create.error, 'Vérifiez le prénom et le mois de naissance : votre enfant a entre 5 et 20 ans.')}
+          </Notice>
+        )}
         <Button type="submit" disabled={create.isPending}>
           Ajouter
         </Button>

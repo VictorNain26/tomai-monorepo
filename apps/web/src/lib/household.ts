@@ -32,8 +32,8 @@ export const devicesQuery = (studentId: string) =>
   });
 
 /** A failed household request, in words a parent reads; the server's own message never shows. */
-export function householdMessage(error: unknown): string {
-  if (isProblem(error, 'INVALID_REQUEST')) return 'Vérifiez le prénom et le mois de naissance : votre enfant a entre 5 et 20 ans.';
+export function householdMessage(error: unknown, invalid = 'Vérifiez ce que vous avez saisi.'): string {
+  if (isProblem(error, 'INVALID_REQUEST')) return invalid;
   if (isProblem(error, 'NOT_FOUND')) return 'Cet enfant ou cet appareil n’est plus dans votre foyer.';
   if (isProblem(error, 'RATE_LIMITED')) return 'Trop d’essais. Patientez une minute avant de réessayer.';
   return 'Une erreur est survenue. Réessayez dans un instant.';
@@ -45,5 +45,5 @@ const level = z.custom<Level>(isLevel, 'Sa classe.');
 export const studentSchema = z.object({ name, level });
 
 export const newStudentSchema = studentSchema.extend({
-  birthMonth: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, 'Son mois de naissance.'),
+  birthMonth: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, 'Son mois de naissance, au format AAAA-MM : 2014-03.'),
 });

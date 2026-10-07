@@ -10,6 +10,7 @@ import { Notice } from '../components/notice';
 import { Page } from '../components/page';
 import { api, parseResponse } from '../lib/api';
 import { deviceName, formatDay, formatHour } from '../lib/device';
+import { formatCode } from '../lib/pairing';
 import { LEVEL_LABELS, devicesQuery, householdMessage, studentSchema, studentsQuery, type Student } from '../lib/household';
 
 const student = api.household.students[':id'];
@@ -42,16 +43,23 @@ function StudentPage() {
   );
 }
 
-const formatCode = (code: string) => `${code.slice(0, 4)}-${code.slice(4)}`;
-
 function Devices({ child }: { child: Student }) {
   const queryClient = useQueryClient();
+  // The devices paired when the code was asked for: one more, and the code is spent.
+  const [before, setBefore] = useState<ReadonlySet<string> | null>(null);
   const pairing = useMutation({ mutationFn: () => parseResponse(student['pairing-code'].$post({ param: { id: child.id } })) });
+  const spent = (list: readonly { id: string }[]) => before !== null && list.some(({ id }) => !before.has(id));
+  const pending = (list: readonly { id: string }[]) => pairing.data !== undefined && !spent(list) && Date.now() < Date.parse(pairing.data.expiresAt);
   // While a code waits on the child's device, the list shows it the moment it is redeemed.
   const { data: devices } = useSuspenseQuery({
     ...devicesQuery(child.id),
-    refetchInterval: () => (pairing.data && Date.now() < Date.parse(pairing.data.expiresAt) ? 5000 : false),
+    refetchInterval: (query) => (pending(query.state.data ?? []) ? 5000 : false),
   });
+  const redeemed = spent(devices);
+  const askCode = () => {
+    setBefore(new Set(devices.map(({ id }) => id)));
+    pairing.mutate();
+  };
   const revoke = useMutation({
     mutationFn: (deviceId: string) => parseResponse(student.devices[':deviceId'].$delete({ param: { id: child.id, deviceId } })),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: devicesQuery(child.id).queryKey }),
@@ -86,7 +94,9 @@ function Devices({ child }: { child: Student }) {
         </ul>
       )}
       {revoke.error && <Notice tone="error">{householdMessage(revoke.error)}</Notice>}
-      {pairing.data ? (
+      {redeemed ? (
+        <Notice tone="info">L’appareil de {child.name} est relié.</Notice>
+      ) : pairing.data && pending(devices) ? (
         <Notice tone="info">
           Sur l’appareil de {child.name}, ouvrez {window.location.origin}/jumeler et saisissez le code{' '}
           <strong className="font-mono text-lg tracking-widest">{formatCode(pairing.data.code)}</strong> avant {formatHour(pairing.data.expiresAt)}.
@@ -96,13 +106,8 @@ function Devices({ child }: { child: Student }) {
         <p className="text-muted-foreground">Un code à usage unique relie l’appareil de {child.name} à son compte, sans mot de passe.</p>
       )}
       {pairing.error && <Notice tone="error">{householdMessage(pairing.error)}</Notice>}
-      <Button
-        disabled={pairing.isPending}
-        onClick={() => {
-          pairing.mutate();
-        }}
-      >
-        {pairing.data ? 'Nouveau code' : 'Relier un appareil'}
+      <Button disabled={pairing.isPending} onClick={askCode}>
+        {pending(devices) ? 'Nouveau code' : 'Relier un appareil'}
       </Button>
     </section>
   );
@@ -124,7 +129,15 @@ function EditStudent({ child }: { child: Student }) {
       <h2 id="edit" className="text-xl font-bold text-foreground">
         Son prénom et sa classe
       </h2>
-      <form noValidate onSubmit={(event) => void submit(event)} className="flex flex-col gap-4">
+      <form
+        noValidate
+        onSubmit={(event) => void submit(event)}
+        // A change after a save is not saved yet: its confirmation goes.
+        onChange={() => {
+          update.reset();
+        }}
+        className="flex flex-col gap-4"
+      >
         <Field label="Son prénom" autoComplete="off" {...form.register('name')} error={form.formState.errors.name?.message} />
         <SelectField label="Sa classe" options={LEVEL_LABELS} {...form.register('level')} error={form.formState.errors.level?.message} />
         {update.error && <Notice tone="error">{householdMessage(update.error)}</Notice>}

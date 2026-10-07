@@ -23,4 +23,4 @@ function Input({ className, variant, type, ...props }: InputProps) {
   return <input type={type} className={cn(inputVariants({ variant }), className)} {...props} />;
 }
 
-export { Input };
+export { Input, inputVariants };

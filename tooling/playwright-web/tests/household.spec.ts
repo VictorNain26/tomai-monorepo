@@ -22,6 +22,9 @@ test('a guardian adds a child, changes their class, then deletes their account',
   await page.getByLabel('Sa classe', { exact: true }).selectOption({ label: 'Quatrième' });
   await page.getByRole('button', { name: 'Enregistrer' }).click();
   await expect(page.getByRole('status')).toHaveText('Enregistré.');
+  await page.getByLabel('Son prénom', { exact: true }).fill('Léa-Rose');
+  await expect(page.getByText('Enregistré.')).toBeHidden();
+  await page.getByLabel('Son prénom', { exact: true }).fill('Léa');
 
   await page.getByRole('button', { name: 'Supprimer le compte de Léa' }).click();
   await expect(page.getByRole('alert')).toContainText('C’est définitif');
@@ -48,10 +51,31 @@ test('a code pairs the child’s phone, which sees it, and the guardian disconne
 
   // The guardian's list follows the pairing on its own.
   await expect(page.getByRole('button', { name: 'Déconnecter' })).toBeVisible({ timeout: 10_000 });
+  await expect(page.getByText('L’appareil de Noé est relié.')).toBeVisible();
+  await expect(page.getByText(/^[0-9A-Z]{4}-[0-9A-Z]{4}$/)).toBeHidden();
   await page.getByRole('button', { name: 'Déconnecter' }).click();
   await expect(page.getByText('Aucun appareil relié.')).toBeVisible();
 
   await child.reload();
   await expect(child).toHaveURL(/\/connexion$/);
   await phone.close();
+});
+
+// page.route never sees what the service worker answers.
+test.describe('with the session gone', () => {
+  test.use({ serviceWorkers: 'block' });
+
+  test('a request refused for a lost session sends the guardian back to the sign-in', async ({ page }) => {
+    await guardian(page, 'perdu');
+    await page.route('**/api/household/students', (route) =>
+      route.request().method() === 'POST'
+        ? route.fulfill({ status: 401, contentType: 'application/problem+json', json: { status: 401, code: 'UNAUTHENTICATED' } })
+        : route.fallback(),
+    );
+    await page.getByLabel('Son prénom', { exact: true }).fill('Léo');
+    await page.getByLabel('Sa classe', { exact: true }).selectOption({ label: 'Sixième' });
+    await page.getByLabel('Son mois de naissance').fill('2015-09');
+    await page.getByRole('button', { name: 'Ajouter' }).click();
+    await expect(page).toHaveURL(/\/connexion$/);
+  });
 });

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { deviceName } from './device';
+import { deviceName, formatDay, formatHour } from './device';
 
 describe('deviceName', () => {
   it('names a phone by its system and browser', () => {
@@ -17,5 +17,19 @@ describe('deviceName', () => {
     expect(deviceName('test-device')).toBe('Appareil inconnu');
     expect(deviceName(null)).toBe('Appareil inconnu');
     expect(deviceName('')).toBe('Appareil inconnu');
+  });
+});
+
+describe('formatDay and formatHour', () => {
+  // A local date: the same text whatever the time zone of the machine.
+  const date = new Date(2026, 9, 7, 14, 32);
+
+  it('write the day and the hour as a French reader does', () => {
+    expect(formatDay(date)).toBe('7 octobre 2026 à 14:32');
+    expect(formatHour(date)).toBe('14:32');
+  });
+
+  it('read the ISO text the server sends', () => {
+    expect(formatHour(date.toISOString())).toBe('14:32');
   });
 });

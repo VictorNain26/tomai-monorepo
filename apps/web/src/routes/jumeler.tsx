@@ -4,22 +4,20 @@ import { useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { z } from '../lib/zod';
 import { Field } from '../components/field';
 import { Notice } from '../components/notice';
 import { Page } from '../components/page';
 import { authClient, authMessage } from '../lib/auth';
+import { pairingSchema } from '../lib/pairing';
 
 /** The child's device: the code their parent asked for opens its own session. */
 export const Route = createFileRoute('/jumeler')({ component: Pair });
-
-const schema = z.object({ code: z.string().trim().min(8, 'Les 8 caractères du code.').max(32, 'Le code a 8 caractères.') });
 
 function Pair() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [failure, setFailure] = useState<string | null>(null);
-  const form = useForm({ resolver: zodResolver(schema), defaultValues: { code: '' } });
+  const form = useForm({ resolver: zodResolver(pairingSchema), defaultValues: { code: '' } });
 
   const submit = form.handleSubmit(async ({ code }) => {
     setFailure(null);
