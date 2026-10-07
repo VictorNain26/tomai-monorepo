@@ -149,7 +149,7 @@ modèle sans prévenir et invalide l'évaluation. Chaque prompt porte une versio
 
 | Garde-fou | Mécanisme | Où |
 |---|---|---|
-| Modération d'entrée | `mistral-moderation-2603` par `moderateStudentTurn` (`platform/ai/moderation.ts`), qui classe le message de l'élève avec le dernier message du tuteur en contexte ; catégories `sexual`, `selfharm`, `jailbreaking`, `pii`, `violence_and_threats`, `dangerous`, `criminal` gardées avec le message ; `selfharm` décide la détresse, les autres se mesurent sans bloquer (un devoir d'histoire touche à la violence) ; modération indisponible : les règles seules jugent la détresse, l'échec journalisé (`modules/tutor/chat-orchestration.service.ts`) | En parallèle de l'analyse du tour, avant le premier mot |
+| Modération d'entrée | `mistral-moderation-2603` par `studentTurn` (`platform/ai/moderation.ts`), qui classe le message de l'élève avec le dernier message du tuteur en contexte ; catégories `sexual`, `selfharm`, `jailbreaking`, `pii`, `violence_and_threats`, `dangerous`, `criminal` gardées avec le message ; `selfharm` décide la détresse, les autres se mesurent sans bloquer (un devoir d'histoire touche à la violence) ; modération indisponible : les règles seules jugent la détresse, l'échec journalisé (`modules/tutor/chat-orchestration.service.ts`) | En parallèle de l'analyse du tour, avant le premier mot |
 | Contrôle avant l'élève | Le message entier est généré, contrôlé, puis envoyé ; celui qui est envoyé est celui qui est persisté (`controlled-turn.ts`, `output-check.ts`). Déterministe : réponse et ses formes comparées à la fiche d'exercice, une forme déjà écrite par l'élève et jugée juste restant permise pour la confirmer ; balises et gabarits ; égalités recalculées par mathjs. Sur un échec, une régénération sous contrainte, puis une réponse de repli fixe, l'événement tracé | Entre `streamText` et l'élève ; aussi sur les fiches de révision générées et le titre de séance, avant leur enregistrement |
 | Modération de sortie | Même modèle sur le message entier, en parallèle du contrôle ; catégories bloquantes `OUTPUT_BLOCKING` ; même action sur un blocage | Avant l'élève |
 | Détresse | Classifieur indépendant du prompt (catégorie Self-Harm + règles en français, testés sur des phrases d'élèves) ; réponse fixe rédigée et approuvée par un humain, avec le 3114 et un adulte de confiance, et, à construire au lot 3, le 119 quand le message laisse penser que le danger vient de la maison, puis fin de la conversation (Crawford et Glatard, CMAJ 2026) ; numéros d'aide vérifiés sur service-public.gouv.fr F33954. Ni fiche ni tuteur (l'analyse du tour, lancée en parallèle, est écartée) : la réponse est gardée avec le message, la séance close (tout message suivant reçoit la même réponse), l'événement enregistré, un par séance (`distress_events`), pour la revue humaine du lot 3 : un humain relit chaque événement et décide d'un message au parent, qui n'en reçoit que le motif et des ressources, l'élève prévenu d'abord (`etudes/2026-10-07/foyer-eleve-age.md`). Ni quota, ni limite de flux, ni écriture en échec ne retiennent la réponse (`modules/tutor/distress.ts`) | Même point d'entrée |
@@ -208,7 +208,7 @@ Ordre du prompt, du plus stable au plus variable (`assembleChatPrompt`,
 Aucune consigne du serveur dans un bloc déclaré non fiable.
 
 `promptCacheKey` = identifiant de session (recommandation Mistral). Les tokens servis par le
-cache sont gardés par appel dans `cost_tracking` (`billingMetadata.cachedTokens`).
+cache sont gardés par appel dans `ai_cost` (`cached_input_tokens`, `platform/ai/schema.ts`).
 
 Mémoire : celle de la séance seulement. Le raisonnement des tours précédents est rejoué
 tel quel, comme le demande Mistral. Le résumé de conversation est incrémental : l'ancien
@@ -218,7 +218,7 @@ reviendrait que mesurée.
 
 ## 8. Sorties structurées
 
-Toutes les sorties machine passent par `generateStructured` (`platform/ai/mistral-client.ts`) :
+Toutes les sorties machine passent par `generateStructured` (`platform/ai/client.ts`) :
 `generateText` + `Output.object` avec un schéma Zod, `strictJsonSchema: true` sur chaque appel,
 et une validation au runtime. Aucun parsing par regex ni `generateObject` (déprécié en
 `ai@7`). Champs nullables et valeurs `unclear` là où la source peut manquer ;
@@ -291,10 +291,10 @@ sous son revenu net dans le pire cas mesuré (vision, « Offre et prix » et
 succès). Coûts mesurés : `etudes/2026-10-01/couts.md`, `etudes/2026-10-06/passage-de-fin.md` ;
 quotas et rentabilité : `etudes/2026-10-07/rentabilite.md`.
 
-- Chaque appel IA facturé est tracé dans `cost_tracking` par construction, en micro-euros
+- Chaque appel IA facturé est tracé dans `ai_cost` par construction, en micro-euros
   (`platform/ai/cost.ts`) : chat, analyse du tour, fiche, diagnostic, titre, résumé, lecture
   d'image, cartes, STT, TTS. La modération, gratuite, ne l'est pas.
-- Le quota est un budget du jour, lu dans `cost_tracking` : le coût réel, tokens en cache à
+- Le quota est un budget du jour, lu dans `ai_cost` : le coût réel, tokens en cache à
   leur prix (10 %), lecture vocale comprise, jamais des tokens bruts (`modules/billing/quota.ts`,
   budgets dans `quota-config.ts`).
 - Les fiches de révision sont réservées au Complet, qu'elles viennent de la route de

@@ -85,7 +85,7 @@ export default [
             allow(element('domain'), element('domain')),
             allow(element('referential'), element(['referential', 'domain'])),
             allow(element('eval'), element(['eval', 'referential', 'domain'])),
-            allow(element('testing'), element(['testing', 'platform'])),
+            allow(element('testing'), element(['testing', 'platform']), file('config')),
             allow(file('test'), file(['root', 'config']), element(['platform', 'domain', 'module', 'referential', 'eval', 'testing'])),
           ],
         },
