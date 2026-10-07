@@ -39,7 +39,8 @@ bloquant levé). L'historique vit dans git et les PR.
   suppression confirmée par le mot de passe qui emporte le foyer d'un gardien seul.
 - **Étape 5 en cours**, le tuteur porté : la plateforme IA et le faux Mistral (#430), les
   contrôles purs (#431), les étapes du tour, qui échouent fermées (#432), les séances et leurs
-  tables (3a) ; restent le tour en flux et son enregistrement (3b), puis le quota par élève. L'étude des hébergeurs
+  tables (#434), le tour et son enregistrement (3b) ; restent le résumé de séance et le titre,
+  puis le quota par élève. L'étude des hébergeurs
   UE avance en parallèle.
   L'ordre complet est dans l'étude. Test complet dans Chrome à la fin de chaque étape, la première
   à l'étape 6 avec les écrans.

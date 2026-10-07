@@ -46,6 +46,16 @@ export function stripPromptTags(content: string): string {
   return stripped;
 }
 
+/** The text without NUL, the C0 controls and DEL: tabs and line breaks stay. */
+export function sanitize(text: string): string {
+  return Array.from(text)
+    .filter((char) => {
+      const code = char.codePointAt(0) ?? 0;
+      return code === 0x09 || code === 0x0a || code === 0x0d || (code >= 0x20 && code !== 0x7f);
+    })
+    .join('');
+}
+
 /** The student's message, fenced: an instruction inside is content to read, never an order. */
 export function wrapUserMessage(content: string): string {
   return `<student_message>\n${stripPromptTags(content)}\n</student_message>`;

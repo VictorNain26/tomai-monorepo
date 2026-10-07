@@ -9,6 +9,8 @@ import type { Logger } from 'pino';
 import type { Config } from './config';
 import { householdModule } from './modules/household';
 import { tutorModule } from './modules/tutor';
+import type { Ai } from './platform/ai/client';
+import type { Moderation } from './platform/ai/moderation';
 import type { Auth } from './platform/auth/auth';
 import type { Db } from './platform/db/client';
 import type { AppEnv } from './platform/http/env';
@@ -24,12 +26,14 @@ export interface AppDeps {
   logger: Logger;
   db: Db;
   auth: Auth;
+  ai: Ai;
+  moderation: Moderation;
   lifecycle: Lifecycle;
 }
 
-export function createApp({ config, logger, db, auth, lifecycle }: AppDeps) {
+export function createApp({ config, logger, db, auth, ai, moderation, lifecycle }: AppDeps) {
   const household = householdModule({ db, auth });
-  const tutor = tutorModule({ db, auth });
+  const tutor = tutorModule({ db, auth, ai, moderation, logger });
   // One budget for the API and the probes: /health/ready runs a query on every call. The web's
   // files don't count, a page load fetches a dozen of them.
   const budget = rateLimit({ points: 100, durationSeconds: 60 });

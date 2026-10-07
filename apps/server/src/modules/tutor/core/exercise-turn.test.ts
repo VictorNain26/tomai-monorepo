@@ -246,6 +246,7 @@ describe('prepareExerciseTurn', () => {
     expect(await prepareExerciseTurn(deps, request({ current: null }))).toEqual({
       exercise: null,
       isNew: false,
+      mathCheck: null,
       diagnosis: null,
       hintLevel: null,
       contract: null,

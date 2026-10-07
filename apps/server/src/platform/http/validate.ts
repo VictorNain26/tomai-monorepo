@@ -21,9 +21,9 @@ const uuid = z.uuid();
 
 /** A path parameter that must be a UUID: anything else names no resource, which the database would refuse with an error. */
 export function uuidParam<const N extends string>(name: N) {
-  return validator('param', (params: Record<string, string>): Record<N, string> => {
-    const value = params[name];
-    if (!uuid.safeParse(value).success || value === undefined) throw new Problem('NOT_FOUND');
-    return { [name]: value } as Record<N, string>;
+  return validator('param', (params: Record<string, string>) => {
+    const parsed = uuid.safeParse(params[name]);
+    if (!parsed.success) throw new Problem('NOT_FOUND');
+    return { [name]: parsed.data } as Record<N, string>;
   });
 }

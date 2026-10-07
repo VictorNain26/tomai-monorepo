@@ -12,7 +12,7 @@ variable `MISTRAL_SERVER_URL`). Référence de conception : `docs/tuteur.md` �
 
 | Rôle | Modèle | Réglage |
 |---|---|---|
-| Chat élève, texte et image | `mistral-small-2603` (Small 4) | `reasoningEffort` routé par `modules/tutor/core/reasoning.ts`, `promptCacheKey` = ID de session |
+| Chat élève, texte et image | `mistral-small-2603` (Small 4) | `generateText` en un appel, contrôlé avant l'élève (`modules/tutor/core/controlled-turn.ts`) ; `reasoningEffort` routé par `modules/tutor/core/reasoning.ts`, `promptCacheKey` = ID de session |
 | Lecture d'image (transcription seule), résumés, cartes, titres, diagnostic | `mistral-small-2603` | `reasoningEffort: 'none'` (défaut de `platform/ai/client.ts`) |
 | Fiche d'exercice | `mistral-small-2603` | `reasoningEffort: 'high'` passé à `generateStructured`, sans plafond de tokens, température 0,7, trois tirages votés (`modules/tutor/core/sheet.ts`) |
 | Analyse du tour | `mistral-small-2603` | `reasoningEffort: 'high'`, température 0,7 (`modules/tutor/core/analysis.ts`) |

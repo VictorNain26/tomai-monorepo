@@ -211,7 +211,7 @@ export function exerciseBlock(sheet: ExerciseSheet): string {
     .join('\n');
 }
 
-const SHEET_PROMPT_VERSION = '2026-10-06.4';
+export const SHEET_PROMPT_VERSION = '2026-10-06.4';
 const DRAWS = 3;
 const SHEET_TIMEOUT_MS = 20_000;
 // Small 4's model card: « 0.7 for reasoning_effort="high" » (huggingface.co/mistralai/Mistral-Small-4-119B-2603).
