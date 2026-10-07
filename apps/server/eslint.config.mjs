@@ -54,7 +54,7 @@ const inModule = (categories) => ({ element: { type: 'module' }, file: { categor
 /** @type {import("eslint").Linter.Config[]} */
 export default [
   {
-    ignores: ['dist/**', 'coverage/**', 'build/**'],
+    ignores: ['dist/**', 'coverage/**'],
   },
   ...nodeConfig,
   {

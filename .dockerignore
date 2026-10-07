@@ -6,7 +6,6 @@
 
 # Build outputs
 **/dist/
-**/build/
 **/.turbo/
 **/coverage/
 **/*.tsbuildinfo

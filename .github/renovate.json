@@ -17,7 +17,7 @@
   "prHourlyLimit": 0,
   "prConcurrentLimit": 8,
   "branchConcurrentLimit": 8,
-  "ignorePaths": ["**/node_modules/**", "**/dist/**", "**/build/**", "**/coverage/**", "**/.turbo/**"],
+  "ignorePaths": ["**/node_modules/**", "**/dist/**", "**/coverage/**", "**/.turbo/**"],
   "major": {
     "dependencyDashboardApproval": true,
     "automerge": false,

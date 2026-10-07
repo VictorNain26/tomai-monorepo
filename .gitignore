@@ -22,8 +22,6 @@ coverage
 .turbo
 
 # Build Outputs
-out/
-build
 dist
 
 # TypeScript incremental build cache
