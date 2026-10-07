@@ -3,12 +3,19 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider, createRouter } from '@tanstack/react-router';
+import { Failure } from './components/failure';
 import { routeTree } from './routeTree.gen';
 import '@fontsource-variable/nunito';
 import './styles.css';
 
 const queryClient = new QueryClient();
-const router = createRouter({ routeTree, context: { queryClient }, defaultPreload: 'intent', scrollRestoration: true });
+const router = createRouter({
+  routeTree,
+  context: { queryClient },
+  defaultPreload: 'intent',
+  defaultErrorComponent: Failure,
+  scrollRestoration: true,
+});
 
 declare module '@tanstack/react-router' {
   interface Register {

@@ -82,7 +82,7 @@ test.describe('after a deployment', () => {
 
     await page.goto('/');
 
-    await expect(page.getByText('Something went wrong!')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Une erreur est survenue' })).toBeVisible();
     expect(failed()).toBe(2);
     expect(loads).toBe(2);
   });

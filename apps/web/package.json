@@ -8,6 +8,7 @@
     "preview": "vite preview --port 3002 --strictPort",
     "lint": "eslint . --max-warnings 0",
     "typecheck": "tsc -b",
+    "test": "bun test src",
     "clean": "rm -rf dist node_modules/.tmp"
   },
   "dependencies": {
@@ -26,6 +27,7 @@
   },
   "devDependencies": {
     "@repo/eslint-config": "workspace:*",
+    "bun-types": "^1.4.2",
     "@tailwindcss/vite": "^4.3.3",
     "@tanstack/router-plugin": "^1.168.42",
     "@types/node": "^24.13.6",

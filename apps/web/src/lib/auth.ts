@@ -17,5 +17,6 @@ const AUTH_MESSAGES: Partial<Record<string, string>> = {
 
 export function authMessage(error: { code?: string | undefined; status: number }): string {
   if (error.status === 429) return 'Trop d’essais. Patientez une minute avant de réessayer.';
-  return (error.code && AUTH_MESSAGES[error.code]) ?? 'Une erreur est survenue. Réessayez dans un instant.';
+  const message = error.code === undefined ? undefined : AUTH_MESSAGES[error.code];
+  return message ?? 'Une erreur est survenue. Réessayez dans un instant.';
 }

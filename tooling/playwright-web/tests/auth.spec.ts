@@ -10,6 +10,7 @@ async function signUp(page: Page, email: string) {
   await page.getByLabel('Adresse e-mail').fill(email);
   await page.getByLabel('Mot de passe').fill('un mot de passe solide');
   await page.getByRole('button', { name: 'Créer le compte' }).click();
+  await expect(page.getByRole('heading', { name: 'Vérifiez votre e-mail' })).toBeVisible();
 }
 
 async function signIn(page: Page, email: string) {
@@ -22,7 +23,6 @@ async function signIn(page: Page, email: string) {
 test('a parent signs up, is asked to confirm, is refused before, then reaches the household and signs out', async ({ page }) => {
   const email = address('parent');
   await signUp(page, email);
-  await expect(page.getByRole('heading', { name: 'Vérifiez votre e-mail' })).toBeVisible();
   await expect(page.getByRole('status')).toContainText(email);
 
   await signIn(page, email);
@@ -41,6 +41,8 @@ test('a parent signs up, is asked to confirm, is refused before, then reaches th
 
 test('a wrong password is refused in French, the form checked before it is sent', async ({ page }) => {
   await page.goto('/connexion');
+  // Under 16 px, iOS Safari zooms on the field it focuses.
+  expect(await page.getByLabel('Adresse e-mail').evaluate((field) => getComputedStyle(field).fontSize)).toBe('16px');
   await page.getByRole('button', { name: 'Se connecter' }).click();
   await expect(page.getByText('Une adresse e-mail valide.')).toBeVisible();
 
@@ -66,4 +68,29 @@ test('a link without its token, or an expired one, says so', async ({ page }) =>
   await page.goto('/api/auth/verify-email?token=invalide&callbackURL=/');
   await expect(page).toHaveURL(/\/erreur-connexion\?error=INVALID_TOKEN$/);
   await expect(page.getByRole('alert')).toContainText('Ce lien n’est plus valable');
+});
+
+test('a sign-out the server refuses says so, and keeps the parent signed in', async ({ page }) => {
+  const email = address('sortie');
+  await signUp(page, email);
+  await confirmEmail(email);
+  await signIn(page, email);
+  await expect(page).toHaveURL(/\/foyer$/);
+
+  await page.route('**/api/auth/sign-out', (route) => route.fulfill({ status: 429, json: { code: 'TOO_MANY_REQUESTS' } }));
+  await page.getByRole('button', { name: 'Se déconnecter' }).click();
+  await expect(page.getByRole('alert')).toContainText('Trop d’essais');
+  await expect(page).toHaveURL(/\/foyer$/);
+});
+
+test('a screen that cannot load says so in French, and loads on a retry', async ({ page }) => {
+  await page.route('**/api/me', (route) =>
+    route.fulfill({ status: 500, contentType: 'application/problem+json', json: { status: 500, code: 'INTERNAL_ERROR' } }),
+  );
+  await page.goto('/');
+  await expect(page.getByRole('heading', { name: 'Une erreur est survenue' })).toBeVisible();
+
+  await page.unroute('**/api/me');
+  await page.getByRole('button', { name: 'Réessayer' }).click();
+  await expect(page).toHaveURL(/\/connexion$/);
 });
