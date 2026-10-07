@@ -1,5 +1,4 @@
 import { defineConfig, fontProviders } from 'astro/config';
-import react from '@astrojs/react';
 import sitemap from '@astrojs/sitemap';
 import tailwindcss from '@tailwindcss/vite';
 
@@ -9,7 +8,7 @@ export default defineConfig({
   // aide.html rather than aide/index.html: the Caddyfile serves /aide without a redirect to /aide/.
   build: { format: 'file' },
   server: { port: 3001 },
-  integrations: [react(), sitemap()],
+  integrations: [sitemap()],
   vite: { plugins: [tailwindcss()] },
   // No Markdown here; Shiki's inline styles would only trip the CSP check.
   markdown: { syntaxHighlight: false },
@@ -34,9 +33,6 @@ export default defineConfig({
   security: {
     csp: {
       directives: ["default-src 'self'"],
-      // Motion renders each reveal's starting state as a style attribute, and the Radix sheet of the mobile
-      // menu adds a <style> to lock the page's scroll: neither can carry a hash. Scripts stay hash-locked.
-      styleDirective: { resources: ["'self'", "'unsafe-inline'"] },
     },
   },
 });

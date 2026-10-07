@@ -1,6 +1,6 @@
 ---
-import { Check } from 'lucide-react';
-import { cn } from '@repo/ui';
+import { Check } from '@lucide/astro';
+import { cn } from '@repo/ui/classes';
 import SectionHeader from '@/components/atoms/section-header.astro';
 
 const PLANS = [
@@ -37,7 +37,7 @@ const PLANS = [
           <ul class="mt-8 space-y-4">
             {plan.features.map((feature) => (
               <li class="flex items-start gap-4 text-foreground">
-                <Check className="size-5 shrink-0 text-success" aria-hidden="true" />
+                <Check class="size-5 shrink-0 text-success" aria-hidden="true" />
                 {feature}
               </li>
             ))}

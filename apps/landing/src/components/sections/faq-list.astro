@@ -1,0 +1,52 @@
+---
+import { ChevronDown } from '@lucide/astro';
+import { FAQS } from './faq-data';
+---
+
+<div class="mx-auto max-w-3xl space-y-4">
+  {FAQS.map((faq, index) => (
+    <details
+      name="faq"
+      open={index === 0}
+      class="group overflow-hidden rounded-2xl bg-card shadow-sm ring-1 ring-border transition-shadow duration-base hover:ring-primary"
+    >
+      <summary
+        id={`faq-question-${index}`}
+        class="flex min-h-11 cursor-pointer list-none items-center justify-between p-4 text-left focus-visible:ring-inset sm:p-6 [&::-webkit-details-marker]:hidden"
+      >
+        <div class="flex items-center gap-4">
+          <div class="hidden size-10 shrink-0 items-center justify-center rounded-full bg-secondary text-muted-foreground transition-colors group-open:bg-primary group-open:text-primary-foreground sm:flex">
+            <faq.icon class="size-5" aria-hidden="true" />
+          </div>
+          <span class="text-base font-bold text-foreground sm:text-lg">{faq.question}</span>
+        </div>
+        <ChevronDown class="ml-2 size-5 shrink-0 text-muted-foreground transition-transform duration-base group-open:rotate-180" aria-hidden="true" />
+      </summary>
+      <div id={`faq-answer-${index}`} class="px-4 pb-4 text-muted-foreground sm:px-6 sm:pb-6 sm:pl-20">
+        {faq.answer}
+      </div>
+    </details>
+  ))}
+</div>
+
+<style>
+  /* An answer opens and closes in height; a browser without ::details-content opens it at once. */
+  details {
+    interpolate-size: allow-keywords;
+  }
+
+  details::details-content {
+    height: 0;
+    opacity: 0;
+    overflow: clip;
+    transition:
+      height var(--duration-base),
+      opacity var(--duration-base),
+      content-visibility var(--duration-base) allow-discrete;
+  }
+
+  details[open]::details-content {
+    height: auto;
+    opacity: 1;
+  }
+</style>

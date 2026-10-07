@@ -1,5 +1,5 @@
 ---
-import { cn } from '@repo/ui';
+import { cn } from '@repo/ui/classes';
 import Layout from './layout.astro';
 import SectionHeader from '@/components/atoms/section-header.astro';
 
@@ -12,15 +12,14 @@ interface Props {
   title: string;
   description?: string;
   metaDescription?: string;
-  canonical?: string;
   noindex?: boolean;
   maxWidth?: keyof typeof MAX_WIDTHS;
 }
 
-const { title, description, metaDescription = description, canonical, noindex = false, maxWidth = '4xl' } = Astro.props;
+const { title, description, metaDescription = description, noindex = false, maxWidth = '4xl' } = Astro.props;
 ---
 
-<Layout title={title} noindex={noindex} {...(metaDescription && { description: metaDescription })} {...(canonical && { canonical })}>
+<Layout title={title} noindex={noindex} {...(metaDescription && { description: metaDescription })}>
   <div class={cn('container py-12 md:py-24', MAX_WIDTHS[maxWidth])}>
     <SectionHeader as="h1" title={title} {...(description && { description })} align="left" class="mb-8" />
     <slot />

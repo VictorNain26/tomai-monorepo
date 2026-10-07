@@ -1,10 +1,10 @@
 ---
-import { FadeIn } from '@/components/atoms/fade-in';
+import FadeIn from '@/components/atoms/fade-in.astro';
 import Highlight from '@/components/annotations/highlight.astro';
 ---
 
 <section class="py-16 lg:py-24">
-  <FadeIn client:load className="container max-w-4xl text-center">
+  <FadeIn class="container max-w-4xl text-center">
     <h2 class="text-4xl text-balance text-foreground sm:text-5xl">
       Copier une réponse prend dix secondes. <Highlight>L&apos;oublier aussi.</Highlight>
     </h2>

@@ -1,13 +1,13 @@
 ---
 import PageLayout from '@/layouts/page-layout.astro';
-import { FaqList } from '@/components/sections/faq-list';
+import FaqList from '@/components/sections/faq-list.astro';
 import { BRAND_NAME } from '@/lib/brand';
 
 const DESCRIPTION = `Retrouvez les réponses aux questions les plus fréquentes sur ${BRAND_NAME}, en préparation\u00a0: réponses aux exercices, niveau, suivi parental, données et tarifs.`;
 ---
 
-<PageLayout title="Questions fréquentes" description={DESCRIPTION} canonical="/faq">
-  <FaqList client:load />
+<PageLayout title="Questions fréquentes" description={DESCRIPTION}>
+  <FaqList />
 
   <p class="mt-8 text-center text-sm text-muted-foreground">
     Vous avez une autre question ?{' '}

@@ -1,26 +1,20 @@
 ---
-import { getImage } from 'astro:assets';
-import { Hourglass, Landmark, ShieldCheck } from 'lucide-react';
-import { TomIllustration } from '@/components/atoms/tom-illustration';
+import { Hourglass, Landmark, ShieldCheck } from '@lucide/astro';
+import TomIllustration from '@/components/atoms/tom-illustration.astro';
 import Highlight from '@/components/annotations/highlight.astro';
-import tom from '@/assets/tom.png';
 import DemoExchange from './demo-exchange.astro';
 
 const SIGNALS = [
   { icon: Landmark, label: "L'IA de Mistral AI, appelée en Europe" },
   { icon: ShieldCheck, label: 'Une offre gratuite, sans carte bancaire' },
 ];
-
-const TOM_WIDTH = 176;
-const tomImage = await getImage({ src: tom, width: TOM_WIDTH, densities: [1, 2] });
-const tomPicture = { src: tomImage.src, srcSet: tomImage.srcSet.attribute, width: TOM_WIDTH, height: TOM_WIDTH };
 ---
 
 <section class="py-16 lg:py-24">
   <div class="container grid w-full grid-cols-1 items-center gap-12 lg:grid-cols-2 lg:gap-16">
     <div>
       <span class="inline-flex items-center gap-2 rounded-full bg-card px-3 py-1 text-sm font-bold ring-1 ring-border">
-        <Hourglass className="size-4 text-success" aria-hidden="true" />
+        <Hourglass class="size-4 text-success" aria-hidden="true" />
         En préparation&nbsp;: l&apos;application n&apos;est pas encore ouverte
       </span>
 
@@ -36,7 +30,7 @@ const tomPicture = { src: tomImage.src, srcSet: tomImage.srcSet.attribute, width
       <ul class="mt-10 flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground">
         {SIGNALS.map(({ icon: Icon, label }) => (
           <li class="flex items-center gap-2">
-            <Icon className="size-4 text-success" aria-hidden="true" />
+            <Icon class="size-4 text-success" aria-hidden="true" />
             {label}
           </li>
         ))}
@@ -45,7 +39,7 @@ const tomPicture = { src: tomImage.src, srcSet: tomImage.srcSet.attribute, width
 
     <div class="relative lg:pl-24">
       <DemoExchange />
-      <TomIllustration client:load picture={tomPicture} className="absolute -bottom-6 -left-16 hidden w-44 lg:block" />
+      <TomIllustration class="absolute -bottom-6 -left-16 hidden w-44 lg:block" />
     </div>
   </div>
 </section>

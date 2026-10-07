@@ -1,11 +1,11 @@
 ---
-import { buttonVariants } from '@repo/ui';
+import { buttonVariants } from '@repo/ui/classes';
 import PageLayout from '@/layouts/page-layout.astro';
-import { FaqList } from '@/components/sections/faq-list';
+import FaqList from '@/components/sections/faq-list.astro';
 import { BRAND_NAME } from '@/lib/brand';
 ---
 
-<PageLayout title="Centre d'aide" description={`Les réponses aux questions fréquentes sur ${BRAND_NAME}.`} maxWidth="3xl" canonical="/aide">
+<PageLayout title="Centre d'aide" description={`Les réponses aux questions fréquentes sur ${BRAND_NAME}.`} maxWidth="3xl">
   <h2 class="mb-4 text-2xl">Une question sur {BRAND_NAME} ?</h2>
   <p class="mb-8 max-w-md text-muted-foreground">Écrivez-nous : nous lisons chaque message.</p>
   <a href="/contact" class={buttonVariants({ size: 'lg' })}>
@@ -13,6 +13,6 @@ import { BRAND_NAME } from '@/lib/brand';
   </a>
 
   <div class="mt-12">
-    <FaqList client:load />
+    <FaqList />
   </div>
 </PageLayout>

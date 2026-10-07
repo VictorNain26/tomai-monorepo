@@ -1,0 +1,29 @@
+---
+import { cn } from '@repo/ui/classes';
+
+interface Props {
+  orientation?: 'horizontal' | 'vertical';
+}
+
+const { orientation = 'horizontal' } = Astro.props;
+
+const LINKS = [
+  { href: '/#how-it-works', label: 'Comment ça marche' },
+  { href: '/#parents', label: 'Parents' },
+  { href: '/#pricing', label: 'Tarifs' },
+];
+---
+
+<div class={cn('flex', orientation === 'vertical' ? 'flex-col space-y-4' : 'items-center gap-4')}>
+  {LINKS.map((link) => (
+    <a
+      href={link.href}
+      class={cn(
+        'min-h-11 items-center text-sm font-bold text-foreground transition-colors duration-base hover:text-primary',
+        orientation === 'vertical' ? 'flex' : 'inline-flex px-2',
+      )}
+    >
+      {link.label}
+    </a>
+  ))}
+</div>

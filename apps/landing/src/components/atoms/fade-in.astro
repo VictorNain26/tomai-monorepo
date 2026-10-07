@@ -1,0 +1,27 @@
+---
+interface Props {
+  class?: string;
+  delay?: number;
+}
+
+const { class: className, delay = 0 } = Astro.props;
+---
+
+<div data-reveal data-delay={delay} class={className}>
+  <slot />
+</div>
+
+<style>
+  /* The entry state of a reveal (src/scripts/reveal.ts), only when scripts run: without them, the page shows whole. */
+  @media (scripting: enabled) {
+    div {
+      opacity: 0;
+    }
+  }
+
+  @media (scripting: enabled) and (prefers-reduced-motion: no-preference) {
+    div {
+      transform: translateY(20px);
+    }
+  }
+</style>

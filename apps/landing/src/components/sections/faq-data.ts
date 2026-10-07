@@ -1,4 +1,4 @@
-import { BarChart3, BookOpen, BrainCircuit, Cpu, CreditCard, Globe, MessageSquareX, ShieldCheck } from 'lucide-react';
+import { ChartColumn, BookOpen, BrainCircuit, Cpu, CreditCard, Globe, MessageSquareX, ShieldCheck } from '@lucide/astro';
 
 export const FAQS = [
   {
@@ -22,7 +22,7 @@ export const FAQS = [
     question: 'Comment suivre le travail de mon enfant ?',
     answer:
       "L'espace parent montrera un résumé : matières travaillées, temps passé, notions qui résistent. Il ne montrera pas les conversations : votre enfant gardera un espace à lui.",
-    icon: BarChart3,
+    icon: ChartColumn,
   },
   {
     question: 'Quelle IA utilisez-vous ?',

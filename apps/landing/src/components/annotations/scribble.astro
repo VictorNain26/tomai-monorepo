@@ -1,0 +1,40 @@
+---
+import { cn } from '@repo/ui/classes';
+
+interface Props {
+  class?: string;
+  delay?: number;
+}
+
+const { class: className, delay = 0 } = Astro.props;
+---
+
+<span class={cn('relative inline-block', className)}>
+  <slot />
+  <svg
+    aria-hidden="true"
+    viewBox="0 0 200 80"
+    preserveAspectRatio="none"
+    fill="none"
+    class="pointer-events-none absolute -inset-x-3 -inset-y-2 h-[calc(100%+1rem)] w-[calc(100%+1.5rem)] overflow-visible"
+  >
+    <path
+      data-reveal
+      data-delay={delay}
+      d="M100 4 C 170 2, 198 30, 190 50 C 180 76, 40 80, 12 56 C -6 36, 30 6, 110 8"
+      stroke="currentColor"
+      stroke-width="3"
+      stroke-linecap="round"
+      vector-effect="non-scaling-stroke"
+    ></path>
+  </svg>
+</span>
+
+<style>
+  /* Shown before Motion's first frame, the stroke would flash whole (src/scripts/reveal.ts). */
+  @media (scripting: enabled) and (prefers-reduced-motion: no-preference) {
+    path:not([data-drawing]) {
+      visibility: hidden;
+    }
+  }
+</style>

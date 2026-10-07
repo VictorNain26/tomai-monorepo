@@ -9,7 +9,6 @@ import { BRAND_NAME } from '@/lib/brand';
 interface Props {
   title?: string;
   description?: string;
-  canonical?: string;
   noindex?: boolean;
 }
 
@@ -37,7 +36,7 @@ const KEYWORDS = [
   'Mistral',
 ];
 
-const { title, description = DESCRIPTION, canonical, noindex = false } = Astro.props;
+const { title, description = DESCRIPTION, noindex = false } = Astro.props;
 const site = Astro.site?.href ?? '';
 const ogImage = new URL('/opengraph-image.png', site).href;
 
@@ -80,7 +79,7 @@ const jsonLd = [
     <meta name="category" content="education" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-    {canonical && <link rel="canonical" href={new URL(canonical, site).href} />}
+    {!noindex && <link rel="canonical" href={new URL(Astro.routePattern, site).href} />}
     <meta property="og:title" content={TITLE} />
     <meta property="og:description" content={DESCRIPTION} />
     <meta property="og:site_name" content={BRAND_NAME} />
@@ -103,18 +102,6 @@ const jsonLd = [
     <link rel="sitemap" href="/sitemap-index.xml" />
     <Font cssVariable="--font-nunito" preload />
     <Font cssVariable="--font-caveat" preload />
-    <noscript>
-      <style is:inline>
-        /* data-reveal must mark only elements whose hidden state is Motion's entry state. */
-        [data-reveal] {
-          opacity: 1 !important;
-          transform: none !important;
-        }
-        path[data-reveal] {
-          stroke-dasharray: none !important;
-        }
-      </style>
-    </noscript>
     {jsonLd.map((schema) => (
       <JsonLd data={schema} />
     ))}
@@ -133,5 +120,11 @@ const jsonLd = [
       </main>
       <Footer />
     </div>
+    <script>
+      import '@/scripts/reveal';
+
+      // Last in the page, so every component's script has run: the e2e suite waits on this flag.
+      document.documentElement.dataset['hydrated'] = '';
+    </script>
   </body>
 </html>

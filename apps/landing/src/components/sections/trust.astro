@@ -1,5 +1,5 @@
 ---
-import { FadeIn } from '@/components/atoms/fade-in';
+import FadeIn from '@/components/atoms/fade-in.astro';
 import HandNote from '@/components/annotations/hand-note.astro';
 import Highlight from '@/components/annotations/highlight.astro';
 
@@ -11,7 +11,7 @@ const COMMITMENTS = [
 ---
 
 <section class="py-16 lg:py-24">
-  <FadeIn client:load className="container grid max-w-5xl gap-10 md:grid-cols-[1fr_2fr] md:items-start">
+  <FadeIn class="container grid max-w-5xl gap-10 md:grid-cols-[1fr_2fr] md:items-start">
     <HandNote class="md:mt-2">Ce qu&apos;on s&apos;engage à faire, et à ne pas faire.</HandNote>
     <div>
       <h2 class="mb-6 text-4xl text-foreground sm:text-5xl">

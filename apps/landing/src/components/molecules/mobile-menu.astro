@@ -1,0 +1,55 @@
+---
+import { Menu, X } from '@lucide/astro';
+import { buttonVariants } from '@repo/ui/classes';
+import NavLinks from './nav-links.astro';
+---
+
+<mobile-menu>
+  <button type="button" data-open aria-haspopup="dialog" aria-label="Ouvrir le menu" class={buttonVariants({ variant: 'ghost', size: 'icon' })}>
+    <Menu class="size-5" aria-hidden="true" />
+  </button>
+  <dialog
+    aria-label="Menu"
+    class="fixed inset-y-0 right-0 left-auto m-0 h-dvh max-h-none w-3/4 max-w-none border-l bg-background p-0 shadow-lg backdrop:bg-overlay/80 sm:max-w-sm"
+  >
+    {/* Fills the dialog, so that only a click on the backdrop lands on the dialog itself. */}
+    <div class="flex h-full flex-col gap-4 p-6 pt-16">
+      <nav aria-label="Principale" class="flex flex-col gap-4">
+        <NavLinks orientation="vertical" />
+      </nav>
+    </div>
+    <button
+      type="button"
+      data-close
+      class="absolute top-2 right-2 inline-flex size-11 items-center justify-center rounded-full opacity-70 transition-opacity duration-base hover:opacity-100"
+    >
+      <X class="size-5" aria-hidden="true" />
+      <span class="sr-only">Fermer</span>
+    </button>
+  </dialog>
+</mobile-menu>
+
+<style>
+  /* A modal dialog leaves the page behind it scrollable: the open menu locks it. */
+  :global(html:has(dialog[open])) {
+    overflow: hidden;
+  }
+</style>
+
+<script>
+  class MobileMenu extends HTMLElement {
+    connectedCallback() {
+      const dialog = this.querySelector('dialog');
+      if (!dialog) return;
+      this.querySelector('[data-open]')?.addEventListener('click', () => {
+        dialog.showModal();
+      });
+      // The close button, a link followed, or a click on the backdrop, which only the dialog itself receives.
+      dialog.addEventListener('click', (event) => {
+        if (event.target === dialog || (event.target instanceof Element && event.target.closest('[data-close], a'))) dialog.close();
+      });
+    }
+  }
+
+  customElements.define('mobile-menu', MobileMenu);
+</script>

@@ -14,15 +14,12 @@
     "clean": "rm -rf dist .astro"
   },
   "dependencies": {
-    "@astrojs/react": "^7.0.1",
     "@astrojs/sitemap": "^3.7.4",
+    "@lucide/astro": "^1.52.0",
     "@repo/tokens": "workspace:*",
     "@repo/ui": "workspace:*",
     "astro": "^7.3.6",
-    "lucide-react": "^1.47.0",
-    "motion": "^13.4.0",
-    "react": "^19.3.0",
-    "react-dom": "^19.3.0"
+    "motion": "^13.4.0"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.10",
@@ -30,8 +27,6 @@
     "@repo/eslint-config": "workspace:*",
     "@tailwindcss/vite": "^4.3.3",
     "@types/node": "^24.13.6",
-    "@types/react": "~19.3.0",
-    "@types/react-dom": "~19.3.0",
     "eslint": "^10.11.0",
     "sharp": "^0.35.5",
     "tailwindcss": "^4.3.3",
