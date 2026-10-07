@@ -3,7 +3,7 @@
  * `ownSession`, a clause of the query itself: another student's session is simply not found.
  */
 
-import { and, asc, desc, eq, gte, isNull, lt, or, sql, sum } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, isNull, sql, sum } from 'drizzle-orm';
 import type { DistressSource } from '../../domain/distress';
 import type { MathCheck } from '../../domain/exercise-math';
 import type { SubjectFamily } from '../../domain/subjects';
@@ -121,19 +121,28 @@ export function createTutorRepository(db: Db) {
 
     /**
      * Marks a turn as running in the student's session, and reads the session in the same
-     * statement: a session closed by the turn before is seen closed. Undefined when a turn already
-     * runs, or when the session is not theirs.
+     * statement: a session closed by the turn before is seen closed. Undefined when a turn of the
+     * student already runs, in this session or another, or when the session is not theirs.
      */
     async startTurn(studentId: string, sessionId: string) {
-      const [started] = await db
-        .update(studySession)
-        // To the millisecond, as a JavaScript Date holds it: endTurn compares it back.
-        .set({ turnStartedAt: sql`date_trunc('milliseconds', now())` })
-        .where(
-          and(ownSession(studentId, sessionId), or(isNull(studySession.turnStartedAt), lt(studySession.turnStartedAt, sql`now() - ${STALE_TURN}`))),
-        )
-        .returning({ subject: studySession.subject, closedAt: studySession.closedAt, turnStartedAt: studySession.turnStartedAt });
-      return started;
+      return db.transaction(async (tx) => {
+        // One turn at a time for the student, whatever the session: turns in parallel sessions would
+        // all pass the same quota check. The lock serialises this student's starts until the commit.
+        await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${`turn:${studentId}`}))`);
+        const [running] = await tx
+          .select({ id: studySession.id })
+          .from(studySession)
+          .where(and(eq(studySession.studentId, studentId), gte(studySession.turnStartedAt, sql`now() - ${STALE_TURN}`)))
+          .limit(1);
+        if (running) return undefined;
+        const [started] = await tx
+          .update(studySession)
+          // To the millisecond, as a JavaScript Date holds it: endTurn compares it back.
+          .set({ turnStartedAt: sql`date_trunc('milliseconds', now())` })
+          .where(ownSession(studentId, sessionId))
+          .returning({ subject: studySession.subject, closedAt: studySession.closedAt, turnStartedAt: studySession.turnStartedAt });
+        return started;
+      });
     },
 
     /** Frees the session, unless another turn took over a lock this one held too long. */
