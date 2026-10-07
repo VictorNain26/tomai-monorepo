@@ -19,7 +19,7 @@ et la rétention.
 - **Les élèves gratuits font aussi les coûts fixes.** Hébergement, traces et e-mails suivent les
   élèves actifs, pas les payants : à 6 % de payants, 100 foyers payants font 1 900 élèves actifs
   et 270 € HT de frais par mois.
-- **Le seuil de rentabilité est bas, un revenu ne l'est pas.** Les frais sont couverts à 42 foyers
+- **Le seuil de rentabilité est bas, un revenu ne l'est pas.** Les frais sont couverts à 40 foyers
   payants (6 % de payants). 1 500 € par mois demandent 620 foyers payants, soit 6 000 inscriptions
   par mois en régime établi ; 1 530 foyers et 15 000 inscriptions si seulement 3 % paient. **Le
   vrai risque est la distribution.**
@@ -37,8 +37,8 @@ et la rétention.
 | Sujet | Position | Raison |
 |---|---|---|
 | Quota du Gratuit | **2 c par élève et par jour**, coût réel compté, voix comprise (transcription et lecture) | Couvre une soirée normale (1,74 c) avec photo et voix, comme le promet la vision ; 1 c n'en couvre que 0,6 |
-| Quota du Complet | **10 c par élève et par jour** | Un élève au plafond tous les jours du mois laisse encore 1,56 € à 7,99 € (1,23 € avec la TVA) ; c'est 5,7 soirées normales par jour |
-| Fonctionnement du quota | Remise à zéro à 4 h, heure de Paris ; si le quota ne peut pas être lu, le tour est refusé, sauf la réponse de détresse, qui passe toujours | Une soirée qui finit après minuit ne se coupe pas en deux ; un compteur illisible ne doit pas ouvrir la facture (`../../tuteur.md`, § 13) |
+| Quota du Complet | **10 c par élève et par jour** | Un foyer moyen (1,16 élève) au plafond tous les jours du mois laisse encore 1,56 € à 7,99 € (1,23 € avec la TVA) ; c'est 5,7 soirées normales par jour |
+| Fonctionnement du quota | Remise à zéro à 4 h, heure de Paris ; si le quota ne peut pas être lu, le tour est refusé, sauf la réponse de détresse, qui passe toujours | Une soirée qui finit après minuit ne se coupe pas en deux ; un compteur illisible ne doit pas ouvrir la facture |
 | Unité du quota | Par élève, sans plafond par foyer | La marge vient de l'usage moyen ; le plafond ne sert qu'à arrêter l'abus. Trois enfants au plafond tous les jours coûteraient 10,80 € TTC par mois : un cas à guetter dans les mesures, pas à coder d'avance |
 | Prix | **7,99 € TTC par mois**, et **une année scolaire à 69 € payée d'avance, sans renouvellement automatique** | 7,99 € tient au pire cas ; 5,99 € ne tient plus au plafond de 10 c (marge nulle). L'année sans renouvellement répond aussi à la peur d'un abonnement piège (`../../vision.md`, questions ouvertes). Kartable vend 99,90 € pour 10 mois |
 | Statut | **Rester micro-entrepreneur, en BIC, avec le versement libératoire** si le revenu fiscal le permet ; revoir le choix au passage du seuil de TVA (vers 390 foyers payants) ou si le GAR devient un canal | Aucun coût de création, et le statut existe déjà ; le GAR n'accepte que des personnes morales (`../2026-10-01/statut-juridique.md`) |
@@ -75,9 +75,9 @@ tour : une réponse lue coûte 7,6 fois le reste du tour.
 
 | Profil (séances par semaine) | Séance | Texte seul | Type (photo 25 %, voix 10 %) | Chaque réponse lue |
 |---|---|---|---|---|
-| léger (2) | 3 tours, 1 exercice | 0,73 c | 0,98 c | 3,04 c |
-| normal (4) | 6 tours, 1,5 exercice | 1,26 c | 1,74 c | 5,86 c |
-| intensif (6) | 12 tours, 3 exercices | 2,51 c | 3,48 c | 11,72 c |
+| léger (2) | 3 tours, 1 exercice | 0,71 c | 0,98 c | 3,04 c |
+| normal (4) | 6 tours, 1,5 exercice | 1,21 c | 1,74 c | 5,86 c |
+| intensif (6) | 12 tours, 3 exercices | 2,42 c | 3,48 c | 11,72 c |
 
 Par élève et par mois, sur 36 semaines de cours et 8 de petites vacances à 30 % de l'usage :
 léger 0,07 €, normal 0,23 €, intensif 0,67 € HT (0,20, 0,75 et 2,25 € si chaque réponse est lue).
@@ -92,7 +92,7 @@ léger 0,07 €, normal 0,23 €, intensif 0,67 € HT (0,20, 0,75 et 2,25 € s
 | 10 | 5,7 | 2,9 | 100 | 4,18 |
 
 À 2 c, un élève gratuit fait sa soirée normale, photo comprise ; s'il fait lire chaque réponse à
-voix haute, il s'arrête après deux ou trois tours : la voix se paie sur son budget, c'est voulu.
+voix haute, il s'arrête après un ou deux tours : la voix se paie sur son budget, c'est voulu.
 
 ## 4. Le revenu d'un foyer payant
 
@@ -131,7 +131,8 @@ pas le prix : c'est une valeur de configuration.
 
 ## 6. Rétention, année scolaire, seuils
 
-Un foyer mensuel paie 4,1 mois en moyenne (RevenueCat), 3,3 si l'été double les départs :
+Un foyer mensuel paie 4,1 mois en moyenne (calage sur les taux de RevenueCat, § 10), 3,3 si l'été
+double les départs :
 
 | Rétention | Mois payés, été compris | Valeur nette (€) | Par inscrit, à 2,0 % de conversion | 3,1 % | 4,5 % |
 |---|---|---|---|---|---|
@@ -139,7 +140,8 @@ Un foyer mensuel paie 4,1 mois en moyenne (RevenueCat), 3,3 si l'été double le
 | médiane | 3,3 | 17,96 | 0,36 | 0,56 | 0,81 |
 | haute | 4,6 | 25,13 | 0,50 | 0,78 | 1,13 |
 
-Une année scolaire payée d'avance rapporte 40,80 € à 59 €, 48,29 € à 69 € et 55,78 € à 79 €. La
+Une année scolaire payée d'avance rapporte 40,17 € à 59 €, 47,66 € à 69 € et 55,15 € à 79 €, l'usage de
+toute l'année compté. La
 comparaison vaut par acheteur : combien de familles prennent l'année plutôt que le mois reste à
 mesurer.
 
@@ -147,9 +149,9 @@ Pour couvrir les frais, puis un revenu (gratuits légers, quota de 2 c, rétenti
 
 | Revenu visé (€ par mois) | Part payante | Foyers payants | Élèves actifs | Nouveaux payants par mois | Inscriptions par mois (3,1 %) |
 |---|---|---|---|---|---|
-| 0 | 3 % | 148 | 5 723 | 45 | 1 441 |
-| 0 | 6 % | 42 | 812 | 13 | 409 |
-| 0 | 9 % | 30 | 387 | 9 | 292 |
+| 0 | 3 % | 145 | 5 607 | 44 | 1 411 |
+| 0 | 6 % | 40 | 773 | 12 | 389 |
+| 0 | 9 % | 29 | 374 | 9 | 282 |
 | 1 500 | 3 % | 1 528 | 59 083 | 461 | 14 873 |
 | 1 500 | 6 % | 622 | 12 025 | 188 | 6 054 |
 | 1 500 | 9 % | 495 | 6 380 | 149 | 4 818 |
@@ -178,15 +180,16 @@ confidentialité et l'AIPD (2 000 €), marque à l'INPI pour une classe (190 �
 
 Ce qui reste au fondateur par mois, gratuits et frais compris (7,99 €, usage normal, gratuits
 légers) ; micro BIC avec versement libératoire, SASU sans salaire avec les dividendes au PFU
-(31,4 %) après l'IS, expert-comptable à 1 000 € HT par an :
+(31,4 %) après l'IS, expert-comptable à 1 000 € HT par an ; une SASU, personne distincte, ne
+compte pas le chiffre d'affaires de la micro existante pour la franchise de TVA :
 
 | Part payante | Foyers payants | CA annuel TTC (€) | TVA | Micro (€/mois) | SASU (€/mois) |
 |---|---|---|---|---|---|
-| 3 % | 100 | 9 588 | franchise | −96 | 2 |
+| 3 % | 100 | 9 588 | franchise | −91 | −8 |
 | 3 % | 500 | 47 940 | due | 416 | 639 |
 | 3 % | 1 000 | 95 880 | due | 935 | 1 386 |
-| 6 % | 100 | 9 588 | franchise | 77 | 103 |
-| 6 % | 300 | 28 764 | franchise | 828 | 754 |
+| 6 % | 100 | 9 588 | franchise | 82 | 96 |
+| 6 % | 300 | 28 764 | franchise | 833 | 747 |
 | 6 % | 500 | 47 940 | due | 1 282 | 1 144 |
 | 6 % | 1 000 | 95 880 | due | 2 667 | 2 357 |
 

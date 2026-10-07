@@ -48,14 +48,15 @@ def turn_cost(p_tts=P_TTS, reasoning=REASONING, p_voice=P_VOICE):
     return CHAT * (1 + P_REGEN) + analysis(reasoning) + P_ATTEMPT * DIAGNOSIS + p_voice * STT + p_tts * TTS + SUMMARY
 
 
-def session_cost(turns, exercises, p_tts=P_TTS, p_photo=P_PHOTO, reasoning=REASONING):
-    return exercises * (DRAWS * SHEET_DRAW + p_photo * PHOTO) + turns * turn_cost(p_tts, reasoning) + TITLE
+def session_cost(turns, exercises, p_tts=P_TTS, p_photo=P_PHOTO, reasoning=REASONING, p_voice=P_VOICE):
+    return exercises * (DRAWS * SHEET_DRAW + p_photo * PHOTO) + turns * turn_cost(p_tts, reasoning, p_voice) + TITLE
 
 
-def student_month(profile, p_tts=P_TTS, reasoning=REASONING):
+def student_month(profile, p_tts=P_TTS, reasoning=REASONING, p_voice=P_VOICE):
     """€ HT par élève et par mois, en moyenne sur l'année."""
     sessions, turns, exercises = PROFILES[profile]
-    return WEEKS_PER_MONTH * (sessions * session_cost(turns, exercises, p_tts, reasoning=reasoning) + PARENT_WEEK) / 100
+    session = session_cost(turns, exercises, p_tts, reasoning=reasoning, p_voice=p_voice)
+    return WEEKS_PER_MONTH * (sessions * session + PARENT_WEEK) / 100
 
 
 # ================================================================ Revenu et fiscalité
@@ -73,19 +74,20 @@ PFU = 0.314                  # S : flat tax sur les dividendes, 2026
 SASU_ACCOUNTANT = 1000 / 12  # S : expert-comptable en ligne, 470 à 1 250 € HT par an
 
 
-def revenue_ht(price, vat_due):
-    return price / (1 + VAT) if vat_due else price
+def revenue_ht(price, vat):
+    """`vat` : le taux de TVA due, 0 en franchise."""
+    return price / (1 + vat)
 
 
 def fees(price):
     return price * STRIPE[0] + STRIPE[1]
 
 
-def net_per_household(price=PRICE, vat_due=False, cat='BIC', ai_cost=0.0):
+def net_per_household(price=PRICE, vat=0.0, cat='BIC', ai_cost=0.0):
     """Reste au fondateur par foyer payant et par mois, en micro avec versement libératoire, avant
     les coûts fixes. En franchise, la TVA des fournisseurs ne se récupère pas : l'IA compte TTC."""
-    rev = revenue_ht(price, vat_due)
-    return rev - fees(price) - rev * (COTIS[cat] + VL[cat]) - ai_cost * (1 if vat_due else 1 + VAT)
+    rev = revenue_ht(price, vat)
+    return rev - fees(price) - rev * (COTIS[cat] + VL[cat]) - ai_cost * (1 if vat else 1 + VAT)
 
 
 # ================================================================ Coûts fixes mensuels (€ HT)
@@ -110,10 +112,10 @@ def langfuse_month(units):
 
 
 def fixed_month(students, units):
-    """Par élèves actifs du mois, gratuits compris (paliers de ../2026-10-01/couts.md) : hébergement
-    au plus cher de Scaleway et Clever Cloud (S), au-delà de 10 000 élèves un palier de plus par
-    tranche (H) ; outils (S) ; assurance RC pro (H). Mistral n'a pas de frais fixes : le ZDR ne
-    demande que le paiement à l'usage."""
+    """Frais soumis à la TVA, par élèves actifs du mois, gratuits compris (paliers de
+    ../2026-10-01/couts.md) : hébergement au plus cher de Scaleway et Clever Cloud (S), au-delà de
+    10 000 élèves un palier de plus par tranche (H) ; outils (S). Mistral n'a pas de frais fixes :
+    le ZDR ne demande que le paiement à l'usage."""
     if students <= 100:
         hosting, sentry, storage = 22.45, 0, 0.03
     elif students <= 1000:
@@ -122,8 +124,11 @@ def fixed_month(students, units):
         tranches = -(-students // 10_000)
         hosting, sentry, storage = 152.0 * tranches, 23.07, 3.21 * tranches
     email = max(0.0, students * EMAILS - 300) * 0.25 / 1000
-    vercel, uptime, domain, insurance = 17.75, 9.0, 0.65, 25.0
-    return hosting + sentry + storage + email + langfuse_month(units) + vercel + uptime + domain + insurance
+    vercel, uptime, domain = 17.75, 9.0, 0.65
+    return hosting + sentry + storage + email + langfuse_month(units) + vercel + uptime + domain
+
+
+INSURANCE = 25.0             # H : RC pro par mois, exonérée de TVA (taxe sur les assurances comprise)
 
 
 def platform(paying, share, free_profile='léger', paid_profile='normal'):
@@ -205,8 +210,9 @@ def free_household(profile, quota=QUOTA_FREE):
     return student * CHILDREN * (1 + VAT)
 
 
-def vat_due(paying):
-    return paying * PRICE * 12 + EXISTING_CA > FRANCHISE
+def vat_due(paying, existing=EXISTING_CA):
+    """Le CA de la micro existante compte pour la micro, pas pour une SASU, personne distincte."""
+    return paying * PRICE * 12 + existing > FRANCHISE
 
 
 def founder_month(paying, share, free_profile='léger'):
@@ -215,13 +221,17 @@ def founder_month(paying, share, free_profile='léger'):
     (IA, hébergement, outils) ne se récupère pas ; les frais de paiement en sont exonérés."""
     free_n = paying * (1 - share) / share
     students, units = platform(paying, share, free_profile)
-    due = vat_due(paying)
-    rev = revenue_ht(PRICE, due) * paying
     supplies = student_month('normal') * CHILDREN * paying + free_household(free_profile) / (1 + VAT) * free_n
     supplies += fixed_month(students, units)
-    costs = supplies * (1 if due else 1 + VAT) + fees(PRICE) * paying
+
+    def result(due, accountant):
+        rev = revenue_ht(PRICE, VAT if due else 0) * paying
+        return rev, (supplies + accountant) * (1 if due else 1 + VAT) + INSURANCE + fees(PRICE) * paying
+
+    rev, costs = result(vat_due(paying), 0)
     micro = rev * (1 - COTIS['BIC'] - VL['BIC']) - costs
-    year = (rev - costs - SASU_ACCOUNTANT) * 12
+    rev, costs = result(vat_due(paying, 0), SASU_ACCOUNTANT)
+    year = (rev - costs) * 12
     tax = min(year, IS_LOW_CAP) * IS_LOW + max(0.0, year - IS_LOW_CAP) * IS_HIGH if year > 0 else 0
     sasu = (year - tax) * (1 - PFU) / 12 if year > 0 else year / 12
     return micro, sasu
@@ -246,13 +256,13 @@ def main():
     print("\n## Coût d'une soirée (une séance), centimes HT\n")
     rows = []
     for name, (_, turns, ex) in PROFILES.items():
-        rows.append([name, f'{turns} tours, {e(ex, 1)} exercice(s)', c(session_cost(turns, ex, 0, 0)), c(session_cost(turns, ex)),
+        rows.append([name, f'{turns} tours, {e(ex, 1)} exercice(s)', c(session_cost(turns, ex, 0, 0, p_voice=0)), c(session_cost(turns, ex)),
                      c(session_cost(turns, ex, 1.0)), c(session_cost(turns, ex, 1.0, 1.0))])
     print(table(['Profil', 'Séance', 'Texte seul', 'Type (photo 25 %, voix 10 %)', 'Chaque réponse lue', 'Lue, et photo à chaque exercice'], rows))
 
     print("\n## Coût par élève et par mois (€ HT, moyenne sur l'année)\n")
     print(table(['Profil', 'Type', 'Sans voix', 'Chaque réponse lue'],
-                [[n, e(student_month(n), 3), e(student_month(n, 0), 3), e(student_month(n, 1.0), 3)] for n in PROFILES]))
+                [[n, e(student_month(n), 3), e(student_month(n, 0, p_voice=0), 3), e(student_month(n, 1.0), 3)] for n in PROFILES]))
 
     print('\n## Quota quotidien par élève : ce qu\'il couvre, ce qu\'il coûte au plafond\n')
     normal, intensive = session_cost(6, 1.5), session_cost(12, 3)
@@ -267,7 +277,7 @@ def main():
     ai_paid = student_month('normal') * CHILDREN
     rows = []
     for price in (5.99, 7.99, 9.99, 12.99):
-        for due in (False, True):
+        for due in (0, VAT):
             rows.append([e(price), 'due' if due else 'franchise', e(net_per_household(price, due)),
                          e(net_per_household(price, due, ai_cost=ai_paid)),
                          e(net_per_household(price, due, ai_cost=QUOTA_PAID * 30 / 100 * CHILDREN)),
@@ -314,7 +324,7 @@ def main():
     for share in (PAID_SHARE['basse'], PAID_SHARE['médiane']):
         for paying in (100, 300, 500, 1000, 2000):
             micro, sasu = founder_month(paying, share)
-            rev_ht = revenue_ht(PRICE, vat_due(paying)) * paying * 12
+            rev_ht = revenue_ht(PRICE, VAT if vat_due(paying) else 0) * paying * 12
             rows.append([f'{int(share * 100)} %', paying, e(paying * PRICE * 12, 0), 'due' if vat_due(paying) else 'franchise',
                          e(micro, 0), e(sasu, 0), 'oui' if rev_ht + EXISTING_CA <= MICRO_CAP else 'non, plafond dépassé'])
     print(table(['Part payante', 'Foyers payants', 'CA annuel TTC (€)', 'TVA', 'Micro BIC, versement libératoire (€/mois)',
@@ -324,7 +334,7 @@ def main():
     life = lifetime_months('médiane', True)
     rows = [['mensuel 7,99 €', e(life, 1) + ' mois en moyenne', e(net * life)]]
     for price in ANNUAL:
-        value = price - (price * STRIPE[0] + STRIPE[1]) - price * (COTIS['BIC'] + VL['BIC']) - ai_paid * 10 * (1 + VAT)
+        value = net_per_household(price, ai_cost=ai_paid * 12)
         rows.append([f'année scolaire {price} €', f'10 mois couverts, soit {e(price / 10)} € par mois', e(value)])
     print(table(['Formule', 'Durée', 'Valeur nette par foyer (€)'], rows))
 
@@ -333,7 +343,7 @@ def main():
     for paying in (30, 100, 300, 1000):
         students, units = platform(paying, PAID_SHARE['médiane'])
         rows.append([paying, e(students, 0), e(units, 0), e(langfuse_month(units)), e(langfuse_month(units * 0.1)),
-                     e(fixed_month(students, units)), e(fixed_month(students, units * 0.1))])
+                     e(fixed_month(students, units) + INSURANCE), e(fixed_month(students, units * 0.1) + INSURANCE)])
     print(table(['Foyers payants', 'Élèves actifs', 'Points Langfuse', 'Langfuse', 'Langfuse, 10 % des traces',
                  'Coûts fixes', 'Coûts fixes, 10 % des traces'], rows))
     print()
@@ -350,10 +360,8 @@ def main():
     rows = [[label, e(net_per_household(ai_cost=cost * CHILDREN) - net)] for label, cost in variants]
     rows.append(['Carte premium au lieu de standard', e(-0.013 * PRICE)])
     rows.append(['Catégorie BNC au lieu de BIC', e(net_per_household(cat='BNC', ai_cost=ai_paid) - net)])
-    rows.append(['TVA due au lieu de la franchise', e(net_per_household(vat_due=True, ai_cost=ai_paid) - net)])
-    reduced = PRICE / (1 + REDUCED_VAT)
-    rows.append([f'TVA due au taux réduit de {e(REDUCED_VAT * 100, 1)} %',
-                 e(reduced - fees(PRICE) - reduced * (COTIS['BIC'] + VL['BIC']) - ai_paid - net)])
+    rows.append(['TVA due au lieu de la franchise', e(net_per_household(vat=VAT, ai_cost=ai_paid) - net)])
+    rows.append([f'TVA due au taux réduit de {e(REDUCED_VAT * 100, 1)} %', e(net_per_household(vat=REDUCED_VAT, ai_cost=ai_paid) - net)])
     print(table(['Variante', 'Écart (€ par foyer et par mois)'], rows))
     print(f'\nBase : {e(net)} € par foyer payant et par mois.')
 
