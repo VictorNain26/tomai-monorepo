@@ -28,8 +28,15 @@ bloquant levé). L'historique vit dans git et les PR.
 - **Étape 3** : un seul workflow, `ci.yml`, réuni par `ci-ok` ; l'image ne contient plus que Bun,
   les bundles, les migrations et le web (261 Mo au lieu de 1,23 Go), lancée en CI contre
   Postgres et publiée sur GHCR au SHA sur `main`.
-- **Prochaine action** : étape 4, le foyer et les comptes ; l'étude des hébergeurs UE avance en
-  parallèle. L'ordre complet est dans l'étude. Test complet dans Chrome à la fin de chaque étape.
+- **Le foyer et l'âge, revus le 2026-10-07** (`etudes/2026-10-07/foyer-eleve-age.md`, décisions de
+  Victor) : trois façons d'accompagner l'élève, du CP à la terminale, la V1 en mode guidé au
+  collège ; le parent ne connaît aucun identifiant de son enfant, qui relie son appareil par un code ;
+  l'élève voit le résumé de son parent ; la détresse est relue par un humain avant tout message au
+  parent.
+- **Prochaine action** : étape 4, le foyer et les comptes en mode guidé (#425 à reprendre : le
+  jumelage d'appareil remplace le nom d'utilisateur et le mot de passe de l'élève), puis l'e-mail des
+  gardiens ; l'étude des hébergeurs UE avance en parallèle. Test complet dans Chrome à la fin de
+  chaque étape.
 - **Décisions de Victor en attente**, au moment de l'étape qui en dépend : budgets du quota
   (étape 5) ; offre Mistral payante pour paralléliser l'évaluation et juge d'une autre famille,
   seulement s'il est très bon marché (étape 8) ; fournisseur d'e-mail UE (étape 4).
@@ -46,7 +53,7 @@ supprime ou que l'étude couvre n'y figure plus.
 
 ### Refonte — comptes (étape 4)
 
-- **Sessions et mots de passe** : réinitialisation par e-mail avec `revokeSessionsOnPasswordReset`, et suppression des sessions d'un élève quand le gardien change son mot de passe (better-auth 1.7, `init-options.d.mts`).
+- **Sessions** : réinitialisation du mot de passe d'un gardien par e-mail avec `revokeSessionsOnPasswordReset` (better-auth 1.7, `init-options.d.mts`) ; un appareil d'élève déconnecté par le parent perd sa session.
 
 ### Refonte — préproduction (étape 7)
 
@@ -65,9 +72,10 @@ supprime ou que l'étude couvre n'y figure plus.
 
 ### Lot 3 — l'app entre les mains des familles
 
-- **Après une détresse** : décider avec l'alerte au parent ce que voit l'élève ensuite, et qui lève la fermeture ; une photo seule n'est pas jugée.
+- **Après une détresse** : la revue humaine (Victor au départ), son délai et sa trace ; ce que voit l'élève ensuite, et qui lève la fermeture ; une photo seule n'est pas jugée (`etudes/2026-10-07/foyer-eleve-age.md`).
 - **Conformité** : mention « vous parlez à une IA » dès la première interaction, consentement conjoint sous 15 ans, AIPD, résumé parent proportionné et connu de l'enfant, aucun lien avec un établissement sans réévaluer le haut risque (`etudes/2026-10-01/education-nationale.md`, c ; `tuteur.md` §11).
-- **Alerte au parent** : le push web n'atteint qu'un parent qui a installé l'app (iOS) ; l'alerte de détresse demande un canal garanti, l'e-mail par exemple, à décider avec le parcours parent.
+- **Message au parent après revue** : le push web n'atteint qu'un parent qui a installé l'app (iOS) ; un message décidé après une détresse demande un canal garanti, l'e-mail par exemple, à décider avec le parcours parent.
+- **Après la V1, primaire et lycée** : modes accompagné et autonome, transition à 15 puis 18 ans (`etudes/2026-10-07/foyer-eleve-age.md`, § 7) ; le primaire attend une mesure de la reconnaissance vocale sur des voix d'enfants français.
 - **Voix** : la `Permissions-Policy` interdit le micro ; l'ouvrir à `self` avec l'enregistrement d'un oral. Une seule voix, française (`fr_marie_*`) : décider s'il en faut d'autres pour les cours de langue, et réévaluer la normalisation de la lecture vocale.
 - **Langue d'un oral** : la transcription impose le français, et un oral de langue se transcrit mal (« Yes. » bruité devient « Oui. ») ; le client déclare la langue d'un oral de langue et la route la passe à Voxtral.
 
@@ -140,6 +148,7 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
 | Bloquant | Effet | Qui | Comment lever |
 |---|---|---|---|
 | Zero Data Retention non demandé | Mistral peut conserver textes et audio d'élèves selon sa rétention par défaut ; bloque tout utilisateur réel, pas le merge | Victor | Étape manuelle ci-dessous |
+| Clause des mineurs des conditions de Mistral (usages interdits, (c)) : pas de données personnelles d'enfants sous l'âge du consentement numérique, 15 ans en France ; lue à la lettre, presque tout le collège | Bloque tout utilisateur réel de moins de 15 ans, pas le merge | Victor | Clarification écrite de Mistral, demandée avec le ZDR (`etudes/2026-10-07/foyer-eleve-age.md`, § 1) |
 
 ## Étapes manuelles (Victor)
 
@@ -149,7 +158,7 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
 | Juger un échantillon de conversations sur la page prévue, par courtes séances | Vérifier le juge, lot 1 | quand la page existe |
 | Ouvrir le compte de l'hébergeur UE recommandé par l'étude | Préproduction, lot 3 | à faire, après l'étude |
 | Langfuse : la description de la file d'annotation `tom-judge-agreement` renvoie encore à `docs/agent.md`, devenu `docs/tuteur.md` ; la corriger dans l'interface (l'API n'a pas de mise à jour de file) | Évaluation | à faire |
-| Demander le Zero Data Retention : réservé au paiement à l'usage (« only with pay-as-you-go », [centre d'aide Mistral](https://help.mistral.ai/en/articles/347612-can-i-activate-zero-data-retention-zdr)), or le compte est sur l'offre gratuite (8,50 € d'API inclus par mois, paiement à l'usage désactivé, constaté le 2026-10-02). Activer le paiement à l'usage avec un plafond, puis envoyer la demande avec sa justification (mineurs, RGPD) ; vérifier ensuite Admin › API › Confidentialité. L'entraînement sur les appels API et les modèles Labs y sont désactivés | Porte avant ouverture | à faire |
+| Demander le Zero Data Retention : réservé au paiement à l'usage (« only with pay-as-you-go », [centre d'aide Mistral](https://help.mistral.ai/en/articles/347612-can-i-activate-zero-data-retention-zdr)), or le compte est sur l'offre gratuite (8,50 € d'API inclus par mois, paiement à l'usage désactivé, constaté le 2026-10-02). Activer le paiement à l'usage avec un plafond, puis envoyer la demande avec sa justification (mineurs, RGPD), et dans le même envoi la question sur la clause (c) des conditions commerciales : un service pour des 10-15 ans, avec l'accord de leurs parents, est-il permis ; vérifier ensuite Admin › API › Confidentialité. L'entraînement sur les appels API et les modèles Labs y sont désactivés | Porte avant ouverture | à faire |
 | Trancher le statut juridique avec un expert-comptable : rester micro-entrepreneur ou créer une SASU (le GAR n'accepte que des personnes morales ; seuils de TVA et de la micro calculés en abonnés dans `etudes/2026-10-01/statut-juridique.md`) | Avant l'ouverture, au démarrage du lot 3 | à faire |
 | Vérifier Tom dans le hero sur un iPhone (Safari : salut et respiration sans fond noir) | Landing en ligne | à faire |
 | Relecture des 32 exercices : confiée à Claude le 2026-10-02 et outillée (32 citations retrouvées mot pour mot dans leur PDF officiel, 14 sources de réponse en ligne, 14 réponses recalculées par le test) ; un regard pédagogique humain sur un échantillon reste à prévoir avant de publier les mesures | Lot 1, jeu rejouable par un tiers ; lot 4 pour la publication | fait |

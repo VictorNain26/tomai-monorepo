@@ -1,7 +1,8 @@
 # Vision produit
 
 Statut : validée par Victor le 2026-10-01, revue le 2026-10-06 (contraintes, preuve jugée par le
-fondateur, critères mesurables). Source de vérité du produit : pour qui, quelle
+fondateur, critères mesurables) et le 2026-10-07 (le foyer et l'âge, la détresse,
+`etudes/2026-10-07/foyer-eleve-age.md`). Source de vérité du produit : pour qui, quelle
 promesse, quelles preuves, quel prix, ce qu'on n'est pas. Les specs techniques
 (`architecture.md`, `tuteur.md`) et la roadmap en découlent. Les
 faits viennent des études du 2026-10-01 (`docs/etudes/`), qui portent les
@@ -40,7 +41,7 @@ concurrent est mesurée ; ce qui n'est pas construit ne se promet pas.
 |---|---|---|
 | **Il ne cède pas** | La réponse de l'exercice de l'élève n'est jamais donnée, même sous pression (« c'est pour demain », « je suis son parent ») ; le cran d'aide est fixé par le serveur, pas par une consigne à l'IA | Lot 2, mesuré par le lot 1 |
 | **Il explique bien** | Il repère l'erreur, pose une question à la fois, monte d'un cran seulement si l'élève bloque, ne se trompe pas, parle comme en collège | Lot 2, mesuré par le lot 1 |
-| **Le parent voit sans surveiller** | Un résumé de la semaine (ce qui a été travaillé, ce qui résiste) et une alerte de détresse, jamais les conversations ; l'élève sait ce que voit son parent | Lot 3 |
+| **Le parent voit sans surveiller** | Un résumé de la semaine (ce qui a été travaillé, ce qui résiste), que l'élève voit aussi ; une détresse relue par un humain avant tout message au parent, qui n'en reçoit que le motif ; jamais les conversations, et le parent ne connaît aucun identifiant de son enfant | Lot 3 |
 | **Les données d'un enfant restent en Europe** | Modèles Mistral sur l'endpoint UE, hébergement UE, aucune donnée réutilisée pour entraîner | Lot 3 (hébergement), ZDR à demander |
 | **On publie nos mesures** | Le protocole, le jeu d'exercices et les résultats (fuite et qualité d'aide), y compris face aux concurrents, sont publics et rejouables, avec leur marge d'erreur et le nom de qui a jugé | Lot 1, publié au lot 4 |
 
@@ -101,10 +102,21 @@ surveillance de l'enfant. Pas de classement, pas de points, pas de séries.
   (`etudes/2026-10-01/parents.md`) : mensuelle, sans engagement, résiliable en un clic,
   prévenue avant chaque prélèvement.
 
+## Le foyer et l'âge
+
+Le parent ouvre le foyer et conclut le contrat, gratuit compris ; un second parent peut le
+rejoindre et s'opposer. Trois façons d'accompagner l'élève, du CP à la terminale : accompagné au
+primaire (le parent ouvre la séance et reste là, la voix d'abord), guidé au collège (l'élève relie
+son appareil par un code du parent), autonome au lycée (son propre identifiant). Le mode suit le
+niveau ; l'élève voit le résumé de son parent et peut en demander l'arrêt, une demande qui
+s'applique d'elle-même à partir de 15 ans. À 18 ans, le lien parental prend fin. Rien ne bascule
+sans prévenir l'élève et le parent (`etudes/2026-10-07/foyer-eleve-age.md`).
+
 ## Périmètre V1
 
-- **Dedans** : collège, de la 6e à la 3e ; client web pensé d'abord pour le téléphone ;
-  texte, photo et voix ; résumé et alerte de détresse pour le parent ; Gratuit et Complet.
+- **Dedans** : collège, de la 6e à la 3e, en mode guidé ; client web pensé d'abord pour le
+  téléphone ; texte, photo et voix ; résumé pour le parent et détresse relue par un humain ;
+  Gratuit et Complet. Le modèle de données prévoit déjà le primaire et le lycée.
 - **Dehors** :
   - **Pronote** : l'accès actuel passe par une bibliothèque non officielle, archivée et
     cassée par la version 2026 de Pronote, en se faisant passer pour l'application
@@ -113,7 +125,8 @@ surveillance de l'enfant. Pas de classement, pas de points, pas de séries.
     produit qui marche déjà sans lui.
   - **Enseignants et établissements** : horizon, pas la V1 (référencement GAR, achat par
     établissement).
-  - Lycée, application native.
+  - Lycée et primaire, construits après la V1 ; le primaire attend une mesure de la
+    reconnaissance vocale sur des voix d'enfants français. Application native.
 
 ## Distribution
 
