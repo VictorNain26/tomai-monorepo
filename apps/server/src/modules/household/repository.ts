@@ -43,6 +43,17 @@ export function createHouseholdRepository(db: Db) {
       return member?.role;
     },
 
+    /** A student's own profile; undefined for anyone who is not a student. */
+    async findProfile(studentId: string) {
+      const [student] = await db
+        .select({ id: user.id, name: user.name, level: studentProfile.level })
+        .from(user)
+        .innerJoin(studentProfile, eq(studentProfile.userId, user.id))
+        .innerJoin(householdMember, and(eq(householdMember.userId, user.id), eq(householdMember.role, 'student')))
+        .where(eq(user.id, studentId));
+      return student;
+    },
+
     async listStudents(guardianId: string) {
       return db
         .select(studentColumns)
