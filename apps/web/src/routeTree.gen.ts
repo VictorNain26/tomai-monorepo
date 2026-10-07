@@ -14,6 +14,7 @@ import { Route as ParentRouteImport } from './routes/_parent'
 import { Route as ErreurConnexionRouteImport } from './routes/erreur-connexion'
 import { Route as FoyerRouteImport } from './routes/foyer'
 import { Route as JumelerRouteImport } from './routes/jumeler'
+import { Route as MemoireRouteImport } from './routes/memoire'
 import { Route as ParentConnexionRouteImport } from './routes/_parent.connexion'
 import { Route as ParentInscriptionRouteImport } from './routes/_parent.inscription'
 import { Route as ParentMotDePasseOublieRouteImport } from './routes/_parent.mot-de-passe-oublie'
@@ -44,6 +45,11 @@ const FoyerRoute = FoyerRouteImport.update({
 const JumelerRoute = JumelerRouteImport.update({
   id: '/jumeler',
   path: '/jumeler',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MemoireRoute = MemoireRouteImport.update({
+  id: '/memoire',
+  path: '/memoire',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ParentConnexionRoute = ParentConnexionRouteImport.update({
@@ -87,6 +93,7 @@ export interface FileRoutesByFullPath {
   '/erreur-connexion': typeof ErreurConnexionRoute
   '/foyer': typeof FoyerRouteWithChildren
   '/jumeler': typeof JumelerRoute
+  '/memoire': typeof MemoireRoute
   '/connexion': typeof ParentConnexionRoute
   '/inscription': typeof ParentInscriptionRoute
   '/mot-de-passe-oublie': typeof ParentMotDePasseOublieRoute
@@ -99,6 +106,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/erreur-connexion': typeof ErreurConnexionRoute
   '/jumeler': typeof JumelerRoute
+  '/memoire': typeof MemoireRoute
   '/connexion': typeof ParentConnexionRoute
   '/inscription': typeof ParentInscriptionRoute
   '/mot-de-passe-oublie': typeof ParentMotDePasseOublieRoute
@@ -114,6 +122,7 @@ export interface FileRoutesById {
   '/erreur-connexion': typeof ErreurConnexionRoute
   '/foyer': typeof FoyerRouteWithChildren
   '/jumeler': typeof JumelerRoute
+  '/memoire': typeof MemoireRoute
   '/_parent/connexion': typeof ParentConnexionRoute
   '/_parent/inscription': typeof ParentInscriptionRoute
   '/_parent/mot-de-passe-oublie': typeof ParentMotDePasseOublieRoute
@@ -129,6 +138,7 @@ export interface FileRouteTypes {
     | '/erreur-connexion'
     | '/foyer'
     | '/jumeler'
+    | '/memoire'
     | '/connexion'
     | '/inscription'
     | '/mot-de-passe-oublie'
@@ -141,6 +151,7 @@ export interface FileRouteTypes {
     | '/'
     | '/erreur-connexion'
     | '/jumeler'
+    | '/memoire'
     | '/connexion'
     | '/inscription'
     | '/mot-de-passe-oublie'
@@ -155,6 +166,7 @@ export interface FileRouteTypes {
     | '/erreur-connexion'
     | '/foyer'
     | '/jumeler'
+    | '/memoire'
     | '/_parent/connexion'
     | '/_parent/inscription'
     | '/_parent/mot-de-passe-oublie'
@@ -170,6 +182,7 @@ export interface RootRouteChildren {
   ErreurConnexionRoute: typeof ErreurConnexionRoute
   FoyerRoute: typeof FoyerRouteWithChildren
   JumelerRoute: typeof JumelerRoute
+  MemoireRoute: typeof MemoireRoute
   SeanceSessionIdRoute: typeof SeanceSessionIdRoute
 }
 
@@ -208,6 +221,13 @@ declare module '@tanstack/react-router' {
       path: '/jumeler'
       fullPath: '/jumeler'
       preLoaderRoute: typeof JumelerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/memoire': {
+      id: '/memoire'
+      path: '/memoire'
+      fullPath: '/memoire'
+      preLoaderRoute: typeof MemoireRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_parent/connexion': {
@@ -297,6 +317,7 @@ const rootRouteChildren: RootRouteChildren = {
   ErreurConnexionRoute: ErreurConnexionRoute,
   FoyerRoute: FoyerRouteWithChildren,
   JumelerRoute: JumelerRoute,
+  MemoireRoute: MemoireRoute,
   SeanceSessionIdRoute: SeanceSessionIdRoute,
 }
 export const routeTree = rootRouteImport

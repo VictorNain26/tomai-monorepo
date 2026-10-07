@@ -46,4 +46,13 @@ export const studentSchema = z.object({ name, level });
 
 export const newStudentSchema = studentSchema.extend({
   birthMonth: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, 'Son mois de naissance, au format AAAA-MM : 2014-03.'),
+  memoryProposed: z.boolean(),
 });
+
+/** What the guardian reads of the learner memory of their child. */
+export function memoryStatus({ name, memory }: Pick<Student, 'name' | 'memory'>): string {
+  if (memory.state === 'active') return `${name} l’a acceptée : Tom retient les notions de ses exercices et ce qui a résisté.`;
+  if (memory.decidesAlone) return `À partir de 15 ans, ${name} décide seul${memory.state === 'asked' ? ' : la question lui est posée' : ''}.`;
+  if (memory.state === 'asked') return `Proposée : ${name} répondra à sa prochaine visite.`;
+  return memory.proposed ? `${name} l’a refusée.` : 'Pas proposée : Tom ne retient rien d’une séance à l’autre.';
+}

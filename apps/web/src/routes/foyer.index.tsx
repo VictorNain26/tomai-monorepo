@@ -4,7 +4,7 @@ import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-q
 import { Link, createFileRoute } from '@tanstack/react-router';
 import { useForm } from 'react-hook-form';
 import type { z } from '../lib/zod';
-import { Field, SelectField } from '../components/field';
+import { CheckboxField, Field, SelectField } from '../components/field';
 import { Notice } from '../components/notice';
 import { Page } from '../components/page';
 import { SignOut } from '../components/sign-out';
@@ -55,7 +55,7 @@ function Household() {
 
 function AddStudent() {
   const queryClient = useQueryClient();
-  const form = useForm({ resolver: zodResolver(newStudentSchema), defaultValues: { name: '', birthMonth: '' } });
+  const form = useForm({ resolver: zodResolver(newStudentSchema), defaultValues: { name: '', birthMonth: '', memoryProposed: false } });
   const create = useMutation({
     mutationFn: (json: z.output<typeof newStudentSchema>) => parseResponse(api.household.students.$post({ json })),
     onSuccess: async () => {
@@ -81,6 +81,11 @@ function AddStudent() {
           placeholder="AAAA-MM"
           {...form.register('birthMonth')}
           error={form.formState.errors.birthMonth?.message}
+        />
+        <CheckboxField
+          label="Proposer que Tom retienne ce qui a résisté"
+          hint="Les notions de ses exercices et ce qui a été difficile, jamais ce qu’il écrit. Votre enfant accepte ou non, et peut tout effacer."
+          {...form.register('memoryProposed')}
         />
         {create.error && (
           <Notice tone="error">

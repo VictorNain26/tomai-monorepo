@@ -48,13 +48,14 @@ bloquant levé). L'historique vit dans git et les PR.
 - **Mémoire d'une séance à l'autre** (`etudes/2026-10-07/memoire-entre-seances.md`), décidée par
   Victor le 2026-10-07 : une mémoire d'apprentissage tirée des exercices, acceptée par le parent
   et l'enfant, visible et effaçable par l'élève, remise à zéro à la rentrée ; promise seulement
-  après la mesure avec et sans mémoire. Le serveur est fait (#443) : l'accord, le bloc
-  `<learner_memory>`, `/api/memory` ; restent les écrans du parent et de l'élève.
+  après la mesure avec et sans mémoire. Faite : le serveur (#443, l'accord, le bloc
+  `<learner_memory>`, `/api/memory`) et les écrans du parent et de l'élève (#444). Reste sa mesure
+  au harnais (lot 1), avant toute promesse.
 - **Le prénom et la mémoire chez Mistral** (Victor, 2026-10-07) : ils partent dans le prompt ;
   aucun vrai élève avant la réponse écrite de Mistral sur sa clause des moins de 15 ans ; s'il
   refuse, ils en sortent (`tuteur.md` § 11).
-- **Prochaine action** : la mémoire d'une séance à l'autre, puis l'étape 7 (la préproduction
-  UE). L'étude des hébergeurs UE avance en parallèle.
+- **Prochaine action** : l'étape 7, la préproduction UE, à commencer par l'étude des hébergeurs
+  UE.
 - **Rentabilité et quotas** (`etudes/2026-10-07/rentabilite.md`) : le gratuit décide de la
   rentabilité, la distribution est le vrai risque ; quotas proposés de 2 c (Gratuit) et 10 c
   (Complet) par élève et par jour, voix comprise, remis à zéro à 4 h, et l'année scolaire à 69 €

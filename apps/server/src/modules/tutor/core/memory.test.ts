@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import { programmeFor } from '../../../referential';
-import { learnerMemoryBlock, notionMemories, type PastExercise } from './memory';
+import { learnerMemoryBlock, notionMemories, notionView, type PastExercise } from './memory';
 import { notionText } from './sheet';
 
 const [first, second] = programmeFor('quatrieme', 'mathematiques', 2026)?.entries ?? [];
@@ -58,7 +58,9 @@ describe('learnerMemoryBlock', () => {
   it('writes the exercise’s notions only, in the referential’s words, with no text of the student', () => {
     const block = learnerMemoryBlock([first.id], memories);
     expect(block).toStartWith('<learner_memory>\n');
-    expect(block).toContain(`- ${notionText(first.id) ?? ''} : travaillée 1 fois ; la dernière fois, pas résolue, avec de l'aide jusqu'au palier 3`);
+    expect(block).toContain(
+      `- ${notionText(first.id) ?? ''} : travaillée 1 fois ; la dernière fois, pas résolue, avec de l'aide jusqu'à : étape intermédiaire`,
+    );
     expect(block).toContain("erreur fréquente : fait des erreurs d'inattention");
     expect(block).toEndWith('</learner_memory>');
   });
@@ -66,5 +68,21 @@ describe('learnerMemoryBlock', () => {
   it('is null when the past says nothing of the exercise’s notions', () => {
     expect(learnerMemoryBlock([second.id], memories)).toBeNull();
     expect(learnerMemoryBlock([first.id], [])).toBeNull();
+  });
+});
+
+describe('notionView', () => {
+  it('names the help by its step of the ladder, and the error to watch in the student’s words', () => {
+    const [memory] = notionMemories([exercise({ hintLevel: 2, solved: false, errorTypes: ['misinterpret', 'misinterpret'] })], new Map());
+    if (!memory) throw new Error('no memory');
+    expect(notionView(memory)).toEqual({
+      notionId: first.id,
+      label: first.text,
+      worked: 1,
+      lastSolved: false,
+      lastHelp: 'Indice ciblé',
+      watch: 'mal lire la consigne',
+    });
+    expect(notionView({ ...memory, frequentError: null }).watch).toBeNull();
   });
 });

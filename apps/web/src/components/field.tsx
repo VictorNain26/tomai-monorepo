@@ -1,4 +1,4 @@
-import { Input, NativeSelect, NativeSelectOption } from '@repo/ui';
+import { Checkbox, Input, NativeSelect, NativeSelectOption } from '@repo/ui';
 import { useId, type ComponentProps } from 'react';
 
 type FieldProps = ComponentProps<typeof Input> & { label: string; error?: string | undefined };
@@ -58,6 +58,29 @@ export function SelectField({ label, options, error, ...select }: SelectFieldPro
           {error}
         </p>
       )}
+    </div>
+  );
+}
+
+type CheckboxFieldProps = Omit<ComponentProps<'input'>, 'type'> & { label: string; hint?: string };
+
+/** A checkbox with its label beside it, and a line that says what it means. */
+export function CheckboxField({ label, hint, ...checkbox }: CheckboxFieldProps) {
+  const id = useId();
+  const hintId = `${id}-hint`;
+  return (
+    <div className="flex items-start gap-3">
+      <Checkbox id={id} aria-describedby={hint ? hintId : undefined} {...checkbox} />
+      <div className="flex flex-col gap-1">
+        <label htmlFor={id} className="text-sm font-bold text-foreground">
+          {label}
+        </label>
+        {hint && (
+          <p id={hintId} className="text-sm text-muted-foreground">
+            {hint}
+          </p>
+        )}
+      </div>
     </div>
   );
 }
