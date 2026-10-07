@@ -1,6 +1,6 @@
 /**
  * Closed beta: a guardian's account is created for an invited address only. An invitation is a
- * verification value of better-auth, keyed by the address, spent by the sign-up that uses it
+ * verification value of better-auth, keyed by the address, spent once its account is created
  * (./auth.ts). Inviting an address again replaces its invitation.
  */
 
@@ -8,7 +8,7 @@ import { eq } from 'drizzle-orm';
 import type { Db } from '../db/client';
 import { verification } from './schema';
 
-export const INVITATION_PREFIX = 'sign-up-invitation:';
+const INVITATION_PREFIX = 'sign-up-invitation:';
 const INVITATION_DAYS = 30;
 
 // better-auth stores an address in lowercase (api/routes/sign-up.mjs): the invitation is keyed the same way.
