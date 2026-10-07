@@ -44,7 +44,25 @@ describe('loadConfig', () => {
       authSecret: BASE.BETTER_AUTH_SECRET,
       webDistDir: undefined,
       mail: undefined,
-      mistral: { apiKey: undefined, serverUrl: 'https://api.eu.mistral.ai', model: 'mistral-small-2603', timeoutMs: 30_000, retryAttempts: 2 },
+      mistral: {
+        apiKey: undefined,
+        serverUrl: 'https://api.eu.mistral.ai',
+        euEndpoint: true,
+        model: 'mistral-small-2603',
+        timeoutMs: 30_000,
+        retryAttempts: 2,
+      },
+    });
+  });
+
+  it('keeps the Mistral origin without its trailing slash, the EU one recognised', () => {
+    expect(loadConfig({ ...PRODUCTION, MISTRAL_SERVER_URL: 'https://api.eu.mistral.ai/' }).mistral).toMatchObject({
+      serverUrl: 'https://api.eu.mistral.ai',
+      euEndpoint: true,
+    });
+    expect(loadConfig({ ...BASE, MISTRAL_SERVER_URL: 'http://localhost:9000' }).mistral).toMatchObject({
+      serverUrl: 'http://localhost:9000',
+      euEndpoint: false,
     });
   });
 

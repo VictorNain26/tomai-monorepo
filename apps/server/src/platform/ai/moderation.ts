@@ -112,6 +112,8 @@ export function createModeration({ mistral, logger }: { mistral: MistralConfig; 
     },
 
     async studentTurn(lastTutorText, studentText) {
+      // A photo alone: no text to classify, and no score measured.
+      if (!studentText.trim()) return { flagged: [], selfharmScore: null };
       const response = await sdk.classifiers.moderateChat({
         model: MODEL,
         inputs: [...(lastTutorText ? [{ role: 'assistant' as const, content: lastTutorText }] : []), { role: 'user' as const, content: studentText }],

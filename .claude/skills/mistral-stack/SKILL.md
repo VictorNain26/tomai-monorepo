@@ -27,7 +27,8 @@ modèle et de prix sans prévenir (docs.mistral.ai/inference/model-lifecycle).
 
 ## Appeler l'API
 
-- Le client se crée dans `src/main.ts` et se passe en paramètre : `createAi`
+- Le client se crée à la racine de composition (`src/main.ts`, quand le tour s'y branche) et se
+  passe en paramètre : `createAi`
   (`src/platform/ai/client.ts`) pour `generateText` et `generateStructured`, `createModeration`
   (`src/platform/ai/moderation.ts`). Jamais un SDK appelé depuis un service, jamais
   l'environnement lu ailleurs : la clé est toujours passée, même vide, sans quoi les SDK liraient
@@ -45,12 +46,13 @@ modèle et de prix sans prévenir (docs.mistral.ai/inference/model-lifecycle).
 
 Chaque appel facturé de `createAi` écrit son coût dans `ai_cost`, en micro-euros, au nom de
 l'élève (`owner`, `null` hors d'un élève : rien n'est écrit), une réponse hors schéma comprise.
-La modération, gratuite, n'est pas tracée.
+La modération, gratuite, n'est pas tracée. Un appel qui ne passe pas par `createAi` (chat en flux,
+voix) écrit son coût lui aussi : jamais un appel facturé hors du quota.
 
 - **Tarif** : `PRICES_USD` (`src/platform/ai/cost.ts`), prix publics en dollars par ID daté. Tokens
   en cache à 10 % du prix d'entrée, endpoint UE +10 %, conversion au taux que Mistral facture
-  (`MISTRAL_USD_TO_EUR`). Un modèle absent de la table écrit une ligne à 0 marquée
-  `unknown_model` et un avertissement : l'ajouter à la table.
+  (`MISTRAL_USD_TO_EUR`). Un modèle sans prix fait échouer `createAi`, donc le démarrage :
+  l'ajouter à la table.
 - **Quota** : 2 c par élève et par jour en Gratuit, 10 c en Complet, voix comprise, remise à zéro
   à 4 h (`docs/etudes/2026-10-07/rentabilite.md`) ; il revient avec l'étape 5 de la refonte.
 - **Réduire le coût** : cache de prompt, clé = ID de session pour le chat, ID de workflow

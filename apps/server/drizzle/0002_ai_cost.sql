@@ -7,7 +7,6 @@ CREATE TABLE "ai_cost" (
 	"cached_input_tokens" integer NOT NULL,
 	"output_tokens" integer NOT NULL,
 	"cost_micro_eur" integer NOT NULL,
-	"unknown_model" boolean NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint

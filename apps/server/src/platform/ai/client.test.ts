@@ -53,7 +53,7 @@ describe('generateText', () => {
     expect(await ai.generateText(call())).toBe('Une fraction');
     // Outside the EU endpoint, no upcharge: 0,00021 $ × 0,85.
     expect(await costs()).toMatchObject([
-      { operation: 'title', model: 'mistral-small-2603', inputTokens: 1000, outputTokens: 100, costMicroEur: 179, unknownModel: false },
+      { operation: 'title', model: 'mistral-small-2603', inputTokens: 1000, outputTokens: 100, costMicroEur: 179 },
     ]);
   });
 
@@ -92,12 +92,8 @@ describe('generateText', () => {
     expect(lines).toContainEqual(expect.objectContaining({ msg: 'AI cost not written', operation: 'title' }));
   });
 
-  it('writes a model missing from the price list at 0, and warns', async () => {
-    const unpriced = createAi({ mistral: mistral.config({ model: 'mistral-small-2512' }), db, logger });
-    mistral.chat.push({ text: 'ok' });
-    await unpriced.generateText(call());
-    expect(await costs()).toMatchObject([{ model: 'mistral-small-2512', costMicroEur: 0, unknownModel: true }]);
-    expect(lines).toContainEqual(expect.objectContaining({ msg: 'AI cost: model missing from the price list' }));
+  it('refuses to start on a model without a price, whose calls no quota could bound', () => {
+    expect(() => createAi({ mistral: mistral.config({ model: 'mistral-small-2609' }), db, logger })).toThrow('No price');
   });
 
   it('fails at its deadline when Mistral hangs', async () => {

@@ -35,15 +35,18 @@ const fields = z.object({
   // A dated model only: an alias changes model and price silently
   // (docs.mistral.ai/inference/model-lifecycle).
   MISTRAL_API_KEY: z.string().optional(),
-  // A bare origin: the SDKs add their own paths.
+  // A bare origin, kept without its trailing slash: the SDKs add their own paths.
   MISTRAL_SERVER_URL: z
     .url({ protocol: /^https?$/ })
     .refine((url) => new URL(url).href === `${new URL(url).origin}/`, { error: 'MISTRAL_SERVER_URL doit être une origine, sans chemin' })
+    .transform((url) => new URL(url).origin)
     .default(MISTRAL_EU),
   MISTRAL_MODEL: z
     .string()
     .refine((model) => !model.endsWith('-latest'), { error: 'MISTRAL_MODEL doit être un modèle daté, pas un alias -latest' })
     .default('mistral-small-2603'),
+  // For the text calls. Moderation keeps its own shorter deadlines, measured during an incident
+  // (platform/ai/moderation.ts); 0 retries turns its retries off too.
   MISTRAL_TIMEOUT_MS: z.coerce.number().int().positive().default(30_000),
   MISTRAL_RETRY_ATTEMPTS: z.coerce.number().int().min(0).max(5).default(2),
 });
@@ -87,6 +90,8 @@ export interface MistralConfig {
   /** Outside production, absent: Mistral refuses the calls. */
   readonly apiKey: string | undefined;
   readonly serverUrl: string;
+  /** Inference guaranteed in the EU, at a 10 % upcharge. */
+  readonly euEndpoint: boolean;
   readonly model: string;
   readonly timeoutMs: number;
   readonly retryAttempts: number;
@@ -102,7 +107,7 @@ export function loadConfig(environment: Environment): Config {
     throw new Error(`Invalid environment:\n  ${missing.map((key) => `${key}: requis avec ${set.join(', ')}`).join('\n  ')}`);
   }
   // A student's text never leaves the EU in production.
-  if (env.NODE_ENV === 'production' && new URL(env.MISTRAL_SERVER_URL).origin !== MISTRAL_EU) {
+  if (env.NODE_ENV === 'production' && env.MISTRAL_SERVER_URL !== MISTRAL_EU) {
     throw new Error(`Invalid environment:\n  MISTRAL_SERVER_URL: ${MISTRAL_EU} requis en production`);
   }
   return Object.freeze({
@@ -120,6 +125,7 @@ export function loadConfig(environment: Environment): Config {
     mistral: {
       apiKey: env.MISTRAL_API_KEY,
       serverUrl: env.MISTRAL_SERVER_URL,
+      euEndpoint: env.MISTRAL_SERVER_URL === MISTRAL_EU,
       model: env.MISTRAL_MODEL,
       timeoutMs: env.MISTRAL_TIMEOUT_MS,
       retryAttempts: env.MISTRAL_RETRY_ATTEMPTS,

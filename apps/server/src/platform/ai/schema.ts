@@ -3,7 +3,7 @@
  * free, is not written.
  */
 
-import { boolean, index, integer, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { index, integer, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 import { user } from '../auth/schema';
 
 export const aiCost = pgTable(
@@ -19,8 +19,6 @@ export const aiCost = pgTable(
     cachedInputTokens: integer('cached_input_tokens').notNull(),
     outputTokens: integer('output_tokens').notNull(),
     costMicroEur: integer('cost_micro_eur').notNull(),
-    // A model missing from the price list costs 0 here: the row says so.
-    unknownModel: boolean('unknown_model').notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [index('ai_cost_student_id_created_at_idx').on(table.studentId, table.createdAt)],

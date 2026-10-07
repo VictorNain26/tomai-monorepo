@@ -92,6 +92,7 @@ export function fakeMistral() {
   const config = (overrides: Partial<MistralConfig> = {}): MistralConfig => ({
     apiKey: 'test',
     serverUrl: url,
+    euEndpoint: false,
     model: 'mistral-small-2603',
     timeoutMs: 2_000,
     retryAttempts: 0,

@@ -10,8 +10,8 @@ import type { Logger } from 'pino';
 import type { z } from 'zod';
 import type { MistralConfig } from '../../config';
 import type { Db } from '../db/client';
-import { costMicroEur, type Usage } from './cost';
-import { aiCost } from './schema';
+import { pricing, type Usage } from './cost';
+import { insertCost } from './repository';
 
 /** Who a call is billed to: a student, or nobody outside a student (evaluation, live tests). */
 type Owner = { studentId: string } | null;
@@ -64,14 +64,20 @@ export function createAi({ mistral, db, logger }: { mistral: MistralConfig; db: 
   // The key always passed, even empty: the provider would otherwise read MISTRAL_API_KEY itself.
   const provider = createMistral({ baseURL: `${mistral.serverUrl}/v1`, apiKey: mistral.apiKey ?? '' });
   const model = provider(mistral.model);
+  // Throws at boot for a model without a price: its calls would escape the quota.
+  const costOf = pricing(mistral.model, mistral.euEndpoint);
 
   /** A failed write is logged, never thrown: the student already has the answer. */
   async function record(call: TextCall, usage: Usage): Promise<void> {
     if (!call.owner) return;
-    const cost = costMicroEur(mistral.model, usage, mistral.serverUrl);
-    if (cost.unknownModel) logger.warn({ model: mistral.model }, 'AI cost: model missing from the price list');
     try {
-      await db.insert(aiCost).values({ studentId: call.owner.studentId, model: mistral.model, operation: call.operation, ...usage, ...cost });
+      await insertCost(db, {
+        studentId: call.owner.studentId,
+        model: mistral.model,
+        operation: call.operation,
+        ...usage,
+        costMicroEur: costOf(usage),
+      });
     } catch (err) {
       logger.error({ err, operation: call.operation }, 'AI cost not written');
     }

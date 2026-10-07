@@ -13,7 +13,7 @@ export interface Usage {
 }
 
 /** Read on docs.mistral.ai/inference/pricing on 2026-10-07. */
-const PRICES_USD: Readonly<Record<string, { input: number; output: number }>> = {
+const PRICES_USD: Readonly<Record<string, { input: number; output: number } | undefined>> = {
   'mistral-small-2603': { input: 0.15, output: 0.6 },
 };
 
@@ -26,11 +26,14 @@ const EU_UPCHARGE = 1.1;
  */
 const MISTRAL_USD_TO_EUR = 0.85;
 
-export function costMicroEur(model: string, usage: Usage, serverUrl: string): { costMicroEur: number; unknownModel: boolean } {
+/** The cost of a model's calls; throws for a model without a price, which no quota could bound. */
+export function pricing(model: string, euEndpoint: boolean): (usage: Usage) => number {
   const price = PRICES_USD[model];
-  if (!price) return { costMicroEur: 0, unknownModel: true };
-  const cached = Math.min(usage.cachedInputTokens, usage.inputTokens);
-  const usd = ((usage.inputTokens - cached + cached * CACHE_RATE) * price.input + usage.outputTokens * price.output) / 1_000_000;
-  const upcharge = new URL(serverUrl).host === 'api.eu.mistral.ai' ? EU_UPCHARGE : 1;
-  return { costMicroEur: Math.round(usd * upcharge * MISTRAL_USD_TO_EUR * 1_000_000), unknownModel: false };
+  if (!price) throw new Error(`No price for ${model}: add it to PRICES_USD (platform/ai/cost.ts)`);
+  const rate = (euEndpoint ? EU_UPCHARGE : 1) * MISTRAL_USD_TO_EUR;
+  return (usage) => {
+    const cached = Math.min(usage.cachedInputTokens, usage.inputTokens);
+    const usd = ((usage.inputTokens - cached + cached * CACHE_RATE) * price.input + usage.outputTokens * price.output) / 1_000_000;
+    return Math.round(usd * rate * 1_000_000);
+  };
 }

@@ -1,5 +1,5 @@
 {
-  "id": "88afb3e5-fa65-448e-bfe4-a26db8ba0e66",
+  "id": "9ba78e94-059e-42fa-95ad-538bc4848447",
   "prevId": "8c58a968-779e-4f16-8bf1-d9175935da2c",
   "version": "7",
   "dialect": "postgresql",
@@ -177,12 +177,6 @@
         "cost_micro_eur": {
           "name": "cost_micro_eur",
           "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "unknown_model": {
-          "name": "unknown_model",
-          "type": "boolean",
           "primaryKey": false,
           "notNull": true
         },

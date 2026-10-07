@@ -65,6 +65,11 @@ describe('studentTurn', () => {
     ]);
   });
 
+  it('asks nothing for a turn without text, a photo alone', async () => {
+    expect(await moderation.studentTurn('Envoie ton exercice', '  ')).toEqual({ flagged: [], selfharmScore: null });
+    expect(mistral.received).toEqual([]);
+  });
+
   it('reads a missing score as unknown, not as low', async () => {
     mistral.moderations.push({ scores: {} });
     expect(await moderation.studentTurn(null, 'bonjour')).toEqual({ flagged: [], selfharmScore: null });
