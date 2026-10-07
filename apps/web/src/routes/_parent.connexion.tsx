@@ -11,7 +11,7 @@ import { Page } from '../components/page';
 import { authClient, authMessage } from '../lib/auth';
 import { meQuery } from '../lib/me';
 
-export const Route = createFileRoute('/connexion')({ component: SignIn });
+export const Route = createFileRoute('/_parent/connexion')({ component: SignIn });
 
 const schema = z.object({
   email: z.email('Une adresse e-mail valide.'),

@@ -9,7 +9,7 @@ import { Notice } from '../components/notice';
 import { Page } from '../components/page';
 import { authClient, authMessage } from '../lib/auth';
 
-export const Route = createFileRoute('/mot-de-passe-oublie')({ component: ForgottenPassword });
+export const Route = createFileRoute('/_parent/mot-de-passe-oublie')({ component: ForgottenPassword });
 
 const schema = z.object({ email: z.email('Une adresse e-mail valide.') });
 

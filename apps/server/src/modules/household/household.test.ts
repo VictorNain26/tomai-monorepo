@@ -335,6 +335,12 @@ describe("a student, through better-auth's own routes", () => {
     expect(await db.select().from(account).where(eq(account.userId, student.id))).toEqual([]);
   });
 
+  it('sends a link opened on their device to the sign-in page, which says whose the device is', async () => {
+    const res = await api.request('GET', '/api/auth/verify-email?token=un-lien-du-parent&callbackURL=/', { cookie });
+    expect(res.status).toBe(302);
+    expect(res.headers.get('location')).toBe('/connexion');
+  });
+
   it('still reads their session and signs out', async () => {
     const fresh = await api.pair(ownGuardian, student.id);
     expect((await api.sessionUser(fresh))?.id).toBe(student.id);

@@ -1,6 +1,7 @@
 import { Button } from '@repo/ui';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { Link, createFileRoute, redirect, useNavigate } from '@tanstack/react-router';
+import { SignOut } from '../components/sign-out';
 import { Notice } from '../components/notice';
 import { Page } from '../components/page';
 import { api, parseResponse } from '../lib/api';
@@ -97,6 +98,10 @@ function Devices() {
         ))}
       </ul>
       <p className="text-sm text-muted-foreground">Un appareil que tu ne reconnais pas ? Dis-le à ton parent : il peut le déconnecter.</p>
+      <p className="text-sm text-muted-foreground">
+        Sur un appareil partagé, déconnecte-toi en partant : ton parent te donnera un nouveau code pour revenir.
+      </p>
+      <SignOut label="Me déconnecter de cet appareil" />
     </section>
   );
 }
