@@ -48,7 +48,7 @@
         "@mistralai/mistralai": "^2.7.0",
         "@scaleway/sdk-client": "^2.12.1",
         "@scaleway/sdk-tem": "^2.15.0",
-        "ai": "^7.0.107",
+        "ai": "7.0.128",
         "better-auth": "^1.7.5",
         "drizzle-orm": "^0.45.3",
         "hono": "^4.13.12",
