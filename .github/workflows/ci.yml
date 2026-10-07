@@ -5,12 +5,12 @@
 name: CI
 
 # No paths-ignore: `ci-ok` must report on every PR, or the ruleset blocks its merge, and every
-# commit on main gets its image.
+# commit on main gets its image. Every PR, whatever its base: in a cascade, each PR targets the
+# branch before it, and the run on its head still counts once it is retargeted on main.
 on:
   push:
     branches: [main]
   pull_request:
-    branches: [main]
 
 permissions:
   contents: read
