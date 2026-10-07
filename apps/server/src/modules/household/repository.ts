@@ -57,7 +57,7 @@ export function createHouseholdRepository(db: Db) {
           birthMonth: studentProfile.birthMonth,
           memoryProposedAt: studentProfile.memoryProposedAt,
           memoryAnswer: studentProfile.memoryAnswer,
-          memoryResetAt: studentProfile.memoryResetAt,
+          memoryResetAfter: studentProfile.memoryResetAfter,
         })
         .from(user)
         .innerJoin(studentProfile, eq(studentProfile.userId, user.id))
@@ -132,12 +132,13 @@ export function createHouseholdRepository(db: Db) {
           .set({
             updatedAt: now,
             ...(patch.level === undefined ? {} : { level: patch.level }),
-            // Withdrawn, the memory is erased, and the child's answer with it: proposed again, it is asked again.
+            // Withdrawn, the child's answer goes with it: proposed again, it is asked again, and the
+            // acceptance starts the memory afresh.
             ...(patch.memoryProposed === undefined
               ? {}
               : patch.memoryProposed
                 ? { memoryProposedAt: sql`coalesce(${studentProfile.memoryProposedAt}, now())` }
-                : { memoryProposedAt: null, memoryAnswer: null, memoryResetAt: sql`now()` }),
+                : { memoryProposedAt: null, memoryAnswer: null }),
           })
           .where(eq(studentProfile.userId, studentId));
         return true;
@@ -201,23 +202,19 @@ export function createHouseholdRepository(db: Db) {
     },
 
     /**
-     * The student's answer to the learner memory, which starts from it either way: accepted, nothing
-     * done before counts; declined, what it kept is erased.
+     * The student's answer to the learner memory, which starts afresh with it either way, in one
+     * statement: accepted, no exercise up to `afterPosition` counts; declined, what it kept is gone.
      */
-    async answerMemory(studentId: string, answer: MemoryAnswer) {
-      // The database's clock, which dates the exercises the memory compares with it.
+    async answerMemory(studentId: string, answer: MemoryAnswer, afterPosition: number) {
       await db
         .update(studentProfile)
-        .set({ memoryAnswer: answer, memoryResetAt: sql`now()`, updatedAt: new Date() })
+        .set({ memoryAnswer: answer, memoryResetAfter: afterPosition, updatedAt: new Date() })
         .where(eq(studentProfile.userId, studentId));
     },
 
-    /** The learner memory starts again from now: no earlier exercise counts. */
-    async resetMemory(studentId: string) {
-      await db
-        .update(studentProfile)
-        .set({ memoryResetAt: sql`now()`, updatedAt: new Date() })
-        .where(eq(studentProfile.userId, studentId));
+    /** The learner memory starts afresh: no exercise up to `afterPosition` counts. */
+    async resetMemory(studentId: string, afterPosition: number) {
+      await db.update(studentProfile).set({ memoryResetAfter: afterPosition, updatedAt: new Date() }).where(eq(studentProfile.userId, studentId));
     },
   };
 }

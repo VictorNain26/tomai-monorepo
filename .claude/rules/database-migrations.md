@@ -33,7 +33,10 @@ de l'image Docker, `docker-entrypoint.sh` applique les migrations (`dist/migrate
 
 ## Interdictions
 
-- Pas d'édition manuelle des `.sql` ni de `_journal.json`.
+- Pas d'édition manuelle des `.sql` générés ni de `_journal.json`. Une migration de données
+  s'écrit dans le fichier vide que crée `bun run db:generate --custom --name <nom>`
+  ([doc](https://orm.drizzle.team/docs/kit-custom-migrations)), entre l'ajout d'une colonne
+  nullable et sa contrainte.
 - Une migration commitée ne se modifie ni ne se supprime : elle a pu être appliquée ailleurs.
 
 ## Changements destructifs

@@ -148,7 +148,7 @@ export const distressEvent = pgTable(
   ],
 );
 
-/** A notion the student marked as understood: the learner memory counts only its later exercises. */
+/** A notion the student marked as understood: the learner memory counts only its exercises after `afterPosition`. */
 export const learnerNotionReset = pgTable(
   'learner_notion_reset',
   {
@@ -156,7 +156,7 @@ export const learnerNotionReset = pgTable(
       .notNull()
       .references(() => user.id, { onDelete: 'cascade' }),
     notionId: text('notion_id').notNull(),
-    resetAt: timestamp('reset_at', { withTimezone: true }).notNull().defaultNow(),
+    afterPosition: bigint('after_position', { mode: 'number' }).notNull(),
   },
   (table) => [primaryKey({ columns: [table.studentId, table.notionId] })],
 );

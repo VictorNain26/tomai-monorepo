@@ -6,9 +6,8 @@ import { notionText } from './sheet';
 const [first, second] = programmeFor('quatrieme', 'mathematiques', 2026)?.entries ?? [];
 if (!first || !second) throw new Error('the referential has no maths for the quatrième');
 
-const day = (n: number) => new Date(Date.UTC(2026, 8, n));
 const exercise = (overrides: Partial<PastExercise>): PastExercise => ({
-  createdAt: day(10),
+  position: 10,
   entries: [first.id],
   hintLevel: 1,
   solved: true,
@@ -20,8 +19,8 @@ describe('notionMemories', () => {
   it('counts each notion, reads its last exercise, and names an error seen twice', () => {
     const memories = notionMemories(
       [
-        exercise({ createdAt: day(10), errorTypes: ['misinterpret'] }),
-        exercise({ createdAt: day(12), entries: [first.id, second.id], hintLevel: 4, solved: false, errorTypes: ['misinterpret', 'not-sure'] }),
+        exercise({ position: 10, errorTypes: ['misinterpret'] }),
+        exercise({ position: 12, entries: [first.id, second.id], hintLevel: 4, solved: false, errorTypes: ['misinterpret', 'not-sure'] }),
       ],
       new Map(),
     );
@@ -36,15 +35,29 @@ describe('notionMemories', () => {
     expect(memory?.frequentError).toBeNull();
   });
 
-  it('leaves out the exercises before a correction of the student, for that notion only', () => {
+  it('leaves out the exercises up to a correction of the student, for that notion only', () => {
     const memories = notionMemories(
-      [exercise({ createdAt: day(10), entries: [first.id, second.id] }), exercise({ createdAt: day(20), entries: [second.id] })],
-      new Map([[second.id, day(15)]]),
+      [
+        exercise({ position: 10, entries: [first.id, second.id] }),
+        exercise({ position: 15, entries: [second.id] }),
+        exercise({ position: 20, entries: [second.id] }),
+      ],
+      new Map([[second.id, 15]]),
     );
     expect(memories.map(({ notionId, worked }) => [notionId, worked])).toEqual([
       [first.id, 1],
       [second.id, 1],
     ]);
+  });
+
+  it('breaks a tie between two errors by the closed list, whatever the order of the turns', () => {
+    for (const errorTypes of [
+      ['careless', 'misinterpret', 'careless', 'misinterpret'],
+      ['misinterpret', 'careless', 'misinterpret', 'careless'],
+    ]) {
+      const [memory] = notionMemories([exercise({ errorTypes })], new Map());
+      expect(memory?.frequentError).toBe('misinterpret');
+    }
   });
 
   it('drops a notion the referential does not know', () => {
