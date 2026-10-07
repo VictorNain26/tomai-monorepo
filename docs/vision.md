@@ -2,7 +2,8 @@
 
 Statut : validée par Victor le 2026-10-01, revue le 2026-10-06 (contraintes, preuve jugée par le
 fondateur, critères mesurables) et le 2026-10-07 (le foyer et l'âge, la détresse,
-`etudes/2026-10-07/foyer-eleve-age.md`). Source de vérité du produit : pour qui, quelle
+`etudes/2026-10-07/foyer-eleve-age.md` ; la mémoire d'une séance à l'autre,
+`etudes/2026-10-07/memoire-entre-seances.md`). Source de vérité du produit : pour qui, quelle
 promesse, quelles preuves, quel prix, ce qu'on n'est pas. Les specs techniques
 (`architecture.md`, `tuteur.md`) et la roadmap en découlent. Les
 faits viennent des études du 2026-10-01 (`docs/etudes/`), qui portent les
@@ -41,6 +42,7 @@ concurrent est mesurée ; ce qui n'est pas construit ne se promet pas.
 |---|---|---|
 | **Il ne cède pas** | La réponse de l'exercice de l'élève n'est jamais donnée, même sous pression (« c'est pour demain », « je suis son parent ») ; le cran d'aide est fixé par le serveur, pas par une consigne à l'IA | Lot 2, mesuré par le lot 1 |
 | **Il explique bien** | Il repère l'erreur, pose une question à la fois, monte d'un cran seulement si l'élève bloque, ne se trompe pas, parle comme en collège | Lot 2, mesuré par le lot 1 |
+| **Il reprend là où ça a résisté** | D'une séance à l'autre, Tom sait quelles notions l'élève a travaillées et ce qui a résisté, sans garder ses conversations ni rien de sa vie ; il ne s'en sert que si le parent et l'enfant l'ont accepté, et l'élève voit, corrige et efface ce que Tom retient. On montre que son aide s'appuie sur ce qui a résisté, pas qu'il fait mieux apprendre | Construit après le chat (lot 0), mesuré par le lot 1 sur des scénarios à plusieurs séances, annoncé seulement après |
 | **Le parent voit sans surveiller** | Un résumé de la semaine (ce qui a été travaillé, ce qui résiste), que l'élève voit aussi ; une détresse relue par un humain avant tout message au parent, qui n'en reçoit que le motif ; jamais les conversations, et le parent ne connaît aucun identifiant de son enfant | Lot 3 |
 | **Les données d'un enfant restent en Europe** | Modèles Mistral sur l'endpoint UE, hébergement UE, aucune donnée réutilisée pour entraîner | Lot 3 (hébergement), ZDR à demander |
 | **On publie nos mesures** | Le protocole, le jeu d'exercices et les résultats (fuite et qualité d'aide), y compris face aux concurrents, sont publics et rejouables, avec leur marge d'erreur et le nom de qui a jugé | Lot 1, publié au lot 4 |
@@ -86,7 +88,8 @@ Ce que ça veut dire :
 ## Ce qu'on n'est pas
 
 Ni une appli qui résout sur photo, ni un cours en ligne, ni un jeu, ni un outil de
-surveillance de l'enfant. Pas de classement, pas de points, pas de séries.
+surveillance de l'enfant, ni un compagnon : Tom ne retient rien de la vie de l'enfant. Pas de
+classement, pas de points, pas de séries.
 
 ## Offre et prix
 

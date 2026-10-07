@@ -216,11 +216,23 @@ Aucune consigne du serveur dans un bloc déclaré non fiable.
 `promptCacheKey` = identifiant de session (recommandation Mistral). Les tokens servis par le
 cache sont gardés par appel dans `ai_cost` (`cached_input_tokens`, `platform/ai/schema.ts`).
 
-Mémoire : celle de la séance seulement. Le raisonnement des tours précédents est rejoué
-tel quel, comme le demande Mistral. Le résumé de conversation est incrémental : l'ancien
-résumé et les seuls messages qu'il ne couvre pas, hors des dix derniers. Aucune mémoire d'une
-séance à l'autre (épisodes, embeddings, profils) : la vision ne la promet pas, et elle ne
-reviendrait que mesurée.
+Mémoire de la séance : le raisonnement des tours précédents est rejoué tel quel, comme le
+demande Mistral. Le résumé de conversation est incrémental : l'ancien résumé et les seuls
+messages qu'il ne couvre pas, hors des dix derniers.
+
+Mémoire d'une séance à l'autre (`etudes/2026-10-07/memoire-entre-seances.md`) : une mémoire
+d'apprentissage, jamais de compagnon.
+- À la création d'un exercice, le serveur agrège pour les notions de sa fiche les exercices de
+  l'élève sur l'année scolaire (fois travaillée, palier atteint, résolution, type d'erreur
+  fréquent), et fige le bloc sur l'exercice : stable, donc en cache.
+- Le serveur l'écrit, jamais le modèle : aucun texte de l'élève, aucune conversation, que des
+  libellés du référentiel, des nombres et des types d'erreur d'une liste fermée.
+- Rien de la détresse, de la santé, des émotions ou de la vie de l'enfant ; aucune relance.
+- Active seulement avec l'accord du parent et de l'enfant (de l'élève seul à partir de 15 ans) ;
+  remise à zéro à la rentrée. Une désactivation, une correction ou un effacement vident aussi le
+  bloc de l'exercice en cours.
+- Ni embeddings ni bibliothèque de mémoire ; l'idée fausse nommée par un appel structuré ne
+  viendra que sur mesure.
 
 ## 8. Sorties structurées
 
@@ -254,7 +266,11 @@ Le harnais sert aussi la preuve publique : protocole, jeu et résultats rejouabl
 
 ## 10. Élève et parents
 
-- Aucun profil de l'élève gardé d'une séance à l'autre (§7).
+- **La mémoire d'apprentissage (§7)** : avant 15 ans, proposée par le parent à l'ajout de
+  l'enfant, acceptée par l'enfant à sa première séance, coupée par l'un ou l'autre à tout moment ;
+  à partir de 15 ans, l'élève décide seul. L'élève voit ce
+  que Tom retient, notion par notion, le corrige ou l'efface ; le parent n'en voit que ce que
+  dit le résumé.
 - **Le parent voit un résumé de la semaine, jamais les conversations** : ce qui a été
   travaillé, ce qui résiste, écrit comme des pistes de conversation. L'élève voit le même
   résumé, au même moment, et peut en demander l'arrêt ; à partir de 15 ans, sa demande
@@ -273,10 +289,11 @@ Cartographie de risque, à valider par un conseil avant l'ouverture.
 | AI Act art. 50(1), applicable depuis le 2026-08-02 | Divulgation IA dans le prompt et dans l'interface dès la première interaction (lot 3) |
 | AI Act art. 50(2), marquage machine des sorties texte | Question ouverte (dialogue privé couvert ou non) à faire trancher par un conseil ; fin du délai le 2026-12-02 |
 | Loi 78-17 art. 45 | Double consentement sous 15 ans pour ce qui repose sur le consentement ; le parent conclut le contrat (lot 3) |
-| Conditions commerciales de Mistral, usages interdits (c) : pas de données personnelles d'enfants sous l'âge du consentement numérique (15 ans en France) | Clarification écrite demandée à Mistral avec le ZDR, avant tout utilisateur réel ; d'ici là, rien d'identifiant (prénom, nom) dans ce qui part chez Mistral |
+| Conditions commerciales de Mistral, usages interdits (c) : pas de données personnelles d'enfants sous l'âge du consentement numérique (15 ans en France) | Clarification écrite demandée à Mistral avec le ZDR ; aucun vrai élève avant sa réponse. Le prénom et la mémoire d'apprentissage partent dans le prompt ; si Mistral refuse, ils en sortent (Victor, 2026-10-07) |
 | RGPD art. 9 (la détresse est une donnée de santé) ; Code pénal art. 434-3 | Base légale et conduite à tenir à faire trancher par un conseil (`etudes/2026-10-07/foyer-eleve-age.md`, § 8) |
 | Cadre d'usage de l'IA du ministère (2025) : usage autonome à partir de la 4e | Pèse sur une recommandation par un collège en 6e et 5e ; texte complet à lire |
 | CNIL, données d'élèves non réutilisées | Endpoint UE ; ZDR avant tout utilisateur réel |
+| RGPD art. 4(4) et 22, CNIL recommandation 8 (profilage d'un mineur) | La mémoire d'apprentissage : désactivée tant que le parent et l'enfant ne l'acceptent pas, aucune décision automatisée, AIPD avant l'ouverture (`etudes/2026-10-07/memoire-entre-seances.md`) |
 | Annexe III (haut risque éducation) | Hors champ tant que le produit est vendu aux familles et n'évalue pas les acquis pour orienter ; bascule si vente à des établissements |
 
 ## 12. Non vérifié

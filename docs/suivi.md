@@ -42,6 +42,13 @@ bloquant levé). L'historique vit dans git et les PR.
   enregistrement (#435), le quota par élève (#436, 2 c par jour pour tous tant que le paiement
   n'existe pas), le résumé de séance et le titre. Le tuteur répond par
   `POST /api/sessions/:id/messages` ; aucun écran ne l'appelle encore.
+- **Mémoire d'une séance à l'autre** (`etudes/2026-10-07/memoire-entre-seances.md`), décidée par
+  Victor le 2026-10-07 : une mémoire d'apprentissage tirée des exercices, acceptée par le parent
+  et l'enfant, visible et effaçable par l'élève, remise à zéro à la rentrée ; promise seulement
+  après la mesure avec et sans mémoire. Elle se construit après le chat (étape 6).
+- **Le prénom et la mémoire chez Mistral** (Victor, 2026-10-07) : ils partent dans le prompt ;
+  aucun vrai élève avant la réponse écrite de Mistral sur sa clause des moins de 15 ans ; s'il
+  refuse, ils en sortent (`tuteur.md` § 11).
 - **Prochaine action** : étape 6, le chat et la connexion dans le web. L'étude des hébergeurs UE
   avance en parallèle. L'ordre complet est dans l'étude. Test complet dans Chrome à la fin de chaque étape, la première
   à l'étape 6 avec les écrans.
