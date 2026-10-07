@@ -53,8 +53,11 @@ export async function testDatabase(): Promise<Database & { url: string }> {
   // One hook, in this order: dropped first, the database would leave the client waiting on killed
   // connections until its timeout, the hook's own.
   afterAll(async () => {
-    await database.close();
-    await drop();
+    try {
+      await database.close();
+    } finally {
+      await drop();
+    }
   });
   return { ...database, url };
 }
