@@ -42,7 +42,7 @@ COPY apps/server/tsconfig*.json ./apps/server/
 WORKDIR /app/apps/server
 # bun build inlines process.env.NODE_ENV: set after the install, which needs the dev dependencies.
 ENV NODE_ENV=production
-RUN bun run build && test -f dist/main.js -a -f dist/migrate.js
+RUN bun run build && test -f dist/main.js -a -f dist/migrate.js -a -f dist/invite.js
 
 # Stage 3: production.
 FROM oven/bun:1.4.2-slim@sha256:cb3bbbb08e13a4a2ff400f24c7a2a1d5efa83f6ef8544d52d95a519631e2fc61 AS production

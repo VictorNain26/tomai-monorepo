@@ -44,6 +44,7 @@ const api = httpClient(
     background: tasks.run,
   }),
   mail,
+  db,
 );
 
 const guardian = await api.guardian('parent@example.com');

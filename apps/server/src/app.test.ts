@@ -12,6 +12,7 @@ import { createBackgroundTasks } from './platform/lifecycle/background';
 import { createApp } from './app';
 import { accountDeletion } from './modules/household';
 import { createAuth } from './platform/auth/auth';
+import { invite } from './platform/auth/invitation';
 import { createLifecycle } from './platform/lifecycle/shutdown';
 import { testDatabase } from './testing/database';
 import { ORIGIN } from './testing/http';
@@ -53,7 +54,8 @@ const sessionCookie = (res: Response) => res.headers.getSetCookie().find((cookie
 describe('auth', () => {
   const account = { name: 'Victor', email: 'victor@example.com', password: 'un mot de passe solide' };
 
-  it('signs up with an email and a password, and sends the address a link to confirm it', async () => {
+  it('signs up an invited address with a password, and sends it a link to confirm it', async () => {
+    await invite(db, account.email);
     const res = await post('/api/auth/sign-up/email', account);
     expect(res.status).toBe(200);
     expect(sessionCookie(res)).toBeUndefined();

@@ -42,6 +42,7 @@ const api = httpClient(
     background: tasks.run,
   }),
   mail,
+  db,
 );
 const repository = createTutorRepository(db);
 

@@ -1,9 +1,11 @@
 /**
- * The HTTP calls of a test, as the web makes them: a guardian signed up and confirmed, a student
+ * The HTTP calls of a test, as the web makes them: a guardian invited, signed up and confirmed, a student
  * created, a device paired by the guardian's code. `app` is the test's app, built by createApp.
  */
 
 import { expect } from 'bun:test';
+import { invite } from '../platform/auth/invitation';
+import type { Db } from '../platform/db/client';
 import type { memoryMailer } from './mailer';
 
 export const ORIGIN = 'http://localhost:3002';
@@ -25,7 +27,7 @@ interface Device {
   userAgent: string | null;
 }
 
-export function httpClient(app: App, mail: ReturnType<typeof memoryMailer>) {
+export function httpClient(app: App, mail: ReturnType<typeof memoryMailer>, db: Db) {
   const request = (method: string, path: string, { cookie, body }: { cookie?: string | undefined; body?: unknown } = {}) =>
     app.request(`${ORIGIN}${path}`, {
       method,
@@ -46,8 +48,9 @@ export function httpClient(app: App, mail: ReturnType<typeof memoryMailer>) {
 
   const api = {
     request,
-    /** Signed up, the address confirmed by its link: the session that link opens. */
+    /** Invited, signed up, the address confirmed by its link: the session that link opens. */
     async guardian(email: string) {
+      await invite(db, email);
       const res = await request('POST', '/api/auth/sign-up/email', { body: { name: 'Parent', email, password: 'un mot de passe solide' } });
       expect(res.status).toBe(200);
       return cookieOf(await app.request(mail.linkTo(email, 'Confirmez')));

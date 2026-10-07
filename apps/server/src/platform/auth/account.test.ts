@@ -17,7 +17,8 @@ import { fakeMistral } from '../../testing/mistral';
 import { memoryMailer } from '../../testing/mailer';
 import { createLifecycle } from '../lifecycle/shutdown';
 import { createAuth } from './auth';
-import { session, user } from './schema';
+import { invitationIdentifier, invite } from './invitation';
+import { session, user, verification } from './schema';
 
 const PASSWORD = 'un mot de passe solide';
 const { db } = await testDatabase();
@@ -51,14 +52,69 @@ const cookieOf = (res: Response) =>
     .find((cookie) => cookie.startsWith('better-auth.session_token='))
     ?.split(';')[0] ?? '';
 
+const signUp = async (email: string) => request('POST', '/api/auth/sign-up/email', { body: { name: 'Parent', email, password: PASSWORD } });
+
 async function guardian(email: string) {
-  await request('POST', '/api/auth/sign-up/email', { body: { name: 'Parent', email, password: PASSWORD } });
+  await invite(db, email);
+  await signUp(email);
   return cookieOf(await app.request(mail.linkTo(email, 'Confirmez')));
 }
 
 const signIn = async (email: string, password: string) => request('POST', '/api/auth/sign-in/email', { body: { email, password } });
 const sessionUser = async (cookie: string) =>
   ((await (await request('GET', '/api/auth/get-session', { cookie })).json()) as { user: { id: string } } | null)?.user;
+
+describe('invitation', () => {
+  const invitations = (email: string) =>
+    db
+      .select()
+      .from(verification)
+      .where(eq(verification.identifier, invitationIdentifier(email)));
+  const refused = async (res: Response) => {
+    expect(res.status).toBe(403);
+    expect(((await res.json()) as { code: string }).code).toBe('INVITATION_REQUIRED');
+  };
+
+  it('refuses an address without one, creating and sending nothing', async () => {
+    const sentBefore = mail.sent.length;
+    await refused(await signUp('pas-invite@example.com'));
+    expect(await db.select().from(user).where(eq(user.email, 'pas-invite@example.com'))).toEqual([]);
+    expect(mail.sent.length).toBe(sentBefore);
+  });
+
+  it('opens one sign-up, whatever the case of the address, and is spent by it', async () => {
+    await invite(db, ' Invitee@Example.com ');
+    expect((await signUp('invitee@example.com')).status).toBe(200);
+    expect(await invitations('invitee@example.com')).toEqual([]);
+  });
+
+  it('is kept by a sign-up that fails', async () => {
+    await invite(db, 'trop-court@example.com');
+    const short = await request('POST', '/api/auth/sign-up/email', { body: { name: 'Parent', email: 'trop-court@example.com', password: 'court' } });
+    expect(short.status).toBe(400);
+    expect((await signUp('trop-court@example.com')).status).toBe(200);
+  });
+
+  it("refuses an account's address without one as any other: the answer tells no account", async () => {
+    await guardian('deja@example.com');
+    await refused(await signUp('deja@example.com'));
+  });
+
+  it('refuses an expired one', async () => {
+    await invite(db, 'en-retard@example.com');
+    await db
+      .update(verification)
+      .set({ expiresAt: new Date(Date.now() - 1000) })
+      .where(eq(verification.identifier, invitationIdentifier('en-retard@example.com')));
+    await refused(await signUp('en-retard@example.com'));
+  });
+
+  it('is replaced when the address is invited again', async () => {
+    await invite(db, 'deux-fois@example.com');
+    const { expiresAt } = await invite(db, 'deux-fois@example.com');
+    expect((await invitations('deux-fois@example.com')).map((row) => row.expiresAt)).toEqual([expiresAt]);
+  });
+});
 
 describe('the error page', () => {
   it("is the web's, not better-auth's own, whose inline style the CSP blocks", async () => {
@@ -107,7 +163,8 @@ describe('password reset', () => {
 describe('email verification', () => {
   it('sends the link again when the guardian tries to sign in before confirming', async () => {
     const email = 'distrait@example.com';
-    await request('POST', '/api/auth/sign-up/email', { body: { name: 'Parent', email, password: PASSWORD } });
+    await invite(db, email);
+    await signUp(email);
     const links = () => mail.sent.filter((each) => each.to === email && each.subject.includes('Confirmez')).length;
     expect(links()).toBe(1);
 

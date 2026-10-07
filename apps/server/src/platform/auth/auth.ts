@@ -2,8 +2,9 @@
  * better-auth, on the one public origin of the API and the web: the session cookie stays on that
  * host. No cookieCache: a cached session would outlive a deleted account, or a password the
  * guardian revoked, for its whole maxAge. A student has no credential: their device is paired by
- * a guardian's code (./pairing.ts). A guardian proves their email before signing in, can reset
- * their password, which ends every session, and delete their account by giving their password.
+ * a guardian's code (./pairing.ts). A guardian signs up on an invitation (./invitation.ts), proves
+ * their email before signing in, can reset their password, which ends every session, and delete
+ * their account by giving their password.
  */
 
 import { betterAuth } from 'better-auth';
@@ -13,6 +14,7 @@ import type { Logger } from 'pino';
 import type { Config } from '../../config';
 import type { Db } from '../db/client';
 import type { Mailer } from '../email/mailer';
+import { invitationIdentifier } from './invitation';
 import { devicePairing, PAIRING_PREFIX } from './pairing';
 import { account, session, user, verification } from './schema';
 
@@ -95,16 +97,36 @@ export function createAuth(db: Db, config: Pick<Config, 'publicUrl' | 'authSecre
       },
     },
     hooks: {
-      // Deleting an account asks for its password, whatever the session's age: a re-authentication
-      // that works from any device, where an emailed link needs the browser that holds the session.
       before: createAuthMiddleware(async (ctx) => {
         const body: unknown = ctx.body;
-        const password = typeof body === 'object' && body !== null && 'password' in body ? body.password : undefined;
+        const field = (name: string): unknown => (typeof body === 'object' && body !== null && name in body ? Reflect.get(body, name) : undefined);
+        // Deleting an account asks for its password, whatever the session's age: a re-authentication
+        // that works from any device, where an emailed link needs the browser that holds the session.
+        const password = field('password');
         if (ctx.path === '/delete-user' && (typeof password !== 'string' || password === '')) {
           throw new APIError('BAD_REQUEST', { message: 'Password required' });
         }
-        return Promise.resolve();
+        // Closed beta (./invitation.ts), checked before better-auth looks the address up: an address
+        // without an invitation is refused alike, whether it has an account or not. Spent once the
+        // account exists (databaseHooks): a sign-up that fails keeps it.
+        if (ctx.path === '/sign-up/email') {
+          const email = field('email');
+          const invitation = typeof email === 'string' ? await ctx.context.internalAdapter.findVerificationValue(invitationIdentifier(email)) : null;
+          if (!invitation || invitation.expiresAt <= new Date()) {
+            throw APIError.from('FORBIDDEN', { code: 'INVITATION_REQUIRED', message: 'Sign-up is by invitation only' });
+          }
+        }
       }),
+    },
+    databaseHooks: {
+      // After the sign-up's transaction commits (better-auth's db/with-hooks.mjs).
+      user: {
+        create: {
+          after: async ({ email }, ctx) => {
+            await ctx?.context.internalAdapter.deleteVerificationByIdentifier(invitationIdentifier(email));
+          },
+        },
+      },
     },
     // A page of the web: better-auth's own error page has an inline style the CSP blocks.
     onAPIError: { errorURL: `${config.publicUrl}/erreur-connexion` },

@@ -19,6 +19,7 @@ const AUTH_MESSAGES: Partial<Record<string, string>> = {
   PASSWORD_TOO_SHORT: 'Le mot de passe est trop court : 8 caractères au moins.',
   PASSWORD_TOO_LONG: 'Le mot de passe est trop long.',
   INVALID_TOKEN: 'Ce lien n’est plus valable. Demandez-en un nouveau.',
+  INVITATION_REQUIRED: 'Cette adresse n’a pas d’invitation, ou elle a expiré.',
 };
 
 export function authMessage(error: { code?: string | undefined; status: number }): string {

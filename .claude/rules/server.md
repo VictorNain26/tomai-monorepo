@@ -15,8 +15,9 @@ Tuteur : `docs/tuteur.md`. Stack locale : skill `dev-bootstrap`. Appel IA 
 
 - Jamais recréer à côté ce que la refonte n'a pas encore reconstruit : il revient de
   l'historique (`048676b4`) avec l'étape qui l'utilise.
-- Jamais lire l'environnement hors de `src/main.ts` et `src/migrate.ts` (refusé au lint) : la
-  config (`src/config.ts`) et les dépendances se passent en paramètre, aucun état global importé.
+- Jamais lire l'environnement hors des points d'entrée `src/main.ts`, `src/migrate.ts`
+  et `src/invite.ts` (refusé au lint) : la config (`src/config.ts`) et les dépendances se passent
+  en paramètre, aucun état global importé.
 - Jamais un try/catch dans une route ni un corps d'erreur écrit à la main : on lève
   `new Problem(code, detail?)` (`platform/http/problem.ts`, RFC 9457), et un message interne ne
   sort jamais.

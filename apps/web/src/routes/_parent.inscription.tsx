@@ -43,6 +43,7 @@ function SignUp() {
 
   return (
     <Page title="Créer un compte parent">
+      <Notice tone="info">Tom est en bêta fermée : un compte se crée avec l’adresse e-mail qui a reçu une invitation.</Notice>
       <form noValidate onSubmit={(event) => void submit(event)} className="flex flex-col gap-4">
         <Field label="Votre prénom" autoComplete="given-name" {...form.register('name')} error={form.formState.errors.name?.message} />
         <Field label="Adresse e-mail" type="email" autoComplete="email" {...form.register('email')} error={form.formState.errors.email?.message} />

@@ -12,6 +12,9 @@ bun run setup  # .env, BETTER_AUTH_SECRET, postgres, migrations Drizzle
 bun run dev    # postgres, migrations, puis server :3000 + landing :3001 + web :3002
 ```
 
+Un compte parent se crée sur invitation, en bêta fermée comme en production :
+`cd apps/server && bun run invite <adresse>` (`bun dist/invite.js <adresse>` dans l'image).
+
 Arrêt de l'infra : `bun run dev:down`. `bun run dev` attend que postgres soit prêt et que les
 migrations passent ; sinon rien ne démarre.
 
