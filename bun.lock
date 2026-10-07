@@ -44,6 +44,8 @@
       "dependencies": {
         "@better-auth/core": "^1.7.5",
         "@hono/bun": "^1.0.0",
+        "@scaleway/sdk-client": "^2.12.1",
+        "@scaleway/sdk-tem": "^2.15.0",
         "better-auth": "^1.7.5",
         "drizzle-orm": "^0.45.3",
         "hono": "^4.13.12",
@@ -819,6 +821,14 @@
     "@rollup/rollup-win32-x64-gnu": ["@rollup/rollup-win32-x64-gnu@4.62.2", "", { "os": "win32", "cpu": "x64" }, "sha512-T6xr6ucWSFto+VGajA8YH26LdpHRuP4YLHEKAtCWvJDOlnmWcDZVCI2Jmjr+IFHDlt2zRaTAKE4tfjTaWLgJBg=="],
 
     "@rollup/rollup-win32-x64-msvc": ["@rollup/rollup-win32-x64-msvc@4.62.2", "", { "os": "win32", "cpu": "x64" }, "sha512-BfzEnDJOt9T8M989/lA37EcJgat01wLRnoi5dQf3QzOH7jzpqTAzdDbVfRljVr5r+jzKqpbHeyOfAaXxAd0PAA=="],
+
+    "@scaleway/random-name": ["@scaleway/random-name@6.0.2", "", {}, "sha512-fhR2aCzxoZlOZcCM42srbALdpdqMy79LwOK5mVf4sGG1uknn095mr5PQ/0/zwfk/FX2KycZwbKJzr4zP6CG3Zg=="],
+
+    "@scaleway/sdk-client": ["@scaleway/sdk-client@2.12.1", "", {}, "sha512-d27fK0yuKIbALEn56wjRVchz/kdPnN2LAgl1Z6D2OqvGzdzBQ5dFDNofGdgYWgnQ29HMkcCZMaR67317TYxVuA=="],
+
+    "@scaleway/sdk-std": ["@scaleway/sdk-std@2.9.1", "", { "peerDependencies": { "@scaleway/sdk-client": "2.12.1" } }, "sha512-vHm6ynE0pml5uuokep2/r5A7Sb69vJgr27NlonN6EUA+d4nYAf2nqoN0kifpZQHIYSodAiYWPjYwsl5TJSNSeA=="],
+
+    "@scaleway/sdk-tem": ["@scaleway/sdk-tem@2.15.0", "", { "dependencies": { "@scaleway/random-name": "6.0.2", "@scaleway/sdk-std": "2.9.1" }, "peerDependencies": { "@scaleway/sdk-client": "^2.12.1" } }, "sha512-IIcyAcf67fAw4CfXmGTppWPjnyIzwgdhsCZ5yxK3pL7d2d34zxNWwk6N6tCZ9p8MsUGNUD2WvRAHeRxYi/Kl8A=="],
 
     "@sentry/babel-plugin-component-annotate": ["@sentry/babel-plugin-component-annotate@5.3.0", "", {}, "sha512-p4q8gn8wcFqZGP/s2MnJCAAd8fTikaU6A0mM97RDHQgStcrYiaS0Sc5zUNfb1V+UOLPuvdEdL6MwyxfzjYJQTA=="],
 

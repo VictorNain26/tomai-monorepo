@@ -4,7 +4,7 @@
  * (OWASP Authorization Cheat Sheet): a student of another household is simply not found.
  */
 
-import { and, desc, eq, gt, inArray } from 'drizzle-orm';
+import { and, desc, eq, gt, inArray, ne } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import type { SchoolLevel } from '../../domain/levels';
 import { session, user } from '../../platform/auth/schema';
@@ -117,6 +117,31 @@ export function createHouseholdRepository(db: Db) {
         .where(and(eq(session.id, deviceId), eq(session.userId, studentId), inArray(session.userId, studentsOf(guardianId))))
         .returning({ id: session.id });
       return revoked.length > 0;
+    },
+
+    /**
+     * Before a guardian's account goes: when they are its only guardian, the household goes too,
+     * with its students' accounts (their sessions, memberships and profiles by ON DELETE CASCADE);
+     * otherwise only their membership, with their user row.
+     */
+    async deleteHouseholdOfSoleGuardian(guardianId: string) {
+      await db.transaction(async (tx) => {
+        const [member] = await tx
+          .select({ householdId: householdMember.householdId })
+          .from(householdMember)
+          .where(and(eq(householdMember.userId, guardianId), eq(householdMember.role, 'guardian')))
+          .for('update');
+        if (!member) return;
+        const others = await tx
+          .select({ userId: householdMember.userId })
+          .from(householdMember)
+          .where(
+            and(eq(householdMember.householdId, member.householdId), eq(householdMember.role, 'guardian'), ne(householdMember.userId, guardianId)),
+          );
+        if (others.length > 0) return;
+        await tx.delete(user).where(inArray(user.id, studentsOf(guardianId)));
+        await tx.delete(household).where(eq(household.id, member.householdId));
+      });
     },
 
     /** The student's sessions, membership and profile go with the user row (ON DELETE CASCADE). */

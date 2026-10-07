@@ -17,7 +17,14 @@ afterAll(() => {
   rmSync(empty, { recursive: true, force: true });
 });
 
-const PRODUCTION = { ...BASE, NODE_ENV: 'production', BETTER_AUTH_URL: 'https://tom.example', WEB_DIST_DIR: build };
+const MAIL = {
+  SCW_ACCESS_KEY: 'SCWACCESSKEY',
+  SCW_SECRET_KEY: 'secret',
+  SCW_DEFAULT_PROJECT_ID: '6170692e-7363-616c-6577-61792e636f6d',
+  MAIL_FROM: 'tom@mail.tom.example',
+};
+
+const PRODUCTION = { ...BASE, ...MAIL, NODE_ENV: 'production', BETTER_AUTH_URL: 'https://tom.example', WEB_DIST_DIR: build };
 
 describe('loadConfig', () => {
   it('fills the development defaults, the Vite dev server as public origin', () => {
@@ -29,6 +36,7 @@ describe('loadConfig', () => {
       publicUrl: 'http://localhost:3002',
       authSecret: BASE.BETTER_AUTH_SECRET,
       webDistDir: undefined,
+      mail: undefined,
     });
   });
 
@@ -36,8 +44,13 @@ describe('loadConfig', () => {
     expect(Object.isFrozen(loadConfig(BASE))).toBe(true);
   });
 
-  it('accepts a production environment with its public origin and the web build', () => {
-    expect(loadConfig(PRODUCTION)).toMatchObject({ production: true, publicUrl: 'https://tom.example', webDistDir: build });
+  it('accepts a production environment with its public origin, the web build and the mail settings', () => {
+    expect(loadConfig(PRODUCTION)).toMatchObject({
+      production: true,
+      publicUrl: 'https://tom.example',
+      webDistDir: build,
+      mail: { accessKey: MAIL.SCW_ACCESS_KEY, secretKey: MAIL.SCW_SECRET_KEY, projectId: MAIL.SCW_DEFAULT_PROJECT_ID, from: MAIL.MAIL_FROM },
+    });
   });
 
   it.each([
@@ -49,6 +62,10 @@ describe('loadConfig', () => {
     [{ ...BASE, WEB_DIST_DIR: empty }, 'index.html'],
     [{ ...PRODUCTION, BETTER_AUTH_URL: undefined }, 'BETTER_AUTH_URL'],
     [{ ...PRODUCTION, WEB_DIST_DIR: undefined }, 'WEB_DIST_DIR'],
+    [{ ...PRODUCTION, SCW_SECRET_KEY: undefined }, 'SCW_SECRET_KEY'],
+    [{ ...BASE, ...MAIL, SCW_DEFAULT_PROJECT_ID: 'not-a-uuid' }, 'SCW_DEFAULT_PROJECT_ID'],
+    [{ ...BASE, ...MAIL, MAIL_FROM: 'tom' }, 'MAIL_FROM'],
+    [{ ...BASE, SCW_ACCESS_KEY: 'SCWACCESSKEY' }, 'SCW_SECRET_KEY: requis avec SCW_ACCESS_KEY'],
   ])('refuses %o, naming %s', (environment, named) => {
     expect(() => loadConfig(environment)).toThrow(named);
   });
