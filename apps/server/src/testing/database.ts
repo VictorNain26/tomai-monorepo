@@ -32,26 +32,36 @@ export function maintenance(): postgres.Sql {
   return postgres(serverUrl('postgres'), { max: 1, onnotice: () => undefined });
 }
 
-async function scratchDatabase(template?: string): Promise<string> {
+/** A database for this file; `drop` removes it once nothing holds a connection to it. */
+async function scratchDatabase(template?: string): Promise<{ url: string; drop: () => Promise<void> }> {
   const name = databaseName('db');
   const admin = maintenance();
   await admin.unsafe(template ? `CREATE DATABASE ${name} TEMPLATE ${template}` : `CREATE DATABASE ${name}`);
-  afterAll(async () => {
-    await admin.unsafe(`DROP DATABASE IF EXISTS ${name} WITH (FORCE)`);
-    await admin.end();
-  });
-  return serverUrl(name);
+  return {
+    url: serverUrl(name),
+    drop: async () => {
+      await admin.unsafe(`DROP DATABASE IF EXISTS ${name} WITH (FORCE)`);
+      await admin.end();
+    },
+  };
 }
 
 /** A fresh database for this file, migrated as the template is, dropped after its tests. */
 export async function testDatabase(): Promise<Database & { url: string }> {
-  const url = await scratchDatabase(TEMPLATE);
+  const { url, drop } = await scratchDatabase(TEMPLATE);
   const database = createDb(url, { production: false });
-  afterAll(() => database.close());
+  // One hook, in this order: dropped first, the database would leave the client waiting on killed
+  // connections until its timeout, the hook's own.
+  afterAll(async () => {
+    await database.close();
+    await drop();
+  });
   return { ...database, url };
 }
 
 /** An empty database, without the template's migrations, dropped after the file's tests. */
 export async function emptyDatabase(): Promise<{ url: string }> {
-  return { url: await scratchDatabase() };
+  const { url, drop } = await scratchDatabase();
+  afterAll(drop);
+  return { url };
 }
