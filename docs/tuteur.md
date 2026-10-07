@@ -216,11 +216,21 @@ Aucune consigne du serveur dans un bloc déclaré non fiable.
 `promptCacheKey` = identifiant de session (recommandation Mistral). Les tokens servis par le
 cache sont gardés par appel dans `ai_cost` (`cached_input_tokens`, `platform/ai/schema.ts`).
 
-Mémoire : celle de la séance seulement. Le raisonnement des tours précédents est rejoué
-tel quel, comme le demande Mistral. Le résumé de conversation est incrémental : l'ancien
-résumé et les seuls messages qu'il ne couvre pas, hors des dix derniers. Aucune mémoire d'une
-séance à l'autre (épisodes, embeddings, profils) : la vision ne la promet pas, et elle ne
-reviendrait que mesurée.
+Mémoire de la séance : le raisonnement des tours précédents est rejoué tel quel, comme le
+demande Mistral. Le résumé de conversation est incrémental : l'ancien résumé et les seuls
+messages qu'il ne couvre pas, hors des dix derniers.
+
+Mémoire d'une séance à l'autre (`etudes/2026-10-07/memoire-entre-seances.md`) : une mémoire
+d'apprentissage, jamais de compagnon.
+- À la création d'un exercice, le serveur agrège pour les notions de sa fiche les exercices de
+  l'élève sur l'année scolaire (fois travaillée, palier atteint, résolution, type d'erreur
+  fréquent), et fige le bloc sur l'exercice : stable, donc en cache.
+- Le serveur l'écrit, jamais le modèle : aucun texte de l'élève, aucune conversation, que des
+  libellés du référentiel, des nombres et des types d'erreur d'une liste fermée.
+- Rien de la détresse, de la santé, des émotions ou de la vie de l'enfant ; aucune relance.
+- Active seulement avec l'accord du parent et de l'enfant ; remise à zéro à la rentrée.
+- Ni embeddings ni bibliothèque de mémoire ; l'idée fausse nommée par un appel structuré ne
+  viendra que sur mesure.
 
 ## 8. Sorties structurées
 
@@ -254,7 +264,10 @@ Le harnais sert aussi la preuve publique : protocole, jeu et résultats rejouabl
 
 ## 10. Élève et parents
 
-- Aucun profil de l'élève gardé d'une séance à l'autre (§7).
+- **La mémoire d'apprentissage (§7)** : proposée par le parent à l'ajout de l'enfant, acceptée
+  par l'enfant à sa première séance, coupée par l'un ou l'autre à tout moment. L'élève voit ce
+  que Tom retient, notion par notion, le corrige ou l'efface ; le parent n'en voit que ce que
+  dit le résumé.
 - **Le parent voit un résumé de la semaine, jamais les conversations** : ce qui a été
   travaillé, ce qui résiste, écrit comme des pistes de conversation. L'élève voit le même
   résumé, au même moment, et peut en demander l'arrêt ; à partir de 15 ans, sa demande
