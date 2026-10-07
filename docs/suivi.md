@@ -54,8 +54,11 @@ bloquant levé). L'historique vit dans git et les PR.
 - **Le prénom et la mémoire chez Mistral** (Victor, 2026-10-07) : ils partent dans le prompt ;
   aucun vrai élève avant la réponse écrite de Mistral sur sa clause des moins de 15 ans ; s'il
   refuse, ils en sortent (`tuteur.md` § 11).
-- **Prochaine action** : l'étape 7, la préproduction UE, à commencer par l'étude des hébergeurs
-  UE.
+- **Hébergement** (`etudes/2026-10-07/hebergement.md`), décidé par Victor le 2026-10-07 : Clever
+  Cloud en région Paris pour la préproduction, OVHcloud en repli ; HDS demandé à la CNIL, la zone
+  HDS (200 € par mois et ×1,4) seulement si la réponse l'exige, pour la production.
+- **Prochaine action** : l'étape 7, la préproduction sur Clever Cloud, une fois le compte ouvert
+  par Victor.
 - **Rentabilité et quotas** (`etudes/2026-10-07/rentabilite.md`) : le gratuit décide de la
   rentabilité, la distribution est le vrai risque ; quotas proposés de 2 c (Gratuit) et 10 c
   (Complet) par élève et par jour, voix comprise, remis à zéro à 4 h, et l'année scolaire à 69 €
@@ -175,7 +178,8 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
 | Recréer la base locale, qui porte l'ancien schéma : `docker compose down -v` puis `bun run setup` (skill `dev-bootstrap`) ; et dans `apps/server/.env`, `BETTER_AUTH_URL=http://localhost:3002` | Refonte, étape 2 | à faire |
 | Juger un échantillon de conversations sur la page prévue, par courtes séances | Vérifier le juge, lot 1 | quand la page existe |
 | Ouvrir une Organisation Scaleway pour l'e-mail (moyen de paiement, identité, projet dédié, clé IAM limitée à Transactional Email) ; publier SPF, DKIM, DMARC (`p=none` d'abord) et MX du sous-domaine d'envoi, puis vérifier le domaine dans la console (`etudes/2026-10-07/email-transactionnel.md`). Le domaine dépend du nom du produit | Préproduction, étape 7 | à faire |
-| Ouvrir le compte de l'hébergeur UE recommandé par l'étude | Préproduction, lot 3 | à faire, après l'étude |
+| Ouvrir le compte Clever Cloud (organisation, paiement, région Paris), signer le DPA, créer un jeton d'API pour GitHub Actions (`etudes/2026-10-07/hebergement.md`) | Préproduction, étape 7 | à faire |
+| Écrire à la CNIL sur HDS, avec le texte proposé dans `etudes/2026-10-07/hebergement.md` ; la réponse entre dans l'AIPD | Avant l'ouverture | à faire |
 | Langfuse : la description de la file d'annotation `tom-judge-agreement` renvoie encore à `docs/agent.md`, devenu `docs/tuteur.md` ; la corriger dans l'interface (l'API n'a pas de mise à jour de file) | Évaluation | à faire |
 | Demander le Zero Data Retention : réservé au paiement à l'usage (« only with pay-as-you-go », [centre d'aide Mistral](https://help.mistral.ai/en/articles/347612-can-i-activate-zero-data-retention-zdr)), or le compte est sur l'offre gratuite (8,50 € d'API inclus par mois, paiement à l'usage désactivé, constaté le 2026-10-02). Activer le paiement à l'usage avec un plafond, puis envoyer la demande avec sa justification (mineurs, RGPD), et dans le même envoi la question sur la clause (c) des conditions commerciales : un service pour des 10-15 ans, avec l'accord de leurs parents, est-il permis ; vérifier ensuite Admin › API › Confidentialité. L'entraînement sur les appels API et les modèles Labs y sont désactivés | Porte avant ouverture | à faire |
 | Trancher avec un expert-comptable, en une consultation : rester micro-entrepreneur (recommandé, `etudes/2026-10-07/rentabilite.md`) ou créer une SASU (le GAR n'accepte que des personnes morales, `etudes/2026-10-01/statut-juridique.md`) ; BIC ou BNC ; taux de TVA de Tom, normal ou 5,5 % ; CFP ; accès au versement libératoire selon le revenu fiscal de référence de 2024 | Avant l'ouverture, au démarrage du lot 3 | à faire |
