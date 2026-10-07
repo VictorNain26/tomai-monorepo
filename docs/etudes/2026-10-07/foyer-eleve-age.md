@@ -154,8 +154,8 @@ autre vérification. Un second parent peut rejoindre le foyer et s'opposer.
 Fixe à tous les âges : jamais les conversations au parent ; l'élève sait ce que voit son parent,
 expliqué à l'oral pour les plus jeunes ; « vous parlez à une IA » dès la première interaction, et
 Tom ne se présente pas comme un ami ; rien de la vie de l'enfant ni de ses conversations gardé
-d'une séance à l'autre, seule une mémoire d'apprentissage acceptée par le parent et l'enfant
-(revu le 2026-10-07, `memoire-entre-seances.md`), pas de mécanique d'engagement ; aucune bascule
+d'une séance à l'autre, seule une mémoire d'apprentissage acceptée par le parent et l'enfant,
+par l'élève seul à partir de 15 ans (revu le 2026-10-07, `memoire-entre-seances.md`), pas de mécanique d'engagement ; aucune bascule
 silencieuse, chaque changement prévient l'élève et le parent.
 
 Droits de l'élève, à tout âge : il les exerce lui-même (accès, effacement, opposition), le parent

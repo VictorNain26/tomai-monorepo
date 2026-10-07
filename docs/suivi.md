@@ -46,6 +46,10 @@ bloquant levé). L'historique vit dans git et les PR.
   Victor le 2026-10-07 : une mémoire d'apprentissage tirée des exercices, acceptée par le parent
   et l'enfant, visible et effaçable par l'élève, remise à zéro à la rentrée ; promise seulement
   après la mesure avec et sans mémoire. Elle se construit après le chat (étape 6).
+- **À trancher par Victor : le prénom chez Mistral.** `tuteur.md` § 11 promet que rien
+  d'identifiant ne part chez Mistral avant la clarification de sa clause sur les moins de 15 ans,
+  mais le tuteur envoie le prénom à chaque tour (`studentBlock`, depuis l'étape 5). La mémoire
+  attend la même clarification (`etudes/2026-10-07/memoire-entre-seances.md`).
 - **Prochaine action** : étape 6, le chat et la connexion dans le web. L'étude des hébergeurs UE
   avance en parallèle. L'ordre complet est dans l'étude. Test complet dans Chrome à la fin de chaque étape, la première
   à l'étape 6 avec les écrans.

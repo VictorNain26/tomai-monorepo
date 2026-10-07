@@ -29,8 +29,9 @@ Ce qui revient :
   tutorat, d'octobre 2025 à avril 2026. La mesure est la réussite de l'élève, seul, à l'exercice
   suivant :
   - +3,4 % quand le tuteur reçoit un résumé des exercices récents, justes et faux (608 000 fils) ;
-  - +2,7 % quand il reçoit les prérequis non maîtrisés (1,36 million de fils) ;
-  - 6,1 % pour l'ensemble de ces signaux.
+  - +2,7 % quand il reçoit les prérequis non maîtrisés (1,36 million de fils).
+  Ce sont deux expériences distinctes. Khan en fait « in total » 6,1 %, une somme, sans dire
+  si le gain est absolu ou relatif : on cite les deux mesures, pas le total.
 
 ## Ce que disent les mesures et la pédagogie
 
@@ -75,7 +76,8 @@ Ce qui revient :
   santé (art. 9 ; [CJUE C-184/20](https://juricaf.org/arret/CJUE-COURDEJUSTICEDELUNIONEUROPEENNE-20220801-C18420)) : on les exclut.
 - **AIPD.** Elle est obligatoire de fait avant la mise en service : enfants, profilage et usage
   innovant réunissent trois critères du [WP248](https://ec.europa.eu/newsroom/just/document.cfm?doc_id=47711).
-  Elle était déjà due (`tuteur.md` § 11).
+  `suivi.md` la portait déjà parmi les points de conformité ; elle entre dans la porte avant
+  ouverture (`roadmap.md`) et dans `tuteur.md` § 11.
 
 ## Les techniques
 
@@ -102,7 +104,11 @@ ses notions (`sheet.entries`). Chaque exercice garde le palier d'aide atteint, l
 et sa résolution. Le diagnostic donne un type d'erreur dans une liste fermée (`guess`,
 `misinterpret`, `careless`, `right-idea`, `imprecise`).
 
-1. **Ce qu'on garde en plus** : le type d'erreur de chaque tour, dans `turn_record`. Rien d'autre.
+1. **Ce qu'on garde en plus** :
+   - le type d'erreur de chaque tour, dans `turn_record` ;
+   - l'accord du parent et celui de l'enfant ;
+   - les corrections de l'élève (une notion, sa date), et la date de sa dernière remise à zéro ;
+   - le bloc figé sur l'exercice.
    Aucun texte de l'élève, aucune conversation, aucun fait sur sa vie.
 2. **Ce que Tom lit** : à la création d'un exercice, le serveur agrège, pour les notions de sa
    fiche, les exercices de l'élève sur l'année scolaire, puis fige le résultat sur l'exercice. Par
@@ -113,6 +119,13 @@ et sa résolution. Le diagnostic donne un type d'erreur dans une liste fermée (
 3. **Ce que l'élève voit** : une page « Ce que Tom retient », notion par notion, où il peut
    corriger (« j'ai compris ») ou tout effacer. C'est l'open learner model, et ce qu'exigent
    l'accès et la rectification exercés par l'enfant lui-même.
+   - Une correction ou une remise à zéro change ce que le serveur agrège ensuite : seuls comptent
+     les exercices postérieurs, pour la notion corrigée ou pour toutes.
+   - Désactiver, corriger ou effacer vide aussi le bloc de l'exercice en cours : l'opposition
+     joue au tour suivant, pas à la fin de l'exercice.
+   - Effacer la mémoire n'efface pas l'historique des séances, que l'élève relit et dont vit le
+     résumé du parent. Cet historique a sa propre durée de conservation, à fixer dans l'AIPD ; la
+     mémoire n'en est qu'une lecture.
 4. **Ce que voit le parent** : rien de plus que le résumé de la semaine, qui puise dans ces mêmes
    données (lot 3).
 5. **Ce qu'on exclut** :
@@ -128,23 +141,37 @@ et sa résolution. Le diagnostic donne un type d'erreur dans une liste fermée (
 
 **Tests** :
 - deux élèves sur la même notion : rien de l'un dans le prompt de l'autre ;
+- sans l'accord du parent et de l'enfant (ou de l'élève seul à partir de 15 ans), aucun bloc ;
+- une désactivation, une correction ou une remise à zéro changent le bloc dès le tour suivant ;
+- rien d'avant la rentrée ni d'avant la dernière remise à zéro dans l'agrégat ;
 - le bloc identique d'un tour à l'autre d'un même exercice ;
 - un « retiens que… » de l'élève ne laisse aucun texte en base ;
 - la suppression du compte efface tout ;
 - le harnais compare l'aide avec et sans mémoire, en une seule mesure annoncée, avant de la
-  promettre.
+  promettre. Il ne mesure que ce qu'il peut voir : sur des scénarios à plusieurs séances, l'aide
+  s'appuie-t-elle sur ce qui a résisté, sans rien affirmer de faux ni donner la réponse ? Il ne
+  dit pas que l'élève apprend mieux : seule une mesure sur de vrais élèves, comme celle de Khan,
+  le dirait.
 
 ## Décisions de Victor (2026-10-07)
 
-1. **Activation** : proposée par le parent à l'ajout de l'enfant, acceptée par l'enfant à sa
-   première séance ; l'un ou l'autre la coupe à tout moment.
+1. **Activation** : avant 15 ans, proposée par le parent à l'ajout de l'enfant et acceptée par
+   l'enfant à sa première séance ; l'un ou l'autre la coupe à tout moment. À partir de 15 ans,
+   l'élève décide seul (loi Informatique et Libertés, art. 45, et la règle de `foyer-eleve-age.md`
+   pour ses demandes) ; à 18 ans, le lien parental prend fin.
 2. **Portée** : notions, paliers et types d'erreur, tirés des exercices, sans appel de modèle.
    L'idée fausse nommée par un appel structuré ne viendra que si le harnais montre un gain.
 3. **Durée** : l'année scolaire. Remise à zéro à la rentrée ; effacement à la suppression du compte
    et à la désactivation.
 4. **Promesse** : « Tom reprend là où ça a résisté » entre dans la vision comme promesse à prouver,
-   annoncée seulement après la mesure.
+   annoncée seulement après la mesure, et jamais comme un gain d'apprentissage.
 
 `vision.md`, `tuteur.md` (§ 7 et § 10) et la règle de `foyer-eleve-age.md` changent avec cette
-étude. La clause des CGU de Mistral sur les moins de 15 ans reste le bloquant ouvert : la mémoire
-ajoute au prompt des données de l'élève, sans changer leur nature.
+étude.
+
+**Mistral.** La clause (c) de ses conditions interdit les données personnelles d'enfants de moins
+de 15 ans, et `tuteur.md` § 11 promet que rien d'identifiant ne part chez Mistral avant sa
+clarification écrite. La mémoire y ajoute un profil d'apprentissage, une catégorie nouvelle : elle
+ne part chez Mistral qu'une fois la clause levée. Ce constat en révèle un autre : le tuteur envoie
+déjà le prénom de l'élève à chaque tour (`studentBlock`), contre cette promesse. C'est à trancher
+par Victor avant tout utilisateur réel (`suivi.md`).

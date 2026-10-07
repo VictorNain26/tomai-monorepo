@@ -228,7 +228,9 @@ d'apprentissage, jamais de compagnon.
 - Le serveur l'écrit, jamais le modèle : aucun texte de l'élève, aucune conversation, que des
   libellés du référentiel, des nombres et des types d'erreur d'une liste fermée.
 - Rien de la détresse, de la santé, des émotions ou de la vie de l'enfant ; aucune relance.
-- Active seulement avec l'accord du parent et de l'enfant ; remise à zéro à la rentrée.
+- Active seulement avec l'accord du parent et de l'enfant (de l'élève seul à partir de 15 ans) ;
+  remise à zéro à la rentrée. Une désactivation, une correction ou un effacement vident aussi le
+  bloc de l'exercice en cours.
 - Ni embeddings ni bibliothèque de mémoire ; l'idée fausse nommée par un appel structuré ne
   viendra que sur mesure.
 
@@ -264,8 +266,9 @@ Le harnais sert aussi la preuve publique : protocole, jeu et résultats rejouabl
 
 ## 10. Élève et parents
 
-- **La mémoire d'apprentissage (§7)** : proposée par le parent à l'ajout de l'enfant, acceptée
-  par l'enfant à sa première séance, coupée par l'un ou l'autre à tout moment. L'élève voit ce
+- **La mémoire d'apprentissage (§7)** : avant 15 ans, proposée par le parent à l'ajout de
+  l'enfant, acceptée par l'enfant à sa première séance, coupée par l'un ou l'autre à tout moment ;
+  à partir de 15 ans, l'élève décide seul. L'élève voit ce
   que Tom retient, notion par notion, le corrige ou l'efface ; le parent n'en voit que ce que
   dit le résumé.
 - **Le parent voit un résumé de la semaine, jamais les conversations** : ce qui a été
@@ -290,6 +293,7 @@ Cartographie de risque, à valider par un conseil avant l'ouverture.
 | RGPD art. 9 (la détresse est une donnée de santé) ; Code pénal art. 434-3 | Base légale et conduite à tenir à faire trancher par un conseil (`etudes/2026-10-07/foyer-eleve-age.md`, § 8) |
 | Cadre d'usage de l'IA du ministère (2025) : usage autonome à partir de la 4e | Pèse sur une recommandation par un collège en 6e et 5e ; texte complet à lire |
 | CNIL, données d'élèves non réutilisées | Endpoint UE ; ZDR avant tout utilisateur réel |
+| RGPD art. 4(4) et 22, CNIL recommandation 8 (profilage d'un mineur) | La mémoire d'apprentissage : désactivée tant que le parent et l'enfant ne l'acceptent pas, aucune décision automatisée, AIPD avant l'ouverture (`etudes/2026-10-07/memoire-entre-seances.md`) |
 | Annexe III (haut risque éducation) | Hors champ tant que le produit est vendu aux familles et n'évalue pas les acquis pour orienter ; bascule si vente à des établissements |
 
 ## 12. Non vérifié

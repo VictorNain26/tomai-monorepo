@@ -35,7 +35,9 @@ brevet) et un élève simulé ; observabilité de production avec l'hébergeur.
 **Lot 2** — le savoir est acquis (#380 à #404, `etudes/2026-10-06/passage-de-fin.md`) et se porte
 dans le nouveau tuteur à l'étape 5 de la refonte, avec le diagnostic de #415, un contrôle de fuite
 qui bloque au lieu de laisser passer, et un cran d'aide qui monte quand l'élève bloque. Reste à
-fermer les fuites restantes et à le prouver avec le harnais refait.
+fermer les fuites restantes et à le prouver avec le harnais refait. La mémoire d'apprentissage
+(`etudes/2026-10-07/memoire-entre-seances.md`) se construit après le chat de la refonte, et se
+mesure au harnais avec et sans elle, sur des scénarios à plusieurs séances.
 
 **Lot 3** — ordre indicatif, pensé pour que Victor teste lui-même au plus tôt : le chat avec une
 connexion simple et la préproduction UE arrivent dans la refonte (étapes 6 et 7) ; puis
@@ -52,7 +54,7 @@ Rien n'est ouvert à des élèves avant (obligations, pas des repères) :
 - endpoint UE et ZDR actifs, et la clause des mineurs des conditions de Mistral clarifiée par
   écrit (`etudes/2026-10-07/foyer-eleve-age.md`, § 1), demandées ensemble ;
 - la détresse relue par un humain, avec un délai tenu, avant tout message au parent ;
-- double consentement sous 15 ans ;
+- double consentement sous 15 ans, y compris pour la mémoire d'apprentissage, et son AIPD ;
 - avis d'un conseil sur l'art. 50(2) ;
 - pages légales alignées sur l'hébergement réel ;
 - mesures publiées rejouables.
