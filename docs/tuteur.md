@@ -49,11 +49,12 @@ d'agent reste la nôtre ([regional inference](https://docs.mistral.ai/inference/
 
 | Rôle | Modèle | Réglage |
 |---|---|---|
-| Chat élève, texte et image | **Mistral Small 4** `mistral-small-2603` | sans raisonnement sous un contrat de tour, l'exactitude passant par la fiche d'exercice ; sans fiche, `routeReasoningEffort` (`modules/tutor/mistral-reasoning.ts`) passe en `high` sur une réponse proposée, ou en 4e-3e en maths et sciences sur une demande de solution ou d'explication ; température 0,7, dans la plage de la fiche Hugging Face de Small 4 pour `none` ; `promptCacheKey` par session |
-| Lecture d'une image jointe (`documents/mistral-vision.ts`, transcription seule), génération de cartes, analyse du tour (`turn-analysis.service.ts`) | Mistral Small 4 `mistral-small-2603` | `reasoningEffort: 'none'` ; sortie structurée stricte |
+| Chat élève, texte et image | **Mistral Small 4** `mistral-small-2603` | sans raisonnement sous un contrat de tour, l'exactitude passant par la fiche d'exercice ; sans fiche, `routeReasoningEffort` (`modules/tutor/core/reasoning.ts`) passe en `high` sur une réponse proposée, ou en 4e-3e en maths et sciences sur une demande de solution ou d'explication ; température 0,7, dans la plage de la fiche Hugging Face de Small 4 pour `none` ; `promptCacheKey` par session |
+| Lecture d'une image jointe (`documents/mistral-vision.ts`, transcription seule), génération de cartes | Mistral Small 4 `mistral-small-2603` | `reasoningEffort: 'none'` ; sortie structurée stricte |
+| Analyse du tour (`modules/tutor/core/analysis.ts`) | Mistral Small 4 `mistral-small-2603` | `reasoningEffort: 'high'`, température 0,7 : sans raisonnement, une question de fait était lue comme une demande d'explication (`etudes/2026-10-06/passage-de-fin.md`) ; sortie structurée stricte |
 | Résumé de séance, titre | Mistral Small 4 `mistral-small-2603` | `reasoningEffort: 'none'` ; texte |
-| Fiche d'exercice (`exercise-sheet.service.ts`) | Mistral Small 4 `mistral-small-2603` | `reasoningEffort: 'high'` sans plafond de tokens, borné par un timeout de 20 s ; température 0,7 (« 0.7 for `reasoning_effort="high"` », fiche Hugging Face) ; trois tirages votés ; sortie structurée stricte |
-| Diagnostic d'une proposition (`exercise-diagnosis.service.ts`) | Mistral Small 4 `mistral-small-2603` | `reasoningEffort: 'none'`, température 0, contre la fiche ; mathjs tranche quand il sait lire ; sortie structurée stricte |
+| Fiche d'exercice (`modules/tutor/core/sheet.ts`) | Mistral Small 4 `mistral-small-2603` | `reasoningEffort: 'high'` sans plafond de tokens, borné par un timeout de 20 s ; température 0,7 (« 0.7 for `reasoning_effort="high"` », fiche Hugging Face) ; trois tirages votés ; sortie structurée stricte |
+| Diagnostic d'une proposition (`modules/tutor/core/diagnosis.ts`) | Mistral Small 4 `mistral-small-2603` | `reasoningEffort: 'none'`, température 0, contre la fiche ; mathjs tranche quand il sait lire ; sortie structurée stricte |
 | Modération entrée/sortie | `mistral-moderation-2603` | Catégories par sens (§5) |
 | STT / TTS | Voxtral via `@mistralai/mistralai` (`audio.*`) | Timeout explicite |
 | Juge d'évaluation | Mistral Small 4 `mistral-small-2603` | Questions oui/non en JSON strict, cinq tirages, référence fournie |
@@ -107,9 +108,11 @@ modèle sans prévenir et invalide l'évaluation. Chaque prompt porte une versio
 ## 4. Pédagogie
 
 - **Échelle d'indices graduée**, palier courant tenu **côté serveur** par exercice
-  (`hint-ladder.ts`) : relance → indice conceptuel → indice ciblé → étape intermédiaire →
+  (`modules/tutor/core/ladder.ts`) : relance → indice conceptuel → indice ciblé → étape intermédiaire →
   exemple analogue entièrement résolu. Jamais la réponse de l'exercice de l'élève lui-même.
-  Le palier monte avec les tentatives réelles, et descend quand l'élève réussit.
+  Le palier monte avec les tentatives réelles, ou après deux « je sais pas » de suite sans
+  tentative (décision de Victor du 2026-10-06), et descend quand l'élève réussit ; une demande
+  de solution seule ne le fait jamais monter.
   Appui : Bastani 2025 (les indices conçus par des enseignants annulent la perte
   d'apprentissage), RCT LearnLM collège (44,3 % des éditions humaines servent à
   éviter la frustration), Sweller 2019 (exemples résolus pour le novice).
@@ -135,9 +138,9 @@ modèle sans prévenir et invalide l'évaluation. Chaque prompt porte une versio
   code (il monte avec les tentatives réelles, jamais sous la seule pression), et un contrat
   du tour qui ne donne au modèle qui rédige que la part de la fiche que le palier autorise.
 - **Périmètre V1 : collège (6e → 3e)** : les seuls niveaux du serveur
-  (`EDUCATION_LEVELS`, `lib/education-levels.ts`, d'où dérive l'enum `school_level`) ; le
+  (`SCHOOL_LEVELS`, `domain/levels.ts`, d'où dérive l'enum `school_level`) ; le
   prompt ne parle que du collège.
-- **Une seule taxonomie** `lib/subjects.ts` : familles pour l'analyse du tour et les
+- **Une seule taxonomie** `domain/subjects.ts` : familles pour l'analyse du tour et les
   consignes du tuteur, slugs du collège pour les outils, les paquets de cartes, le
   référentiel et le jeu. Le slug se valide aux routes, la séance garde une famille. Un bloc
   matière existe pour chaque famille, `langues` et `general` compris.
@@ -150,7 +153,7 @@ modèle sans prévenir et invalide l'évaluation. Chaque prompt porte une versio
 | Garde-fou | Mécanisme | Où |
 |---|---|---|
 | Modération d'entrée | `mistral-moderation-2603` par `studentTurn` (`platform/ai/moderation.ts`), qui classe le message de l'élève avec le dernier message du tuteur en contexte ; catégories `sexual`, `selfharm`, `jailbreaking`, `pii`, `violence_and_threats`, `dangerous`, `criminal` gardées avec le message ; `selfharm` décide la détresse, les autres se mesurent sans bloquer (un devoir d'histoire touche à la violence) ; modération indisponible : les règles seules jugent la détresse, l'échec journalisé (`modules/tutor/chat-orchestration.service.ts`) | En parallèle de l'analyse du tour, avant le premier mot |
-| Contrôle avant l'élève | Le message entier est généré, contrôlé, puis envoyé ; celui qui est envoyé est celui qui est persisté (`controlled-turn.ts`, `output-check.ts`). Déterministe : réponse et ses formes comparées à la fiche d'exercice, une forme déjà écrite par l'élève et jugée juste restant permise pour la confirmer ; balises et gabarits ; égalités recalculées par mathjs. Sur un échec, une régénération sous contrainte, puis une réponse de repli fixe, l'événement tracé | Entre `streamText` et l'élève ; aussi sur les fiches de révision générées et le titre de séance, avant leur enregistrement |
+| Contrôle avant l'élève | Le message entier est généré, contrôlé, puis envoyé ; celui qui est envoyé est celui qui est persisté (`controlled-turn.ts`, `modules/tutor/core/output-check.ts`). Déterministe : réponse et ses formes comparées à la fiche d'exercice, une forme déjà écrite par l'élève et jugée juste restant permise pour la confirmer ; une fiche incertaine tenue aux formes de tous ses tirages, et une fiche absente à un palier bas (le contrôle échoue fermé) ; balises et gabarits ; égalités recalculées par mathjs. Sur un échec, une régénération sous contrainte, puis une réponse de repli fixe, l'événement tracé | Entre `streamText` et l'élève ; aussi sur les fiches de révision générées et le titre de séance, avant leur enregistrement |
 | Modération de sortie | Même modèle sur le message entier, en parallèle du contrôle ; catégories bloquantes `OUTPUT_BLOCKING` ; même action sur un blocage | Avant l'élève |
 | Détresse | Classifieur indépendant du prompt (catégorie Self-Harm + règles en français, testés sur des phrases d'élèves) ; réponse fixe rédigée et approuvée par un humain, avec le 3114 et un adulte de confiance, et, à construire au lot 3, le 119 quand le message laisse penser que le danger vient de la maison, puis fin de la conversation (Crawford et Glatard, CMAJ 2026) ; numéros d'aide vérifiés sur service-public.gouv.fr F33954. Ni fiche ni tuteur (l'analyse du tour, lancée en parallèle, est écartée) : la réponse est gardée avec le message, la séance close (tout message suivant reçoit la même réponse), l'événement enregistré, un par séance (`distress_events`), pour la revue humaine du lot 3 : un humain relit chaque événement et décide d'un message au parent, qui n'en reçoit que le motif et des ressources, l'élève prévenu d'abord (`etudes/2026-10-07/foyer-eleve-age.md`). Ni quota, ni limite de flux, ni écriture en échec ne retiennent la réponse (`modules/tutor/distress.ts`) | Même point d'entrée |
 | Fuite de réponse | Palier d'aide imposé par le serveur (§4) ; la recherche de la réponse dans le texte (`findLeakForm`, `domain/leak.ts`), partagée avec le harnais, tourne dans le contrôle avant l'élève | Assembleur de tour, contrôle avant l'élève |
@@ -186,7 +189,7 @@ Ordre du prompt, du plus stable au plus variable (`assembleChatPrompt`,
 1. Système statique versionné : identité (dont la divulgation « je suis une IA »),
    pédagogie, sécurité, format. Aucune donnée d'élève.
 2. Définitions d'outils.
-3. Exercice en cours (`exerciseBlock`, `exercise-sheet.ts`) : son énoncé, délimité comme
+3. Exercice en cours (`exerciseBlock`, `modules/tutor/core/sheet.ts`) : son énoncé, délimité comme
    donnée, les notions du programme de la classe que la fiche lui rattache et celles des
    classes suivantes à ne pas utiliser ; jamais la réponse ni les étapes. Les notions
    viennent du référentiel (`apps/server/src/referential/`, en mathématiques et en français) :

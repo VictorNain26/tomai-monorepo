@@ -23,6 +23,9 @@ const files = [
   { pattern: 'src/modules/*/service.ts', category: 'service' },
   { pattern: 'src/modules/*/repository.ts', category: 'repository' },
   { pattern: 'src/modules/*/schema.ts', category: 'schema' },
+  // A module's core/: its pure decisions and the model steps they call, which the service
+  // composes. They may read the referential, the data of the programmes.
+  { pattern: 'src/modules/*/core/*.ts', category: 'core' },
 ];
 
 // A test passes its doubles in; replacing a module hides the wiring and breaks silently.
@@ -78,7 +81,8 @@ export default [
             allow(file('root'), file(['root', 'config']), element(['platform', 'domain']), inModule(['module-index'])),
             allow(inModule(['module-index']), sameModule(['routes', 'service', 'repository']), element('platform')),
             allow(inModule(['routes']), sameModule(['service']), element(['platform', 'domain'])),
-            allow(inModule(['service']), sameModule(['repository']), element(['platform', 'domain'])),
+            allow(inModule(['service']), sameModule(['repository', 'core']), element(['platform', 'domain'])),
+            allow(inModule(['core']), sameModule(['core']), element(['platform', 'domain', 'referential'])),
             allow(inModule(['repository']), sameModule(['schema']), element(['platform', 'domain'])),
             allow(inModule(['schema']), element(['platform', 'domain'])),
             allow(element('platform'), element('platform'), file('config')),

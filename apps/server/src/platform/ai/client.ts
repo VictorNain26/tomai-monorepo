@@ -28,6 +28,8 @@ export interface TextCall {
   /** Mistral's prompt cache: stable while the start of the prompt is (docs.mistral.ai/api/endpoint/chat). */
   promptCacheKey?: string;
   reasoningEffort?: 'none' | 'high';
+  /** Shorter than the configured deadline for a call the turn waits on. */
+  timeoutMs?: number;
 }
 
 interface StructuredCall<T> extends TextCall {
@@ -104,14 +106,14 @@ export function createAi({ mistral, db, logger }: { mistral: MistralConfig; db: 
 
   return {
     async generateText(call) {
-      const result = await generate({ ...settings(call, AbortSignal.timeout(mistral.timeoutMs)), messages: call.messages });
+      const result = await generate({ ...settings(call, AbortSignal.timeout(call.timeoutMs ?? mistral.timeoutMs)), messages: call.messages });
       await record(call, usageOf(result.usage));
       return result.text;
     },
 
     async generateStructured<T>(call: StructuredCall<T>) {
       // One deadline for the call and its repair.
-      const abortSignal = AbortSignal.timeout(mistral.timeoutMs);
+      const abortSignal = AbortSignal.timeout(call.timeoutMs ?? mistral.timeoutMs);
       const attempt = async (messages: ModelMessage[]) => {
         try {
           const result = await generate({
