@@ -77,10 +77,14 @@ En place (`apps/web`) :
   build, jamais une réponse `/api`, et laisse passer les navigations `/api` (callback OAuth).
   Photo, voix et push passeront par le web, sans application native en V1.
 
-Cible :
-- Le client typé du serveur (`hcWithType`, `parseResponse` et `DetailedError` de `hono/client`)
-  arrive à l'étape 6 de la refonte ; aujourd'hui `apps/web` n'appelle pas encore le serveur.
-- Données par TanStack Query, formulaires par react-hook-form et Zod.
+- Client typé : le serveur émet ses déclarations (`build:types`, seul point d'entrée
+  `apps/server/src/contract.ts`), que turbo construit avant le typecheck et le lint du web ; le
+  web les lit par `hc<AppType>` et `parseResponse` de `hono/client`, une erreur par `problemOf`
+  (`apps/web/src/lib/api.ts`). Aucun type du serveur n'est réécrit côté client.
+- Données par TanStack Query, formulaires par react-hook-form et Zod, celui-ci en mode
+  `jitless` : sa sonde `new Function` serait une violation de la CSP.
+
+Cible :
 - Primitives `@repo/ui` (shadcn sur Radix). Base UI est écarté : sur iOS, il ne verrouille pas
   le défilement derrière un panneau quand la barre de Safari est repliée
   (`@base-ui/utils/useScrollLock.mjs`).

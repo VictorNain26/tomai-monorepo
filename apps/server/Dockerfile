@@ -12,12 +12,16 @@ WORKDIR /app
 COPY package.json bun.lock bunfig.toml ./
 COPY apps/web/package.json ./apps/web/
 COPY packages/tokens/package.json ./packages/tokens/
+COPY packages/ui/package.json ./packages/ui/
 COPY packages/eslint-config/package.json ./packages/eslint-config/
+# The web imports only the server's types, which Vite erases: its manifest, for the install.
+COPY apps/server/package.json ./apps/server/
 RUN --mount=type=cache,target=/root/.bun/install/cache \
     bun install --frozen-lockfile --ignore-scripts --filter web
 
 COPY tsconfig.base.json ./
 COPY packages/tokens/ ./packages/tokens/
+COPY packages/ui/ ./packages/ui/
 COPY apps/web/ ./apps/web/
 WORKDIR /app/apps/web
 RUN bun run build && test -f dist/index.html -a -f dist/sw.js

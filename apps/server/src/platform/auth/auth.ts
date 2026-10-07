@@ -106,6 +106,8 @@ export function createAuth(db: Db, config: Pick<Config, 'publicUrl' | 'authSecre
         return Promise.resolve();
       }),
     },
+    // A page of the web: better-auth's own error page has an inline style the CSP blocks.
+    onAPIError: { errorURL: `${config.publicUrl}/erreur-connexion` },
     // better-auth 1.7 skips its origin check when NODE_ENV is test (context/create-context.mjs):
     // on in every environment, the tests exercise the check production runs.
     advanced: { disableOriginCheck: false, backgroundTasks: { handler: background } },

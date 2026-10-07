@@ -57,6 +57,7 @@ export function createApp({ config, logger, db, auth, ai, moderation, lifecycle,
     })
     .use('/api/auth/*', household.authGuard)
     .on(['GET', 'POST'], '/api/auth/*', (c) => auth.handler(c.req.raw))
+    .route('/api/me', household.me)
     .route('/api/household', household.routes)
     .route('/api/sessions', tutor.routes)
     .route('/health', healthRoutes({ db, lifecycle, logger }))

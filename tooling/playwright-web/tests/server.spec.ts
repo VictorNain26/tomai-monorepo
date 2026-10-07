@@ -51,14 +51,12 @@ test.describe('after a deployment', () => {
   // The service worker would answer from its cache, which page.route never sees.
   test.use({ serviceWorkers: 'block' });
 
-  // A route's chunk is any script the page loads besides the entry that index.html names.
+  // The chunk of the sign-in, where a visitor lands: a route's own chunk, the one the router loads
+  // lazily, not a chunk the entry shares, whose loss would stop the whole app.
   async function failRouteChunk(page: Page, times: number) {
-    const html = await (await page.request.get('/')).text();
-    const entry = /<script type="module" crossorigin src="([^"]+)"/.exec(html)?.[1];
-    expect(entry).toBeDefined();
     let failed = 0;
-    await page.route('/assets/*.js', async (route) => {
-      if (new URL(route.request().url()).pathname === entry || failed >= times) return route.fallback();
+    await page.route('/assets/connexion-*.js', async (route) => {
+      if (failed >= times) return route.fallback();
       failed++;
       return route.fulfill({ status: 404, body: '' });
     });
@@ -84,8 +82,9 @@ test.describe('after a deployment', () => {
 
     await page.goto('/');
 
-    await expect(page.getByText('Something went wrong!')).toBeVisible();
-    expect(failed()).toBe(2);
+    await expect(page.getByRole('heading', { name: 'Une erreur est survenue' })).toBeVisible();
+    // One reload, not a loop. WebKit asks no second time for a module it failed to load.
+    expect(failed()).toBeGreaterThanOrEqual(1);
     expect(loads).toBe(2);
   });
 });

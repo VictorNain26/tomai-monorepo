@@ -48,6 +48,11 @@ export function studentAuthGuard({ auth, service }: { auth: Auth; service: House
   });
 }
 
+/** /api/me: who is signed in, and as what; the web picks its home from it. */
+export function meRoutes({ auth, service }: { auth: Auth; service: HouseholdService }) {
+  return new Hono<SessionEnv>().use(requireSession(auth)).get('/', async (c) => c.json(await service.me(c.var.userId, c.var.userName)));
+}
+
 export function householdRoutes({ auth, service }: { auth: Auth; service: HouseholdService }) {
   const guardianOnly = createMiddleware<SessionEnv>(async (c, next) => {
     await service.assertNotStudent(c.var.userId);

@@ -1,3 +1,4 @@
 @import 'tailwindcss';
 @import '@repo/tokens/theme.css';
 @import '@repo/tokens/base.css';
+@source '../../../packages/ui/src';

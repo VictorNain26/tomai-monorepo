@@ -2,6 +2,11 @@
   "name": "tomai-server",
   "version": "2.0.0",
   "type": "module",
+  "exports": {
+    "./contract": {
+      "types": "./dist/types/contract.d.ts"
+    }
+  },
   "scripts": {
     "dev": "bun --watch src/main.ts | pino-pretty",
     "start": "bun dist/main.js",
@@ -14,7 +19,8 @@
     "db:migrate": "bun src/migrate.ts",
     "db:check": "bun --bun drizzle-kit check --config=drizzle.config.ts",
     "db:studio": "bunx drizzle-kit studio",
-    "referential:extract": "bun src/referential/extract.ts"
+    "referential:extract": "bun src/referential/extract.ts",
+    "build:types": "bun --bun tsc -p tsconfig.types.json"
   },
   "dependencies": {
     "@ai-sdk/mistral": "^4.0.48",

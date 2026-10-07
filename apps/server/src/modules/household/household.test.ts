@@ -103,6 +103,36 @@ const creation = client();
 const creator = await creation.guardian('createur@example.com');
 const leo = await creation.student(creator, { name: 'Léo', level: 'sixieme', birthMonth: '2015-09' });
 
+describe('/api/me', () => {
+  it('tells who is signed in and as what, a guardian without a household yet included', async () => {
+    const api = client();
+    const fresh = await api.guardian('nouveau@example.com');
+    expect(await (await api.request('GET', '/api/me', { cookie: fresh })).json()).toMatchObject({ name: 'Parent', role: 'guardian', level: null });
+    expect(await (await api.request('GET', '/api/me', { cookie: asStudentA })).json()).toEqual({
+      id: studentOfA.id,
+      name: 'Léa',
+      role: 'student',
+      level: 'cinquieme',
+    });
+    expect((await api.request('GET', '/api/me')).status).toBe(401);
+  });
+
+  it('extends a session used past a day, and sends its new cookie', async () => {
+    const api = client();
+    const cookie = await api.guardian('assidu@example.com');
+    const { id } = (await (await api.request('GET', '/api/me', { cookie })).json()) as { id: string };
+    await db
+      .update(session)
+      .set({ expiresAt: new Date(Date.now() + 3_600_000) })
+      .where(eq(session.userId, id));
+    const res = await api.request('GET', '/api/me', { cookie });
+    expect(res.status).toBe(200);
+    expect(res.headers.getSetCookie().some((line) => line.startsWith('better-auth.session_token='))).toBe(true);
+    const [row] = await db.select({ expiresAt: session.expiresAt }).from(session).where(eq(session.userId, id));
+    expect(row?.expiresAt.getTime()).toBeGreaterThan(Date.now() + 6 * 86_400_000);
+  });
+});
+
 describe('a guardian creates a student', () => {
   const api = creation;
   const guardian = creator;
