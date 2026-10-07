@@ -59,7 +59,8 @@ bloquant levé). L'historique vit dans git et les PR.
   Astro dans une application statique ; Bugsink à la place de Sentry ; Vercel supprimé. HDS demandé
   à la CNIL ; s'il est requis, la production naît en zone HDS ou chez Scalingo.
 - **Landing en Astro** (portage fidèle, décision de Victor du 2026-10-07) : Next.js, Vercel et Sentry
-  supprimés ; Astro 7 statique, îlots React, CSP à empreintes, servie par Caddy (`apps/landing/Caddyfile`),
+  supprimés ; Astro 7 statique sans framework client (éléments natifs et personnalisés, API vanilla de
+  Motion), CSP à empreintes, servie par Caddy (`apps/landing/Caddyfile`),
   contre lequel tourne la suite e2e ; pages légales alignées sur Clever Cloud. En ligne, c'est toujours
   la version Next sur Vercel, jusqu'au déploiement chez Clever Cloud.
 - **Prochaine action** : l'étape 7, la préproduction sur Clever Cloud, une fois le compte ouvert par
@@ -83,6 +84,11 @@ supprime ou que l'étude couvre n'y figure plus.
 
 ### Refonte — préproduction (étape 7)
 
+- **Test intermittent du serveur** : `modules/tutor/learner-memory.test.ts` échoue environ une fois
+  sur dix en local (3 sur 20 le 2026-10-07 : une notion oubliée ou une mémoire remise à zéro compte
+  encore des exercices antérieurs), jamais vu en CI. Écartés : un cache de session (better-auth sans
+  `cookieCache`), une course entre la réponse et l'enregistrement du tour (enregistré avant la
+  réponse), un recul de l'horloge de Postgres (aucun mesuré). À trouver dans une PR dédiée.
 - **Observabilité** : les erreurs du serveur vers Bugsink, auto-hébergé avec sa base, celles des navigateurs par le serveur (`tunnel`) ; les traces OpenTelemetry attendent un besoin mesuré (`etudes/2026-10-07/hebergement.md`).
 - **Cookies de session** : le préfixe `__Host-` pour ceux de better-auth, l'app et la landing étant du même site (à vérifier dans la config de better-auth).
 - **Postgres de l'hébergeur** : `verify-full` vérifie le certificat contre les CA du système ; une CA privée demande l'option `ssl` avec `ca` (`platform/db/client.ts`).
@@ -119,8 +125,7 @@ supprime ou que l'étude couvre n'y figure plus.
 ### Lot 4 — marque et lancement
 
 - **Image Open Graph** : `apps/landing/public/opengraph-image.png`, capturée sur la version Next, porte le nom et le titre en dur ; à refaire avec le nom du produit (revue du portage en Astro).
-- **Tests e2e qui gardent l'identité rejetée** (`signs.spec.ts`, graisse des titres dans `type.spec.ts`, place de Tom dans `hero.spec.ts`), et ceux du web (`apps/web/tests/home.spec.ts`, nom et couleurs du manifest) : à revoir avec la nouvelle identité.
-- **`Scribble`** (`apps/landing/src/components/annotations/scribble.tsx`) : erreur d'hydratation sous mouvement réduit (`initial` différent entre serveur et client) ; correctif technique permis pendant le gel.
+- **Tests e2e qui gardent l'identité rejetée** (`signs.spec.ts`, graisse des titres dans `type.spec.ts`, place de Tom dans `hero.spec.ts`), et ceux du web (`tooling/playwright-web/tests/home.spec.ts`, nom et couleurs du manifest) : à revoir avec la nouvelle identité.
 
 ## Surveillance
 

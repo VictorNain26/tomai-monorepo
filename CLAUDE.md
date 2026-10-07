@@ -43,10 +43,9 @@ adversarial review step »). Un constat retenu se corrige avant le merge, puis
 
 ## Garde-fous déterministes
 
-- `.claude/settings.json` : `permissions.ask` sur `db:push`, `drizzle-kit push`, `dropdb`,
-  `DROP DATABASE` ou `SCHEMA` et `docker compose down -v` ; `permissions.deny` sur `.env`,
-  `.env.*` (sauf `.env.example`) et les porteurs de clés. La règle porte sur le texte de la
-  commande : une autre forme d'appel y échappe ([doc](https://code.claude.com/docs/en/permissions)).
+- `.claude/settings.json` : ses `permissions.ask` gardent les commandes qui détruisent une base,
+  ses `permissions.deny` les fichiers de secrets. Une règle porte sur le texte de la commande :
+  une autre forme d'appel y échappe ([doc](https://code.claude.com/docs/en/permissions)).
 - lefthook : format, lint et typecheck avant un commit ; tests et build avant un push.
 - CI (`.github/workflows/ci.yml`) : vérifications, tests, build, e2e, migrations, image, sécurité,
   réunis par `ci-ok`, le seul check à exiger.

@@ -46,6 +46,10 @@ En place (`apps/server/src`) :
   sessions fermées) et supprime son compte avec son mot de passe, ce qui emporte son foyer s'il en
   est le seul gardien. Les envois partent après la réponse (`platform/lifecycle/background.ts`),
   que l'arrêt attend.
+- `modules/tutor` : les séances, le tour (`POST /api/sessions/:id/messages`), qui échoue fermé, le
+  quota par élève, le résumé et le titre en tâche de fond, la mémoire d'apprentissage
+  (`/api/memory`) ; ses règles dans `tuteur.md`.
+- `platform/ai` : les appels à Mistral et à sa modération, le coût de chacun.
 - `platform/auth/pairing.ts` : le jumelage d'un appareil d'élève, un code à usage unique demandé
   par le gardien, haché par better-auth, qui ouvre une session pour l'élève.
 - `domain/` (niveaux, matières), `referential/` (outil et textes officiels), `eval/` (jeu
@@ -79,17 +83,12 @@ En place (`apps/web`) :
 
 - Client typé : le serveur émet ses déclarations (`build:types`, seul point d'entrée
   `apps/server/src/contract.ts`), que turbo construit avant le typecheck et le lint du web ; le
-  web les lit par `hc<AppType>` et `parseResponse` de `hono/client`, une erreur par `problemOf`
+  web les lit par `hc<AppType>` et `parseResponse` de `hono/client`, une erreur par `isProblem`
   (`apps/web/src/lib/api.ts`). Aucun type du serveur n'est réécrit côté client.
 - Données par TanStack Query, formulaires par react-hook-form et Zod, celui-ci en mode
   `jitless` : sa sonde `new Function` serait une violation de la CSP.
-
-Cible :
-- Primitives `@repo/ui` (shadcn sur Radix). Base UI est écarté : sur iOS, il ne verrouille pas
-  le défilement derrière un panneau quand la barre de Safari est repliée
-  (`@base-ui/utils/useScrollLock.mjs`).
-- Le chat consomme le protocole de l'AI SDK (`useChat` de `@ai-sdk/react`), déjà
-  celui du serveur.
+- Primitives `@repo/ui` (shadcn) ; le chat par `useChat` de `@ai-sdk/react`, qui lit le protocole
+  du serveur (`apps/web/src/lib/chat.ts`).
 
 ## Observabilité
 

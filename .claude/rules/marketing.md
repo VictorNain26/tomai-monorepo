@@ -15,12 +15,12 @@ Source : `docs/vision.md`, qui fixe aussi la promesse, la cible et le prix.
 - **Chaque chiffre public a une source primaire datée** ; chaque différence revendiquée face à un concurrent est **mesurée** (harnais du lot 1, protocole publié) ; ce qui n'est pas construit ne se promet pas.
 - **Pas de promesse de progrès scolaire ni de meilleures notes** : rien ne la mesure aujourd'hui. Pas de « le seul ».
 - **Preuve sociale réelle uniquement** : témoignages de vraies familles, avec leur accord, et chiffres sourcés ou mesures publiées. Jamais de témoignage, d'avis, de logo ni de compteur d'utilisateurs inventé ou anticipé.
-- Une phrase de la landing qu'on ne peut adosser à une source ou à une mesure se retire : c'est le seul type de changement admis tant que la landing est gelée (lot 4).
+- Jamais une phrase de la landing qu'on ne peut adosser à une source ou à une mesure : elle se retire.
 - **Jamais** : « conforme au cadre d'usage de l'IA du ministère », « agréé » ou « recommandé par l'Éducation nationale », « aligné sur les programmes » sans la métrique publiée, « fait les devoirs » (`docs/etudes/2026-10-01/education-nationale.md`, c).
 
 ## RGPD / consentement (EU, mineurs)
 
-- **Pas de dark pattern sur le bandeau cookies** : « Refuser » aussi visible que « Accepter » (même taille/poids). Aucun cookie non essentiel avant consentement ; au retrait, les cookies s'arrêtent réellement. ([CNIL — dark patterns, déc. 2024](https://www.cnil.fr/en/dark-patterns-cookie-banners-cnil-issues-formal-notice-website-publishers))
-- **Majorité numérique FR = 15 ans** : sous 15 ans, traitement fondé sur le consentement = **double consentement conjoint enfant + parent**. ([CNIL — recommandation 4](https://www.cnil.fr/fr/recommandation-4-rechercher-le-consentement-dun-parent-pour-les-mineurs-de-moins-de-15-ans))
-- **Privacy by default** pour le compte élève (profil privé, pas de partage tiers) et **aucune publicité comportementale ciblant un mineur**, même avec accord parental. ([CNIL — droits numériques des mineurs](https://www.cnil.fr/fr/enjeux-numeriques/les-droits-numeriques-des-mineurs))
-- **Information adaptée à l'âge** (pas le même pavé juridique pour un parent et un élève de 12 ans). ([CNIL — recommandation 6](https://www.cnil.fr/fr/recommandation-6-renforcer-linformation-et-les-droits-des-mineurs-par-le-design))
+- **Jamais de dark pattern sur un bandeau cookies** : « Refuser » jamais moins visible que « Accepter » (même taille, même graisse), jamais un cookie non essentiel avant le consentement ni après son retrait. ([CNIL — dark patterns, déc. 2024](https://www.cnil.fr/en/dark-patterns-cookie-banners-cnil-issues-formal-notice-website-publishers))
+- **Jamais, sous 15 ans, un traitement fondé sur le consentement sans le double consentement conjoint de l'enfant et du parent** (majorité numérique française à 15 ans). ([CNIL — recommandation 4](https://www.cnil.fr/fr/recommandation-4-rechercher-le-consentement-dun-parent-pour-les-mineurs-de-moins-de-15-ans))
+- **Jamais un compte élève public ni partagé avec un tiers par défaut**, et **jamais de publicité comportementale ciblant un mineur**, même avec l'accord du parent. ([CNIL — droits numériques des mineurs](https://www.cnil.fr/fr/enjeux-numeriques/les-droits-numeriques-des-mineurs))
+- **Jamais le même pavé juridique pour un parent et pour un élève de 12 ans** : l'information s'adapte à l'âge. ([CNIL — recommandation 6](https://www.cnil.fr/fr/recommandation-6-renforcer-linformation-et-les-droits-des-mineurs-par-le-design))

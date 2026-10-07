@@ -31,9 +31,11 @@ demandent le Postgres de `docker compose` (`DATABASE_URL`).
   Postgres local). Projets `iphone` (WebKit) et `android` (Chromium) ; prérequis :
   `cd tooling/playwright-web && bunx playwright install chromium webkit`, puis les
   bibliothèques système de WebKit, `bunx playwright install-deps webkit`.
-- **Landing** : mise en page (hiérarchie des titres, aucun défilement horizontal, cibles de
-  44 px, lignes légales, liens soulignés), rendu sans JavaScript et sous mouvement réduit,
-  absence de formulaire et de liste d'attente, menu mobile, page 404.
+- **Landing** : servie par le Caddy de production (`apps/landing/Caddyfile`, en conteneur, Docker
+  requis) ; mise en page (hiérarchie des titres, aucun défilement horizontal, cibles de 44 px,
+  lignes légales, liens soulignés), rendu sans JavaScript et sous mouvement réduit, absence de
+  formulaire et de liste d'attente, menu mobile, page 404, en-têtes, redirections, canonical et
+  CSP sans refus.
 
 Les suites Playwright tournent en CI (job `E2E (Playwright)`, tâche turbo `test:e2e`, sur les
 paquets touchés), pas avant un commit.
