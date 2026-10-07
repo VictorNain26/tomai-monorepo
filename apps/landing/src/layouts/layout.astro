@@ -102,7 +102,8 @@ const jsonLd = [
     <link rel="apple-touch-icon" href="/apple-icon.png" sizes="180x180" type="image/png" />
     <link rel="sitemap" href="/sitemap-index.xml" />
     <Font cssVariable="--font-nunito" preload />
-    <Font cssVariable="--font-caveat" preload />
+    {/* Not preloaded: only the home page writes by hand. */}
+    <Font cssVariable="--font-caveat" />
     {jsonLd.map((schema) => (
       <JsonLd data={schema} />
     ))}

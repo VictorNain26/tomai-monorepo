@@ -1,6 +1,6 @@
 import { animate, inView } from 'motion';
 
-// Each [data-reveal] starts hidden by global.css, only when scripts run, so that without them the page shows whole.
+// Each [data-reveal] starts in its entry state, set by its component's style only when scripts run: without them, the page shows whole.
 const REVEAL_SECONDS = 0.5;
 const DRAW_SECONDS = 0.8;
 const RISE_PX = 20;
@@ -34,7 +34,7 @@ for (const stroke of document.querySelectorAll<SVGPathElement>('path[data-reveal
         duration: DRAW_SECONDS,
         delay,
         ease: 'easeInOut',
-        // global.css hides the stroke until Motion writes its first frame: shown any earlier, it would flash whole.
+        // The scribble's style hides the stroke until Motion writes its first frame: shown any earlier, it would flash whole.
         onUpdate: () => {
           stroke.dataset['drawing'] = '';
         },

@@ -5,19 +5,20 @@ import NavLinks from '@/components/molecules/nav-links.astro';
 ---
 
 <header class="sticky top-0 z-50 w-full border-b border-transparent bg-background/70 backdrop-blur transition-colors duration-base data-scrolled:border-border data-scrolled:bg-background/90 data-scrolled:backdrop-blur-md">
-  <nav aria-label="Principale" class="container relative flex h-16 items-center justify-between">
-    <div class="flex items-center z-20">
+  <div class="container relative flex h-16 items-center justify-between">
+    <div class="z-20 flex items-center">
       <Logo />
     </div>
 
-    <div class="hidden md:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+    <nav aria-label="Principale" class="absolute top-1/2 left-1/2 hidden -translate-x-1/2 -translate-y-1/2 md:flex">
       <NavLinks />
-    </div>
+    </nav>
 
+    {/* Outside the desktop navigation: the menu's dialog holds its own. */}
     <div class="z-20 flex items-center gap-2">
       <MobileMenu />
     </div>
-  </nav>
+  </div>
 </header>
 
 <script>
