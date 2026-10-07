@@ -24,7 +24,14 @@ const MAIL = {
   MAIL_FROM: 'tom@mail.tom.example',
 };
 
-const PRODUCTION = { ...BASE, ...MAIL, NODE_ENV: 'production', BETTER_AUTH_URL: 'https://tom.example', WEB_DIST_DIR: build };
+const PRODUCTION = {
+  ...BASE,
+  ...MAIL,
+  NODE_ENV: 'production',
+  BETTER_AUTH_URL: 'https://tom.example',
+  WEB_DIST_DIR: build,
+  MISTRAL_API_KEY: 'key',
+};
 
 describe('loadConfig', () => {
   it('fills the development defaults, the Vite dev server as public origin', () => {
@@ -37,6 +44,25 @@ describe('loadConfig', () => {
       authSecret: BASE.BETTER_AUTH_SECRET,
       webDistDir: undefined,
       mail: undefined,
+      mistral: {
+        apiKey: undefined,
+        serverUrl: 'https://api.eu.mistral.ai',
+        euEndpoint: true,
+        model: 'mistral-small-2603',
+        timeoutMs: 30_000,
+        retryAttempts: 2,
+      },
+    });
+  });
+
+  it('keeps the Mistral origin without its trailing slash, the EU one recognised', () => {
+    expect(loadConfig({ ...PRODUCTION, MISTRAL_SERVER_URL: 'https://api.eu.mistral.ai/' }).mistral).toMatchObject({
+      serverUrl: 'https://api.eu.mistral.ai',
+      euEndpoint: true,
+    });
+    expect(loadConfig({ ...BASE, MISTRAL_SERVER_URL: 'http://localhost:9000' }).mistral).toMatchObject({
+      serverUrl: 'http://localhost:9000',
+      euEndpoint: false,
     });
   });
 
@@ -66,6 +92,11 @@ describe('loadConfig', () => {
     [{ ...BASE, ...MAIL, SCW_DEFAULT_PROJECT_ID: 'not-a-uuid' }, 'SCW_DEFAULT_PROJECT_ID'],
     [{ ...BASE, ...MAIL, MAIL_FROM: 'tom' }, 'MAIL_FROM'],
     [{ ...BASE, SCW_ACCESS_KEY: 'SCWACCESSKEY' }, 'SCW_SECRET_KEY: requis avec SCW_ACCESS_KEY'],
+    [{ ...PRODUCTION, MISTRAL_API_KEY: undefined }, 'MISTRAL_API_KEY'],
+    [{ ...PRODUCTION, MISTRAL_SERVER_URL: 'https://api.mistral.ai' }, 'MISTRAL_SERVER_URL: https://api.eu.mistral.ai requis en production'],
+    [{ ...BASE, MISTRAL_MODEL: 'mistral-small-latest' }, 'MISTRAL_MODEL'],
+    [{ ...BASE, MISTRAL_SERVER_URL: 'https://api.eu.mistral.ai/v1' }, 'MISTRAL_SERVER_URL'],
+    [{ ...BASE, MISTRAL_RETRY_ATTEMPTS: '9' }, 'MISTRAL_RETRY_ATTEMPTS'],
   ])('refuses %o, naming %s', (environment, named) => {
     expect(() => loadConfig(environment)).toThrow(named);
   });

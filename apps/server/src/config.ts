@@ -8,6 +8,7 @@ import { join } from 'node:path';
 import { z } from 'zod';
 
 const LOG_LEVELS = ['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'] as const;
+const MISTRAL_EU = 'https://api.eu.mistral.ai';
 
 const webDistDir = z.string().refine((dir) => existsSync(join(dir, 'index.html')), {
   error: 'WEB_DIST_DIR doit être le build de apps/web, un dossier qui contient index.html',
@@ -30,6 +31,24 @@ const fields = z.object({
   SCW_SECRET_KEY: z.string().optional(),
   SCW_DEFAULT_PROJECT_ID: z.guid().optional(),
   MAIL_FROM: z.email().optional(),
+  // Mistral, through its EU endpoint in production (docs.mistral.ai/inference/regional-inference).
+  // A dated model only: an alias changes model and price silently
+  // (docs.mistral.ai/inference/model-lifecycle).
+  MISTRAL_API_KEY: z.string().optional(),
+  // A bare origin, kept without its trailing slash: the SDKs add their own paths.
+  MISTRAL_SERVER_URL: z
+    .url({ protocol: /^https?$/ })
+    .refine((url) => new URL(url).href === `${new URL(url).origin}/`, { error: 'MISTRAL_SERVER_URL doit être une origine, sans chemin' })
+    .transform((url) => new URL(url).origin)
+    .default(MISTRAL_EU),
+  MISTRAL_MODEL: z
+    .string()
+    .refine((model) => !model.endsWith('-latest'), { error: 'MISTRAL_MODEL doit être un modèle daté, pas un alias -latest' })
+    .default('mistral-small-2603'),
+  // For the text calls. Moderation keeps its own shorter deadlines, measured during an incident
+  // (platform/ai/moderation.ts); 0 retries turns its retries off too.
+  MISTRAL_TIMEOUT_MS: z.coerce.number().int().positive().default(30_000),
+  MISTRAL_RETRY_ATTEMPTS: z.coerce.number().int().min(0).max(5).default(2),
 });
 
 const databaseFields = fields.pick({ NODE_ENV: true, DATABASE_URL: true });
@@ -37,7 +56,7 @@ const databaseFields = fields.pick({ NODE_ENV: true, DATABASE_URL: true });
 // Zod skips a refinement once a field has failed: these checks run apart, so that one error
 // names every variable at fault.
 const MAIL = ['SCW_ACCESS_KEY', 'SCW_SECRET_KEY', 'SCW_DEFAULT_PROJECT_ID', 'MAIL_FROM'] as const;
-const REQUIRED_IN_PRODUCTION = ['BETTER_AUTH_URL', 'WEB_DIST_DIR', ...MAIL] as const;
+const REQUIRED_IN_PRODUCTION = ['BETTER_AUTH_URL', 'WEB_DIST_DIR', 'MISTRAL_API_KEY', ...MAIL] as const;
 
 type Environment = Record<string, string | undefined>;
 
@@ -64,6 +83,18 @@ export interface Config {
   readonly authSecret: string;
   readonly webDistDir: string | undefined;
   readonly mail: { accessKey: string; secretKey: string; projectId: string; from: string } | undefined;
+  readonly mistral: MistralConfig;
+}
+
+export interface MistralConfig {
+  /** Outside production, absent: Mistral refuses the calls. */
+  readonly apiKey: string | undefined;
+  readonly serverUrl: string;
+  /** Inference guaranteed in the EU, at a 10 % upcharge. */
+  readonly euEndpoint: boolean;
+  readonly model: string;
+  readonly timeoutMs: number;
+  readonly retryAttempts: number;
 }
 
 /** Parses the environment, or throws with every invalid variable named. */
@@ -74,6 +105,10 @@ export function loadConfig(environment: Environment): Config {
   if (set.length > 0 && set.length < MAIL.length) {
     const missing = MAIL.filter((key) => env[key] === undefined);
     throw new Error(`Invalid environment:\n  ${missing.map((key) => `${key}: requis avec ${set.join(', ')}`).join('\n  ')}`);
+  }
+  // A student's text never leaves the EU in production.
+  if (env.NODE_ENV === 'production' && env.MISTRAL_SERVER_URL !== MISTRAL_EU) {
+    throw new Error(`Invalid environment:\n  MISTRAL_SERVER_URL: ${MISTRAL_EU} requis en production`);
   }
   return Object.freeze({
     production: env.NODE_ENV === 'production',
@@ -87,6 +122,14 @@ export function loadConfig(environment: Environment): Config {
       env.SCW_ACCESS_KEY && env.SCW_SECRET_KEY && env.SCW_DEFAULT_PROJECT_ID && env.MAIL_FROM
         ? { accessKey: env.SCW_ACCESS_KEY, secretKey: env.SCW_SECRET_KEY, projectId: env.SCW_DEFAULT_PROJECT_ID, from: env.MAIL_FROM }
         : undefined,
+    mistral: {
+      apiKey: env.MISTRAL_API_KEY,
+      serverUrl: env.MISTRAL_SERVER_URL,
+      euEndpoint: env.MISTRAL_SERVER_URL === MISTRAL_EU,
+      model: env.MISTRAL_MODEL,
+      timeoutMs: env.MISTRAL_TIMEOUT_MS,
+      retryAttempts: env.MISTRAL_RETRY_ATTEMPTS,
+    },
   });
 }
 

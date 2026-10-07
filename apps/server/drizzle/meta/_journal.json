@@ -15,6 +15,13 @@
       "when": 1791354976557,
       "tag": "0001_household",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791362656406,
+      "tag": "0002_ai_cost",
+      "breakpoints": true
     }
   ]
 }
