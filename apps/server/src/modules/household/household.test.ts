@@ -116,6 +116,21 @@ describe('/api/me', () => {
     });
     expect((await api.request('GET', '/api/me')).status).toBe(401);
   });
+
+  it('extends a session used past a day, and sends its new cookie', async () => {
+    const api = client();
+    const cookie = await api.guardian('assidu@example.com');
+    const { id } = (await (await api.request('GET', '/api/me', { cookie })).json()) as { id: string };
+    await db
+      .update(session)
+      .set({ expiresAt: new Date(Date.now() + 3_600_000) })
+      .where(eq(session.userId, id));
+    const res = await api.request('GET', '/api/me', { cookie });
+    expect(res.status).toBe(200);
+    expect(res.headers.getSetCookie().some((line) => line.startsWith('better-auth.session_token='))).toBe(true);
+    const [row] = await db.select({ expiresAt: session.expiresAt }).from(session).where(eq(session.userId, id));
+    expect(row?.expiresAt.getTime()).toBeGreaterThan(Date.now() + 6 * 86_400_000);
+  });
 });
 
 describe('a guardian creates a student', () => {
