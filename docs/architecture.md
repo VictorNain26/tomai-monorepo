@@ -102,7 +102,7 @@ Cible :
   se réécrivent avant tout export.
 - **Cible** (`etudes/2026-10-06/refonte-evaluation.md`, « Observabilité en production ») : traces et
   métriques sans identifiant ni texte, logs avec `trace_id`, erreurs dans un outil hébergé dans
-  l'UE, rétentions courtes, accès réservé ; la destination se tranche avec l'hébergeur.
+  l'UE, rétentions courtes, accès réservé ; les erreurs vont à Bugsink, chez l'hébergeur.
 
 ## Hébergement
 

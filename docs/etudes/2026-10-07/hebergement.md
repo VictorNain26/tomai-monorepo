@@ -85,14 +85,16 @@ détresse effacé après sa relecture humaine.
 ## Recommandation et décisions de Victor (2026-10-07)
 
 1. **Clever Cloud** pour la préproduction, en région Paris : une instance XS et un Postgres 18
-   dédié. Pour la production, Clever Cloud si les tests de préproduction passent, sinon OVHcloud.
+   dédié, puis tout le reste (« Architecture unifiée »). Pour la production, Clever Cloud si les tests
+   de préproduction passent ; OVHcloud si l'un d'eux échoue.
 2. **Twilio et Pipedrive acceptés** : ils servent au support et au CRM, donc aux données du compte
    de Victor, jamais aux données des élèves. C'est la différence avec Brevo, écarté parce que ses
    sous-traitants touchent les e-mails envoyés. À inscrire dans l'AIPD.
 3. **HDS** : Victor pose la question par écrit à la CNIL ; la réponse entre dans l'AIPD. D'ici là,
    aucun vrai élève, ce que la porte avant ouverture impose déjà. Si la réponse l'exige, la production
-   naît avant le premier vrai élève dans la zone HDS de Clever Cloud, ou chez Scalingo, environ trois
-   fois moins cher, s'il construit le serveur Bun d'une façon qu'on aura testée.
+   naît avant le premier vrai élève dans la zone HDS de Clever Cloud, ou chez Scalingo, environ 3,5
+   fois moins cher. Scalingo construit par buildpack, pas depuis notre image : il faudrait que la CI
+   vérifie ce qu'il construit, e2e compris, avant de le retenir.
 
 ## Architecture unifiée (décisions de Victor, 2026-10-07)
 
@@ -101,10 +103,10 @@ Victor a demandé de « tout unifier si possible », refonte comprise, sans rien
 | Brique | Choix | Raison |
 |---|---|---|
 | Hébergeur | Clever Cloud, région Paris, pour tout | Ci-dessus |
-| Domaines | Deux noms d'hôte : `<nom>.fr` pour la landing, `app.<nom>.fr` pour le serveur et le web | L'origine se joue à l'hôte ([MDN](https://developer.mozilla.org/en-US/docs/Web/Security/Same-origin_policy)) : aucun script de la vitrine ne tourne dans l'origine de la session du parent ; le cookie de better-auth reste à l'hôte, le service worker à sa portée `/`, sans rien changer au web |
-| Landing | Astro, site statique, dans une application statique Clever Cloud à part (instance pico, environ 4,50 € par mois, [doc](https://www.clever.cloud/developers/doc/applications/static/)) | Next.js en export statique marche, mais garde des scripts en ligne qu'une CSP stricte refuse sans un mécanisme encore expérimental ([doc](https://nextjs.org/docs/app/guides/content-security-policy)) ; Astro sort du HTML sans JavaScript, pose ses empreintes de scripts (`security.csp`, stable) et garde `@repo/ui` en îlots React. La fusionner dans `apps/web` demanderait TanStack Start et mettrait la vitrine sous le service worker de l'app. Elle reste en ligne quand l'app redémarre |
+| Domaines | Deux noms d'hôte : `<nom>.fr` pour la landing, `app.<nom>.fr` pour le serveur et le web | L'origine se joue à l'hôte ([MDN](https://developer.mozilla.org/en-US/docs/Web/Security/Same-origin_policy)) : aucun script de la vitrine ne tourne dans l'origine de la session du parent ; le service worker garde sa portée `/`. Mais les deux hôtes sont du même site : un script de la vitrine pourrait poser un cookie sur `<nom>.fr` que l'app recevrait. Les cookies de session prennent donc le préfixe `__Host-`, qui les attache à l'hôte |
+| Landing | Astro, site statique, dans une application statique Clever Cloud à part (instance pico, environ 4,50 € par mois, [doc](https://www.clever.cloud/developers/doc/applications/static/)) | Next.js en export statique marche, mais garde des scripts en ligne qu'une CSP stricte refuse sans un mécanisme encore expérimental ([doc](https://nextjs.org/docs/app/guides/content-security-policy)) ; Astro sort du HTML sans JavaScript, pose ses empreintes de scripts (`security.csp`, stable) et garde `@repo/ui` en îlots React. La fusionner dans `apps/web` demanderait TanStack Start et mettrait la vitrine sous le service worker de l'app. Elle reste en ligne quand l'app redémarre. Son Caddyfile porte les en-têtes de `vercel.json` (`X-Frame-Options`, `nosniff`, `Referrer-Policy`, `Permissions-Policy`), `frame-ancestors`, `object-src` et `base-uri` (un `<meta>` CSP ne peut pas les porter), et la redirection `/home` ; le `<meta>` d'Astro porte `script-src` et `style-src` |
 | Vercel | Supprimé | Son offre gratuite est réservée à un usage « non-commercial » ([fair use](https://vercel.com/docs/limits/fair-use-guidelines)), et la landing présente des prix ; société américaine |
-| Erreurs | Bugsink, auto-hébergé chez Clever Cloud, à la place de Sentry | Sentry passe par AWS, Cloudflare et Google, même en région UE ([sous-traitants](https://sentry.io/legal/subprocessors/)) ; Bugsink est néerlandais, un seul conteneur, compatible avec les SDK Sentry ([installation](https://www.bugsink.com/docs/installation/)), version 2.6.1 du 2026-09-25 |
+| Erreurs | Bugsink, auto-hébergé chez Clever Cloud, à la place de Sentry | Sentry passe par AWS, Cloudflare et Google, même en région UE ([sous-traitants](https://sentry.io/legal/subprocessors/)) ; Bugsink est néerlandais, un seul conteneur, compatible avec les SDK Sentry ([installation](https://www.bugsink.com/docs/installation/)), version 2.6.1 du 2026-09-25. Le disque d'une application Clever Cloud ne dure pas : il lui faut sa propre base (un Postgres `xxs_sml`, environ 5 € par mois, plus son instance). Les navigateurs lui envoient leurs erreurs par le serveur (l'option `tunnel` des SDK), sans origine de plus dans la CSP |
 | E-mail | Scaleway TEM, inchangé | Clever Cloud n'en a pas ; son extension MailPace envoie depuis le Royaume-Uni, sans liste de sous-traitants publiée ([DPA](https://mailpace.com/dpa)) |
 | Photos (lot 3) | Cellar, le S3 de Clever Cloud ([doc](https://www.clever.cloud/developers/doc/deploy/storage/cellar/)), l'envoi passant par le serveur | Pas de CORS ni de `connect-src` de plus |
 | Traces OpenTelemetry | Reportées | Clever Cloud a métriques, logs et alertes, mais ni APM ni traces ; les logs pino suffisent à l'étape 7 |
