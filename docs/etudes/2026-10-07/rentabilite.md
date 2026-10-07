@@ -48,10 +48,9 @@ et la rétention.
 
 **À trancher par un expert-comptable**, en une consultation : BIC ou BNC ; le taux de TVA de
 Tom, normal ou réduit à 5,5 % comme Kartable (−0,27 € par foyer au lieu de −0,97 € une fois la TVA
-due) ; la CFP. **À donner par Victor** : le chiffre d'affaires annuel de son activité de
-micro-entrepreneur actuelle (`EXISTING_CA`), qui s'ajoute à celui de Tom pour les seuils de TVA
-et de la micro, et son revenu fiscal de référence de 2024, qui ouvre ou non le versement
-libératoire.
+due) ; la CFP ; l'accès au versement libératoire, qui dépend du revenu fiscal de référence de
+2024. Victor n'a aujourd'hui aucun chiffre d'affaires de micro-entrepreneur (`EXISTING_CA` à 0) :
+les seuils de TVA et de la micro ne comptent que celui de Tom.
 
 ## 2. Coût d'un tour, d'une soirée, d'un élève
 
@@ -180,8 +179,7 @@ confidentialité et l'AIPD (2 000 €), marque à l'INPI pour une classe (190 �
 
 Ce qui reste au fondateur par mois, gratuits et frais compris (7,99 €, usage normal, gratuits
 légers) ; micro BIC avec versement libératoire, SASU sans salaire avec les dividendes au PFU
-(31,4 %) après l'IS, expert-comptable à 1 000 € HT par an ; une SASU, personne distincte, ne
-compte pas le chiffre d'affaires de la micro existante pour la franchise de TVA :
+(31,4 %) après l'IS, expert-comptable à 1 000 € HT par an :
 
 | Part payante | Foyers payants | CA annuel TTC (€) | TVA | Micro (€/mois) | SASU (€/mois) |
 |---|---|---|---|---|---|
@@ -193,10 +191,9 @@ compte pas le chiffre d'affaires de la micro existante pour la franchise de TVA 
 | 6 % | 500 | 47 940 | due | 1 282 | 1 144 |
 | 6 % | 1 000 | 95 880 | due | 2 667 | 2 357 |
 
-La micro sort de son plafond de 83 600 € HT vers 1 050 foyers payants, avant de compter
-l'activité existante de Victor. Une SASU sans salaire n'ouvre aucune protection sociale ni
-retraite, et doit sa propre CFE dès sa deuxième année, quand la micro existante la paie déjà ; ni
-l'une ni l'autre n'est au tableau.
+La micro sort de son plafond de 83 600 € HT vers 1 050 foyers payants. Une SASU sans salaire
+n'ouvre aucune protection sociale ni retraite. La CFE, due par l'une comme par l'autre après leur
+première année, n'est pas au tableau.
 
 ## 9. Mesures à faire avant de figer les chiffres
 
@@ -303,4 +300,3 @@ diagnostic 0,003 € pour 35 ; titre 0,004 € pour 112 ; cartes 0,007 € pour 
 | Photo | un exercice sur quatre, 800 tokens de lecture | Faible |
 | Régénération par le contrôle | 10 % des tours | Faible |
 | Paliers d'hébergement | sans mesure de charge | Quelques dizaines de payants au seuil |
-| Chiffre d'affaires micro existant | 0 € | Seuils de TVA et de la micro atteints plus tôt |
