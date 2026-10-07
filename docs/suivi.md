@@ -33,12 +33,13 @@ bloquant levé). L'historique vit dans git et les PR.
   collège ; le parent ne connaît aucun identifiant de son enfant, qui relie son appareil par un code ;
   l'élève voit le résumé de son parent ; la détresse est relue par un humain avant tout message au
   parent.
-- **Étape 4 en cours**, en deux PR en cascade : le foyer, l'élève en mode guidé, son jumelage
-  d'appareil et la matrice d'accès (`feat/household-accounts`) ; puis l'e-mail des gardiens
-  (vérification, réinitialisation, suppression du compte) chez Scaleway TEM, choisi le 2026-10-07
-  (`etudes/2026-10-07/email-transactionnel.md`).
-- **Prochaine action** : la PR de l'e-mail des gardiens ; l'étude des hébergeurs UE avance en
-  parallèle. L'ordre complet est dans l'étude. Test complet dans Chrome à la fin de chaque étape.
+- **Étape 4** : le foyer, l'élève en mode guidé, son jumelage d'appareil et la matrice d'accès
+  (#425) ; l'e-mail des gardiens chez Scaleway TEM (`etudes/2026-10-07/email-transactionnel.md`) :
+  adresse vérifiée avant toute connexion, réinitialisation qui ferme toutes les sessions,
+  suppression confirmée par e-mail qui emporte le foyer d'un gardien seul.
+- **Prochaine action** : étape 5, le tuteur porté ; l'étude des hébergeurs UE avance en parallèle.
+  L'ordre complet est dans l'étude. Test complet dans Chrome à la fin de chaque étape, la première
+  à l'étape 6 avec les écrans.
 - **Décisions de Victor en attente**, au moment de l'étape qui en dépend : budgets du quota
   (étape 5) ; offre Mistral payante pour paralléliser l'évaluation et juge d'une autre famille,
   seulement s'il est très bon marché (étape 8).
@@ -53,16 +54,12 @@ nomme son étape de refonte ou son lot ; quand le plan de la PR s'écrit, le poi
 tâche ou est explicitement renvoyé (`.claude/rules/plans-and-agents.md`). Ce que la refonte
 supprime ou que l'étude couvre n'y figure plus.
 
-### Refonte — comptes (étape 4)
-
-- **Réinitialisation du mot de passe d'un gardien** par e-mail, avec `revokeSessionsOnPasswordReset` (better-auth 1.7, `init-options.d.mts`) : la PR de l'e-mail des gardiens.
-- **Suppression du compte d'un gardien** : supprimer aussi le foyer et ses élèves, que `ON DELETE CASCADE` sur l'appartenance laisserait sans gardien (revue de #425) ; la PR de l'e-mail des gardiens.
-
 ### Refonte — préproduction (étape 7)
 
 - **Observabilité** : OpenTelemetry et Sentry côté serveur, avec une destination dans l'UE contrainte par la config (`refonte-architecture.md`, « Données et autorisation »).
 - **Postgres de l'hébergeur** : `verify-full` vérifie le certificat contre les CA du système ; une CA privée demande l'option `ssl` avec `ca` (`platform/db/client.ts`).
 - **Hébergement** : délai de grâce SIGTERM d'au moins un tour de chat, et `DRAIN_MS` (`src/main.ts`, 5 s) recalé sur l'intervalle de la sonde de l'hébergeur ; stockage partagé du rate limit s'il y a plusieurs instances ; derrière le proxy de l'hébergeur, ses sauts de confiance pour la clé du rate limit, y compris celle de better-auth sur l'échange d'un code de jumelage (`advanced.ipAddress`, `platform/auth/pairing.ts`), sans quoi tous les clients partagent un même compteur (`platform/http/rate-limit.ts`, aujourd'hui l'adresse de la connexion) et pour `trustedProxies` de better-auth ; compression des fichiers du web par le build ou par le proxy, selon l'hébergeur.
+- **Appareils de l'élève, avec les écrans (étape 6)** : prévenir l'élève sur ses appareils déjà reliés quand un nouvel appareil l'est (date, type d'appareil), ce qui rend réelle la transparence du jumelage ; décider, en concevant l'historique, si un appareil nouvellement relié ne montre que les séances commencées après son jumelage (revue de #425, `etudes/2026-10-07/foyer-eleve-age.md`, § 7). Les pages du web pour les liens de vérification, de réinitialisation et de suppression.
 - **Client web** : `ai` aligné sur la version qu'épingle `@ai-sdk/react`, avec l'étape 6 ; mesures sur un vrai iPhone et un Android (`etudes/2026-10-06/client-web.md`).
 - **Connexion** : la page d'erreur de better-auth (`/api/auth/error`) a un `<style>` en ligne que la CSP bloque ; `onAPIError.errorURL` vers une page du web, avec l'étape 6.
 
@@ -77,7 +74,7 @@ supprime ou que l'étude couvre n'y figure plus.
 
 - **Après une détresse** : la revue humaine (Victor au départ), son délai et sa trace ; ce que voit l'élève ensuite, et qui lève la fermeture ; une photo seule n'est pas jugée (`etudes/2026-10-07/foyer-eleve-age.md`).
 - **Conformité** : mention « vous parlez à une IA » dès la première interaction, consentement conjoint sous 15 ans, AIPD, résumé parent proportionné et connu de l'enfant, aucun lien avec un établissement sans réévaluer le haut risque (`etudes/2026-10-01/education-nationale.md`, c ; `tuteur.md` §11).
-- **Message au parent après revue** : le push web n'atteint qu'un parent qui a installé l'app (iOS) ; un message décidé après une détresse demande un canal garanti, l'e-mail par exemple, à décider avec le parcours parent.
+- **Message au parent après revue** : le push web n'atteint qu'un parent qui a installé l'app (iOS) ; un message décidé après une détresse demande un canal garanti, l'e-mail par exemple, à décider avec le parcours parent ; une table d'envois à clé unique en tient l'idempotence et la trace (`etudes/2026-10-07/email-transactionnel.md`).
 - **Après la V1, primaire et lycée** : modes accompagné et autonome, transition à 15 puis 18 ans (`etudes/2026-10-07/foyer-eleve-age.md`, § 7) ; le primaire attend une mesure de la reconnaissance vocale sur des voix d'enfants français.
 - **Voix** : la `Permissions-Policy` interdit le micro ; l'ouvrir à `self` avec l'enregistrement d'un oral. Une seule voix, française (`fr_marie_*`) : décider s'il en faut d'autres pour les cours de langue, et réévaluer la normalisation de la lecture vocale.
 - **Langue d'un oral** : la transcription impose le français, et un oral de langue se transcrit mal (« Yes. » bruité devient « Oui. ») ; le client déclare la langue d'un oral de langue et la route la passe à Voxtral.
