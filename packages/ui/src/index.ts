@@ -1,6 +1,6 @@
 export { cn } from './lib/utils';
 
-export { Button } from './components/button';
+export { Button, buttonVariants } from './components/button';
 
 export { Checkbox } from './components/checkbox';
 

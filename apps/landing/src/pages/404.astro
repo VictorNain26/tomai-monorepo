@@ -1,0 +1,10 @@
+---
+import { buttonVariants } from '@repo/ui';
+import PageLayout from '@/layouts/page-layout.astro';
+---
+
+<PageLayout title="Page introuvable" description="Cette page n'existe pas ou plus.">
+  <a href="/" class={buttonVariants({ size: 'lg' })}>
+    Retour à l&apos;accueil
+  </a>
+</PageLayout>

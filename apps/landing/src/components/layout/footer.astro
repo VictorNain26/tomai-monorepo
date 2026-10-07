@@ -1,0 +1,74 @@
+---
+import Logo from '@/components/atoms/logo.astro';
+import { BRAND_NAME } from '@/lib/brand';
+
+// The page is built once: the year is the build's.
+const YEAR = new Date().getFullYear();
+
+const LINK_GROUPS = [
+  {
+    title: 'Produit',
+    links: [
+      { href: '/#how-it-works', label: 'Comment ça marche' },
+      { href: '/#parents', label: 'Parents' },
+      { href: '/#pricing', label: 'Tarifs' },
+    ],
+  },
+  {
+    title: 'Aide',
+    links: [
+      { href: '/aide', label: "Centre d'aide" },
+      { href: '/contact', label: 'Contact' },
+    ],
+  },
+  {
+    title: 'Légal',
+    links: [
+      { href: '/confidentialite', label: 'Confidentialité' },
+      { href: '/cgu', label: 'CGU' },
+      { href: '/mentions-legales', label: 'Mentions légales' },
+    ],
+  },
+] as const;
+---
+
+<footer class="bg-secondary text-secondary-foreground">
+  <div class="container py-16 md:py-20">
+    <div class="grid grid-cols-1 gap-10 md:grid-cols-4">
+      <div class="space-y-4">
+        <Logo />
+        <p class="max-w-xs text-sm text-muted-foreground">
+          En préparation&nbsp;: une aide aux devoirs pour que, le soir, ce ne soit plus au parent d&apos;expliquer, ni à l&apos;IA de faire
+          l&apos;exercice.
+        </p>
+        <ul class="space-y-2 text-sm text-muted-foreground">
+          <li>Modèles de Mistral AI, appelés en Europe</li>
+          <li>Sans publicité</li>
+          <li>Un service web, pensé d&apos;abord pour le téléphone</li>
+        </ul>
+      </div>
+
+      {LINK_GROUPS.map((group) => (
+        <nav aria-label={group.title}>
+          <p class="mb-4 text-sm font-bold text-muted-foreground">{group.title}</p>
+          <ul class="space-y-2 text-sm">
+            {group.links.map((link) => (
+              <li>
+                <a
+                  href={link.href}
+                  class="inline-flex min-h-11 min-w-11 items-center text-foreground underline-offset-4 transition-colors duration-base hover:underline"
+                >
+                  {link.label}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      ))}
+    </div>
+
+    <p class="mt-12 text-sm text-muted-foreground">
+      © {YEAR} {BRAND_NAME}. Tous droits réservés.
+    </p>
+  </div>
+</footer>

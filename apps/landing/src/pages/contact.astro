@@ -1,0 +1,16 @@
+---
+import { buttonVariants } from '@repo/ui';
+import PageLayout from '@/layouts/page-layout.astro';
+
+const CONTACT_EMAIL = 'contact@tomia.fr';
+---
+
+<PageLayout title="Contactez-nous" description="Une question, une suggestion ? Écrivez-nous." canonical="/contact">
+  <div class="mt-12 max-w-xl">
+    <h2 class="mb-4 text-2xl">Par email</h2>
+    <p class="mb-8 text-muted-foreground">Nous lisons chaque message.</p>
+    <a href={`mailto:${CONTACT_EMAIL}`} class={buttonVariants({ size: 'lg' })}>
+      {CONTACT_EMAIL}
+    </a>
+  </div>
+</PageLayout>

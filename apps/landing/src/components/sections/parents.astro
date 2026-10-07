@@ -1,0 +1,38 @@
+---
+import { EyeOff, LineChart } from 'lucide-react';
+import { FadeIn } from '@/components/atoms/fade-in';
+import SectionHeader from '@/components/atoms/section-header.astro';
+import Highlight from '@/components/annotations/highlight.astro';
+
+const POINTS = [
+  { icon: LineChart, title: 'Un résumé', body: 'Matières travaillées, temps passé, notions qui résistent.' },
+  {
+    icon: EyeOff,
+    title: 'Pas les conversations',
+    body: "L'espace parent montrera un résumé, pas les conversations : votre enfant gardera un espace à lui.",
+  },
+];
+---
+
+<section id="parents" class="scroll-mt-20 py-16 lg:py-24">
+  <div class="container">
+    <SectionHeader eyebrow="Pour les parents">
+      <Fragment slot="title">
+        Vous saurez où il en est, <Highlight>sans lire par-dessus son épaule</Highlight>
+      </Fragment>
+    </SectionHeader>
+    <div class="mx-auto grid max-w-5xl gap-6 sm:grid-cols-2">
+      {POINTS.map(({ icon: Icon, title, body }, index) => (
+        <FadeIn client:load delay={index * 0.1}>
+          <div class="flex h-full gap-4 rounded-2xl bg-card shadow-sm ring-1 ring-border p-6">
+            <Icon className="mt-2 size-6 shrink-0 text-primary" aria-hidden="true" />
+            <div>
+              <h3 class="mb-2 text-xl text-foreground">{title}</h3>
+              <p class="text-muted-foreground">{body}</p>
+            </div>
+          </div>
+        </FadeIn>
+      ))}
+    </div>
+  </div>
+</section>

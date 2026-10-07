@@ -3,35 +3,37 @@
   "version": "1.0.0",
   "type": "module",
   "private": true,
-  "description": "Tom Landing Page - Site vitrine Next.js 16",
+  "description": "Tom Landing Page - Site vitrine Astro",
   "scripts": {
-    "dev": "bun --bun next dev --port 3001",
-    "build": "next build",
-    "start": "bun --bun next start",
-    "lint": "next typegen && eslint . --max-warnings 0",
-    "typecheck": "next typegen && tsc --noEmit",
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "lint": "astro sync && eslint . --max-warnings 0",
+    "typecheck": "astro check",
     "test:e2e": "playwright test",
-    "clean": "rm -rf .next"
+    "clean": "rm -rf dist .astro"
   },
   "dependencies": {
+    "@astrojs/react": "^7.0.1",
+    "@astrojs/sitemap": "^3.7.4",
     "@repo/tokens": "workspace:*",
     "@repo/ui": "workspace:*",
-    "@sentry/nextjs": "^10.75.0",
+    "astro": "^7.3.6",
     "lucide-react": "^1.47.0",
     "motion": "^13.4.0",
-    "next": "~16.3.8",
     "react": "^19.3.0",
     "react-dom": "^19.3.0"
   },
   "devDependencies": {
+    "@astrojs/check": "^0.9.10",
     "@playwright/test": "^1.63.0",
     "@repo/eslint-config": "workspace:*",
-    "@tailwindcss/postcss": "^4.3.3",
+    "@tailwindcss/vite": "^4.3.3",
     "@types/node": "^24.13.6",
     "@types/react": "~19.3.0",
     "@types/react-dom": "~19.3.0",
     "eslint": "^10.11.0",
-    "postcss": "^8.5.28",
+    "sharp": "^0.35.5",
     "tailwindcss": "^4.3.3",
     "typescript": "6.0.3"
   }

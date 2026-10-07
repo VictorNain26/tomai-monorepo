@@ -1,20 +1,14 @@
 {
   "$schema": "https://json.schemastore.org/tsconfig",
-  "extends": "../../tsconfig.base.json",
+  "extends": ["astro/tsconfigs/strict", "../../tsconfig.base.json"],
   "compilerOptions": {
-    /* Next.js Specific */
     "lib": ["DOM", "DOM.Iterable", "ESNext"],
-    "allowJs": true,
     "jsx": "react-jsx",
-    "incremental": true,
-    "plugins": [{ "name": "next" }],
-
-    /* Path Mapping (TS 5+ bundler mode : paths résolus relativement au tsconfig
-     * sans baseUrl, déprécié en TS 6.x). */
+    "jsxImportSource": "react",
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./src/*"]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", ".next/dev/types/**/*.ts"],
-  "exclude": ["node_modules"]
+  "include": [".astro/types.d.ts", "src", "tests", "playwright.config.ts"],
+  "exclude": ["dist", "node_modules"]
 }

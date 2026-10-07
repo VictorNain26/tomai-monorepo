@@ -3,6 +3,7 @@ import type { Page } from '@playwright/test';
 declare global {
   interface Window {
     layoutShift: number;
+    cspViolations: string[];
   }
 }
 

@@ -1,0 +1,30 @@
+---
+import Logo from '@/components/atoms/logo.astro';
+import { MobileMenu } from '@/components/molecules/mobile-menu';
+import { NavLinks } from '@/components/molecules/nav-links';
+---
+
+<header class="sticky top-0 z-50 w-full border-b border-transparent bg-background/70 backdrop-blur transition-colors duration-base data-scrolled:border-border data-scrolled:bg-background/90 data-scrolled:backdrop-blur-md">
+  <nav aria-label="Principale" class="container relative flex h-16 items-center justify-between">
+    <div class="flex items-center z-20">
+      <Logo />
+    </div>
+
+    <div class="hidden md:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+      <NavLinks />
+    </div>
+
+    <div class="flex items-center gap-2 md:hidden z-20">
+      <MobileMenu client:load />
+    </div>
+  </nav>
+</header>
+
+<script>
+  const header = document.querySelector('header');
+  if (header) {
+    const update = () => header.toggleAttribute('data-scrolled', window.scrollY > 10);
+    update();
+    window.addEventListener('scroll', update, { passive: true });
+  }
+</script>

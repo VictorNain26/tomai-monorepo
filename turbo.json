@@ -3,7 +3,7 @@
   "ui": "tui",
   "globalDependencies": ["tsconfig.base.json"],
   "globalEnv": ["NODE_ENV", "CI"],
-  "globalPassThroughEnv": ["GITHUB_ACTIONS", "VERCEL"],
+  "globalPassThroughEnv": ["GITHUB_ACTIONS"],
   "tasks": {
     "transit": {
       "dependsOn": ["^transit"]
@@ -11,8 +11,7 @@
     "build": {
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", ".env.production", ".env.staging", "!.env.local", "!.env.*.local"],
-      "outputs": [".next/**", "!.next/cache/**", "dist/**", "!dist/types/**", "build/**"],
-      "env": ["NEXT_RUNTIME", "VERCEL_ENV", "SENTRY_AUTH_TOKEN"]
+      "outputs": ["dist/**", "!dist/types/**", "build/**"]
     },
     "dev": {
       "cache": false,

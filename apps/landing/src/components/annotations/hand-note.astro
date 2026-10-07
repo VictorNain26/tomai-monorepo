@@ -1,0 +1,13 @@
+---
+import { cn } from '@repo/ui';
+
+interface Props {
+  class?: string;
+}
+
+const { class: className } = Astro.props;
+---
+
+<p class={cn('-rotate-2 font-hand text-2xl font-bold text-balance text-annotation', className)}>
+  <slot />
+</p>

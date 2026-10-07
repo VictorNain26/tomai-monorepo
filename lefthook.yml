@@ -20,7 +20,7 @@ pre-commit:
 
     - name: lint-landing
       root: 'apps/landing/'
-      glob: '**/*.{ts,tsx}'
+      glob: '**/*.{ts,tsx,astro}'
       run: bunx --no-install eslint --max-warnings 0 --no-warn-ignored {staged_files}
 
     - name: lint-web

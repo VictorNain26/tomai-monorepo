@@ -1,0 +1,33 @@
+---
+import Layout from '@/layouts/layout.astro';
+import JsonLd from '@/components/json-ld.astro';
+import Hero from '@/components/sections/hero.astro';
+import Problem from '@/components/sections/problem.astro';
+import HowItWorks from '@/components/sections/how-it-works.astro';
+import Parents from '@/components/sections/parents.astro';
+import Trust from '@/components/sections/trust.astro';
+import Pricing from '@/components/sections/pricing.astro';
+import FAQ from '@/components/sections/faq.astro';
+import { FAQS } from '@/components/sections/faq-data';
+
+const faqJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: FAQS.map(({ question, answer }) => ({
+    '@type': 'Question',
+    name: question,
+    acceptedAnswer: { '@type': 'Answer', text: answer },
+  })),
+};
+---
+
+<Layout canonical="/">
+  <JsonLd data={faqJsonLd} />
+  <Hero />
+  <Problem />
+  <HowItWorks />
+  <Parents />
+  <Trust />
+  <Pricing />
+  <FAQ />
+</Layout>

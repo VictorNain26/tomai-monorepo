@@ -1,0 +1,44 @@
+---
+import { cn } from '@repo/ui';
+import { FadeIn } from '@/components/atoms/fade-in';
+import { Scribble } from '@/components/annotations/scribble';
+import SectionHeader from '@/components/atoms/section-header.astro';
+
+const STEPS = [
+  {
+    title: 'Il pose sa question',
+    body: "Une photo de l'exercice, sa voix ou le clavier.",
+  },
+  {
+    title: 'Tom cherche où ça coince',
+    body: 'Puis une question, un indice, une étape, à son niveau. Tom est conçu pour ne pas donner la réponse de son exercice.',
+  },
+  {
+    title: 'Il écrit sa réponse',
+    body: "C'est lui qui conclut, pas Tom. Ce qu'il a travaillé pourra ensuite revenir en fiches de révision.",
+  },
+];
+---
+
+<section id="how-it-works" class="scroll-mt-20 py-16 lg:py-24">
+  <div class="container">
+    <SectionHeader eyebrow="Ce que nous construisons" title="Comment Tom guidera votre enfant" />
+    <ol class="mx-auto grid max-w-5xl gap-12 md:grid-cols-3">
+      {STEPS.map((step, index) => (
+        <li class="rounded-2xl bg-card p-8 shadow-sm ring-1 ring-border">
+          <FadeIn client:load delay={index * 0.15}>
+            <Scribble
+              client:load
+              className={cn('mb-4 px-2 font-heading text-3xl', index === 2 ? 'text-success' : 'text-annotation')}
+              delay={0.2 + index * 0.15}
+            >
+              {index + 1}
+            </Scribble>
+            <h3 class="mb-4 text-xl text-foreground">{step.title}</h3>
+            <p class="text-muted-foreground">{step.body}</p>
+          </FadeIn>
+        </li>
+      ))}
+    </ol>
+  </div>
+</section>
