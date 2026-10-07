@@ -51,6 +51,7 @@ supprime ou que l'étude couvre n'y figure plus.
 ### Refonte — comptes (étape 4)
 
 - **Réinitialisation du mot de passe d'un gardien** par e-mail, avec `revokeSessionsOnPasswordReset` (better-auth 1.7, `init-options.d.mts`) : la PR de l'e-mail des gardiens.
+- **Suppression du compte d'un gardien** : supprimer aussi le foyer et ses élèves, que `ON DELETE CASCADE` sur l'appartenance laisserait sans gardien (revue de #425) ; la PR de l'e-mail des gardiens.
 
 ### Refonte — préproduction (étape 7)
 

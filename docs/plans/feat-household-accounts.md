@@ -37,7 +37,9 @@ contrôle de son compte, et des comptes enfants créés hors transaction.
 - [ ] Refus par défaut : une seule fonction d'accès du gardien à l'élève, clause de la requête SQL ;
       l'élève d'un autre foyer répond 404 ; un élève n'atteint aucune route de gardien.
 - [ ] Aucun champ du foyer ni du profil n'est modifiable par les routes de better-auth (ils vivent
-      hors de `user`) ; un élève ne peut ni changer d'e-mail ni supprimer son compte.
+      hors de `user`) ; un élève connecté n'atteint de ces routes que `sign-in/username`,
+      `get-session` et `sign-out` : ni son nom, ni son mot de passe, ni son e-mail, ni la
+      suppression de son compte.
 - [ ] Matrice de tests d'accès croisés sur une vraie base : anonyme, gardien A, gardien B, élève de
       A, élève de B, pour chaque route ; cas limites (nom d'utilisateur pris ou invalide, niveau
       inconnu, mois de naissance futur, élève déjà supprimé).
