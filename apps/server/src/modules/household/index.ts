@@ -8,7 +8,7 @@ import { createPairingCode } from '../../platform/auth/pairing';
 import type { Db } from '../../platform/db/client';
 import { createHouseholdRepository } from './repository';
 import { householdRoutes, meRoutes, studentAuthGuard } from './routes';
-import { createHouseholdService } from './service';
+import { createHouseholdService, learnerMemory, type MemoryAnswer } from './service';
 
 export function householdModule({ db, auth }: { db: Db; auth: Auth }) {
   const service = createHouseholdService({
@@ -18,10 +18,22 @@ export function householdModule({ db, auth }: { db: Db; auth: Auth }) {
   return { routes: householdRoutes({ auth, service }), me: meRoutes({ auth, service }), authGuard: studentAuthGuard({ auth, service }) };
 }
 
-/** The signed-in student's profile, for the tutor; null for anyone who is not a student. */
+/**
+ * The signed-in student's profile, for the tutor: their learner memory's state and last reset
+ * with it; null for anyone who is not a student. The tutor records the student's answer here.
+ */
 export function studentDirectory(db: Db) {
   const repository = createHouseholdRepository(db);
-  return { find: async (userId: string) => (await repository.findProfile(userId)) ?? null };
+  return {
+    async find(userId: string) {
+      const profile = await repository.findProfile(userId);
+      if (!profile) return null;
+      const { birthMonth, memoryProposedAt, memoryAnswer, memoryResetAt, ...student } = profile;
+      return { ...student, memory: learnerMemory({ birthMonth, memoryProposedAt, memoryAnswer, memoryResetAt }, new Date()) };
+    },
+    answerMemory: (studentId: string, answer: MemoryAnswer) => repository.answerMemory(studentId, answer),
+    resetMemory: (studentId: string) => repository.resetMemory(studentId),
+  };
 }
 
 export type StudentDirectory = ReturnType<typeof studentDirectory>;

@@ -172,7 +172,11 @@ describe('the exercise in progress', () => {
     const session = await start(asStudentA);
     expect(await repository.currentExercise(studentA.id, session.id)).toBeUndefined();
     await repository.saveTurn(session.id, turn({ newExercise }));
-    expect(await repository.currentExercise(studentA.id, session.id)).toEqual({ id: expect.any(String) as string, ...fresh });
+    expect(await repository.currentExercise(studentA.id, session.id)).toEqual({
+      id: expect.any(String) as string,
+      position: expect.any(Number) as number,
+      ...fresh,
+    });
   });
 
   it("does not read an exercise of another student's session", async () => {

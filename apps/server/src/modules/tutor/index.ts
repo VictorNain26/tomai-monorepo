@@ -7,7 +7,7 @@ import type { Auth } from '../../platform/auth/auth';
 import type { Db } from '../../platform/db/client';
 import { studentDirectory } from '../household';
 import { createTutorRepository } from './repository';
-import { tutorRoutes } from './routes';
+import { memoryRoutes, tutorRoutes } from './routes';
 import { createTutorService } from './service';
 
 interface Deps {
@@ -21,5 +21,5 @@ interface Deps {
 
 export function tutorModule({ db, auth, ai, moderation, logger, background }: Deps) {
   const service = createTutorService({ repository: createTutorRepository(db), students: studentDirectory(db), ai, moderation, logger, background });
-  return { routes: tutorRoutes({ auth, service, logger }) };
+  return { routes: tutorRoutes({ auth, service, logger }), memory: memoryRoutes({ auth, service }) };
 }

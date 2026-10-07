@@ -50,3 +50,27 @@ export function tutorRoutes({ auth, service, logger }: { auth: Auth; service: Tu
       });
     });
 }
+
+const memoryAnswer = z.object({ answer: z.enum(['accepted', 'declined']) });
+
+/**
+ * /api/memory: what Tom keeps of the signed-in student (`docs/etudes/2026-10-07/memoire-entre-seances.md`),
+ * their answer to it, and its erasure, all of it or one notion understood.
+ */
+export function memoryRoutes({ auth, service }: { auth: Auth; service: TutorService }) {
+  return new Hono<SessionEnv>()
+    .use(requireSession(auth))
+    .get('/', async (c) => c.json(await service.memory(c.var.userId)))
+    .post('/answer', jsonBody(memoryAnswer), async (c) => {
+      await service.answerMemory(c.var.userId, c.req.valid('json').answer);
+      return c.json(await service.memory(c.var.userId));
+    })
+    .delete('/', async (c) => {
+      await service.resetMemory(c.var.userId);
+      return c.body(null, 204);
+    })
+    .delete('/notions/:notionId', async (c) => {
+      await service.resetNotion(c.var.userId, c.req.param('notionId'));
+      return c.body(null, 204);
+    });
+}

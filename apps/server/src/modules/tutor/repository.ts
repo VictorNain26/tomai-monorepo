@@ -3,7 +3,7 @@
  * `ownSession`, a clause of the query itself: another student's session is simply not found.
  */
 
-import { and, asc, count, desc, eq, gt, gte, isNull, notExists, sql, sum } from 'drizzle-orm';
+import { and, asc, count, desc, eq, gt, gte, isNotNull, isNull, lt, notExists, sql, sum } from 'drizzle-orm';
 import type { DistressSource } from '../../domain/distress';
 import type { MathCheck } from '../../domain/exercise-math';
 import type { SubjectFamily } from '../../domain/subjects';
@@ -12,7 +12,8 @@ import { aiCost } from '../../platform/ai/schema';
 import type { Db } from '../../platform/db/client';
 import type { ExerciseChange, ExerciseState } from './core/exercise-turn';
 import type { Hint } from './core/ladder';
-import { distressEvent, exercise, message, studySession, turnRecord } from './schema';
+import type { PastExercise } from './core/memory';
+import { distressEvent, exercise, learnerNotionReset, message, studySession, turnRecord } from './schema';
 
 /** The tutor's last messages on an exercise that the contract lists, so as not to repeat them. */
 const KEPT_HINTS = 4;
@@ -124,7 +125,7 @@ export function createTutorRepository(db: Db) {
     },
 
     /** The last exercise of the student's session, solved or not: its statement stays before the tutor. */
-    async currentExercise(studentId: string, sessionId: string): Promise<(ExerciseState & { id: string }) | undefined> {
+    async currentExercise(studentId: string, sessionId: string): Promise<(ExerciseState & { id: string; position: number }) | undefined> {
       const [row] = await db
         .select({ exercise })
         .from(exercise)
@@ -133,8 +134,61 @@ export function createTutorRepository(db: Db) {
         .orderBy(desc(exercise.position))
         .limit(1);
       if (!row) return undefined;
-      const { id, sheet, uncertain, drawnForms, hintLevel, stepsDone, stuckTurns, hints, solvedAt } = row.exercise;
-      return { id, sheet, uncertain, drawnForms, hintLevel, stepsDone, stuckTurns, hints, solved: solvedAt !== null };
+      const { id, position, sheet, uncertain, drawnForms, hintLevel, stepsDone, stuckTurns, hints, solvedAt } = row.exercise;
+      return { id, position, sheet, uncertain, drawnForms, hintLevel, stepsDone, stuckTurns, hints, solved: solvedAt !== null };
+    },
+
+    /**
+     * The student's exercises with a sheet since `since`, before the one at `before` (all of them
+     * when null), oldest first, with the error types of their turns: what the learner memory reads.
+     * Through the student's own sessions only.
+     */
+    async pastExercises(studentId: string, since: Date, before: number | null): Promise<PastExercise[]> {
+      const rows = await db
+        .select({
+          createdAt: exercise.createdAt,
+          sheet: exercise.sheet,
+          hintLevel: exercise.hintLevel,
+          solvedAt: exercise.solvedAt,
+          errorTypes: sql<
+            string[]
+          >`coalesce((select array_agg(${turnRecord.errorType} order by ${turnRecord.createdAt}) from ${turnRecord} where ${turnRecord.exerciseId} = ${exercise.id} and ${turnRecord.errorType} is not null), '{}')`,
+        })
+        .from(exercise)
+        .innerJoin(studySession, eq(studySession.id, exercise.sessionId))
+        .where(
+          and(
+            eq(studySession.studentId, studentId),
+            gte(exercise.createdAt, since),
+            isNotNull(exercise.sheet),
+            ...(before === null ? [] : [lt(exercise.position, before)]),
+          ),
+        )
+        .orderBy(asc(exercise.position));
+      return rows.map(({ createdAt, sheet, hintLevel, solvedAt, errorTypes }) => ({
+        createdAt,
+        entries: sheet?.entries ?? [],
+        hintLevel,
+        solved: solvedAt !== null,
+        errorTypes,
+      }));
+    },
+
+    /** The notions the student marked as understood, and when. */
+    async notionResets(studentId: string) {
+      const rows = await db
+        .select({ notionId: learnerNotionReset.notionId, resetAt: learnerNotionReset.resetAt })
+        .from(learnerNotionReset)
+        .where(eq(learnerNotionReset.studentId, studentId));
+      return new Map(rows.map(({ notionId, resetAt }) => [notionId, resetAt]));
+    },
+
+    async resetNotion(studentId: string, notionId: string) {
+      const resetAt = new Date();
+      await db
+        .insert(learnerNotionReset)
+        .values({ studentId, notionId, resetAt })
+        .onConflictDoUpdate({ target: [learnerNotionReset.studentId, learnerNotionReset.notionId], set: { resetAt } });
     },
 
     /**

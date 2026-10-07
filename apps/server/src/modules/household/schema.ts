@@ -11,6 +11,7 @@ import { user } from '../../platform/auth/schema';
 
 export const memberRole = pgEnum('household_member_role', ['guardian', 'student']);
 export const schoolLevel = pgEnum('school_level', SCHOOL_LEVELS);
+export const memoryAnswer = pgEnum('memory_answer', ['accepted', 'declined']);
 
 export const household = pgTable('household', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -41,6 +42,11 @@ export const studentProfile = pgTable(
     level: schoolLevel('level').notNull(),
     // The first day of the month: the day of birth is not collected.
     birthMonth: date('birth_month', { mode: 'string' }).notNull(),
+    // The learner memory (domain/memory-consent.ts): the parent's proposal, the child's answer, and
+    // the last reset, before which no exercise counts.
+    memoryProposedAt: timestamp('memory_proposed_at', { withTimezone: true }),
+    memoryAnswer: memoryAnswer('memory_answer'),
+    memoryResetAt: timestamp('memory_reset_at', { withTimezone: true }),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [check('student_profile_birth_month_first_day', sql`extract(day from ${table.birthMonth}) = 1`)],

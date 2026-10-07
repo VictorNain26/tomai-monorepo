@@ -8,6 +8,9 @@
 import { createPlaceholderEmail } from '@better-auth/core/utils/email';
 import { generateId } from '@better-auth/core/utils/id';
 import type { SchoolLevel } from '../../domain/levels';
+import { ageAt, memoryState, SELF_CONSENT_AGE, type MemoryAnswer } from '../../domain/memory-consent';
+
+export type { MemoryAnswer };
 import { Problem } from '../../platform/http/problem';
 import type { HouseholdRepository } from './repository';
 
@@ -15,6 +18,7 @@ export interface StudentInput {
   name: string;
   level: SchoolLevel;
   birthMonth: string;
+  memoryProposed?: boolean | undefined;
 }
 
 interface Deps {
@@ -24,8 +28,31 @@ interface Deps {
 
 type StudentRow = NonNullable<Awaited<ReturnType<HouseholdRepository['findStudent']>>>;
 
+/** The student's learner memory as the tutor reads it; the child answers once the parent proposed it, or alone from 15. */
+export function learnerMemory(
+  profile: { birthMonth: string; memoryProposedAt: Date | null; memoryAnswer: MemoryAnswer | null; memoryResetAt: Date | null },
+  now: Date,
+) {
+  return {
+    state: memoryState({ birthMonth: profile.birthMonth, proposedAt: profile.memoryProposedAt, answer: profile.memoryAnswer }, now),
+    mayAnswer: profile.memoryProposedAt !== null || ageAt(profile.birthMonth, now) >= SELF_CONSENT_AGE,
+    resetAt: profile.memoryResetAt,
+  };
+}
+
 // The date column holds the first day of the month; the API speaks in YYYY-MM.
-const toStudent = ({ birthMonth, ...student }: StudentRow) => ({ ...student, birthMonth: birthMonth.slice(0, 7) });
+const toStudent = ({ birthMonth, memoryProposedAt, memoryAnswer, ...student }: StudentRow) => {
+  const now = new Date();
+  return {
+    ...student,
+    birthMonth: birthMonth.slice(0, 7),
+    memory: {
+      proposed: memoryProposedAt !== null,
+      state: memoryState({ birthMonth, proposedAt: memoryProposedAt, answer: memoryAnswer }, now),
+      decidesAlone: ageAt(birthMonth, now) >= SELF_CONSENT_AGE,
+    },
+  };
+};
 
 export function createHouseholdService({ repository, createPairingCode }: Deps) {
   const found = async (guardianId: string, studentId: string) => {
@@ -64,11 +91,16 @@ export function createHouseholdService({ repository, createPairingCode }: Deps) 
         email: createPlaceholderEmail({ identifier: id, namespace: 'student' }),
         level: input.level,
         birthMonth: `${input.birthMonth}-01`,
+        memoryProposed: input.memoryProposed ?? false,
       });
       return found(guardianId, id);
     },
 
-    async updateStudent(guardianId: string, studentId: string, patch: { name?: string | undefined; level?: SchoolLevel | undefined }) {
+    async updateStudent(
+      guardianId: string,
+      studentId: string,
+      patch: { name?: string | undefined; level?: SchoolLevel | undefined; memoryProposed?: boolean | undefined },
+    ) {
       if (!(await repository.updateStudent(guardianId, studentId, patch))) throw new Problem('NOT_FOUND');
       return found(guardianId, studentId);
     },
