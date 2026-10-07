@@ -90,12 +90,12 @@ surveillance de l'enfant. Pas de classement, pas de points, pas de séries.
 
 ## Offre et prix
 
-- **Gratuit, utilisable chaque soir** : le quota se fixe en échanges ou en coût réel, à partir du coût
-  mesuré (un compte gratuit à son plafond coûte de l'ordre de 0,18 € par mois,
-  `etudes/2026-10-01/couts.md`). Le quota compte le coût réel de la journée ; ses
-  budgets (`apps/server/src/modules/billing/quota-config.ts`) sont provisoires.
+- **Gratuit, utilisable chaque soir** : le quota compte le coût réel de la journée, voix
+  comprise, par élève ; 2 c par jour couvrent une soirée normale avec photo et voix
+  (`etudes/2026-10-07/rentabilite.md`). C'est le gratuit qui décide de la rentabilité : ses
+  budgets se recalent sur l'usage réel.
 - **Complet à 7,99 € TTC par mois** : plancher défendable du modèle de coûts (marge
-  positive dans le pire cas mesuré). Plus d'échanges et les fiches de révision. Prix non
+  positive au plafond de 10 c par jour). Plus d'échanges et les fiches de révision. Prix non
   vérifié auprès de parents. Repères : Dinobot 5,99 et 9,99 €, Le Prof IA
   4,90 €, une heure d'Acadomia 24,40 € après crédit d'impôt.
 - **Facturation sans piège**, parce que c'est le premier reproche des parents dans les avis
