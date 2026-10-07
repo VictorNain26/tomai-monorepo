@@ -19,6 +19,7 @@ import { Route as MotDePasseOublieRouteImport } from './routes/mot-de-passe-oubl
 import { Route as NouveauMotDePasseRouteImport } from './routes/nouveau-mot-de-passe'
 import { Route as FoyerIndexRouteImport } from './routes/foyer.index'
 import { Route as FoyerStudentIdRouteImport } from './routes/foyer.$studentId'
+import { Route as SeanceSessionIdRouteImport } from './routes/seance.$sessionId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -70,6 +71,11 @@ const FoyerStudentIdRoute = FoyerStudentIdRouteImport.update({
   path: '/$studentId',
   getParentRoute: () => FoyerRoute,
 } as any)
+const SeanceSessionIdRoute = SeanceSessionIdRouteImport.update({
+  id: '/seance/$sessionId',
+  path: '/seance/$sessionId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -81,6 +87,7 @@ export interface FileRoutesByFullPath {
   '/mot-de-passe-oublie': typeof MotDePasseOublieRoute
   '/nouveau-mot-de-passe': typeof NouveauMotDePasseRoute
   '/foyer/$studentId': typeof FoyerStudentIdRoute
+  '/seance/$sessionId': typeof SeanceSessionIdRoute
   '/foyer/': typeof FoyerIndexRoute
 }
 export interface FileRoutesByTo {
@@ -92,6 +99,7 @@ export interface FileRoutesByTo {
   '/mot-de-passe-oublie': typeof MotDePasseOublieRoute
   '/nouveau-mot-de-passe': typeof NouveauMotDePasseRoute
   '/foyer/$studentId': typeof FoyerStudentIdRoute
+  '/seance/$sessionId': typeof SeanceSessionIdRoute
   '/foyer': typeof FoyerIndexRoute
 }
 export interface FileRoutesById {
@@ -105,6 +113,7 @@ export interface FileRoutesById {
   '/mot-de-passe-oublie': typeof MotDePasseOublieRoute
   '/nouveau-mot-de-passe': typeof NouveauMotDePasseRoute
   '/foyer/$studentId': typeof FoyerStudentIdRoute
+  '/seance/$sessionId': typeof SeanceSessionIdRoute
   '/foyer/': typeof FoyerIndexRoute
 }
 export interface FileRouteTypes {
@@ -119,6 +128,7 @@ export interface FileRouteTypes {
     | '/mot-de-passe-oublie'
     | '/nouveau-mot-de-passe'
     | '/foyer/$studentId'
+    | '/seance/$sessionId'
     | '/foyer/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -130,6 +140,7 @@ export interface FileRouteTypes {
     | '/mot-de-passe-oublie'
     | '/nouveau-mot-de-passe'
     | '/foyer/$studentId'
+    | '/seance/$sessionId'
     | '/foyer'
   id:
     | '__root__'
@@ -142,6 +153,7 @@ export interface FileRouteTypes {
     | '/mot-de-passe-oublie'
     | '/nouveau-mot-de-passe'
     | '/foyer/$studentId'
+    | '/seance/$sessionId'
     | '/foyer/'
   fileRoutesById: FileRoutesById
 }
@@ -154,6 +166,7 @@ export interface RootRouteChildren {
   JumelerRoute: typeof JumelerRoute
   MotDePasseOublieRoute: typeof MotDePasseOublieRoute
   NouveauMotDePasseRoute: typeof NouveauMotDePasseRoute
+  SeanceSessionIdRoute: typeof SeanceSessionIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -228,6 +241,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FoyerStudentIdRouteImport
       parentRoute: typeof FoyerRoute
     }
+    '/seance/$sessionId': {
+      id: '/seance/$sessionId'
+      path: '/seance/$sessionId'
+      fullPath: '/seance/$sessionId'
+      preLoaderRoute: typeof SeanceSessionIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -252,6 +272,7 @@ const rootRouteChildren: RootRouteChildren = {
   JumelerRoute: JumelerRoute,
   MotDePasseOublieRoute: MotDePasseOublieRoute,
   NouveauMotDePasseRoute: NouveauMotDePasseRoute,
+  SeanceSessionIdRoute: SeanceSessionIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

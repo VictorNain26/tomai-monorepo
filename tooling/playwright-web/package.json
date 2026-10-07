@@ -15,6 +15,7 @@
     "@playwright/test": "^1.63.0",
     "@repo/eslint-config": "workspace:*",
     "@types/node": "^24.13.6",
+    "ai": "7.0.128",
     "eslint": "^10.11.0",
     "postgres": "^3.4.9",
     "typescript": "6.0.3"

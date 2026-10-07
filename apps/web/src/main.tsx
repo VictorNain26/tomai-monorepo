@@ -8,16 +8,20 @@ import { routeTree } from './routeTree.gen';
 import '@fontsource-variable/nunito';
 import './styles.css';
 
-// A session gone while a screen is open (expired, revoked elsewhere): back to the sign-in, nothing cached.
+// A session gone while a screen is open (expired, revoked elsewhere): back to the sign-in, then
+// nothing cached, so that no query of the screen left asks again.
+const sessionLost = () => {
+  void router.navigate({ to: '/connexion' }).then(() => {
+    queryClient.clear();
+  });
+};
 const onError = (error: unknown) => {
-  if (!isProblem(error, 'UNAUTHENTICATED')) return;
-  queryClient.clear();
-  void router.navigate({ to: '/connexion' });
+  if (isProblem(error, 'UNAUTHENTICATED')) sessionLost();
 };
 const queryClient = new QueryClient({ queryCache: new QueryCache({ onError }), mutationCache: new MutationCache({ onError }) });
 const router = createRouter({
   routeTree,
-  context: { queryClient },
+  context: { queryClient, sessionLost },
   defaultPreload: 'intent',
   defaultErrorComponent: Failure,
   scrollRestoration: true,

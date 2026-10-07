@@ -46,7 +46,7 @@ export interface TurnInput {
   inputMode: 'text' | 'voice';
 }
 
-/** The turn's reply, and what runs after it, the session still locked. */
+/** The turn's reply, and what runs after it, once the session is free. */
 interface TurnReply {
   text: string;
   after: (() => Promise<void>) | null;
@@ -102,7 +102,6 @@ export function createTutorService({ repository, students, ai, moderation, logge
     return DISTRESS_REPLY;
   }
 
-  /** After the reply: the title of a session's first turn, and the summary once enough messages wait. */
   /** After the reply: the title of the session's first turn, and the summary once enough messages wait. */
   async function afterTurn(
     studentId: string,
@@ -324,11 +323,12 @@ export function createTutorService({ repository, students, ai, moderation, logge
         await free();
         throw error;
       }
-      // The title and the summary run under the turn's lock: a quick next turn would summarize the
-      // same messages again, and pay for it.
-      const { after } = reply;
-      if (after) background(after().finally(free));
-      else await free();
+      // The session is free once the reply is stored: the student may answer at once. The title and
+      // the summary then run outside the lock, safe without it: the title is asked of the first turn
+      // only, and a summary replaces the one it read or nothing. Two may be paid for the same
+      // messages when a turn ends while the previous summary runs.
+      await free();
+      if (reply.after) background(reply.after());
       return reply.text;
     },
   };

@@ -28,8 +28,8 @@ export function authMessage(error: { code?: string | undefined; status: number }
 }
 
 /** The sessions of whoever is signed in, one per paired device: what a student sees of their pairing. */
-export const mySessionsQuery = queryOptions({
-  queryKey: ['my-sessions'],
+export const pairedDevicesQuery = queryOptions({
+  queryKey: ['paired-devices'],
   queryFn: async () => {
     const { data, error } = await authClient.listSessions();
     if (error) throw new Error(`list-sessions failed: ${String(error.status)}`);

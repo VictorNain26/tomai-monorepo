@@ -41,7 +41,10 @@ bloquant levé). L'historique vit dans git et les PR.
   purs (#431), les étapes du tour, qui échouent fermées (#432), les séances (#434), le tour et son
   enregistrement (#435), le quota par élève (#436, 2 c par jour pour tous tant que le paiement
   n'existe pas), le résumé de séance et le titre. Le tuteur répond par
-  `POST /api/sessions/:id/messages` ; aucun écran ne l'appelle encore.
+  `POST /api/sessions/:id/messages`.
+- **Étape 6 faite**, le web : le client typé et la connexion du gardien (#438), le foyer et le
+  jumelage de l'appareil (#439), le chat de l'élève avec `useChat` (#441). Reste son test
+  complet dans Chrome.
 - **Mémoire d'une séance à l'autre** (`etudes/2026-10-07/memoire-entre-seances.md`), décidée par
   Victor le 2026-10-07 : une mémoire d'apprentissage tirée des exercices, acceptée par le parent
   et l'enfant, visible et effaçable par l'élève, remise à zéro à la rentrée ; promise seulement
@@ -49,9 +52,8 @@ bloquant levé). L'historique vit dans git et les PR.
 - **Le prénom et la mémoire chez Mistral** (Victor, 2026-10-07) : ils partent dans le prompt ;
   aucun vrai élève avant la réponse écrite de Mistral sur sa clause des moins de 15 ans ; s'il
   refuse, ils en sortent (`tuteur.md` § 11).
-- **Prochaine action** : étape 6, le chat et la connexion dans le web. L'étude des hébergeurs UE
-  avance en parallèle. L'ordre complet est dans l'étude. Test complet dans Chrome à la fin de chaque étape, la première
-  à l'étape 6 avec les écrans.
+- **Prochaine action** : le premier test complet dans Chrome, puis la mémoire d'une séance à
+  l'autre, puis l'étape 7 (la préproduction UE). L'étude des hébergeurs UE avance en parallèle.
 - **Rentabilité et quotas** (`etudes/2026-10-07/rentabilite.md`) : le gratuit décide de la
   rentabilité, la distribution est le vrai risque ; quotas proposés de 2 c (Gratuit) et 10 c
   (Complet) par élève et par jour, voix comprise, remis à zéro à 4 h, et l'année scolaire à 69 €
@@ -75,7 +77,7 @@ supprime ou que l'étude couvre n'y figure plus.
 - **Postgres de l'hébergeur** : `verify-full` vérifie le certificat contre les CA du système ; une CA privée demande l'option `ssl` avec `ca` (`platform/db/client.ts`).
 - **Hébergement** : délai de grâce SIGTERM d'au moins un tour de chat, et `DRAIN_MS` (`src/main.ts`, 5 s) recalé sur l'intervalle de la sonde de l'hébergeur ; stockage partagé du rate limit s'il y a plusieurs instances ; derrière le proxy de l'hébergeur, ses sauts de confiance pour la clé du rate limit, y compris celle de better-auth sur l'échange d'un code de jumelage (`advanced.ipAddress`, `platform/auth/pairing.ts`), sans quoi tous les clients partagent un même compteur (`platform/http/rate-limit.ts`, aujourd'hui l'adresse de la connexion) et pour `trustedProxies` de better-auth ; compression des fichiers du web par le build ou par le proxy, selon l'hébergeur.
 - **Appareils de l'élève** : l'élève voit ses appareils reliés sur son accueil ; reste à le prévenir sur ses appareils déjà reliés quand un nouvel appareil l'est (date, type d'appareil) ; décider, en concevant l'historique, si un appareil nouvellement relié ne montre que les séances commencées après son jumelage (revue de #425, `etudes/2026-10-07/foyer-eleve-age.md`, § 7).
-- **Client web** : `ai` aligné sur la version qu'épingle `@ai-sdk/react`, avec l'étape 6 ; mesures sur un vrai iPhone et un Android (`etudes/2026-10-06/client-web.md`).
+- **Client web** : mesures sur un vrai iPhone et un Android (`etudes/2026-10-06/client-web.md`).
 
 ### Lot 1 — harnais d'évaluation et observabilité
 
