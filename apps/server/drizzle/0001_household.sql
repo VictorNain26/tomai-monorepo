@@ -20,10 +20,7 @@ CREATE TABLE "student_profile" (
 	CONSTRAINT "student_profile_birth_month_first_day" CHECK (extract(day from "student_profile"."birth_month") = 1)
 );
 --> statement-breakpoint
-ALTER TABLE "user" ADD COLUMN "username" text;--> statement-breakpoint
-ALTER TABLE "user" ADD COLUMN "display_username" text;--> statement-breakpoint
 ALTER TABLE "household_member" ADD CONSTRAINT "household_member_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "household_member" ADD CONSTRAINT "household_member_household_id_household_id_fk" FOREIGN KEY ("household_id") REFERENCES "public"."household"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "student_profile" ADD CONSTRAINT "student_profile_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-CREATE INDEX "household_member_household_id_idx" ON "household_member" USING btree ("household_id");--> statement-breakpoint
-ALTER TABLE "user" ADD CONSTRAINT "user_username_unique" UNIQUE("username");
+CREATE INDEX "household_member_household_id_idx" ON "household_member" USING btree ("household_id");

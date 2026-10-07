@@ -1,6 +1,7 @@
 /**
  * The household on a real database, through the HTTP API as the web will call it: the access
- * matrix first (anonymous, two guardians, a student of each), then what a guardian does.
+ * matrix first (anonymous, two guardians, a student of each), then what a guardian does, the
+ * pairing of a student's device, and what a student may do with better-auth's own routes.
  */
 
 import { describe, expect, it } from 'bun:test';
@@ -8,7 +9,8 @@ import { eq } from 'drizzle-orm';
 import pino from 'pino';
 import { createApp } from '../../app';
 import { createAuth } from '../../platform/auth/auth';
-import { user } from '../../platform/auth/schema';
+import { PAIRING_PREFIX } from '../../platform/auth/pairing';
+import { account, user, verification } from '../../platform/auth/schema';
 import { createLifecycle } from '../../platform/lifecycle/shutdown';
 import { testDatabase } from '../../testing/database';
 import { householdMember, studentProfile } from './schema';
@@ -20,9 +22,15 @@ const auth = createAuth(db, { publicUrl: ORIGIN, authSecret: 'x'.repeat(32) });
 interface Student {
   id: string;
   name: string;
-  username: string;
   level: string;
   birthMonth: string;
+}
+
+interface Device {
+  id: string;
+  pairedAt: string;
+  lastActiveAt: string;
+  userAgent: string | null;
 }
 
 // One app per block: each has its own rate-limit budget, and every request here shares one address.
@@ -38,7 +46,12 @@ function client() {
   const request = (method: string, path: string, { cookie, body }: { cookie?: string | undefined; body?: unknown } = {}) =>
     app.request(`${ORIGIN}${path}`, {
       method,
-      headers: { 'Content-Type': 'application/json', Origin: ORIGIN, ...(cookie === undefined ? {} : { Cookie: cookie }) },
+      headers: {
+        'Content-Type': 'application/json',
+        Origin: ORIGIN,
+        'User-Agent': 'test-device',
+        ...(cookie === undefined ? {} : { Cookie: cookie }),
+      },
       ...(body === undefined ? {} : { body: JSON.stringify(body) }),
     });
 
@@ -48,37 +61,45 @@ function client() {
       .find((cookie) => cookie.startsWith('better-auth.session_token='))
       ?.split(';')[0] ?? '';
 
-  return {
+  const api = {
     request,
     async guardian(email: string) {
       const res = await request('POST', '/api/auth/sign-up/email', { body: { name: 'Parent', email, password: 'un mot de passe solide' } });
       expect(res.status).toBe(200);
       return cookieOf(res);
     },
-    async student(cookie: string, overrides: Partial<Record<keyof Student | 'password', string>> = {}) {
+    async student(cookie: string, overrides: Partial<Omit<Student, 'id'>> = {}) {
       const res = await request('POST', '/api/household/students', {
         cookie,
-        body: {
-          name: 'Léa',
-          username: `eleve_${crypto.randomUUID().slice(0, 8)}`,
-          password: 'motdepasse',
-          level: 'cinquieme',
-          birthMonth: '2014-03',
-          ...overrides,
-        },
+        body: { name: 'Léa', level: 'cinquieme', birthMonth: '2014-03', ...overrides },
       });
       expect(res.status).toBe(201);
       return (await res.json()) as Student;
     },
-    async signInStudent(username: string, password = 'motdepasse') {
-      const res = await request('POST', '/api/auth/sign-in/username', { body: { username, password } });
+    async pairingCode(cookie: string, studentId: string) {
+      const res = await request('POST', `/api/household/students/${studentId}/pairing-code`, { cookie });
+      expect(res.status).toBe(201);
+      return ((await res.json()) as { code: string; expiresAt: string }).code;
+    },
+    async redeem(code: string) {
+      const res = await request('POST', '/api/auth/device-pairing/redeem', { body: { code } });
       return { status: res.status, cookie: cookieOf(res) };
+    },
+    /** A guardian's code, redeemed on a new device: that device's session cookie. */
+    async pair(cookie: string, studentId: string) {
+      const { status, cookie: device } = await api.redeem(await api.pairingCode(cookie, studentId));
+      expect(status).toBe(200);
+      return device;
     },
     async sessionUser(cookie: string) {
       const res = await request('GET', '/api/auth/get-session', { cookie });
       return ((await res.json()) as { user: { id: string } } | null)?.user;
     },
+    async devices(cookie: string, studentId: string) {
+      return (await (await request('GET', `/api/household/students/${studentId}/devices`, { cookie })).json()) as Device[];
+    },
   };
+  return api;
 }
 
 const householdOf = async (userId: string) => (await db.select().from(householdMember).where(eq(householdMember.userId, userId)))[0]?.householdId;
@@ -88,21 +109,20 @@ const guardianA = await matrix.guardian('a@example.com');
 const guardianB = await matrix.guardian('b@example.com');
 const studentOfA = await matrix.student(guardianA);
 const studentOfB = await matrix.student(guardianB);
-const asStudentA = (await matrix.signInStudent(studentOfA.username)).cookie;
-const asStudentB = (await matrix.signInStudent(studentOfB.username)).cookie;
+const asStudentA = await matrix.pair(guardianA, studentOfA.id);
+const asStudentB = await matrix.pair(guardianB, studentOfB.id);
+const [deviceOfA] = await matrix.devices(guardianA, studentOfA.id);
 
 describe('access matrix', () => {
   const api = matrix;
   const target = `/api/household/students/${studentOfA.id}`;
   const routes = [
     { method: 'GET', path: '/api/household/students' },
-    {
-      method: 'POST',
-      path: '/api/household/students',
-      body: { name: 'X', username: 'intrus', password: 'motdepasse', level: 'sixieme', birthMonth: '2015-01' },
-    },
+    { method: 'POST', path: '/api/household/students', body: { name: 'X', level: 'sixieme', birthMonth: '2015-01' } },
     { method: 'PATCH', path: target, body: { name: 'Changé' } },
-    { method: 'PUT', path: `${target}/password`, body: { password: 'autre mot de passe' } },
+    { method: 'POST', path: `${target}/pairing-code` },
+    { method: 'GET', path: `${target}/devices` },
+    { method: 'DELETE', path: `${target}/devices/${deviceOfA?.id ?? ''}` },
     { method: 'DELETE', path: target },
   ];
   const refused = [
@@ -114,7 +134,7 @@ describe('access matrix', () => {
 
   for (const { actor, cookie, status, routes: denied } of refused) {
     for (const { method, path, body } of denied) {
-      it(`refuses ${method} ${path.replace(studentOfA.id, ':id')} to ${actor} with ${String(status)}`, async () => {
+      it(`refuses ${method} ${path.replace(studentOfA.id, ':id').replace(deviceOfA?.id ?? '-', ':device')} to ${actor} with ${String(status)}`, async () => {
         const res = await api.request(method, path, { cookie, body });
         expect(res.status).toBe(status);
         expect(res.headers.get('content-type')).toStartWith('application/problem+json');
@@ -122,10 +142,10 @@ describe('access matrix', () => {
     }
   }
 
-  it('left the student of A untouched, still able to sign in', async () => {
+  it('left the student of A untouched, their device still signed in', async () => {
     const [row] = await db.select({ name: user.name }).from(user).where(eq(user.id, studentOfA.id));
     expect(row?.name).toBe('Léa');
-    expect((await api.signInStudent(studentOfA.username)).status).toBe(200);
+    expect((await api.sessionUser(asStudentA))?.id).toBe(studentOfA.id);
   });
 
   it('lists to each guardian only the students of their household', async () => {
@@ -138,23 +158,20 @@ describe('access matrix', () => {
 
 const creation = client();
 const creator = await creation.guardian('createur@example.com');
-const leo = await creation.student(creator, { name: 'Léo', username: 'Leo.Martin', level: 'sixieme', birthMonth: '2015-09' });
+const leo = await creation.student(creator, { name: 'Léo', level: 'sixieme', birthMonth: '2015-09' });
 
 describe('a guardian creates a student', () => {
   const api = creation;
   const guardian = creator;
 
-  it('returns the student, who signs in by username whatever its case', async () => {
-    expect(leo).toMatchObject({ name: 'Léo', username: 'Leo.Martin', level: 'sixieme', birthMonth: '2015-09' });
-    const signIn = await api.signInStudent('leo.martin');
-    expect(signIn.status).toBe(200);
-    expect((await api.sessionUser(signIn.cookie))?.id).toBe(leo.id);
+  it('returns the student: a first name, a level and a month of birth', () => {
+    expect(leo).toMatchObject({ name: 'Léo', level: 'sixieme', birthMonth: '2015-09' });
   });
 
-  it('gives the student a non-routable address and no family name', async () => {
-    const [row] = await db.select({ email: user.email, name: user.name }).from(user).where(eq(user.id, leo.id));
+  it('gives the student no credential: a non-routable address, no password', async () => {
+    const [row] = await db.select({ email: user.email }).from(user).where(eq(user.id, leo.id));
     expect(row?.email).toEndWith('.invalid');
-    expect(row?.name).toBe('Léo');
+    expect(await db.select().from(account).where(eq(account.userId, leo.id))).toEqual([]);
   });
 
   it('puts every student in one household with their guardian', async () => {
@@ -171,23 +188,7 @@ describe('a guardian creates a student', () => {
     expect(await householdOf(one.id)).toBe(await householdOf(two.id));
   });
 
-  it('refuses a username already taken, in any case, and writes nothing', async () => {
-    const parent = await api.guardian('sans-foyer@example.com');
-    const res = await api.request('POST', '/api/household/students', {
-      cookie: parent,
-      body: { name: 'Autre', username: 'LEO.MARTIN', password: 'motdepasse', level: 'sixieme', birthMonth: '2015-01' },
-    });
-    expect(res.status).toBe(409);
-    expect(((await res.json()) as { code: string }).code).toBe('USERNAME_TAKEN');
-    const parentId = (await api.sessionUser(parent))?.id ?? '';
-    expect(await householdOf(parentId)).toBeUndefined();
-  });
-
   for (const [field, value] of [
-    ['username', 'ab'],
-    ['username', 'léa'],
-    ['username', 'a'.repeat(31)],
-    ['password', 'court'],
     ['level', 'seconde'],
     ['birthMonth', '2999-01'],
     ['birthMonth', new Date().toISOString().slice(0, 7)],
@@ -195,21 +196,85 @@ describe('a guardian creates a student', () => {
     ['birthMonth', '2014-13'],
     ['birthMonth', '2014-3'],
     ['name', '   '],
+    ['name', 'a'.repeat(51)],
   ] as const) {
-    it(`refuses ${field} ${JSON.stringify(value)}`, async () => {
-      const body = {
-        name: 'Léa',
-        username: `ok_${crypto.randomUUID().slice(0, 8)}`,
-        password: 'motdepasse',
-        level: 'cinquieme',
-        birthMonth: '2014-03',
-        [field]: value,
-      };
+    it(`refuses ${field} ${JSON.stringify(value).slice(0, 20)}`, async () => {
+      const body = { name: 'Léa', level: 'cinquieme', birthMonth: '2014-03', [field]: value };
       const res = await api.request('POST', '/api/household/students', { cookie: guardian, body });
       expect(res.status).toBe(400);
-      expect(((await res.json()) as { code: string; detail: string }).detail).toStartWith(`${field}:`);
+      expect(((await res.json()) as { detail: string }).detail).toStartWith(`${field}:`);
     });
   }
+});
+
+const pairing = client();
+const pairingGuardian = await pairing.guardian('jumelage@example.com');
+
+describe("pairing a student's device", () => {
+  const api = pairing;
+  const guardian = pairingGuardian;
+
+  it('opens a session for the student on the device that sends the code', async () => {
+    const student = await api.student(guardian);
+    const device = await api.pair(guardian, student.id);
+    expect((await api.sessionUser(device))?.id).toBe(student.id);
+  });
+
+  it('serves a code once', async () => {
+    const student = await api.student(guardian);
+    const code = await api.pairingCode(guardian, student.id);
+    expect((await api.redeem(code)).status).toBe(200);
+    expect((await api.redeem(code)).status).toBe(400);
+  });
+
+  it('accepts the code as a person types it: lowercase, with a dash or spaces', async () => {
+    const student = await api.student(guardian);
+    const code = await api.pairingCode(guardian, student.id);
+    const typed = ` ${code.slice(0, 4).toLowerCase()}-${code.slice(4).toLowerCase()} `;
+    expect((await api.redeem(typed)).status).toBe(200);
+  });
+
+  it('refuses an unknown code and an expired one', async () => {
+    expect((await api.redeem('AAAA-AAAA')).status).toBe(400);
+    const student = await api.student(guardian);
+    const code = await api.pairingCode(guardian, student.id);
+    await db
+      .update(verification)
+      .set({ expiresAt: new Date(Date.now() - 1000) })
+      .where(eq(verification.value, student.id));
+    expect((await api.redeem(code)).status).toBe(400);
+  });
+
+  it('stores the code hashed, never in clear', async () => {
+    const student = await api.student(guardian);
+    const code = await api.pairingCode(guardian, student.id);
+    const [row] = await db.select({ identifier: verification.identifier }).from(verification).where(eq(verification.value, student.id));
+    expect(row?.identifier).toBeDefined();
+    expect(row?.identifier).not.toContain(code);
+    expect(row?.identifier).not.toStartWith(PAIRING_PREFIX);
+  });
+
+  it("shows the guardian the student's devices, without their address, and disconnects one", async () => {
+    const student = await api.student(guardian);
+    const device = await api.pair(guardian, student.id);
+    const devices = await api.devices(guardian, student.id);
+    expect(devices).toHaveLength(1);
+    expect(devices[0]).toMatchObject({ userAgent: 'test-device' });
+    expect(Object.keys(devices[0] ?? {}).sort()).toEqual(['id', 'lastActiveAt', 'pairedAt', 'userAgent']);
+
+    const res = await api.request('DELETE', `/api/household/students/${student.id}/devices/${devices[0]?.id ?? ''}`, { cookie: guardian });
+    expect(res.status).toBe(204);
+    expect(await api.sessionUser(device)).toBeUndefined();
+    expect(await api.devices(guardian, student.id)).toEqual([]);
+  });
+
+  it('lets the student list their own devices', async () => {
+    const student = await api.student(guardian);
+    const device = await api.pair(guardian, student.id);
+    const res = await api.request('GET', '/api/auth/list-sessions', { cookie: device });
+    expect(res.status).toBe(200);
+    expect(((await res.json()) as unknown[]).length).toBe(1);
+  });
 });
 
 const management = client();
@@ -235,29 +300,13 @@ describe('a guardian manages a student', () => {
     expect(res.status).toBe(400);
   });
 
-  it("changes the password, which ends the student's sessions", async () => {
+  it('deletes the student, their devices, membership and profile; a second delete is not found', async () => {
     const student = await api.student(guardian);
-    const before = await api.signInStudent(student.username);
-    expect(await api.sessionUser(before.cookie)).toBeDefined();
-
-    const res = await api.request('PUT', `/api/household/students/${student.id}/password`, {
-      cookie: guardian,
-      body: { password: 'nouveau mot de passe' },
-    });
-    expect(res.status).toBe(204);
-    expect(await api.sessionUser(before.cookie)).toBeUndefined();
-    expect((await api.signInStudent(student.username)).status).toBe(401);
-    expect((await api.signInStudent(student.username, 'nouveau mot de passe')).status).toBe(200);
-  });
-
-  it('deletes the student, their session, membership and profile; a second delete is not found', async () => {
-    const student = await api.student(guardian);
-    const session = await api.signInStudent(student.username);
+    const device = await api.pair(guardian, student.id);
 
     const res = await api.request('DELETE', `/api/household/students/${student.id}`, { cookie: guardian });
     expect(res.status).toBe(204);
-    expect(await api.sessionUser(session.cookie)).toBeUndefined();
-    expect((await api.signInStudent(student.username)).status).toBe(401);
+    expect(await api.sessionUser(device)).toBeUndefined();
     expect(await householdOf(student.id)).toBeUndefined();
     expect(await db.select().from(studentProfile).where(eq(studentProfile.userId, student.id))).toEqual([]);
 
@@ -267,34 +316,32 @@ describe('a guardian manages a student', () => {
 });
 
 const own = client();
-const ownStudent = await own.student(await own.guardian('regles@example.com'));
-const { cookie: ownCookie } = await own.signInStudent(ownStudent.username);
+const ownGuardian = await own.guardian('regles@example.com');
+const ownStudent = await own.student(ownGuardian);
+const ownCookie = await own.pair(ownGuardian, ownStudent.id);
 
 describe("a student, through better-auth's own routes", () => {
   const api = own;
   const student = ownStudent;
   const cookie = ownCookie;
 
-  it('cannot change their name, username or display name, nor their password', async () => {
-    for (const body of [{ name: 'Autre' }, { username: 'autre_nom' }, { displayUsername: 'Papa_admin' }]) {
-      const res = await api.request('POST', '/api/auth/update-user', { cookie, body });
-      expect(res.status).toBe(403);
+  it('cannot change their name, set a password, change their email nor delete their account', async () => {
+    for (const [path, body] of [
+      ['/api/auth/update-user', { name: 'Autre' }],
+      ['/api/auth/set-password', { newPassword: 'un mot de passe à moi' }],
+      ['/api/auth/change-email', { newEmail: 'eleve@example.com' }],
+      ['/api/auth/delete-user', {}],
+    ] as const) {
+      expect((await api.request('POST', path, { cookie, body })).status).toBe(403);
     }
-    const change = await api.request('POST', '/api/auth/change-password', {
-      cookie,
-      body: { currentPassword: 'motdepasse', newPassword: 'un autre mot de passe' },
-    });
-    expect(change.status).toBe(403);
-    const [row] = await db
-      .select({ name: user.name, username: user.username, displayUsername: user.displayUsername })
-      .from(user)
-      .where(eq(user.id, student.id));
-    expect(row).toEqual({ name: student.name, username: student.username.toLowerCase(), displayUsername: student.username });
-    expect((await api.signInStudent(student.username)).status).toBe(200);
+    const [row] = await db.select({ name: user.name, email: user.email }).from(user).where(eq(user.id, student.id));
+    expect(row?.name).toBe(student.name);
+    expect(row?.email).toEndWith('.invalid');
+    expect(await db.select().from(account).where(eq(account.userId, student.id))).toEqual([]);
   });
 
   it('still reads their session and signs out', async () => {
-    const { cookie: fresh } = await api.signInStudent(student.username);
+    const fresh = await api.pair(ownGuardian, student.id);
     expect((await api.sessionUser(fresh))?.id).toBe(student.id);
     expect((await api.request('POST', '/api/auth/sign-out', { cookie: fresh, body: {} })).status).toBe(200);
     expect(await api.sessionUser(fresh)).toBeUndefined();
@@ -304,14 +351,5 @@ describe("a student, through better-auth's own routes", () => {
     const parent = await api.guardian('libre@example.com');
     const res = await api.request('POST', '/api/auth/update-user', { cookie: parent, body: { name: 'Victor' } });
     expect(res.status).toBe(200);
-  });
-
-  it('cannot change their email nor delete their account', async () => {
-    const change = await api.request('POST', '/api/auth/change-email', { cookie, body: { newEmail: 'eleve@example.com' } });
-    const remove = await api.request('POST', '/api/auth/delete-user', { cookie, body: {} });
-    expect(change.status).toBe(403);
-    expect(remove.status).toBe(403);
-    const [row] = await db.select({ email: user.email }).from(user).where(eq(user.id, student.id));
-    expect(row?.email).toEndWith('.invalid');
   });
 });

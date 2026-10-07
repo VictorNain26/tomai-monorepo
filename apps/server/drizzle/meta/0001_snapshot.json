@@ -1,5 +1,5 @@
 {
-  "id": "d1efa623-1f61-4d2b-91f7-aad96d9848a9",
+  "id": "8c58a968-779e-4f16-8bf1-d9175935da2c",
   "prevId": "688140e6-e81d-4cae-89dc-a9e870d090d9",
   "version": "7",
   "dialect": "postgresql",
@@ -263,18 +263,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "username": {
-          "name": "username",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "display_username": {
-          "name": "display_username",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp with time zone",
@@ -299,13 +287,6 @@
           "nullsNotDistinct": false,
           "columns": [
             "email"
-          ]
-        },
-        "user_username_unique": {
-          "name": "user_username_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "username"
           ]
         }
       },

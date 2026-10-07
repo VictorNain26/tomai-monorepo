@@ -1,7 +1,8 @@
 /**
- * What a guardian does with the students of their household. A student has no email: their
- * address is the non-routable one better-auth itself makes for an account without one (RFC 6761
- * `.invalid`), and they sign in by username.
+ * What a guardian does with the students of their household. A student has no credential: no
+ * email (the non-routable address better-auth itself makes for an account without one, RFC 6761
+ * `.invalid`), no password. Their device is paired by a code the guardian asks for, and the
+ * guardian never gets a session of their child.
  */
 
 import { createPlaceholderEmail } from '@better-auth/core/utils/email';
@@ -12,15 +13,13 @@ import type { HouseholdRepository } from './repository';
 
 export interface StudentInput {
   name: string;
-  username: string;
-  password: string;
   level: SchoolLevel;
   birthMonth: string;
 }
 
 interface Deps {
   repository: HouseholdRepository;
-  hashPassword: (password: string) => Promise<string>;
+  createPairingCode: (userId: string) => Promise<{ code: string; expiresAt: Date }>;
 }
 
 type StudentRow = NonNullable<Awaited<ReturnType<HouseholdRepository['findStudent']>>>;
@@ -28,7 +27,7 @@ type StudentRow = NonNullable<Awaited<ReturnType<HouseholdRepository['findStuden
 // The date column holds the first day of the month; the API speaks in YYYY-MM.
 const toStudent = ({ birthMonth, ...student }: StudentRow) => ({ ...student, birthMonth: birthMonth.slice(0, 7) });
 
-export function createHouseholdService({ repository, hashPassword }: Deps) {
+export function createHouseholdService({ repository, createPairingCode }: Deps) {
   const found = async (guardianId: string, studentId: string) => {
     const student = await repository.findStudent(guardianId, studentId);
     if (!student) throw new Problem('NOT_FOUND');
@@ -47,18 +46,13 @@ export function createHouseholdService({ repository, hashPassword }: Deps) {
 
     async createStudent(guardianId: string, input: StudentInput) {
       const id = generateId();
-      const created = await repository.createStudent(guardianId, {
+      await repository.createStudent(guardianId, {
         id,
         name: input.name,
         email: createPlaceholderEmail({ identifier: id, namespace: 'student' }),
-        // The username plugin's own normalisation, so that /sign-in/username finds it.
-        username: input.username.toLowerCase(),
-        displayUsername: input.username,
-        passwordHash: await hashPassword(input.password),
         level: input.level,
         birthMonth: `${input.birthMonth}-01`,
       });
-      if (!created) throw new Problem('USERNAME_TAKEN');
       return found(guardianId, id);
     },
 
@@ -67,8 +61,18 @@ export function createHouseholdService({ repository, hashPassword }: Deps) {
       return found(guardianId, studentId);
     },
 
-    async setStudentPassword(guardianId: string, studentId: string, password: string) {
-      if (!(await repository.setStudentPassword(guardianId, studentId, await hashPassword(password)))) throw new Problem('NOT_FOUND');
+    async pairingCode(guardianId: string, studentId: string) {
+      await found(guardianId, studentId);
+      return createPairingCode(studentId);
+    },
+
+    async listDevices(guardianId: string, studentId: string) {
+      await found(guardianId, studentId);
+      return repository.listDevices(guardianId, studentId);
+    },
+
+    async revokeDevice(guardianId: string, studentId: string, deviceId: string) {
+      if (!(await repository.revokeDevice(guardianId, studentId, deviceId))) throw new Problem('NOT_FOUND');
     },
 
     async deleteStudent(guardianId: string, studentId: string) {

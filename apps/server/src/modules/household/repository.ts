@@ -4,10 +4,10 @@
  * (OWASP Authorization Cheat Sheet): a student of another household is simply not found.
  */
 
-import { and, eq, inArray } from 'drizzle-orm';
+import { and, desc, eq, inArray } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import type { SchoolLevel } from '../../domain/levels';
-import { account, session, user } from '../../platform/auth/schema';
+import { session, user } from '../../platform/auth/schema';
 import type { Db } from '../../platform/db/client';
 import { household, householdMember, studentProfile } from './schema';
 
@@ -15,9 +15,6 @@ export interface NewStudent {
   id: string;
   name: string;
   email: string;
-  username: string;
-  displayUsername: string;
-  passwordHash: string;
   level: SchoolLevel;
   birthMonth: string;
 }
@@ -36,7 +33,6 @@ export function createHouseholdRepository(db: Db) {
   const studentColumns = {
     id: user.id,
     name: user.name,
-    username: user.displayUsername,
     level: studentProfile.level,
     birthMonth: studentProfile.birthMonth,
   };
@@ -65,35 +61,13 @@ export function createHouseholdRepository(db: Db) {
       return student;
     },
 
-    /**
-     * The student, their password and their profile, in the guardian's household, which is created
-     * with the first student. `false` when the username is taken: nothing is written then.
-     */
+    /** The student and their profile, in the guardian's household, which is created with the first student. */
     async createStudent(guardianId: string, student: NewStudent) {
-      return db.transaction(async (tx) => {
+      await db.transaction(async (tx) => {
         // Serialises a guardian's concurrent creations: one household, never two.
         await tx.select({ id: user.id }).from(user).where(eq(user.id, guardianId)).for('update');
 
-        const [created] = await tx
-          .insert(user)
-          .values({
-            id: student.id,
-            name: student.name,
-            email: student.email,
-            username: student.username,
-            displayUsername: student.displayUsername,
-          })
-          .onConflictDoNothing({ target: user.username })
-          .returning({ id: user.id });
-        if (!created) return false;
-
-        await tx.insert(account).values({
-          id: crypto.randomUUID(),
-          userId: student.id,
-          accountId: student.id,
-          providerId: 'credential',
-          password: student.passwordHash,
-        });
+        await tx.insert(user).values({ id: student.id, name: student.name, email: student.email });
 
         const [member] = await tx
           .select({ householdId: householdMember.householdId })
@@ -108,7 +82,6 @@ export function createHouseholdRepository(db: Db) {
         }
         await tx.insert(householdMember).values({ userId: student.id, householdId, role: 'student' });
         await tx.insert(studentProfile).values({ userId: student.id, level: student.level, birthMonth: student.birthMonth });
-        return true;
       });
     },
 
@@ -128,21 +101,25 @@ export function createHouseholdRepository(db: Db) {
       });
     },
 
-    /** The new password, and every session of the student ended. `false` when not in the household. */
-    async setStudentPassword(guardianId: string, studentId: string, passwordHash: string) {
-      return db.transaction(async (tx) => {
-        const [found] = await tx
-          .update(account)
-          .set({ password: passwordHash, updatedAt: new Date() })
-          .where(and(eq(account.userId, studentId), eq(account.providerId, 'credential'), inArray(account.userId, studentsOf(guardianId))))
-          .returning({ id: account.id });
-        if (!found) return false;
-        await tx.delete(session).where(eq(session.userId, studentId));
-        return true;
-      });
+    /** A device is a session: when it was paired and last used, and its browser; never its token nor its address. */
+    async listDevices(guardianId: string, studentId: string) {
+      return db
+        .select({ id: session.id, pairedAt: session.createdAt, lastActiveAt: session.updatedAt, userAgent: session.userAgent })
+        .from(session)
+        .where(and(eq(session.userId, studentId), inArray(session.userId, studentsOf(guardianId))))
+        .orderBy(desc(session.updatedAt));
     },
 
-    /** The student's account, sessions, membership and profile go with the user row (ON DELETE CASCADE). */
+    /** `false` when no such device of a student of the guardian's household. */
+    async revokeDevice(guardianId: string, studentId: string, deviceId: string) {
+      const revoked = await db
+        .delete(session)
+        .where(and(eq(session.id, deviceId), eq(session.userId, studentId), inArray(session.userId, studentsOf(guardianId))))
+        .returning({ id: session.id });
+      return revoked.length > 0;
+    },
+
+    /** The student's sessions, membership and profile go with the user row (ON DELETE CASCADE). */
     async deleteStudent(guardianId: string, studentId: string) {
       const deleted = await db
         .delete(user)
