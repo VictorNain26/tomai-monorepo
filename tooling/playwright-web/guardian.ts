@@ -41,9 +41,10 @@ export async function guardian(page: Page, name: string) {
 export const childPhone = (browser: Browser, testInfo: TestInfo) =>
   browser.newContext({ ...devices[testInfo.project.name === 'iphone' ? 'iPhone 15' : 'Pixel 7'] });
 
-/** A child added to the household, the guardian left on their page. */
-export async function addChild(page: Page, name: string) {
+/** A child added to the household, the learner memory proposed or not, the guardian left on their page. */
+export async function addChild(page: Page, name: string, { memory = false } = {}) {
   await page.getByLabel('Son prénom', { exact: true }).fill(name);
+  if (memory) await page.getByLabel('Proposer que Tom retienne ce qui a résisté').check();
   await page.getByLabel('Sa classe', { exact: true }).selectOption({ label: 'Cinquième' });
   await page.getByLabel('Son mois de naissance').fill('2014-03');
   await page.getByRole('button', { name: 'Ajouter' }).click();
@@ -52,11 +53,11 @@ export async function addChild(page: Page, name: string) {
 }
 
 /** A student whose device `page` is, paired by a guardian on a phone of their own: the guardian's address. */
-export async function pairedStudent(page: Page, browser: Browser, testInfo: TestInfo, name: string) {
+export async function pairedStudent(page: Page, browser: Browser, testInfo: TestInfo, name: string, { memory = false } = {}) {
   const phone = await childPhone(browser, testInfo);
   const parent = await phone.newPage();
   const parentEmail = await guardian(parent, `parent-${name}`);
-  await addChild(parent, name);
+  await addChild(parent, name, { memory });
   await parent.getByRole('button', { name: 'Relier un appareil' }).click();
   const code = (await parent.getByText(/^[0-9A-Z]{4}-[0-9A-Z]{4}$/).textContent()) ?? '';
   await phone.close();
