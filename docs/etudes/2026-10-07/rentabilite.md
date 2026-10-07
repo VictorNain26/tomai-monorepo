@@ -179,8 +179,7 @@ confidentialité et l'AIPD (2 000 €), marque à l'INPI pour une classe (190 �
 
 Ce qui reste au fondateur par mois, gratuits et frais compris (7,99 €, usage normal, gratuits
 légers) ; micro BIC avec versement libératoire, SASU sans salaire avec les dividendes au PFU
-(31,4 %) après l'IS, expert-comptable à 1 000 € HT par an ; une SASU, personne distincte, ne
-compte pas le chiffre d'affaires de la micro existante pour la franchise de TVA :
+(31,4 %) après l'IS, expert-comptable à 1 000 € HT par an :
 
 | Part payante | Foyers payants | CA annuel TTC (€) | TVA | Micro (€/mois) | SASU (€/mois) |
 |---|---|---|---|---|---|
@@ -192,9 +191,9 @@ compte pas le chiffre d'affaires de la micro existante pour la franchise de TVA 
 | 6 % | 500 | 47 940 | due | 1 282 | 1 144 |
 | 6 % | 1 000 | 95 880 | due | 2 667 | 2 357 |
 
-La micro sort de son plafond de 83 600 € HT vers 1 050 foyers payants. Une SASU sans salaire n'ouvre aucune protection sociale ni
-retraite, et doit sa propre CFE dès sa deuxième année, quand la micro existante la paie déjà ; ni
-l'une ni l'autre n'est au tableau.
+La micro sort de son plafond de 83 600 € HT vers 1 050 foyers payants. Une SASU sans salaire
+n'ouvre aucune protection sociale ni retraite. La CFE, due par l'une comme par l'autre après leur
+première année, n'est pas au tableau.
 
 ## 9. Mesures à faire avant de figer les chiffres
 
