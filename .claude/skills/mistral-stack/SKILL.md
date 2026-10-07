@@ -12,9 +12,10 @@ variable `MISTRAL_SERVER_URL`). Référence de conception : `docs/tuteur.md` �
 
 | Rôle | Modèle | Réglage |
 |---|---|---|
-| Chat élève, texte et image | `mistral-small-2603` (Small 4) | `reasoningEffort` routé par `modules/tutor/mistral-reasoning.ts`, `promptCacheKey` = ID de session |
-| Lecture d'image (transcription seule), résumés, cartes, titres, analyse du tour, diagnostic | `mistral-small-2603` | `reasoningEffort: 'none'` (défaut de `platform/ai/client.ts`) |
-| Fiche d'exercice | `mistral-small-2603` | `reasoningEffort: 'high'` passé à `generateStructured`, sans plafond de tokens, température 0,7, trois tirages votés (`modules/tutor/exercise-sheet.service.ts`) |
+| Chat élève, texte et image | `mistral-small-2603` (Small 4) | `reasoningEffort` routé par `modules/tutor/core/reasoning.ts`, `promptCacheKey` = ID de session |
+| Lecture d'image (transcription seule), résumés, cartes, titres, diagnostic | `mistral-small-2603` | `reasoningEffort: 'none'` (défaut de `platform/ai/client.ts`) |
+| Fiche d'exercice | `mistral-small-2603` | `reasoningEffort: 'high'` passé à `generateStructured`, sans plafond de tokens, température 0,7, trois tirages votés (`modules/tutor/core/sheet.ts`) |
+| Analyse du tour | `mistral-small-2603` | `reasoningEffort: 'high'`, température 0,7 (`modules/tutor/core/analysis.ts`) |
 | Modération d'entrée et de sortie | `mistral-moderation-2603` (gratuit) | `platform/ai/moderation.ts`, drapeaux au seuil de Mistral. Entrée : `studentTurn`, le message de l'élève avec le dernier message du tuteur, `selfharm` décide la détresse, les autres catégories se gardent sans bloquer ; indisponible = les règles seules jugent la détresse. Sortie : catégories bloquantes `OUTPUT_BLOCKING` ; indisponible = rien ne part sans contrôle |
 | STT / TTS | `voxtral-mini-2602` / `voxtral-mini-tts-2603` | STT en français imposé (sans langue, les réponses courtes basculent en anglais, mesuré) ; TTS en voix preset `fr_marie_neutral` (champ `language` refusé par l'API) |
 
