@@ -4,7 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { z } from 'zod';
+import { z } from '../lib/zod';
 import { Field } from '../components/field';
 import { Notice } from '../components/notice';
 import { Page } from '../components/page';
@@ -57,6 +57,9 @@ function SignIn() {
         </Link>
         <Link to="/inscription" className="min-h-11 py-3 text-primary underline">
           Créer un compte parent
+        </Link>
+        <Link to="/jumeler" className="min-h-11 py-3 text-primary underline">
+          Tu es élève ? Relie cet appareil
         </Link>
       </nav>
     </Page>

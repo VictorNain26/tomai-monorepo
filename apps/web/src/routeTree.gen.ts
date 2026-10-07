@@ -14,8 +14,11 @@ import { Route as ConnexionRouteImport } from './routes/connexion'
 import { Route as ErreurConnexionRouteImport } from './routes/erreur-connexion'
 import { Route as FoyerRouteImport } from './routes/foyer'
 import { Route as InscriptionRouteImport } from './routes/inscription'
+import { Route as JumelerRouteImport } from './routes/jumeler'
 import { Route as MotDePasseOublieRouteImport } from './routes/mot-de-passe-oublie'
 import { Route as NouveauMotDePasseRouteImport } from './routes/nouveau-mot-de-passe'
+import { Route as FoyerIndexRouteImport } from './routes/foyer.index'
+import { Route as FoyerStudentIdRouteImport } from './routes/foyer.$studentId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -42,6 +45,11 @@ const InscriptionRoute = InscriptionRouteImport.update({
   path: '/inscription',
   getParentRoute: () => rootRouteImport,
 } as any)
+const JumelerRoute = JumelerRouteImport.update({
+  id: '/jumeler',
+  path: '/jumeler',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MotDePasseOublieRoute = MotDePasseOublieRouteImport.update({
   id: '/mot-de-passe-oublie',
   path: '/mot-de-passe-oublie',
@@ -52,34 +60,52 @@ const NouveauMotDePasseRoute = NouveauMotDePasseRouteImport.update({
   path: '/nouveau-mot-de-passe',
   getParentRoute: () => rootRouteImport,
 } as any)
+const FoyerIndexRoute = FoyerIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => FoyerRoute,
+} as any)
+const FoyerStudentIdRoute = FoyerStudentIdRouteImport.update({
+  id: '/$studentId',
+  path: '/$studentId',
+  getParentRoute: () => FoyerRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/connexion': typeof ConnexionRoute
   '/erreur-connexion': typeof ErreurConnexionRoute
-  '/foyer': typeof FoyerRoute
+  '/foyer': typeof FoyerRouteWithChildren
   '/inscription': typeof InscriptionRoute
+  '/jumeler': typeof JumelerRoute
   '/mot-de-passe-oublie': typeof MotDePasseOublieRoute
   '/nouveau-mot-de-passe': typeof NouveauMotDePasseRoute
+  '/foyer/$studentId': typeof FoyerStudentIdRoute
+  '/foyer/': typeof FoyerIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/connexion': typeof ConnexionRoute
   '/erreur-connexion': typeof ErreurConnexionRoute
-  '/foyer': typeof FoyerRoute
   '/inscription': typeof InscriptionRoute
+  '/jumeler': typeof JumelerRoute
   '/mot-de-passe-oublie': typeof MotDePasseOublieRoute
   '/nouveau-mot-de-passe': typeof NouveauMotDePasseRoute
+  '/foyer/$studentId': typeof FoyerStudentIdRoute
+  '/foyer': typeof FoyerIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/connexion': typeof ConnexionRoute
   '/erreur-connexion': typeof ErreurConnexionRoute
-  '/foyer': typeof FoyerRoute
+  '/foyer': typeof FoyerRouteWithChildren
   '/inscription': typeof InscriptionRoute
+  '/jumeler': typeof JumelerRoute
   '/mot-de-passe-oublie': typeof MotDePasseOublieRoute
   '/nouveau-mot-de-passe': typeof NouveauMotDePasseRoute
+  '/foyer/$studentId': typeof FoyerStudentIdRoute
+  '/foyer/': typeof FoyerIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -89,17 +115,22 @@ export interface FileRouteTypes {
     | '/erreur-connexion'
     | '/foyer'
     | '/inscription'
+    | '/jumeler'
     | '/mot-de-passe-oublie'
     | '/nouveau-mot-de-passe'
+    | '/foyer/$studentId'
+    | '/foyer/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/connexion'
     | '/erreur-connexion'
-    | '/foyer'
     | '/inscription'
+    | '/jumeler'
     | '/mot-de-passe-oublie'
     | '/nouveau-mot-de-passe'
+    | '/foyer/$studentId'
+    | '/foyer'
   id:
     | '__root__'
     | '/'
@@ -107,16 +138,20 @@ export interface FileRouteTypes {
     | '/erreur-connexion'
     | '/foyer'
     | '/inscription'
+    | '/jumeler'
     | '/mot-de-passe-oublie'
     | '/nouveau-mot-de-passe'
+    | '/foyer/$studentId'
+    | '/foyer/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ConnexionRoute: typeof ConnexionRoute
   ErreurConnexionRoute: typeof ErreurConnexionRoute
-  FoyerRoute: typeof FoyerRoute
+  FoyerRoute: typeof FoyerRouteWithChildren
   InscriptionRoute: typeof InscriptionRoute
+  JumelerRoute: typeof JumelerRoute
   MotDePasseOublieRoute: typeof MotDePasseOublieRoute
   NouveauMotDePasseRoute: typeof NouveauMotDePasseRoute
 }
@@ -158,6 +193,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof InscriptionRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/jumeler': {
+      id: '/jumeler'
+      path: '/jumeler'
+      fullPath: '/jumeler'
+      preLoaderRoute: typeof JumelerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/mot-de-passe-oublie': {
       id: '/mot-de-passe-oublie'
       path: '/mot-de-passe-oublie'
@@ -172,15 +214,42 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof NouveauMotDePasseRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/foyer/': {
+      id: '/foyer/'
+      path: '/'
+      fullPath: '/foyer/'
+      preLoaderRoute: typeof FoyerIndexRouteImport
+      parentRoute: typeof FoyerRoute
+    }
+    '/foyer/$studentId': {
+      id: '/foyer/$studentId'
+      path: '/$studentId'
+      fullPath: '/foyer/$studentId'
+      preLoaderRoute: typeof FoyerStudentIdRouteImport
+      parentRoute: typeof FoyerRoute
+    }
   }
 }
+
+interface FoyerRouteChildren {
+  FoyerStudentIdRoute: typeof FoyerStudentIdRoute
+  FoyerIndexRoute: typeof FoyerIndexRoute
+}
+
+const FoyerRouteChildren: FoyerRouteChildren = {
+  FoyerStudentIdRoute: FoyerStudentIdRoute,
+  FoyerIndexRoute: FoyerIndexRoute,
+}
+
+const FoyerRouteWithChildren = FoyerRoute._addFileChildren(FoyerRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ConnexionRoute: ConnexionRoute,
   ErreurConnexionRoute: ErreurConnexionRoute,
-  FoyerRoute: FoyerRoute,
+  FoyerRoute: FoyerRouteWithChildren,
   InscriptionRoute: InscriptionRoute,
+  JumelerRoute: JumelerRoute,
   MotDePasseOublieRoute: MotDePasseOublieRoute,
   NouveauMotDePasseRoute: NouveauMotDePasseRoute,
 }

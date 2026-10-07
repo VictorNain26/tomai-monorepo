@@ -1,8 +1,14 @@
 /** better-auth's client, on the server's own origin (`/api/auth`), its session in a cookie. */
 
+import { queryOptions } from '@tanstack/react-query';
+import type { BetterAuthClientPlugin } from 'better-auth/client';
 import { createAuthClient } from 'better-auth/react';
+import type { DevicePairing } from 'tomai-server/contract';
 
-export const authClient = createAuthClient();
+// The server's device pairing, its endpoints inferred (https://better-auth.com/docs/concepts/plugins).
+const devicePairing = { id: 'device-pairing', $InferServerPlugin: {} as DevicePairing } satisfies BetterAuthClientPlugin;
+
+export const authClient = createAuthClient({ plugins: [devicePairing] });
 
 /** better-auth's error codes, in words a parent reads; the server's own message never shows. */
 const AUTH_MESSAGES: Partial<Record<string, string>> = {
@@ -20,3 +26,13 @@ export function authMessage(error: { code?: string | undefined; status: number }
   const message = error.code === undefined ? undefined : AUTH_MESSAGES[error.code];
   return message ?? 'Une erreur est survenue. Réessayez dans un instant.';
 }
+
+/** The sessions of whoever is signed in, one per paired device: what a student sees of their pairing. */
+export const mySessionsQuery = queryOptions({
+  queryKey: ['my-sessions'],
+  queryFn: async () => {
+    const { data, error } = await authClient.listSessions();
+    if (error) throw new Error(`list-sessions failed: ${String(error.status)}`);
+    return data;
+  },
+});

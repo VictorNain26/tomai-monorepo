@@ -6,5 +6,5 @@
     "types": ["node"],
     "noEmit": true
   },
-  "include": ["tests", "playwright.config.ts", "reset-database.ts", "database.ts"]
+  "include": ["tests", "playwright.config.ts", "reset-database.ts", "database.ts", "guardian.ts"]
 }

@@ -39,6 +39,7 @@ describe('loadConfig', () => {
       production: false,
       port: 3000,
       logLevel: 'info',
+      apiRateLimit: 100,
       databaseUrl: BASE.DATABASE_URL,
       publicUrl: 'http://localhost:3002',
       authSecret: BASE.BETTER_AUTH_SECRET,
@@ -66,6 +67,10 @@ describe('loadConfig', () => {
     });
   });
 
+  it('takes the API budget of a client address from the environment', () => {
+    expect(loadConfig({ ...BASE, API_RATE_LIMIT: '10000' }).apiRateLimit).toBe(10_000);
+  });
+
   it('returns a frozen object', () => {
     expect(Object.isFrozen(loadConfig(BASE))).toBe(true);
   });
@@ -85,6 +90,7 @@ describe('loadConfig', () => {
     [{ ...BASE, BETTER_AUTH_SECRET: 'short' }, 'BETTER_AUTH_SECRET'],
     [{ ...BASE, PORT: '70000' }, 'PORT'],
     [{ ...BASE, LOG_LEVEL: 'verbose' }, 'LOG_LEVEL'],
+    [{ ...BASE, API_RATE_LIMIT: '0' }, 'API_RATE_LIMIT'],
     [{ ...BASE, WEB_DIST_DIR: empty }, 'index.html'],
     [{ ...PRODUCTION, BETTER_AUTH_URL: undefined }, 'BETTER_AUTH_URL'],
     [{ ...PRODUCTION, WEB_DIST_DIR: undefined }, 'WEB_DIST_DIR'],

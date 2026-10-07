@@ -16,4 +16,14 @@ export default [
       '@typescript-eslint/only-throw-error': ['error', { allow: [{ from: 'package', package: '@tanstack/router-core', name: 'Redirect' }] }],
     },
   },
+  {
+    files: ['src/**/*.{ts,tsx}'],
+    ignores: ['src/lib/zod.ts'],
+    rules: {
+      '@typescript-eslint/no-restricted-imports': [
+        'error',
+        { paths: [{ name: 'zod', message: 'Import z from src/lib/zod: it is set jitless before any schema.', allowTypeImports: true }] },
+      ],
+    },
+  },
 ];

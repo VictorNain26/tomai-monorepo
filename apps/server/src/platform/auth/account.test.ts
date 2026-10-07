@@ -29,7 +29,7 @@ const auth = createAuth(
   { mailer: mail.mailer, logger: pino({ level: 'silent' }), background: createBackgroundTasks().run, deleteUser: accountDeletion(db) },
 );
 const app = createApp({
-  config: { production: false, webDistDir: undefined },
+  config: { production: false, webDistDir: undefined, apiRateLimit: 100 },
   logger: pino({ level: 'silent' }),
   db,
   ...mistral.deps(db, pino({ level: 'silent' })),
