@@ -50,7 +50,7 @@ tooling/
 | Paiements | Aucun branché. Paiement web prévu au lot 3 |
 | Observabilité | Logs pino ; Bugsink, auto-hébergé, pour les erreurs avec la préproduction (`docs/etudes/2026-10-07/hebergement.md`). Pas d'analytics installée |
 | Monorepo | Turborepo, workspaces Bun |
-| Déploiement | Landing : une application statique Clever Cloud, servie par Caddy (`apps/landing/Caddyfile`), pas encore déployée. Server : image `apps/server/Dockerfile`, qui embarque le build du web, publiée sur GHCR au SHA à chaque merge sur `main`, pas encore déployée ; hébergée chez Clever Cloud, région Paris (`docs/etudes/2026-10-07/hebergement.md`). Web : servi par le serveur, sur la même origine que l'API ; en dev, par le proxy de Vite (`apps/web/vite.config.ts`) |
+| Déploiement | Landing : une application statique Clever Cloud, servie par Caddy (`apps/landing/Caddyfile`), pas encore déployée. Server : image `apps/server/Dockerfile`, qui embarque le build du web, publiée sur GHCR au SHA à chaque merge sur `main`, pas encore déployée ; elle le sera chez Clever Cloud, région Paris, en staging à chaque merge, puis en production sur approbation (`docs/architecture.md`, « Environnements et livraison »). Web : servi par le serveur, sur la même origine que l'API ; en dev, par le proxy de Vite (`apps/web/vite.config.ts`) |
 
 ## Commandes
 
@@ -66,7 +66,7 @@ Migrations : `.claude/rules/database-migrations.md` ; stack locale : skill `dev-
 
 ## Git
 
-`main` est la seule branche permanente ; la façon d'y entrer est dans `CLAUDE.md`, « Interdits ».
+`main` est la seule branche permanente, sans branche par environnement ; la façon d'y entrer est dans `CLAUDE.md`, « Interdits ».
 
 ## Documentation
 
