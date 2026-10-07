@@ -170,8 +170,8 @@ et sa résolution. Le diagnostic donne un type d'erreur dans une liste fermée (
 étude.
 
 **Mistral.** La clause (c) de ses conditions interdit les données personnelles d'enfants de moins
-de 15 ans, et `tuteur.md` § 11 promet que rien d'identifiant ne part chez Mistral avant sa
-clarification écrite. La mémoire y ajoute un profil d'apprentissage, une catégorie nouvelle : elle
-ne part chez Mistral qu'une fois la clause levée. Ce constat en révèle un autre : le tuteur envoie
-déjà le prénom de l'élève à chaque tour (`studentBlock`), contre cette promesse. C'est à trancher
-par Victor avant tout utilisateur réel (`suivi.md`).
+de 15 ans ; une clarification écrite est demandée. `tuteur.md` § 11 promettait que rien
+d'identifiant ne partirait chez Mistral d'ici là, alors que le tuteur envoie le prénom à chaque
+tour (`studentBlock`) et que la mémoire ajoute un profil d'apprentissage, une catégorie nouvelle.
+Victor a tranché le 2026-10-07 : aucun vrai élève avant la réponse de Mistral ; le prénom et la
+mémoire partent dans le prompt, et en sortent si Mistral refuse.

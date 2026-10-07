@@ -289,7 +289,7 @@ Cartographie de risque, à valider par un conseil avant l'ouverture.
 | AI Act art. 50(1), applicable depuis le 2026-08-02 | Divulgation IA dans le prompt et dans l'interface dès la première interaction (lot 3) |
 | AI Act art. 50(2), marquage machine des sorties texte | Question ouverte (dialogue privé couvert ou non) à faire trancher par un conseil ; fin du délai le 2026-12-02 |
 | Loi 78-17 art. 45 | Double consentement sous 15 ans pour ce qui repose sur le consentement ; le parent conclut le contrat (lot 3) |
-| Conditions commerciales de Mistral, usages interdits (c) : pas de données personnelles d'enfants sous l'âge du consentement numérique (15 ans en France) | Clarification écrite demandée à Mistral avec le ZDR, avant tout utilisateur réel ; d'ici là, rien d'identifiant (prénom, nom) dans ce qui part chez Mistral |
+| Conditions commerciales de Mistral, usages interdits (c) : pas de données personnelles d'enfants sous l'âge du consentement numérique (15 ans en France) | Clarification écrite demandée à Mistral avec le ZDR ; aucun vrai élève avant sa réponse. Le prénom et la mémoire d'apprentissage partent dans le prompt ; si Mistral refuse, ils en sortent (Victor, 2026-10-07) |
 | RGPD art. 9 (la détresse est une donnée de santé) ; Code pénal art. 434-3 | Base légale et conduite à tenir à faire trancher par un conseil (`etudes/2026-10-07/foyer-eleve-age.md`, § 8) |
 | Cadre d'usage de l'IA du ministère (2025) : usage autonome à partir de la 4e | Pèse sur une recommandation par un collège en 6e et 5e ; texte complet à lire |
 | CNIL, données d'élèves non réutilisées | Endpoint UE ; ZDR avant tout utilisateur réel |
