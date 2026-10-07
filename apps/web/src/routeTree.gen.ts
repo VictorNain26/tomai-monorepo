@@ -10,13 +10,14 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as ConnexionRouteImport } from './routes/connexion'
+import { Route as ParentRouteImport } from './routes/_parent'
 import { Route as ErreurConnexionRouteImport } from './routes/erreur-connexion'
 import { Route as FoyerRouteImport } from './routes/foyer'
-import { Route as InscriptionRouteImport } from './routes/inscription'
 import { Route as JumelerRouteImport } from './routes/jumeler'
-import { Route as MotDePasseOublieRouteImport } from './routes/mot-de-passe-oublie'
-import { Route as NouveauMotDePasseRouteImport } from './routes/nouveau-mot-de-passe'
+import { Route as ParentConnexionRouteImport } from './routes/_parent.connexion'
+import { Route as ParentInscriptionRouteImport } from './routes/_parent.inscription'
+import { Route as ParentMotDePasseOublieRouteImport } from './routes/_parent.mot-de-passe-oublie'
+import { Route as ParentNouveauMotDePasseRouteImport } from './routes/_parent.nouveau-mot-de-passe'
 import { Route as FoyerIndexRouteImport } from './routes/foyer.index'
 import { Route as FoyerStudentIdRouteImport } from './routes/foyer.$studentId'
 import { Route as SeanceSessionIdRouteImport } from './routes/seance.$sessionId'
@@ -26,9 +27,8 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ConnexionRoute = ConnexionRouteImport.update({
-  id: '/connexion',
-  path: '/connexion',
+const ParentRoute = ParentRouteImport.update({
+  id: '/_parent',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ErreurConnexionRoute = ErreurConnexionRouteImport.update({
@@ -41,25 +41,30 @@ const FoyerRoute = FoyerRouteImport.update({
   path: '/foyer',
   getParentRoute: () => rootRouteImport,
 } as any)
-const InscriptionRoute = InscriptionRouteImport.update({
-  id: '/inscription',
-  path: '/inscription',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const JumelerRoute = JumelerRouteImport.update({
   id: '/jumeler',
   path: '/jumeler',
   getParentRoute: () => rootRouteImport,
 } as any)
-const MotDePasseOublieRoute = MotDePasseOublieRouteImport.update({
+const ParentConnexionRoute = ParentConnexionRouteImport.update({
+  id: '/connexion',
+  path: '/connexion',
+  getParentRoute: () => ParentRoute,
+} as any)
+const ParentInscriptionRoute = ParentInscriptionRouteImport.update({
+  id: '/inscription',
+  path: '/inscription',
+  getParentRoute: () => ParentRoute,
+} as any)
+const ParentMotDePasseOublieRoute = ParentMotDePasseOublieRouteImport.update({
   id: '/mot-de-passe-oublie',
   path: '/mot-de-passe-oublie',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => ParentRoute,
 } as any)
-const NouveauMotDePasseRoute = NouveauMotDePasseRouteImport.update({
+const ParentNouveauMotDePasseRoute = ParentNouveauMotDePasseRouteImport.update({
   id: '/nouveau-mot-de-passe',
   path: '/nouveau-mot-de-passe',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => ParentRoute,
 } as any)
 const FoyerIndexRoute = FoyerIndexRouteImport.update({
   id: '/',
@@ -79,25 +84,25 @@ const SeanceSessionIdRoute = SeanceSessionIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/connexion': typeof ConnexionRoute
   '/erreur-connexion': typeof ErreurConnexionRoute
   '/foyer': typeof FoyerRouteWithChildren
-  '/inscription': typeof InscriptionRoute
   '/jumeler': typeof JumelerRoute
-  '/mot-de-passe-oublie': typeof MotDePasseOublieRoute
-  '/nouveau-mot-de-passe': typeof NouveauMotDePasseRoute
+  '/connexion': typeof ParentConnexionRoute
+  '/inscription': typeof ParentInscriptionRoute
+  '/mot-de-passe-oublie': typeof ParentMotDePasseOublieRoute
+  '/nouveau-mot-de-passe': typeof ParentNouveauMotDePasseRoute
   '/foyer/$studentId': typeof FoyerStudentIdRoute
   '/seance/$sessionId': typeof SeanceSessionIdRoute
   '/foyer/': typeof FoyerIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/connexion': typeof ConnexionRoute
   '/erreur-connexion': typeof ErreurConnexionRoute
-  '/inscription': typeof InscriptionRoute
   '/jumeler': typeof JumelerRoute
-  '/mot-de-passe-oublie': typeof MotDePasseOublieRoute
-  '/nouveau-mot-de-passe': typeof NouveauMotDePasseRoute
+  '/connexion': typeof ParentConnexionRoute
+  '/inscription': typeof ParentInscriptionRoute
+  '/mot-de-passe-oublie': typeof ParentMotDePasseOublieRoute
+  '/nouveau-mot-de-passe': typeof ParentNouveauMotDePasseRoute
   '/foyer/$studentId': typeof FoyerStudentIdRoute
   '/seance/$sessionId': typeof SeanceSessionIdRoute
   '/foyer': typeof FoyerIndexRoute
@@ -105,13 +110,14 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/connexion': typeof ConnexionRoute
+  '/_parent': typeof ParentRouteWithChildren
   '/erreur-connexion': typeof ErreurConnexionRoute
   '/foyer': typeof FoyerRouteWithChildren
-  '/inscription': typeof InscriptionRoute
   '/jumeler': typeof JumelerRoute
-  '/mot-de-passe-oublie': typeof MotDePasseOublieRoute
-  '/nouveau-mot-de-passe': typeof NouveauMotDePasseRoute
+  '/_parent/connexion': typeof ParentConnexionRoute
+  '/_parent/inscription': typeof ParentInscriptionRoute
+  '/_parent/mot-de-passe-oublie': typeof ParentMotDePasseOublieRoute
+  '/_parent/nouveau-mot-de-passe': typeof ParentNouveauMotDePasseRoute
   '/foyer/$studentId': typeof FoyerStudentIdRoute
   '/seance/$sessionId': typeof SeanceSessionIdRoute
   '/foyer/': typeof FoyerIndexRoute
@@ -120,11 +126,11 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/connexion'
     | '/erreur-connexion'
     | '/foyer'
-    | '/inscription'
     | '/jumeler'
+    | '/connexion'
+    | '/inscription'
     | '/mot-de-passe-oublie'
     | '/nouveau-mot-de-passe'
     | '/foyer/$studentId'
@@ -133,10 +139,10 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/connexion'
     | '/erreur-connexion'
-    | '/inscription'
     | '/jumeler'
+    | '/connexion'
+    | '/inscription'
     | '/mot-de-passe-oublie'
     | '/nouveau-mot-de-passe'
     | '/foyer/$studentId'
@@ -145,13 +151,14 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
-    | '/connexion'
+    | '/_parent'
     | '/erreur-connexion'
     | '/foyer'
-    | '/inscription'
     | '/jumeler'
-    | '/mot-de-passe-oublie'
-    | '/nouveau-mot-de-passe'
+    | '/_parent/connexion'
+    | '/_parent/inscription'
+    | '/_parent/mot-de-passe-oublie'
+    | '/_parent/nouveau-mot-de-passe'
     | '/foyer/$studentId'
     | '/seance/$sessionId'
     | '/foyer/'
@@ -159,13 +166,10 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  ConnexionRoute: typeof ConnexionRoute
+  ParentRoute: typeof ParentRouteWithChildren
   ErreurConnexionRoute: typeof ErreurConnexionRoute
   FoyerRoute: typeof FoyerRouteWithChildren
-  InscriptionRoute: typeof InscriptionRoute
   JumelerRoute: typeof JumelerRoute
-  MotDePasseOublieRoute: typeof MotDePasseOublieRoute
-  NouveauMotDePasseRoute: typeof NouveauMotDePasseRoute
   SeanceSessionIdRoute: typeof SeanceSessionIdRoute
 }
 
@@ -178,11 +182,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/connexion': {
-      id: '/connexion'
-      path: '/connexion'
-      fullPath: '/connexion'
-      preLoaderRoute: typeof ConnexionRouteImport
+    '/_parent': {
+      id: '/_parent'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof ParentRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/erreur-connexion': {
@@ -199,13 +203,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FoyerRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/inscription': {
-      id: '/inscription'
-      path: '/inscription'
-      fullPath: '/inscription'
-      preLoaderRoute: typeof InscriptionRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/jumeler': {
       id: '/jumeler'
       path: '/jumeler'
@@ -213,19 +210,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof JumelerRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/mot-de-passe-oublie': {
-      id: '/mot-de-passe-oublie'
+    '/_parent/connexion': {
+      id: '/_parent/connexion'
+      path: '/connexion'
+      fullPath: '/connexion'
+      preLoaderRoute: typeof ParentConnexionRouteImport
+      parentRoute: typeof ParentRoute
+    }
+    '/_parent/inscription': {
+      id: '/_parent/inscription'
+      path: '/inscription'
+      fullPath: '/inscription'
+      preLoaderRoute: typeof ParentInscriptionRouteImport
+      parentRoute: typeof ParentRoute
+    }
+    '/_parent/mot-de-passe-oublie': {
+      id: '/_parent/mot-de-passe-oublie'
       path: '/mot-de-passe-oublie'
       fullPath: '/mot-de-passe-oublie'
-      preLoaderRoute: typeof MotDePasseOublieRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof ParentMotDePasseOublieRouteImport
+      parentRoute: typeof ParentRoute
     }
-    '/nouveau-mot-de-passe': {
-      id: '/nouveau-mot-de-passe'
+    '/_parent/nouveau-mot-de-passe': {
+      id: '/_parent/nouveau-mot-de-passe'
       path: '/nouveau-mot-de-passe'
       fullPath: '/nouveau-mot-de-passe'
-      preLoaderRoute: typeof NouveauMotDePasseRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof ParentNouveauMotDePasseRouteImport
+      parentRoute: typeof ParentRoute
     }
     '/foyer/': {
       id: '/foyer/'
@@ -251,6 +262,23 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface ParentRouteChildren {
+  ParentConnexionRoute: typeof ParentConnexionRoute
+  ParentInscriptionRoute: typeof ParentInscriptionRoute
+  ParentMotDePasseOublieRoute: typeof ParentMotDePasseOublieRoute
+  ParentNouveauMotDePasseRoute: typeof ParentNouveauMotDePasseRoute
+}
+
+const ParentRouteChildren: ParentRouteChildren = {
+  ParentConnexionRoute: ParentConnexionRoute,
+  ParentInscriptionRoute: ParentInscriptionRoute,
+  ParentMotDePasseOublieRoute: ParentMotDePasseOublieRoute,
+  ParentNouveauMotDePasseRoute: ParentNouveauMotDePasseRoute,
+}
+
+const ParentRouteWithChildren =
+  ParentRoute._addFileChildren(ParentRouteChildren)
+
 interface FoyerRouteChildren {
   FoyerStudentIdRoute: typeof FoyerStudentIdRoute
   FoyerIndexRoute: typeof FoyerIndexRoute
@@ -265,13 +293,10 @@ const FoyerRouteWithChildren = FoyerRoute._addFileChildren(FoyerRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  ConnexionRoute: ConnexionRoute,
+  ParentRoute: ParentRouteWithChildren,
   ErreurConnexionRoute: ErreurConnexionRoute,
   FoyerRoute: FoyerRouteWithChildren,
-  InscriptionRoute: InscriptionRoute,
   JumelerRoute: JumelerRoute,
-  MotDePasseOublieRoute: MotDePasseOublieRoute,
-  NouveauMotDePasseRoute: NouveauMotDePasseRoute,
   SeanceSessionIdRoute: SeanceSessionIdRoute,
 }
 export const routeTree = rootRouteImport

@@ -1,15 +1,14 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@repo/ui';
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
-import { Link, createFileRoute, useNavigate } from '@tanstack/react-router';
-import { useState } from 'react';
+import { Link, createFileRoute } from '@tanstack/react-router';
 import { useForm } from 'react-hook-form';
 import type { z } from '../lib/zod';
 import { Field, SelectField } from '../components/field';
 import { Notice } from '../components/notice';
 import { Page } from '../components/page';
+import { SignOut } from '../components/sign-out';
 import { api, parseResponse } from '../lib/api';
-import { authClient, authMessage } from '../lib/auth';
 import { LEVEL_LABELS, householdMessage, newStudentSchema, studentsQuery } from '../lib/household';
 import { meQuery } from '../lib/me';
 
@@ -49,7 +48,7 @@ function Household() {
         )}
       </section>
       <AddStudent />
-      <SignOut />
+      <SignOut label="Se déconnecter" />
     </Page>
   );
 }
@@ -93,31 +92,5 @@ function AddStudent() {
         </Button>
       </form>
     </section>
-  );
-}
-
-function SignOut() {
-  const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const [failure, setFailure] = useState<string | null>(null);
-
-  const signOut = async () => {
-    setFailure(null);
-    const { error } = await authClient.signOut();
-    if (error) {
-      setFailure(authMessage(error));
-      return;
-    }
-    queryClient.clear();
-    await navigate({ to: '/connexion' });
-  };
-
-  return (
-    <>
-      {failure && <Notice tone="error">{failure}</Notice>}
-      <Button variant="outline" onClick={() => void signOut()}>
-        Se déconnecter
-      </Button>
-    </>
   );
 }

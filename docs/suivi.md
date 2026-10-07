@@ -52,7 +52,8 @@ bloquant levé). L'historique vit dans git et les PR.
 - **Le prénom et la mémoire chez Mistral** (Victor, 2026-10-07) : ils partent dans le prompt ;
   aucun vrai élève avant la réponse écrite de Mistral sur sa clause des moins de 15 ans ; s'il
   refuse, ils en sortent (`tuteur.md` § 11).
-- **Prochaine action** : la mémoire d'une séance à l'autre, puis l'étape 7 (la préproduction UE). L'étude des hébergeurs UE avance en parallèle.
+- **Prochaine action** : la mémoire d'une séance à l'autre, puis l'étape 7 (la préproduction
+  UE). L'étude des hébergeurs UE avance en parallèle.
 - **Rentabilité et quotas** (`etudes/2026-10-07/rentabilite.md`) : le gratuit décide de la
   rentabilité, la distribution est le vrai risque ; quotas proposés de 2 c (Gratuit) et 10 c
   (Complet) par élève et par jour, voix comprise, remis à zéro à 4 h, et l'année scolaire à 69 €

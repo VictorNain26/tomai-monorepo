@@ -27,13 +27,14 @@ export async function signIn(page: Page, email: string) {
   await page.getByRole('button', { name: 'Se connecter' }).click();
 }
 
-/** A guardian at home, on their household. */
+/** A guardian at home, on their household: their address. */
 export async function guardian(page: Page, name: string) {
   const email = address(name);
   await signUp(page, email);
   await confirmEmail(email);
   await signIn(page, email);
   await expect(page).toHaveURL(/\/foyer$/);
+  return email;
 }
 
 /** The child's own phone, of the same kind as the guardian's. */
@@ -50,11 +51,11 @@ export async function addChild(page: Page, name: string) {
   await expect(page.getByRole('heading', { level: 1, name })).toBeVisible();
 }
 
-/** A student whose device `page` is, paired by a guardian on a phone of their own. */
+/** A student whose device `page` is, paired by a guardian on a phone of their own: the guardian's address. */
 export async function pairedStudent(page: Page, browser: Browser, testInfo: TestInfo, name: string) {
   const phone = await childPhone(browser, testInfo);
   const parent = await phone.newPage();
-  await guardian(parent, `parent-${name}`);
+  const parentEmail = await guardian(parent, `parent-${name}`);
   await addChild(parent, name);
   await parent.getByRole('button', { name: 'Relier un appareil' }).click();
   const code = (await parent.getByText(/^[0-9A-Z]{4}-[0-9A-Z]{4}$/).textContent()) ?? '';
@@ -64,4 +65,5 @@ export async function pairedStudent(page: Page, browser: Browser, testInfo: Test
   await page.getByLabel('Le code').fill(code);
   await page.getByRole('button', { name: 'Relier' }).click();
   await expect(page.getByRole('heading', { name: `Bonjour ${name}` })).toBeVisible();
+  return parentEmail;
 }

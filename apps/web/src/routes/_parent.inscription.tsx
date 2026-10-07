@@ -9,7 +9,7 @@ import { Notice } from '../components/notice';
 import { Page } from '../components/page';
 import { authClient, authMessage } from '../lib/auth';
 
-export const Route = createFileRoute('/inscription')({ component: SignUp });
+export const Route = createFileRoute('/_parent/inscription')({ component: SignUp });
 
 const schema = z.object({
   name: z.string().trim().min(1, 'Votre prénom.').max(50, '50 caractères au plus.'),

@@ -10,7 +10,7 @@ import { Page } from '../components/page';
 import { authClient, authMessage } from '../lib/auth';
 
 /** Where the link of a password reset lands, its token in the address (better-auth's `redirectTo`). */
-export const Route = createFileRoute('/nouveau-mot-de-passe')({
+export const Route = createFileRoute('/_parent/nouveau-mot-de-passe')({
   validateSearch: z.object({ token: z.string().optional(), error: z.string().optional() }),
   component: NewPassword,
 });
