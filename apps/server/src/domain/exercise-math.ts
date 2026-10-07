@@ -175,6 +175,24 @@ export function sameMath(a: string, b: string): boolean | null {
   return na && nb ? sameExpression(na, nb) : null;
 }
 
+const plainEquation = (equation: string) => equation.replace(/[\s*]/g, '').toLowerCase();
+
+/**
+ * What a student's equation is to the statement's: the statement written back (no step done),
+ * the same roots (a right step, or the answer once solved), part of them (a right partial
+ * answer, « x = 2 » for « x^2 = 4 »), or other roots. Null when mathjs cannot read both, or when
+ * the unknowns differ: « x = 5 » may answer « 3n + 5 = 20 ».
+ */
+export function compareEquations(proposal: string, statement: string): 'restated' | 'same' | 'part' | 'different' | null {
+  if (plainEquation(proposal) === plainEquation(statement)) return 'restated';
+  const ours = equationRoots(statement);
+  const theirs = equationRoots(proposal);
+  if (!ours || ours.unknown !== theirs?.unknown) return null;
+  if (sameRoots(ours.roots, theirs.roots)) return 'same';
+  const part = theirs.roots.length > 0 && theirs.roots.every((root) => ours.roots.some((other) => close(root, other)));
+  return part ? 'part' : 'different';
+}
+
 export type MathCheck = 'passed' | 'failed' | 'not-applicable';
 
 /** The answer checked against the statement's equation, its roots computed once: an equation must have its roots, a value must be its only root. */

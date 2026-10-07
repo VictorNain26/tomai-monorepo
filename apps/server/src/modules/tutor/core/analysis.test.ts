@@ -66,6 +66,12 @@ describe('analyseTurn', () => {
     expect(data.length).toBeLessThan(8200);
   });
 
+  it('never splits a character in two where it cuts a long message', async () => {
+    mistral.chat.push({ json: read });
+    await analyseTurn(deps, turn(`${'a'.repeat(1999)}${'😀'.repeat(3000)}`));
+    expect(sent().user.isWellFormed()).toBe(true);
+  });
+
   it('keeps a message at the limit whole', async () => {
     mistral.chat.push({ json: read });
     const text = 'c'.repeat(4000);

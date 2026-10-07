@@ -206,6 +206,42 @@ describe('prepareExerciseTurn', () => {
     expect(turn.contract).toContain("Palier d'aide autorisé : 2, indice conceptuel");
   });
 
+  it('keeps the exercise in progress, its answer watched, when every draw for a new one fails', async () => {
+    mistral.chat.push({ status: 400 }, { status: 400 }, { status: 400 });
+    const turn = await prepareExerciseTurn(
+      deps,
+      request({ current: state({ hintLevel: 2 }), analysis: analysis({ bringsExercise: true }), studentText: 'donne la réponse' }),
+    );
+    expect(turn).toMatchObject({ isNew: false, exercise: { sheet: { answer: 'x = 5' }, hintLevel: 2 } });
+    expect(logs).toContainEqual(expect.objectContaining({ msg: 'Sheet failed: the exercise in progress stays' }));
+  });
+
+  it('prepares a new exercise even when the statement in progress is too short to tell a restatement', async () => {
+    mistral.chat.push(
+      { json: draft({ statement: 'Conjugue aller au passé composé.' }) },
+      { json: draft({ statement: 'Conjugue aller au passé composé.' }) },
+      { json: draft() },
+    );
+    const turn = await prepareExerciseTurn(
+      deps,
+      request({
+        current: state({ sheet: { ...sheet, statement: 'Conjugue' } }),
+        analysis: analysis({ bringsExercise: true }),
+        studentText: 'Conjugue aller au passé composé',
+      }),
+    );
+    expect(turn.isNew).toBe(true);
+  });
+
+  it('reads a tie between the draws as an exercise, which stays watched', async () => {
+    mistral.chat.push({ json: draft() }, { json: draft({}, false) }, { status: 400 });
+    const turn = await prepareExerciseTurn(
+      deps,
+      request({ current: null, analysis: analysis({ bringsExercise: true }), studentText: 'Résous 3x + 5 = 20.' }),
+    );
+    expect(turn).toMatchObject({ isNew: true, exercise: { sheet: { answer: 'x = 5' }, uncertain: true } });
+  });
+
   it('gives no contract without an exercise in progress', async () => {
     expect(await prepareExerciseTurn(deps, request({ current: null }))).toEqual({
       exercise: null,

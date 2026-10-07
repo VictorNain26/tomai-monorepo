@@ -111,6 +111,14 @@ describe('generateText', () => {
     expect(Date.now() - start).toBeLessThan(1_000);
   });
 
+  it('never waits past the configured deadline, whatever the call asks', async () => {
+    const hasty = createAi({ mistral: mistral.config({ timeoutMs: 200 }), db, logger });
+    mistral.chat.push('hang');
+    const start = Date.now();
+    expect(await failure(hasty.generateText(call({ timeoutMs: 5_000 })))).toBeInstanceOf(Error);
+    expect(Date.now() - start).toBeLessThan(1_000);
+  });
+
   it('retries an unavailable Mistral as many times as configured', async () => {
     const patient = createAi({ mistral: mistral.config({ retryAttempts: 1, timeoutMs: 10_000 }), db, logger });
     mistral.chat.push({ status: 503 }, { text: 'ok' });

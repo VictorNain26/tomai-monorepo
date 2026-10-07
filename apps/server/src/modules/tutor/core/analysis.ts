@@ -58,7 +58,11 @@ demande d'explication d'une notion n'en apporte pas. Le dernier message du tuteu
 à quoi l'élève répond.`;
 
 // Head and tail: a statement opens a message, a proposal or an offer of cards closes it.
-const clip = (text: string) => stripPromptTags(text.length > MAX_CHARS ? `${text.slice(0, MAX_CHARS / 2)}\n…\n${text.slice(-MAX_CHARS / 2)}` : text);
+// Cut on code points: a surrogate pair split in two would reach Mistral as a lone half.
+function clip(text: string): string {
+  const chars = Array.from(text);
+  return stripPromptTags(chars.length > MAX_CHARS ? `${chars.slice(0, MAX_CHARS / 2).join('')}\n…\n${chars.slice(-MAX_CHARS / 2).join('')}` : text);
+}
 
 /**
  * Analyses the student's message: the statement of the exercise in progress tells a new exercise

@@ -7,7 +7,7 @@
 
 import type { Logger } from 'pino';
 import { z } from 'zod';
-import { sameMath } from '../../../domain/exercise-math';
+import { compareEquations, sameMath } from '../../../domain/exercise-math';
 import type { Ai } from '../../../platform/ai/client';
 import { stripPromptTags, wrapUserMessage } from './fences';
 import type { ExerciseSheet } from './sheet';
@@ -107,9 +107,10 @@ export function settle(diagnosis: Omit<Diagnosis, 'decidedBy'>, sheet: ExerciseS
 
   if (proposal.includes('=')) {
     const equation = sheet.mathEquation ?? (sheet.mathAnswer?.includes('=') ? sheet.mathAnswer : null);
-    const same = equation ? sameMath(proposal, equation) : null;
-    if (same === null) return byModel;
-    return same ? right(SOLVED.test(proposal) ? 'correct' : 'right-step') : wrong;
+    const relation = equation ? compareEquations(proposal, equation) : null;
+    // The statement written back is no step; part of the roots, a right partial answer: the model judges both.
+    if (relation === null || relation === 'restated' || relation === 'part') return byModel;
+    return relation === 'same' ? right(SOLVED.test(proposal) ? 'correct' : 'right-step') : wrong;
   }
   const same = sheet.mathAnswer ? sameMath(proposal, sheet.mathAnswer) : null;
   if (same === true && SOLVED.test(proposal)) return right('correct');

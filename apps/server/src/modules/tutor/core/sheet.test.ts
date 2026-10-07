@@ -41,6 +41,9 @@ describe('schoolYearOf', () => {
     expect(schoolYearOf(new Date('2026-10-04'))).toBe(2026);
     expect(schoolYearOf(new Date('2027-06-30'))).toBe(2026);
     expect(schoolYearOf(new Date('2026-09-01'))).toBe(2026);
+    // The night of 1 September in Paris is still 31 August in UTC.
+    expect(schoolYearOf(new Date('2026-08-31T22:30:00Z'))).toBe(2026);
+    expect(schoolYearOf(new Date('2026-08-31T21:30:00Z'))).toBe(2025);
   });
 });
 
@@ -133,6 +136,15 @@ describe('vote', () => {
       short({ answer: 'nous sommes allés au cinéma', answerForms: ['nous sommes allés au cinéma'], mathAnswer: null, mathEquation: null }),
     ]);
     expect(result).toMatchObject({ sheet: { answer: 'Hier, nous sommes allés au cinéma.' }, uncertain: false });
+  });
+
+  it('agrees on an answer written with digit groups or in KaTeX, as the leak check reads it', () => {
+    const result = vote([
+      short({ answer: '1 000', answerForms: ['1 000'], mathAnswer: null, mathEquation: null }),
+      short({ answer: '1000', answerForms: ['1000'], mathAnswer: null, mathEquation: null }),
+      short({ answer: '\\frac{3}{4}', answerForms: ['\\frac{3}{4}'], mathAnswer: null, mathEquation: null }),
+    ]);
+    expect(result).toMatchObject({ sheet: { answer: '1 000' }, uncertain: false });
   });
 
   it('keeps apart draws that share no writing of the answer', () => {

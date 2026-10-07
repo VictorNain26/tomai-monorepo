@@ -66,12 +66,19 @@ export interface ExerciseTurnRequest {
   now: Date;
 }
 
+const MIN_RESTATED = 12;
+
 export async function prepareExerciseTurn(deps: { ai: Ai; logger: Logger }, request: ExerciseTurnRequest): Promise<ExerciseTurn> {
   const { analysis, current } = request;
   // The statement in progress pasted again with a new try is the same exercise, which the analysis
-  // took for a new one (measured 2026-10-05): a new sheet would reset the level.
-  const restated = current?.sheet ? findLeakForm(request.studentText, [current.sheet.statement]) !== null : false;
-  const prepared = analysis.bringsExercise && !restated ? await prepareSheet(deps, request) : null;
+  // took for a new one (measured 2026-10-05): a new sheet would reset the level. A short statement
+  // (« Conjugue », the rest on a photo) would match any message.
+  const statement = current?.sheet?.statement.trim() ?? '';
+  const restated = statement.length >= MIN_RESTATED && findLeakForm(request.studentText, [statement]) !== null;
+  const drawn = analysis.bringsExercise && !restated ? await prepareSheet(deps, request) : null;
+  // Draws that all failed never replace a watched exercise: its answer stays watched.
+  const prepared = drawn?.sheet === null && current?.sheet ? null : drawn;
+  if (drawn && !prepared) deps.logger.warn('Sheet failed: the exercise in progress stays');
   const exercise: ExerciseState | null = prepared
     ? {
         sheet: prepared.sheet,

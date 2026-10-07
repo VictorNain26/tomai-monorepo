@@ -8,6 +8,7 @@
 import type { Logger } from 'pino';
 import { z } from 'zod';
 import { checkAnswer, sameMath, type MathCheck } from '../../../domain/exercise-math';
+import { normalizeForLeak } from '../../../domain/leak';
 import { LEVEL_SHORT_LABELS, SCHOOL_LEVELS, type SchoolLevel } from '../../../domain/levels';
 import type { SubjectFamily } from '../../../domain/subjects';
 import type { Ai } from '../../../platform/ai/client';
@@ -63,7 +64,11 @@ const ExerciseDraftSchema = z.object({
 
 /** The school year a date belongs to, named after the September that opens it. */
 export function schoolYearOf(date: Date): number {
-  return date.getMonth() >= 8 ? date.getFullYear() : date.getFullYear() - 1;
+  // In Paris: on a server in UTC, the night of 1 September would still be August.
+  const parts = new Intl.DateTimeFormat('en', { timeZone: 'Europe/Paris', year: 'numeric', month: 'numeric' }).formatToParts(date);
+  const year = Number(parts.find((part) => part.type === 'year')?.value);
+  const month = Number(parts.find((part) => part.type === 'month')?.value);
+  return month >= 9 ? year : year - 1;
 }
 
 export interface Notions {
@@ -129,13 +134,10 @@ export function keepKnownNotions(sheet: ExerciseSheet, notions: Notions | null):
   return { sheet: kept, dropped: sheet.entries.length + sheet.laterEntries.length - kept.entries.length - kept.laterEntries.length };
 }
 
+// The leak check's normalisation (KaTeX, typography, digit groups), without quotes or a final stop.
 const normalized = (text: string) =>
-  text
-    .normalize('NFKC')
-    .toLowerCase()
-    .replace(/[’‘]/g, "'")
+  normalizeForLeak(text)
     .replace(/[«»"]/g, '')
-    .replace(/\s+/g, ' ')
     .trim()
     .replace(/[.!;]+$/, '');
 
@@ -260,7 +262,8 @@ export async function prepareSheet({ ai, logger }: { ai: Ai; logger: Logger }, r
 
   const results = draws.flatMap((draw) => (draw.status === 'fulfilled' ? [draw.value.object] : []));
   const withExercise = results.filter((draft) => draft.hasExercise);
-  if (results.length > 0 && withExercise.length * 2 <= results.length) {
+  // A tie is an exercise: left unprepared, its answer would go unwatched.
+  if ((results.length - withExercise.length) * 2 > results.length) {
     logger.info({ draws: results.length }, 'No exercise in the message');
     return null;
   }

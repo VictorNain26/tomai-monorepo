@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'bun:test';
-import { checkAnswer, equationRoots, sameMath } from './exercise-math';
+import { checkAnswer, compareEquations, equationRoots, sameMath } from './exercise-math';
 
 describe('equationRoots', () => {
   it('reads the real roots of an equation in one unknown, degree 1 to 3', () => {
@@ -71,6 +71,21 @@ describe('sameMath', () => {
 
   it('cannot read words', () => {
     expect(sameMath('le sujet', 'le verbe')).toBeNull();
+  });
+});
+
+describe('compareEquations', () => {
+  it('tells the statement written back, the same roots, part of them and other roots', () => {
+    expect(compareEquations('3*x + 5 = 20', '3*x + 5 = 20')).toBe('restated');
+    expect(compareEquations('3x+5=20', '3*x + 5 = 20')).toBe('restated');
+    expect(compareEquations('3*x = 15', '3*x + 5 = 20')).toBe('same');
+    expect(compareEquations('x = 2', 'x^2 = 4')).toBe('part');
+    expect(compareEquations('x = 3', 'x^2 = 4')).toBe('different');
+  });
+
+  it('cannot tell when the unknowns differ or mathjs cannot read', () => {
+    expect(compareEquations('x = 5', '3*n + 5 = 20')).toBeNull();
+    expect(compareEquations('x = cinq', '3*x + 5 = 20')).toBeNull();
   });
 });
 

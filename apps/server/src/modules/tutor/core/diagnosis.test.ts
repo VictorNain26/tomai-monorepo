@@ -80,6 +80,14 @@ describe('settle', () => {
     expect(settle(model('correct', '3*x = 15'), sheet)).toMatchObject({ verdict: 'right-step', decidedBy: 'mathjs' });
   });
 
+  it('leaves to the model the statement written back, a right partial answer and another unknown', () => {
+    expect(settle(model('right-step', '3*x + 5 = 20'), sheet)).toMatchObject({ verdict: 'right-step', decidedBy: 'model' });
+    const square = { ...sheet, statement: 'Résous x² = 4.', mathEquation: 'x^2 = 4', mathAnswer: null };
+    expect(settle(model('right-step', 'x = 2'), square)).toMatchObject({ verdict: 'right-step', decidedBy: 'model' });
+    const other = { ...sheet, mathEquation: '3*n + 5 = 20' };
+    expect(settle(model('correct', 'x = 5'), other)).toMatchObject({ verdict: 'correct', decidedBy: 'model' });
+  });
+
   it('calls an equation that loses the roots of the statement wrong, even when the model found it right', () => {
     expect(settle(model('correct', '3*x = 25'), sheet)).toMatchObject({ verdict: 'incorrect', errorType: 'not-sure', decidedBy: 'mathjs' });
   });
