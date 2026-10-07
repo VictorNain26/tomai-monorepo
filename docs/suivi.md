@@ -141,7 +141,7 @@ supprime ou que l'étude couvre n'y figure plus.
 Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pas.
 
 - **Jeton de la CLI Clever Cloud** (`CLEVER_TOKEN`, `CLEVER_SECRET`, environnement GitHub `staging`) :
-  il expire un an après sa création ([doc](https://www.clever.cloud/developers/doc/tools/ci-cd/)) ; le
+  il expire le 2027-10-08, un an après sa création ([doc](https://www.clever.cloud/developers/doc/tools/ci-cd/)) ; le
   renouveler avant, sans quoi le déploiement du staging échoue.
 - **TypeScript 7** : pas avant que `typescript-eslint` accepte une version au-delà de 6.0.
 - **typescript-eslint 8.71** (groupe `eslint` de Renovate) : les presets typés y activent
