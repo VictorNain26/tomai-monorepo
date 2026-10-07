@@ -222,15 +222,15 @@ messages qu'il ne couvre pas, hors des dix derniers.
 
 Mémoire d'une séance à l'autre (`etudes/2026-10-07/memoire-entre-seances.md`) : une mémoire
 d'apprentissage, jamais de compagnon.
-- À la création d'un exercice, le serveur agrège pour les notions de sa fiche les exercices de
-  l'élève sur l'année scolaire (fois travaillée, palier atteint, résolution, type d'erreur
-  fréquent), et fige le bloc sur l'exercice : stable, donc en cache.
+- À chaque tour d'un exercice, le serveur agrège pour les notions de sa fiche les exercices
+  antérieurs de l'élève sur l'année scolaire (fois travaillée, palier atteint, résolution, type
+  d'erreur fréquent) : le même bloc d'un tour à l'autre, donc en cache.
 - Le serveur l'écrit, jamais le modèle : aucun texte de l'élève, aucune conversation, que des
   libellés du référentiel, des nombres et des types d'erreur d'une liste fermée.
 - Rien de la détresse, de la santé, des émotions ou de la vie de l'enfant ; aucune relance.
 - Active seulement avec l'accord du parent et de l'enfant (de l'élève seul à partir de 15 ans) ;
-  remise à zéro à la rentrée. Une désactivation, une correction ou un effacement vident aussi le
-  bloc de l'exercice en cours.
+  remise à zéro à la rentrée. Une désactivation, une correction ou un effacement jouent dès le
+  tour suivant.
 - Ni embeddings ni bibliothèque de mémoire ; l'idée fausse nommée par un appel structuré ne
   viendra que sur mesure.
 

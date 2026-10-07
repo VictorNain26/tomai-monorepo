@@ -8,8 +8,8 @@
 
 import type { Logger } from 'pino';
 import { detectDistress, DISTRESS_REPLY, type DistressSource } from '../../domain/distress';
+import type { MemoryAnswer } from '../../domain/memory-consent';
 import { DAILY_BUDGET_MICRO_EUR, QUOTA_RESET_HOUR, quotaDayStart } from '../../domain/quota';
-import type { SchoolLevel } from '../../domain/levels';
 import type { Ai } from '../../platform/ai/client';
 import type { InputModeration, Moderation } from '../../platform/ai/moderation';
 import { Problem } from '../../platform/http/problem';
@@ -19,10 +19,11 @@ import { assembleChatPrompt, replayable, type HistoryTurn } from './core/assembl
 import { writeChecked } from './core/controlled-turn';
 import { prepareExerciseTurn } from './core/exercise-turn';
 import { hintOf } from './core/ladder';
+import { learnerMemoryBlock, notionMemories, schoolYearStart } from './core/memory';
 import type { OutputCheckContext } from './core/output-check';
 import { studentBlock, subjectBlock, systemPrompt } from './core/prompt';
 import { routeReasoningEffort } from './core/reasoning';
-import { exerciseBlock, SHEET_PROMPT_VERSION } from './core/sheet';
+import { exerciseBlock, notionText, SHEET_PROMPT_VERSION } from './core/sheet';
 import { RECENT_MESSAGES, SUMMARY_BACKLOG, summarize } from './core/summary';
 import { titleFor } from './core/title';
 import { TURN_PROMPT_VERSION } from './core/version';
@@ -52,9 +53,11 @@ interface TurnReply {
   after: (() => Promise<void>) | null;
 }
 
+type Student = NonNullable<Awaited<ReturnType<StudentDirectory['find']>>>;
+
 /** A turn opened by `openTurn`: the student, their session as the lock read it, and when the turn started. */
 export interface OpenTurn {
-  student: { id: string; name: string; level: SchoolLevel };
+  student: Student;
   session: {
     id: string;
     title: string | null;
@@ -77,6 +80,27 @@ export function createTutorService({ repository, students, ai, moderation, logge
     if (!profile) throw new Problem('FORBIDDEN');
     return profile;
   };
+
+  /** Since the school year opened, or the student's last reset if later. */
+  const memorySince = ({ memory }: Student) => {
+    const start = schoolYearStart(new Date());
+    return memory.resetAt && memory.resetAt > start ? memory.resetAt : start;
+  };
+
+  /** What the student's exercises before `before` say of `notions` (of every notion when null): what Tom reads, what the student sees. */
+  async function memoriesOf(learner: Student, notions: readonly string[] | null, before: number | null) {
+    const [past, resets] = await Promise.all([
+      repository.pastExercises(learner.id, memorySince(learner), before, notions),
+      repository.notionResets(learner.id),
+    ]);
+    return notionMemories(past, resets);
+  }
+
+  /** The learner memory of the exercise's notions, from the exercises before it; null while it is not active. */
+  async function memoryOf(learner: Student, notions: readonly string[], before: number | null) {
+    if (learner.memory.state !== 'active' || notions.length === 0) return null;
+    return learnerMemoryBlock(notions, await memoriesOf(learner, notions, before));
+  }
 
   /** The student's message moderated; null when moderation could not answer, the rules then judging distress alone. */
   const moderateInput = (lastTutorText: string | null, text: string): Promise<InputModeration | null> =>
@@ -184,6 +208,8 @@ export function createTutorService({ repository, students, ai, moderation, logge
       },
     );
     const { exercise, diagnosis, contract, change, hintLevel } = exerciseTurn;
+    // From the exercises before this one: the same block at every turn of it, in the cache.
+    const memory = exercise?.sheet ? await memoryOf(learner, exercise.sheet.entries, exerciseTurn.isNew ? null : (current?.position ?? null)) : null;
 
     const system = systemPrompt(learner.level);
     const instruction = contract ?? turnInstruction(analysis);
@@ -195,7 +221,7 @@ export function createTutorService({ repository, students, ai, moderation, logge
       assembleChatPrompt({
         systemPrompt: system,
         studentBlock: studentBlock(learner.name),
-        exerciseBlock: exercise?.sheet ? exerciseBlock(exercise.sheet) : null,
+        exerciseBlock: exercise?.sheet ? exerciseBlock(exercise.sheet, memory) : null,
         conversationSummary: session.summary,
         history: window,
         subjectBlock: subjectBlock(subject),
@@ -242,6 +268,7 @@ export function createTutorService({ repository, students, ai, moderation, logge
         newExercise: exerciseTurn.isNew,
         hintLevel,
         verdict: diagnosis?.verdict ?? null,
+        errorType: diagnosis?.errorType ?? null,
         decidedBy: diagnosis?.decidedBy ?? null,
         reasoningEffort,
         model,
@@ -255,6 +282,30 @@ export function createTutorService({ repository, students, ai, moderation, logge
   }
 
   return {
+    /** What Tom keeps of the student, notion by notion, and whether they may say yes or no to it. */
+    async memory(userId: string) {
+      const learner = await student(userId);
+      const { state, mayAnswer } = learner.memory;
+      return { state, mayAnswer, notions: state === 'active' ? await memoriesOf(learner, null, null) : [] };
+    },
+
+    async answerMemory(userId: string, answer: MemoryAnswer) {
+      const learner = await student(userId);
+      if (!learner.memory.mayAnswer) throw new Problem('FORBIDDEN');
+      await students.answerMemory(learner.id, answer);
+    },
+
+    async resetMemory(userId: string) {
+      await students.resetMemory((await student(userId)).id);
+    },
+
+    /** The student understood a notion: its earlier exercises no longer count. */
+    async resetNotion(userId: string, notionId: string) {
+      const learner = await student(userId);
+      if (!notionText(notionId)) throw new Problem('NOT_FOUND');
+      await repository.resetNotion(learner.id, notionId);
+    },
+
     async startSession(userId: string) {
       await student(userId);
       return repository.createSession(userId);

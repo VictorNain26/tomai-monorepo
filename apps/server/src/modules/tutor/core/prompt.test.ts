@@ -102,7 +102,7 @@ describe('the tags of the prompt', () => {
         asksExplanation: false,
         saysStuck: false,
       }) ?? '',
-      exerciseBlock(sheet),
+      exerciseBlock(sheet, null),
       sheetMessages('cinquieme', notionsFor('cinquieme', 'mathematiques', 2026), 'x', null)
         .map(({ content }) => content)
         .join('\n'),

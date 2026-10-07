@@ -43,6 +43,13 @@
       "when": 1791368663437,
       "tag": "0005_session_summary",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791386850485,
+      "tag": "0006_learner_memory",
+      "breakpoints": true
     }
   ]
 }

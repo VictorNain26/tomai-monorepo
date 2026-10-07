@@ -33,10 +33,10 @@ const birthMonth = z
     return month <= youngest && month >= oldest;
   }, 'un âge de 5 à 20 ans');
 
-const newStudent = z.object({ name, level: schoolLevelSchema, birthMonth });
+const newStudent = z.object({ name, level: schoolLevelSchema, birthMonth, memoryProposed: z.boolean().optional() });
 const studentPatch = z
-  .object({ name: name.optional(), level: schoolLevelSchema.optional() })
-  .refine((patch) => patch.name !== undefined || patch.level !== undefined, 'au moins un champ');
+  .object({ name: name.optional(), level: schoolLevelSchema.optional(), memoryProposed: z.boolean().optional() })
+  .refine((patch) => patch.name !== undefined || patch.level !== undefined || patch.memoryProposed !== undefined, 'au moins un champ');
 
 /**
  * Before better-auth's handler: a signed-in student is refused every route but STUDENT_AUTH_PATHS.

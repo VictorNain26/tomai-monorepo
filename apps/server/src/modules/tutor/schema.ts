@@ -5,7 +5,7 @@
  */
 
 import { sql } from 'drizzle-orm';
-import { bigint, boolean, index, integer, jsonb, pgEnum, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
+import { bigint, boolean, index, integer, jsonb, pgEnum, pgTable, primaryKey, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
 import { DISTRESS_SOURCES } from '../../domain/distress';
 import { MATH_CHECKS } from '../../domain/exercise-math';
 import { SUBJECT_FAMILIES } from '../../domain/subjects';
@@ -112,6 +112,8 @@ export const turnRecord = pgTable(
     newExercise: boolean('new_exercise').notNull(),
     hintLevel: integer('hint_level'),
     verdict: text('verdict'),
+    /** The diagnosis' error type, which the learner memory counts. */
+    errorType: text('error_type'),
     decidedBy: text('decided_by'),
     reasoningEffort: text('reasoning_effort'),
     model: text('model').notNull(),
@@ -121,7 +123,11 @@ export const turnRecord = pgTable(
     outcome: turnOutcome('outcome').notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
-  (table) => [index('turn_record_session_id_created_at_idx').on(table.sessionId, table.createdAt)],
+  (table) => [
+    index('turn_record_session_id_created_at_idx').on(table.sessionId, table.createdAt),
+    // The learner memory reads the error types of each exercise.
+    index('turn_record_exercise_id_idx').on(table.exerciseId),
+  ],
 );
 
 export const distressEvent = pgTable(
@@ -140,4 +146,17 @@ export const distressEvent = pgTable(
     uniqueIndex('distress_event_session_id_idx').on(table.sessionId),
     index('distress_event_student_id_created_at_idx').on(table.studentId, table.createdAt),
   ],
+);
+
+/** A notion the student marked as understood: the learner memory counts only its later exercises. */
+export const learnerNotionReset = pgTable(
+  'learner_notion_reset',
+  {
+    studentId: text('student_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    notionId: text('notion_id').notNull(),
+    resetAt: timestamp('reset_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [primaryKey({ columns: [table.studentId, table.notionId] })],
 );

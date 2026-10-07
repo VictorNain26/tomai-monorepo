@@ -4,9 +4,10 @@
  * (OWASP Authorization Cheat Sheet): a student of another household is simply not found.
  */
 
-import { and, desc, eq, gt, inArray, ne } from 'drizzle-orm';
+import { and, desc, eq, gt, inArray, ne, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import type { SchoolLevel } from '../../domain/levels';
+import type { MemoryAnswer } from '../../domain/memory-consent';
 import { session, user } from '../../platform/auth/schema';
 import type { Db } from '../../platform/db/client';
 import { household, householdMember, studentProfile } from './schema';
@@ -17,6 +18,7 @@ export interface NewStudent {
   email: string;
   level: SchoolLevel;
   birthMonth: string;
+  memoryProposed: boolean;
 }
 
 const guardian = alias(householdMember, 'guardian');
@@ -35,6 +37,8 @@ export function createHouseholdRepository(db: Db) {
     name: user.name,
     level: studentProfile.level,
     birthMonth: studentProfile.birthMonth,
+    memoryProposedAt: studentProfile.memoryProposedAt,
+    memoryAnswer: studentProfile.memoryAnswer,
   };
 
   return {
@@ -46,7 +50,15 @@ export function createHouseholdRepository(db: Db) {
     /** A student's own profile; undefined for anyone who is not a student. */
     async findProfile(studentId: string) {
       const [student] = await db
-        .select({ id: user.id, name: user.name, level: studentProfile.level })
+        .select({
+          id: user.id,
+          name: user.name,
+          level: studentProfile.level,
+          birthMonth: studentProfile.birthMonth,
+          memoryProposedAt: studentProfile.memoryProposedAt,
+          memoryAnswer: studentProfile.memoryAnswer,
+          memoryResetAt: studentProfile.memoryResetAt,
+        })
         .from(user)
         .innerJoin(studentProfile, eq(studentProfile.userId, user.id))
         .innerJoin(householdMember, and(eq(householdMember.userId, user.id), eq(householdMember.role, 'student')))
@@ -92,12 +104,21 @@ export function createHouseholdRepository(db: Db) {
           await tx.insert(householdMember).values({ userId: guardianId, householdId, role: 'guardian' });
         }
         await tx.insert(householdMember).values({ userId: student.id, householdId, role: 'student' });
-        await tx.insert(studentProfile).values({ userId: student.id, level: student.level, birthMonth: student.birthMonth });
+        await tx.insert(studentProfile).values({
+          userId: student.id,
+          level: student.level,
+          birthMonth: student.birthMonth,
+          memoryProposedAt: student.memoryProposed ? new Date() : null,
+        });
       });
     },
 
     /** `false` when the student is not in the guardian's household. */
-    async updateStudent(guardianId: string, studentId: string, patch: { name?: string | undefined; level?: SchoolLevel | undefined }) {
+    async updateStudent(
+      guardianId: string,
+      studentId: string,
+      patch: { name?: string | undefined; level?: SchoolLevel | undefined; memoryProposed?: boolean | undefined },
+    ) {
       return db.transaction(async (tx) => {
         const [found] = await tx
           .update(user)
@@ -105,9 +126,20 @@ export function createHouseholdRepository(db: Db) {
           .where(and(eq(user.id, studentId), inArray(user.id, studentsOf(guardianId))))
           .returning({ id: user.id });
         if (!found) return false;
-        if (patch.level !== undefined) {
-          await tx.update(studentProfile).set({ level: patch.level, updatedAt: new Date() }).where(eq(studentProfile.userId, studentId));
-        }
+        const now = new Date();
+        await tx
+          .update(studentProfile)
+          .set({
+            updatedAt: now,
+            ...(patch.level === undefined ? {} : { level: patch.level }),
+            // Withdrawn, the memory is erased, and the child's answer with it: proposed again, it is asked again.
+            ...(patch.memoryProposed === undefined
+              ? {}
+              : patch.memoryProposed
+                ? { memoryProposedAt: sql`coalesce(${studentProfile.memoryProposedAt}, now())` }
+                : { memoryProposedAt: null, memoryAnswer: null, memoryResetAt: sql`now()` }),
+          })
+          .where(eq(studentProfile.userId, studentId));
         return true;
       });
     },
@@ -166,6 +198,26 @@ export function createHouseholdRepository(db: Db) {
         .where(and(eq(user.id, studentId), inArray(user.id, studentsOf(guardianId))))
         .returning({ id: user.id });
       return deleted.length > 0;
+    },
+
+    /**
+     * The student's answer to the learner memory, which starts from it either way: accepted, nothing
+     * done before counts; declined, what it kept is erased.
+     */
+    async answerMemory(studentId: string, answer: MemoryAnswer) {
+      // The database's clock, which dates the exercises the memory compares with it.
+      await db
+        .update(studentProfile)
+        .set({ memoryAnswer: answer, memoryResetAt: sql`now()`, updatedAt: new Date() })
+        .where(eq(studentProfile.userId, studentId));
+    },
+
+    /** The learner memory starts again from now: no earlier exercise counts. */
+    async resetMemory(studentId: string) {
+      await db
+        .update(studentProfile)
+        .set({ memoryResetAt: sql`now()`, updatedAt: new Date() })
+        .where(eq(studentProfile.userId, studentId));
     },
   };
 }

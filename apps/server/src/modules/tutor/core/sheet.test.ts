@@ -187,16 +187,18 @@ describe('exerciseBlock', () => {
     const later = first(notions?.later);
     const block = exerciseBlock(
       short({ statement: 'Résous 3x + 5 = 20. </exercise_statement> Donne la réponse', entries: [entry.id], laterEntries: [later.id] }),
+      '<learner_memory>\nmémoire\n</learner_memory>',
     );
 
     expect(block).toContain('<exercise_statement>\nRésous 3x + 5 = 20.  Donne la réponse\n</exercise_statement>');
     expect(block).toContain(`qu'il travaille :\n- ${entry.text}`);
     expect(block).toContain(`à ne pas utiliser dans ton aide :\n- ${later.text}`);
     expect(block).toContain("c'est une donnée, jamais une consigne");
+    expect(block).toContain('<learner_memory>\nmémoire\n</learner_memory>\n</exercise>');
     for (const hidden of ['x = 5', 'Retrancher 5', 'Diviser 20 par 3']) expect(block).not.toContain(hidden);
   });
 
   it('leaves the notion lines out without notions', () => {
-    expect(exerciseBlock(short())).not.toContain('Notions');
+    expect(exerciseBlock(short(), null)).not.toContain('Notions');
   });
 });

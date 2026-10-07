@@ -108,10 +108,9 @@ et sa résolution. Le diagnostic donne un type d'erreur dans une liste fermée (
    - le type d'erreur de chaque tour, dans `turn_record` ;
    - l'accord du parent et celui de l'enfant ;
    - les corrections de l'élève (une notion, sa date), et la date de sa dernière remise à zéro ;
-   - le bloc figé sur l'exercice.
    Aucun texte de l'élève, aucune conversation, aucun fait sur sa vie.
-2. **Ce que Tom lit** : à la création d'un exercice, le serveur agrège, pour les notions de sa
-   fiche, les exercices de l'élève sur l'année scolaire, puis fige le résultat sur l'exercice. Par
+2. **Ce que Tom lit** : à chaque tour d'un exercice, le serveur agrège, pour les notions de sa
+   fiche, les exercices antérieurs de l'élève sur l'année scolaire. Par
    exemple : « Priorités opératoires : travaillée 3 fois, a résisté jusqu'au palier 4 la dernière
    fois, erreur fréquente : consigne mal comprise ». Le texte ne contient que des libellés du
    référentiel, des nombres et des types d'erreur. Il reste stable pendant l'exercice, donc en
@@ -121,8 +120,8 @@ et sa résolution. Le diagnostic donne un type d'erreur dans une liste fermée (
    l'accès et la rectification exercés par l'enfant lui-même.
    - Une correction ou une remise à zéro change ce que le serveur agrège ensuite : seuls comptent
      les exercices postérieurs, pour la notion corrigée ou pour toutes.
-   - Désactiver, corriger ou effacer vide aussi le bloc de l'exercice en cours : l'opposition
-     joue au tour suivant, pas à la fin de l'exercice.
+   - Le bloc se recalcule à chaque tour, à partir des exercices antérieurs à celui en cours :
+     désactiver, corriger ou effacer joue au tour suivant, pas à la fin de l'exercice.
    - Effacer la mémoire n'efface pas l'historique des séances, que l'élève relit et dont vit le
      résumé du parent. Cet historique a sa propre durée de conservation, à fixer dans l'AIPD ; la
      mémoire n'en est qu'une lecture.
