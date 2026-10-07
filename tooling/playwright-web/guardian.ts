@@ -1,7 +1,7 @@
 /** A guardian's account in the suite's database: signed up, confirmed, signed in. */
 
 import { devices, expect, type Browser, type Page, type TestInfo } from '@playwright/test';
-import { confirmEmail } from './database';
+import { confirmEmail, invite } from './database';
 
 // iPhone and Android run side by side on one database: each test has its own address.
 // In lowercase ASCII, as better-auth stores an address: confirmEmail finds it by its text.
@@ -11,12 +11,18 @@ export const address = (name: string) =>
     .replace(/[^a-zA-Z0-9-]/g, '')
     .toLowerCase()}-${crypto.randomUUID().slice(0, 8)}@example.com`;
 
-export async function signUp(page: Page, email: string) {
+export async function fillSignUp(page: Page, email: string) {
   await page.goto('/inscription');
   await page.getByLabel('Votre prénom').fill('Claire');
   await page.getByLabel('Adresse e-mail').fill(email);
   await page.getByLabel('Mot de passe').fill('un mot de passe solide');
   await page.getByRole('button', { name: 'Créer le compte' }).click();
+}
+
+/** Invited, then signed up: asked to confirm the address. */
+export async function signUp(page: Page, email: string) {
+  invite(email);
+  await fillSignUp(page, email);
   await expect(page.getByRole('heading', { name: 'Vérifiez votre e-mail' })).toBeVisible();
 }
 

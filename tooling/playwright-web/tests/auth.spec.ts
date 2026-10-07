@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { confirmEmail } from '../database';
-import { address, guardian, signIn, signUp } from '../guardian';
+import { address, fillSignUp, guardian, signIn, signUp } from '../guardian';
 
 test('a parent signs up, is asked to confirm, is refused before, then reaches the household and signs out', async ({ page }) => {
   const email = address('parent');
@@ -19,6 +19,12 @@ test('a parent signs up, is asked to confirm, is refused before, then reaches th
   await expect(page).toHaveURL(/\/connexion$/);
   await page.goto('/foyer');
   await expect(page).toHaveURL(/\/connexion$/);
+});
+
+test('an address without an invitation is refused, the closed beta said before', async ({ page }) => {
+  await fillSignUp(page, address('sans-invitation'));
+  await expect(page.getByRole('status')).toContainText('bêta fermée');
+  await expect(page.getByRole('alert')).toHaveText('Cette adresse n’a pas d’invitation, ou elle a expiré.');
 });
 
 test('a wrong password is refused in French, the form checked before it is sent', async ({ page }) => {
