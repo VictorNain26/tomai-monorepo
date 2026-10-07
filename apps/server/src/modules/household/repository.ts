@@ -120,27 +120,31 @@ export function createHouseholdRepository(db: Db) {
     },
 
     /**
-     * Before a guardian's account goes: when they are its only guardian, the household goes too,
-     * with its students' accounts (their sessions, memberships and profiles by ON DELETE CASCADE);
-     * otherwise only their membership, with their user row.
+     * A user's deletion, in one transaction: a sole guardian takes their household and its students
+     * with them (the students' sessions, memberships and profiles by ON DELETE CASCADE), a guardian
+     * among others leaves the household. Locks the user row, as createStudent does: a student
+     * created meanwhile waits, then finds no guardian.
      */
-    async deleteHouseholdOfSoleGuardian(guardianId: string) {
+    async deleteAccount(userId: string) {
       await db.transaction(async (tx) => {
+        await tx.select({ id: user.id }).from(user).where(eq(user.id, userId)).for('update');
         const [member] = await tx
           .select({ householdId: householdMember.householdId })
           .from(householdMember)
-          .where(and(eq(householdMember.userId, guardianId), eq(householdMember.role, 'guardian')))
-          .for('update');
-        if (!member) return;
-        const others = await tx
-          .select({ userId: householdMember.userId })
-          .from(householdMember)
-          .where(
-            and(eq(householdMember.householdId, member.householdId), eq(householdMember.role, 'guardian'), ne(householdMember.userId, guardianId)),
-          );
-        if (others.length > 0) return;
-        await tx.delete(user).where(inArray(user.id, studentsOf(guardianId)));
-        await tx.delete(household).where(eq(household.id, member.householdId));
+          .where(and(eq(householdMember.userId, userId), eq(householdMember.role, 'guardian')));
+        if (member) {
+          const others = await tx
+            .select({ userId: householdMember.userId })
+            .from(householdMember)
+            .where(
+              and(eq(householdMember.householdId, member.householdId), eq(householdMember.role, 'guardian'), ne(householdMember.userId, userId)),
+            );
+          if (others.length === 0) {
+            await tx.delete(user).where(inArray(user.id, studentsOf(userId)));
+            await tx.delete(household).where(eq(household.id, member.householdId));
+          }
+        }
+        await tx.delete(user).where(eq(user.id, userId));
       });
     },
 

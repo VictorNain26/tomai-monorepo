@@ -8,8 +8,9 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import pino from 'pino';
+import { createBackgroundTasks } from './platform/lifecycle/background';
 import { createApp } from './app';
-import { householdDeletion } from './modules/household';
+import { accountDeletion } from './modules/household';
 import { createAuth } from './platform/auth/auth';
 import { createLifecycle } from './platform/lifecycle/shutdown';
 import { testDatabase } from './testing/database';
@@ -28,7 +29,11 @@ const app = createApp({
   config: { production: false, webDistDir: dist },
   logger: pino({ level: 'silent' }),
   db,
-  auth: createAuth(db, { publicUrl: ORIGIN, authSecret: 'x'.repeat(32) }, { mailer: mail.mailer, beforeDeleteUser: householdDeletion(db) }),
+  auth: createAuth(
+    db,
+    { publicUrl: ORIGIN, authSecret: 'x'.repeat(32) },
+    { mailer: mail.mailer, logger: pino({ level: 'silent' }), background: createBackgroundTasks().run, deleteUser: accountDeletion(db) },
+  ),
   lifecycle: createLifecycle(),
 });
 

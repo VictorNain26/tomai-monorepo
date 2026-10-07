@@ -1,6 +1,6 @@
 /**
  * The household module, wired from its dependencies: its routes, the guard app.ts puts before
- * better-auth, and what a user's deletion takes with it, which main.ts hands to better-auth.
+ * better-auth, and a user's deletion with what it takes, which main.ts hands to better-auth.
  */
 
 import type { Auth } from '../../platform/auth/auth';
@@ -18,8 +18,8 @@ export function householdModule({ db, auth }: { db: Db; auth: Auth }) {
   return { routes: householdRoutes({ auth, service }), authGuard: studentAuthGuard({ auth, service }) };
 }
 
-/** Before a user's deletion: a sole guardian's household and its students go too. */
-export function householdDeletion(db: Db) {
+/** A user's deletion, with a sole guardian's household and students, in one transaction. */
+export function accountDeletion(db: Db) {
   const repository = createHouseholdRepository(db);
-  return (userId: string) => repository.deleteHouseholdOfSoleGuardian(userId);
+  return (userId: string) => repository.deleteAccount(userId);
 }

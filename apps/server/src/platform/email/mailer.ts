@@ -25,7 +25,8 @@ export interface ScalewayMail {
   apiURL?: string | undefined;
 }
 
-const escapeHtml = (text: string) => text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+// Past it, the email is abandoned and reported, instead of holding a background task.
+const SEND_TIMEOUT_MS = 10_000;
 
 export function scalewayMailer({ accessKey, secretKey, projectId, from, apiURL }: ScalewayMail): Mailer {
   const client = createClient({
@@ -37,17 +38,20 @@ export function scalewayMailer({ accessKey, secretKey, projectId, from, apiURL }
   });
   const tem = new Temv1alpha1.API(client);
   return async ({ to, subject, text }) => {
-    await tem.createEmail({
-      from: { email: from, name: 'Tom' },
-      to: [{ email: to }],
-      subject,
-      text,
-      // The SDK requires an HTML part: the same text, escaped, one paragraph per line.
-      html: escapeHtml(text)
-        .split('\n')
-        .map((line) => `<p>${line}</p>`)
-        .join(''),
-    });
+    await tem.createEmail(
+      {
+        from: { email: from, name: 'Tom' },
+        to: [{ email: to }],
+        subject,
+        text,
+        // The SDK requires an HTML part: the same text, escaped, one paragraph per line.
+        html: Bun.escapeHTML(text)
+          .split('\n')
+          .map((line) => `<p>${line}</p>`)
+          .join(''),
+      },
+      { signal: AbortSignal.timeout(SEND_TIMEOUT_MS) },
+    );
   };
 }
 
