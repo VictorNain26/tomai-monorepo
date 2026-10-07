@@ -38,9 +38,13 @@ En place (`apps/server/src`) :
 - `platform/` : `http` (erreurs RFC 9457, en-têtes de sécurité, service du web), `db` (client,
   migrations sous verrou et vérifiées au démarrage), `auth` (better-auth et ses tables),
   `observability` (pino), `lifecycle` (santé et arrêt).
+- `modules/household` : le foyer, l'élève créé par son gardien (connexion par nom
+  d'utilisateur, sans e-mail ni nom de famille), l'accès du gardien à l'élève comme clause de la
+  requête SQL, une matrice de tests d'accès croisés.
 - `domain/` (niveaux, matières), `referential/` (outil et textes officiels), `eval/` (jeu
   d'évaluation, données seules) ; `testing/` (une base de test par fichier).
-- Les frontières sont vérifiées au lint (`eslint-plugin-boundaries`).
+- Les frontières sont vérifiées au lint (`eslint-plugin-boundaries`), jusqu'aux couches d'un
+  module : routes, service, repository.
 
 ## Client web
 

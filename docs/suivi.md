@@ -28,11 +28,15 @@ bloquant levé). L'historique vit dans git et les PR.
 - **Étape 3** : un seul workflow, `ci.yml`, réuni par `ci-ok` ; l'image ne contient plus que Bun,
   les bundles, les migrations et le web (261 Mo au lieu de 1,23 Go), lancée en CI contre
   Postgres et publiée sur GHCR au SHA sur `main`.
-- **Prochaine action** : étape 4, le foyer et les comptes ; l'étude des hébergeurs UE avance en
+- **Étape 4 en cours**, en deux PR en cascade : le foyer, l'élève créé par son gardien et la
+  matrice d'accès (`feat/household-accounts`) ; puis l'e-mail des gardiens (vérification,
+  réinitialisation, suppression du compte) chez Scaleway TEM, choisi le 2026-10-07
+  (`etudes/2026-10-07/email-transactionnel.md`).
+- **Prochaine action** : la PR de l'e-mail des gardiens ; l'étude des hébergeurs UE avance en
   parallèle. L'ordre complet est dans l'étude. Test complet dans Chrome à la fin de chaque étape.
 - **Décisions de Victor en attente**, au moment de l'étape qui en dépend : budgets du quota
   (étape 5) ; offre Mistral payante pour paralléliser l'évaluation et juge d'une autre famille,
-  seulement s'il est très bon marché (étape 8) ; fournisseur d'e-mail UE (étape 4).
+  seulement s'il est très bon marché (étape 8).
 - **PR ouvertes :** `gh pr list`.
 - **Landing en ligne gelée** jusqu'au lot 4, hors de la refonte : seuls des correctifs d'honnêteté
   ou techniques y entrent. L'identité visuelle est rejetée et se refait au lot 4.
@@ -46,7 +50,7 @@ supprime ou que l'étude couvre n'y figure plus.
 
 ### Refonte — comptes (étape 4)
 
-- **Sessions et mots de passe** : réinitialisation par e-mail avec `revokeSessionsOnPasswordReset`, et suppression des sessions d'un élève quand le gardien change son mot de passe (better-auth 1.7, `init-options.d.mts`).
+- **Réinitialisation du mot de passe d'un gardien** par e-mail, avec `revokeSessionsOnPasswordReset` (better-auth 1.7, `init-options.d.mts`) : la PR de l'e-mail des gardiens.
 
 ### Refonte — préproduction (étape 7)
 
@@ -147,6 +151,7 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
 |---|---|---|
 | Recréer la base locale, qui porte l'ancien schéma : `docker compose down -v` puis `bun run setup` (skill `dev-bootstrap`) ; et dans `apps/server/.env`, `BETTER_AUTH_URL=http://localhost:3002` | Refonte, étape 2 | à faire |
 | Juger un échantillon de conversations sur la page prévue, par courtes séances | Vérifier le juge, lot 1 | quand la page existe |
+| Ouvrir une Organisation Scaleway pour l'e-mail (moyen de paiement, identité, projet dédié, clé IAM limitée à Transactional Email) ; publier SPF, DKIM, DMARC (`p=none` d'abord) et MX du sous-domaine d'envoi, puis vérifier le domaine dans la console (`etudes/2026-10-07/email-transactionnel.md`). Le domaine dépend du nom du produit | Préproduction, étape 7 | à faire |
 | Ouvrir le compte de l'hébergeur UE recommandé par l'étude | Préproduction, lot 3 | à faire, après l'étude |
 | Langfuse : la description de la file d'annotation `tom-judge-agreement` renvoie encore à `docs/agent.md`, devenu `docs/tuteur.md` ; la corriger dans l'interface (l'API n'a pas de mise à jour de file) | Évaluation | à faire |
 | Demander le Zero Data Retention : réservé au paiement à l'usage (« only with pay-as-you-go », [centre d'aide Mistral](https://help.mistral.ai/en/articles/347612-can-i-activate-zero-data-retention-zdr)), or le compte est sur l'offre gratuite (8,50 € d'API inclus par mois, paiement à l'usage désactivé, constaté le 2026-10-02). Activer le paiement à l'usage avec un plafond, puis envoyer la demande avec sa justification (mineurs, RGPD) ; vérifier ensuite Admin › API › Confidentialité. L'entraînement sur les appels API et les modèles Labs y sont désactivés | Porte avant ouverture | à faire |

@@ -9,8 +9,9 @@ paths:
 
 # Migrations Drizzle ORM
 
-Source de vérité : les `schema.ts` (tables de better-auth : `src/platform/auth/schema.ts`),
-réexportés par `src/platform/db/schema.ts`, que lit `drizzle-kit` (`drizzle.config.ts`).
+Source de vérité : les `schema.ts`. `drizzle-kit` (`drizzle.config.ts`) lit
+`src/platform/db/schema.ts`, qui réexporte les tables de better-auth
+(`src/platform/auth/schema.ts`), et `src/modules/*/schema.ts` : `platform` n'importe aucun module.
 
 ## Base locale
 
