@@ -1,7 +1,6 @@
 ---
 import { Font } from 'astro:assets';
 import '@/styles/global.css';
-import noscriptCss from '@/styles/noscript.css?url';
 import Header from '@/components/layout/header.astro';
 import Footer from '@/components/layout/footer.astro';
 import JsonLd from '@/components/json-ld.astro';
@@ -11,6 +10,7 @@ interface Props {
   title?: string;
   description?: string;
   canonical?: string;
+  noindex?: boolean;
 }
 
 const TITLE = `${BRAND_NAME} – Une aide aux devoirs pour le collège, en préparation`;
@@ -37,7 +37,7 @@ const KEYWORDS = [
   'Mistral',
 ];
 
-const { title, description = DESCRIPTION, canonical } = Astro.props;
+const { title, description = DESCRIPTION, canonical, noindex = false } = Astro.props;
 const site = Astro.site?.href ?? '';
 const ogImage = new URL('/opengraph-image.png', site).href;
 
@@ -69,8 +69,14 @@ const jsonLd = [
     <meta name="author" content={BRAND_NAME} />
     <meta name="keywords" content={KEYWORDS.join(',')} />
     <meta name="creator" content={BRAND_NAME} />
-    <meta name="robots" content="index, follow" />
-    <meta name="googlebot" content="index, follow, max-video-preview:-1, max-image-preview:large, max-snippet:-1" />
+    {noindex ? (
+      <meta name="robots" content="noindex" />
+    ) : (
+      <>
+        <meta name="robots" content="index, follow" />
+        <meta name="googlebot" content="index, follow, max-video-preview:-1, max-image-preview:large, max-snippet:-1" />
+      </>
+    )}
     <meta name="category" content="education" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
@@ -97,9 +103,17 @@ const jsonLd = [
     <link rel="sitemap" href="/sitemap-index.xml" />
     <Font cssVariable="--font-nunito" preload />
     <Font cssVariable="--font-caveat" preload />
-    {/* A file rather than an inline style: the CSP admits no inline style without its hash. */}
     <noscript>
-      <link rel="stylesheet" href={noscriptCss} />
+      <style is:inline>
+        /* data-reveal must mark only elements whose hidden state is Motion's entry state. */
+        [data-reveal] {
+          opacity: 1 !important;
+          transform: none !important;
+        }
+        path[data-reveal] {
+          stroke-dasharray: none !important;
+        }
+      </style>
     </noscript>
     {jsonLd.map((schema) => (
       <JsonLd data={schema} />

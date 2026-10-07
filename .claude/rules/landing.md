@@ -18,9 +18,9 @@ Clever Cloud (`Caddyfile`).
   enveloppé dans `Island` (`src/components/island.tsx`) : sans lui, `html[data-hydrated]`, qu'attend
   la suite e2e, ne se pose jamais. Les primitives interactives viennent de `@repo/ui`
   (`.claude/rules/design-system.md`).
-- Jamais un `<style>` ni un `<script>` en ligne écrit à la main hors de ce qu'Astro traite : la CSP
-  (`security.csp`, `astro.config.mjs`) n'admet que ce qu'Astro a haché ; le test « nothing it
-  refuses » (`tests/server.spec.ts`) le vérifie.
+- Jamais un `<script>` en ligne qu'Astro ne traite pas (`is:inline`) : la CSP (`security.csp`,
+  `astro.config.mjs`) n'admet que les scripts qu'Astro a hachés ; les tests « nothing it refuses »
+  (`tests/server.spec.ts`) le vérifient.
 - Jamais un en-tête HTTP, une redirection ou une page d'erreur ailleurs que dans le `Caddyfile` :
   la suite e2e tourne contre lui, dans l'image `caddy` de la version que Clever Cloud annonce
   ([doc](https://www.clever.cloud/developers/doc/deploy/applications/static/)), à suivre à la main

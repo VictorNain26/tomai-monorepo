@@ -118,6 +118,7 @@ supprime ou que l'étude couvre n'y figure plus.
 
 ### Lot 4 — marque et lancement
 
+- **Image Open Graph** : `apps/landing/public/opengraph-image.png`, capturée sur la version Next, porte le nom et le titre en dur ; à refaire avec le nom du produit (revue du portage en Astro).
 - **Tests e2e qui gardent l'identité rejetée** (`signs.spec.ts`, graisse des titres dans `type.spec.ts`, place de Tom dans `hero.spec.ts`), et ceux du web (`apps/web/tests/home.spec.ts`, nom et couleurs du manifest) : à revoir avec la nouvelle identité.
 - **`Scribble`** (`apps/landing/src/components/annotations/scribble.tsx`) : erreur d'hydratation sous mouvement réduit (`initial` différent entre serveur et client) ; correctif technique permis pendant le gel.
 

@@ -34,13 +34,9 @@ export default defineConfig({
   security: {
     csp: {
       directives: ["default-src 'self'"],
-      // Motion renders each reveal's starting state as a style attribute.
-      styleDirective: {
-        resources: [
-          { resource: "'self'", kind: 'element' },
-          { resource: "'unsafe-inline'", kind: 'attribute' },
-        ],
-      },
+      // Motion renders each reveal's starting state as a style attribute, and the Radix sheet of the mobile
+      // menu adds a <style> to lock the page's scroll: neither can carry a hash. Scripts stay hash-locked.
+      styleDirective: { resources: ["'self'", "'unsafe-inline'"] },
     },
   },
 });
