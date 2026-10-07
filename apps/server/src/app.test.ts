@@ -8,10 +8,13 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import pino from 'pino';
+import { createBackgroundTasks } from './platform/lifecycle/background';
 import { createApp } from './app';
+import { accountDeletion } from './modules/household';
 import { createAuth } from './platform/auth/auth';
 import { createLifecycle } from './platform/lifecycle/shutdown';
 import { testDatabase } from './testing/database';
+import { memoryMailer } from './testing/mailer';
 
 const ORIGIN = 'http://localhost:3002';
 const { db } = await testDatabase();
@@ -21,11 +24,16 @@ afterAll(() => {
   rmSync(dist, { recursive: true, force: true });
 });
 
+const mail = memoryMailer();
 const app = createApp({
   config: { production: false, webDistDir: dist },
   logger: pino({ level: 'silent' }),
   db,
-  auth: createAuth(db, { publicUrl: ORIGIN, authSecret: 'x'.repeat(32) }),
+  auth: createAuth(
+    db,
+    { publicUrl: ORIGIN, authSecret: 'x'.repeat(32) },
+    { mailer: mail.mailer, logger: pino({ level: 'silent' }), background: createBackgroundTasks().run, deleteUser: accountDeletion(db) },
+  ),
   lifecycle: createLifecycle(),
 });
 
@@ -41,9 +49,20 @@ const sessionCookie = (res: Response) => res.headers.getSetCookie().find((cookie
 describe('auth', () => {
   const account = { name: 'Victor', email: 'victor@example.com', password: 'un mot de passe solide' };
 
-  it('signs up with an email and a password, and sets a session cookie for this host only', async () => {
+  it('signs up with an email and a password, and sends the address a link to confirm it', async () => {
     const res = await post('/api/auth/sign-up/email', account);
     expect(res.status).toBe(200);
+    expect(sessionCookie(res)).toBeUndefined();
+    expect(mail.linkTo(account.email, 'Confirmez')).toStartWith(`${ORIGIN}/api/auth/verify-email?token=`);
+  });
+
+  it('refuses to sign in before the address is confirmed', async () => {
+    const res = await post('/api/auth/sign-in/email', { email: account.email, password: account.password });
+    expect(res.status).toBe(403);
+  });
+
+  it('confirms the address by the link, which opens a session for this host only', async () => {
+    const res = await app.request(mail.linkTo(account.email, 'Confirmez'));
     const cookie = sessionCookie(res);
     expect(cookie).toBeDefined();
     expect(cookie).toContain('HttpOnly');

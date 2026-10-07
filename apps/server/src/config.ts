@@ -24,13 +24,20 @@ const fields = z.object({
   BETTER_AUTH_SECRET: z.string().min(32, 'BETTER_AUTH_SECRET doit faire au moins 32 caractères'),
   // The build of apps/web. In development, Vite serves it.
   WEB_DIST_DIR: webDistDir.optional(),
+  // Scaleway Transactional Email: an IAM key restricted to it, its Project, and a sender on the
+  // Project's checked domain. Without them, outside production, emails are logged instead.
+  SCW_ACCESS_KEY: z.string().optional(),
+  SCW_SECRET_KEY: z.string().optional(),
+  SCW_DEFAULT_PROJECT_ID: z.guid().optional(),
+  MAIL_FROM: z.email().optional(),
 });
 
 const databaseFields = fields.pick({ NODE_ENV: true, DATABASE_URL: true });
 
 // Zod skips a refinement once a field has failed: these checks run apart, so that one error
 // names every variable at fault.
-const REQUIRED_IN_PRODUCTION = ['BETTER_AUTH_URL', 'WEB_DIST_DIR'] as const;
+const MAIL = ['SCW_ACCESS_KEY', 'SCW_SECRET_KEY', 'SCW_DEFAULT_PROJECT_ID', 'MAIL_FROM'] as const;
+const REQUIRED_IN_PRODUCTION = ['BETTER_AUTH_URL', 'WEB_DIST_DIR', ...MAIL] as const;
 
 type Environment = Record<string, string | undefined>;
 
@@ -56,11 +63,18 @@ export interface Config {
   readonly publicUrl: string;
   readonly authSecret: string;
   readonly webDistDir: string | undefined;
+  readonly mail: { accessKey: string; secretKey: string; projectId: string; from: string } | undefined;
 }
 
 /** Parses the environment, or throws with every invalid variable named. */
 export function loadConfig(environment: Environment): Config {
   const env = parse(fields, environment, REQUIRED_IN_PRODUCTION);
+  // The mail settings go together: with one missing, nothing would be sent, silently.
+  const set = MAIL.filter((key) => env[key] !== undefined);
+  if (set.length > 0 && set.length < MAIL.length) {
+    const missing = MAIL.filter((key) => env[key] === undefined);
+    throw new Error(`Invalid environment:\n  ${missing.map((key) => `${key}: requis avec ${set.join(', ')}`).join('\n  ')}`);
+  }
   return Object.freeze({
     production: env.NODE_ENV === 'production',
     port: env.PORT,
@@ -69,6 +83,10 @@ export function loadConfig(environment: Environment): Config {
     publicUrl: env.BETTER_AUTH_URL ?? 'http://localhost:3002',
     authSecret: env.BETTER_AUTH_SECRET,
     webDistDir: env.WEB_DIST_DIR,
+    mail:
+      env.SCW_ACCESS_KEY && env.SCW_SECRET_KEY && env.SCW_DEFAULT_PROJECT_ID && env.MAIL_FROM
+        ? { accessKey: env.SCW_ACCESS_KEY, secretKey: env.SCW_SECRET_KEY, projectId: env.SCW_DEFAULT_PROJECT_ID, from: env.MAIL_FROM }
+        : undefined,
   });
 }
 

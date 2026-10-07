@@ -4,7 +4,7 @@
  * (OWASP Authorization Cheat Sheet): a student of another household is simply not found.
  */
 
-import { and, desc, eq, gt, inArray } from 'drizzle-orm';
+import { and, desc, eq, gt, inArray, ne } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import type { SchoolLevel } from '../../domain/levels';
 import { session, user } from '../../platform/auth/schema';
@@ -117,6 +117,35 @@ export function createHouseholdRepository(db: Db) {
         .where(and(eq(session.id, deviceId), eq(session.userId, studentId), inArray(session.userId, studentsOf(guardianId))))
         .returning({ id: session.id });
       return revoked.length > 0;
+    },
+
+    /**
+     * A user's deletion, in one transaction: a sole guardian takes their household and its students
+     * with them (the students' sessions, memberships and profiles by ON DELETE CASCADE), a guardian
+     * among others leaves the household. Locks the user row, as createStudent does: a student
+     * created meanwhile waits, then finds no guardian.
+     */
+    async deleteAccount(userId: string) {
+      await db.transaction(async (tx) => {
+        await tx.select({ id: user.id }).from(user).where(eq(user.id, userId)).for('update');
+        const [member] = await tx
+          .select({ householdId: householdMember.householdId })
+          .from(householdMember)
+          .where(and(eq(householdMember.userId, userId), eq(householdMember.role, 'guardian')));
+        if (member) {
+          const others = await tx
+            .select({ userId: householdMember.userId })
+            .from(householdMember)
+            .where(
+              and(eq(householdMember.householdId, member.householdId), eq(householdMember.role, 'guardian'), ne(householdMember.userId, userId)),
+            );
+          if (others.length === 0) {
+            await tx.delete(user).where(inArray(user.id, studentsOf(userId)));
+            await tx.delete(household).where(eq(household.id, member.householdId));
+          }
+        }
+        await tx.delete(user).where(eq(user.id, userId));
+      });
     },
 
     /** The student's sessions, membership and profile go with the user row (ON DELETE CASCADE). */

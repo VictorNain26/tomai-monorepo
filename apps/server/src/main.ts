@@ -5,9 +5,12 @@
 
 import { createApp } from './app';
 import { loadConfig } from './config';
+import { accountDeletion } from './modules/household';
 import { createAuth } from './platform/auth/auth';
 import { createDb } from './platform/db/client';
+import { logMailer, scalewayMailer } from './platform/email/mailer';
 import { pendingMigrations } from './platform/db/migrations';
+import { createBackgroundTasks } from './platform/lifecycle/background';
 import { createLifecycle, shutdown } from './platform/lifecycle/shutdown';
 import { createLogger } from './platform/observability/logger';
 
@@ -39,7 +42,11 @@ if (pending.length > 0) {
 }
 
 const lifecycle = createLifecycle();
-const app = createApp({ config, logger, db: database.db, auth: createAuth(database.db, config), lifecycle });
+// Without the Scaleway settings, which production requires (config.ts), emails are logged.
+const mailer = config.mail ? scalewayMailer(config.mail) : logMailer(logger);
+const tasks = createBackgroundTasks();
+const auth = createAuth(database.db, config, { mailer, logger, background: tasks.run, deleteUser: accountDeletion(database.db) });
+const app = createApp({ config, logger, db: database.db, auth, lifecycle });
 
 // Bun closes an idle connection after 10 s by default, which would cut a streamed answer.
 const server = Bun.serve({ port: config.port, fetch: app.fetch, idleTimeout: 30 });
@@ -54,7 +61,8 @@ for (const signal of ['SIGTERM', 'SIGINT'] as const) {
     void shutdown({
       lifecycle,
       stopServer: () => server.stop(),
-      close: [database.close],
+      // The emails still being sent, and the database.
+      close: [tasks.settled, database.close],
       logger,
       drainMs: DRAIN_MS,
       deadlineMs: SHUTDOWN_DEADLINE_MS,

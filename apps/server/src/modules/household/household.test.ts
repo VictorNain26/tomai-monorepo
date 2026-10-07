@@ -7,17 +7,25 @@
 import { describe, expect, it } from 'bun:test';
 import { eq } from 'drizzle-orm';
 import pino from 'pino';
+import { createBackgroundTasks } from '../../platform/lifecycle/background';
 import { createApp } from '../../app';
 import { createAuth } from '../../platform/auth/auth';
 import { PAIRING_PREFIX } from '../../platform/auth/pairing';
 import { account, session, user, verification } from '../../platform/auth/schema';
 import { createLifecycle } from '../../platform/lifecycle/shutdown';
 import { testDatabase } from '../../testing/database';
+import { memoryMailer } from '../../testing/mailer';
+import { accountDeletion } from './index';
 import { householdMember, studentProfile } from './schema';
 
 const ORIGIN = 'http://localhost:3002';
 const { db } = await testDatabase();
-const auth = createAuth(db, { publicUrl: ORIGIN, authSecret: 'x'.repeat(32) });
+const mail = memoryMailer();
+const auth = createAuth(
+  db,
+  { publicUrl: ORIGIN, authSecret: 'x'.repeat(32) },
+  { mailer: mail.mailer, logger: pino({ level: 'silent' }), background: createBackgroundTasks().run, deleteUser: accountDeletion(db) },
+);
 
 interface Student {
   id: string;
@@ -62,10 +70,11 @@ function client() {
 
   const api = {
     request,
+    /** Signed up, the address confirmed by its link: the session that link opens. */
     async guardian(email: string) {
       const res = await request('POST', '/api/auth/sign-up/email', { body: { name: 'Parent', email, password: 'un mot de passe solide' } });
       expect(res.status).toBe(200);
-      return cookieOf(res);
+      return cookieOf(await app.request(mail.linkTo(email, 'Confirmez')));
     },
     async student(cookie: string, overrides: Partial<Omit<Student, 'id'>> = {}) {
       const res = await request('POST', '/api/household/students', {
