@@ -110,6 +110,26 @@ Tranché le 2026-10-07 (`etudes/2026-10-07/hebergement.md`) : tout chez Clever C
 Astro, dans une application statique à part. Les erreurs vont à Bugsink, l'e-mail part de Scaleway
 TEM, les photos iront dans Cellar.
 
+### Environnements et livraison
+
+Décidé par Victor le 2026-10-08. Une seule branche durable, `main` ; deux environnements, qui sont
+deux applications Clever Cloud, chacune avec sa base et ses clés :
+
+- **Staging** (la préproduction) : chaque merge sur `main`, `ci-ok` vert, y déploie l'image que la
+  CI a construite et testée, désignée par son digest. On y teste dans les conditions du cloud
+  (proxy, Postgres, vrai Mistral) ce que le local ne montre pas.
+- **Production** : la même image, au même digest, après l'approbation de Victor (environnement
+  GitHub `production`, relecteur requis). Elle naît avec la première vraie famille ; d'ici là, seul
+  le staging existe.
+
+Les clés de chaque environnement vivent dans son environnement GitHub : le déploiement du staging
+n'a pas celles de la production. Pas de branche par environnement : une branche longue retarde
+l'intégration (la recherche DORA lie les meilleures performances aux branches courtes,
+[dora.dev](https://dora.dev/capabilities/trunk-based-development/)), et chaque environnement
+reconstruirait une image que personne n'a testée, là où l'image se construit une fois et ne change
+que par sa configuration ([12factor.net](https://12factor.net/build-release-run)). Clever Cloud ne
+fait que tirer l'image : il ne construit rien, et les secrets ne passent pas au build.
+
 ## Décisions ouvertes
 
 Elles sont tranchées au démarrage du lot qui en dépend, doc-first, pas avant :

@@ -64,13 +64,17 @@ bloquant levé). L'historique vit dans git et les PR.
   contre lequel tourne la suite e2e ; pages légales alignées sur Clever Cloud. En ligne, c'est toujours
   la version Next sur Vercel, jusqu'au déploiement chez Clever Cloud.
 - **Staging et bêta fermée** (Victor, 2026-10-07) : la préproduction de l'étape 7 devient le staging,
-  redéployé à chaque merge sur `main`, avec ses propres clés (Mistral, Scaleway, `BETTER_AUTH_SECRET`)
-  et la plus petite taille qui suffit (Docker nano, 582 Mo, pour un serveur mesuré à 150 Mo au repos,
-  et Postgres 18 `xxs_tny`) ; la production naîtra à côté avec la première vraie famille, depuis la
-  même image. Un compte parent se crée sur invitation (`apps/server/src/platform/auth/invitation.ts`,
-  `bun run invite`), au staging comme en production, jusqu'au lancement public (lot 4).
-- **Prochaine action** : l'étape 7, le staging sur Clever Cloud, une fois le compte ouvert par
-  Victor ; la landing de production y est déployée en même temps.
+  avec ses propres clés et la plus petite taille qui suffit (Docker nano, 582 Mo, pour un serveur
+  mesuré à 150 Mo au repos, et Postgres 18 `xxs_tny`). Un compte parent se crée sur invitation
+  (`apps/server/src/platform/auth/invitation.ts`, `bun run invite`, #449), au staging comme en
+  production, jusqu'au lancement public (lot 4).
+- **Livraison** (Victor, 2026-10-08, `architecture.md`, « Environnements et livraison ») : `main`
+  seule, chaque merge déployé en staging ; la production, avec la première vraie famille, reçoit la
+  même image sur l'approbation de Victor. Clever Cloud jugé fiable pour cet usage : pannes publiées
+  et suivies d'un compte rendu, la dernière à Paris le 2026-09-30 (57 min) ; Scalingo reste le plan B.
+- **Prochaine action** : l'étape 7, le staging sur Clever Cloud. Organisation « TomIA » en cours de
+  création par Victor (2FA faite ; restent la facturation, le paiement et le DPA) ; puis la PR du
+  déploiement, avec la landing de production.
 - **Rentabilité et quotas** (`etudes/2026-10-07/rentabilite.md`) : le gratuit décide de la
   rentabilité, la distribution est le vrai risque ; quotas proposés de 2 c (Gratuit) et 10 c
   (Complet) par élève et par jour, voix comprise, remis à zéro à 4 h, et l'année scolaire à 69 €
