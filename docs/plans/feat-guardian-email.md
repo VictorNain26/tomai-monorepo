@@ -31,8 +31,10 @@ supprimer ; supprimer le seul gardien laisserait des élèves sans personne (rev
       vérifié, session ouverte au clic.
 - [ ] Mot de passe oublié : lien de réinitialisation ; la réinitialisation ferme toutes les
       sessions du gardien.
-- [ ] Suppression du compte du gardien, confirmée par e-mail ; elle emporte le foyer et ses
-      élèves (sessions comprises) quand il en est le seul gardien.
+- [ ] Suppression du compte du gardien, confirmée par son mot de passe (revue : un lien par
+      e-mail ne marche que dans le navigateur qui tient la session) et suivie d'un e-mail ; elle
+      emporte le foyer et ses élèves (sessions comprises) quand il en est le seul gardien, en une
+      transaction.
 - [ ] Tests sur une vraie base : chaque parcours, le refus avant vérification, un lien réutilisé,
       la suppression qui emporte les élèves, l'expéditeur Scaleway contre un faux serveur HTTP.
 

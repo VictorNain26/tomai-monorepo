@@ -43,7 +43,9 @@ En place (`apps/server/src`) :
   de la requête SQL, une matrice de tests d'accès croisés.
 - `platform/email` : l'envoi d'un e-mail, Scaleway TEM par son SDK en production, le journal en
   développement ; le gardien vérifie son adresse, réinitialise son mot de passe (toutes ses
-  sessions fermées) et supprime son compte, qui emporte son foyer s'il en est le seul gardien.
+  sessions fermées) et supprime son compte avec son mot de passe, ce qui emporte son foyer s'il en
+  est le seul gardien. Les envois partent après la réponse (`platform/lifecycle/background.ts`),
+  que l'arrêt attend.
 - `platform/auth/pairing.ts` : le jumelage d'un appareil d'élève, un code à usage unique demandé
   par le gardien, haché par better-auth, qui ouvre une session pour l'élève.
 - `domain/` (niveaux, matières), `referential/` (outil et textes officiels), `eval/` (jeu

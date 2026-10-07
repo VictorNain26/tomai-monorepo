@@ -36,7 +36,7 @@ bloquant levé). L'historique vit dans git et les PR.
 - **Étape 4** : le foyer, l'élève en mode guidé, son jumelage d'appareil et la matrice d'accès
   (#425) ; l'e-mail des gardiens chez Scaleway TEM (`etudes/2026-10-07/email-transactionnel.md`) :
   adresse vérifiée avant toute connexion, réinitialisation qui ferme toutes les sessions,
-  suppression confirmée par e-mail qui emporte le foyer d'un gardien seul.
+  suppression confirmée par le mot de passe qui emporte le foyer d'un gardien seul.
 - **Prochaine action** : étape 5, le tuteur porté ; l'étude des hébergeurs UE avance en parallèle.
   L'ordre complet est dans l'étude. Test complet dans Chrome à la fin de chaque étape, la première
   à l'étape 6 avec les écrans.
@@ -59,7 +59,7 @@ supprime ou que l'étude couvre n'y figure plus.
 - **Observabilité** : OpenTelemetry et Sentry côté serveur, avec une destination dans l'UE contrainte par la config (`refonte-architecture.md`, « Données et autorisation »).
 - **Postgres de l'hébergeur** : `verify-full` vérifie le certificat contre les CA du système ; une CA privée demande l'option `ssl` avec `ca` (`platform/db/client.ts`).
 - **Hébergement** : délai de grâce SIGTERM d'au moins un tour de chat, et `DRAIN_MS` (`src/main.ts`, 5 s) recalé sur l'intervalle de la sonde de l'hébergeur ; stockage partagé du rate limit s'il y a plusieurs instances ; derrière le proxy de l'hébergeur, ses sauts de confiance pour la clé du rate limit, y compris celle de better-auth sur l'échange d'un code de jumelage (`advanced.ipAddress`, `platform/auth/pairing.ts`), sans quoi tous les clients partagent un même compteur (`platform/http/rate-limit.ts`, aujourd'hui l'adresse de la connexion) et pour `trustedProxies` de better-auth ; compression des fichiers du web par le build ou par le proxy, selon l'hébergeur.
-- **Appareils de l'élève, avec les écrans (étape 6)** : prévenir l'élève sur ses appareils déjà reliés quand un nouvel appareil l'est (date, type d'appareil), ce qui rend réelle la transparence du jumelage ; décider, en concevant l'historique, si un appareil nouvellement relié ne montre que les séances commencées après son jumelage (revue de #425, `etudes/2026-10-07/foyer-eleve-age.md`, § 7). Les pages du web pour les liens de vérification, de réinitialisation et de suppression.
+- **Appareils de l'élève, avec les écrans (étape 6)** : prévenir l'élève sur ses appareils déjà reliés quand un nouvel appareil l'est (date, type d'appareil), ce qui rend réelle la transparence du jumelage ; décider, en concevant l'historique, si un appareil nouvellement relié ne montre que les séances commencées après son jumelage (revue de #425, `etudes/2026-10-07/foyer-eleve-age.md`, § 7). Les pages du web pour les liens de vérification et de réinitialisation.
 - **Client web** : `ai` aligné sur la version qu'épingle `@ai-sdk/react`, avec l'étape 6 ; mesures sur un vrai iPhone et un Android (`etudes/2026-10-06/client-web.md`).
 - **Connexion** : la page d'erreur de better-auth (`/api/auth/error`) a un `<style>` en ligne que la CSP bloque ; `onAPIError.errorURL` vers une page du web, avec l'étape 6.
 
