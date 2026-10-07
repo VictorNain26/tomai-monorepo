@@ -115,7 +115,6 @@ supprime ou que l'étude couvre n'y figure plus.
 ### Lot 3 — l'app entre les mains des familles
 
 - **Après une détresse** : la revue humaine (Victor au départ), son délai et sa trace ; ce que voit l'élève ensuite, et qui lève la fermeture ; une photo seule n'est pas jugée (`etudes/2026-10-07/foyer-eleve-age.md`).
-- **Pages légales** : `confidentialite` et `cgu` décrivent encore l'avant-refonte : connexion Google, identifiant de l'enfant choisi par le parent, « aucun profil d'apprentissage » alors que la mémoire existe (#443), à réécrire avec l'AIPD (constat du portage en Astro).
 - **Conformité** : mention « vous parlez à une IA » dès la première interaction, consentement conjoint sous 15 ans, AIPD, résumé parent proportionné et connu de l'enfant, aucun lien avec un établissement sans réévaluer le haut risque (`etudes/2026-10-01/education-nationale.md`, c ; `tuteur.md` §11).
 - **Message au parent après revue** : le push web n'atteint qu'un parent qui a installé l'app (iOS) ; un message décidé après une détresse demande un canal garanti, l'e-mail par exemple, à décider avec le parcours parent ; une table d'envois à clé unique en tient l'idempotence et la trace (`etudes/2026-10-07/email-transactionnel.md`).
 - **Après la V1, primaire et lycée** : modes accompagné et autonome, transition à 15 puis 18 ans (`etudes/2026-10-07/foyer-eleve-age.md`, § 7) ; le primaire attend une mesure de la reconnaissance vocale sur des voix d'enfants français.
