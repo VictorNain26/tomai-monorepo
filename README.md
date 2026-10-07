@@ -24,7 +24,7 @@ du web.
 ```
 apps/
 ├── server/       # Bun + Hono — API backend (3000)
-├── landing/      # Next.js — vitrine SEO (3001)
+├── landing/      # Astro — vitrine SEO, statique (3001)
 └── web/          # Vite + React + TanStack Router — application, téléphone d'abord (3002)
 
 packages/
@@ -41,14 +41,14 @@ tooling/
 | Couche | Technologies |
 |--------|-------------|
 | Backend | Bun 1.4, Hono 4, PostgreSQL 18, Drizzle ORM 0.45, pino |
-| Landing | Next.js 16, TailwindCSS 4, Motion 13, `@repo/ui` (shadcn) |
+| Landing | Astro 7, îlots React, TailwindCSS 4, Motion 13, `@repo/ui` (shadcn) |
 | Web | Vite 8, React 19, TanStack Router, TailwindCSS 4 ; tests Playwright à largeur de téléphone (`docs/etudes/2026-10-06/client-web.md`) |
 | Auth | Better Auth 1.7, e-mail et mot de passe ; foyer et comptes élèves à l'étape 4 de la refonte |
 | IA | Mistral Small 4, endpoint UE, avec le tuteur à l'étape 5 de la refonte |
 | Paiements | Aucun branché. Paiement web prévu au lot 3 |
-| Observabilité | Logs pino ; Sentry sur la landing jusqu'à son portage en Astro ; Bugsink, auto-hébergé, pour les erreurs avec la préproduction (`docs/etudes/2026-10-07/hebergement.md`). Pas d'analytics installée |
+| Observabilité | Logs pino ; Bugsink, auto-hébergé, pour les erreurs avec la préproduction (`docs/etudes/2026-10-07/hebergement.md`). Pas d'analytics installée |
 | Monorepo | Turborepo, workspaces Bun |
-| Déploiement | Landing : Vercel (`apps/landing/vercel.json`) jusqu'à son portage en Astro, puis une application statique Clever Cloud. Server : image `apps/server/Dockerfile`, qui embarque le build du web, publiée sur GHCR au SHA à chaque merge sur `main`, pas encore déployée ; hébergée chez Clever Cloud, région Paris (`docs/etudes/2026-10-07/hebergement.md`). Web : servi par le serveur, sur la même origine que l'API ; en dev, Vite (3002) envoie `/api/` au serveur par son proxy |
+| Déploiement | Landing : une application statique Clever Cloud, servie par Caddy (`apps/landing/Caddyfile`), pas encore déployée. Server : image `apps/server/Dockerfile`, qui embarque le build du web, publiée sur GHCR au SHA à chaque merge sur `main`, pas encore déployée ; hébergée chez Clever Cloud, région Paris (`docs/etudes/2026-10-07/hebergement.md`). Web : servi par le serveur, sur la même origine que l'API ; en dev, Vite (3002) envoie `/api/` au serveur par son proxy |
 
 ## Commandes
 

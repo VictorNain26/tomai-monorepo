@@ -58,11 +58,12 @@ bloquant levé). L'historique vit dans git et les PR.
   tout chez Clever Cloud, région Paris ; `app.<nom>.fr` pour l'app, `<nom>.fr` pour la landing en
   Astro dans une application statique ; Bugsink à la place de Sentry ; Vercel supprimé. HDS demandé
   à la CNIL ; s'il est requis, la production naît en zone HDS ou chez Scalingo.
-- **Prochaine action** : porter la landing en Astro, décision de Victor du 2026-10-07 : un portage
-  fidèle, contrôlé par sa suite Playwright, qui sort de Vercel (son offre gratuite exclut l'usage
-  commercial), aligne les pages légales sur Clever Cloud et réécrit `.claude/rules/landing.md` ; le
-  lot 4 n'en réécrira que le contenu. Puis l'étape 7, la préproduction sur Clever Cloud, une fois le
-  compte ouvert par Victor.
+- **Landing en Astro** (portage fidèle, décision de Victor du 2026-10-07) : Next.js, Vercel et Sentry
+  supprimés ; Astro 7 statique, îlots React, CSP à empreintes, servie par Caddy (`apps/landing/Caddyfile`),
+  contre lequel tourne la suite e2e ; pages légales alignées sur Clever Cloud. En ligne, c'est toujours
+  la version Next sur Vercel, jusqu'au déploiement chez Clever Cloud.
+- **Prochaine action** : l'étape 7, la préproduction sur Clever Cloud, une fois le compte ouvert par
+  Victor ; la landing y est déployée avec le serveur.
 - **Rentabilité et quotas** (`etudes/2026-10-07/rentabilite.md`) : le gratuit décide de la
   rentabilité, la distribution est le vrai risque ; quotas proposés de 2 c (Gratuit) et 10 c
   (Complet) par élève et par jour, voix comprise, remis à zéro à 4 h, et l'année scolaire à 69 €
@@ -85,6 +86,7 @@ supprime ou que l'étude couvre n'y figure plus.
 - **Observabilité** : les erreurs du serveur vers Bugsink, auto-hébergé avec sa base, celles des navigateurs par le serveur (`tunnel`) ; les traces OpenTelemetry attendent un besoin mesuré (`etudes/2026-10-07/hebergement.md`).
 - **Cookies de session** : le préfixe `__Host-` pour ceux de better-auth, l'app et la landing étant du même site (à vérifier dans la config de better-auth).
 - **Postgres de l'hébergeur** : `verify-full` vérifie le certificat contre les CA du système ; une CA privée demande l'option `ssl` avec `ca` (`platform/db/client.ts`).
+- **Landing** : son application statique Clever Cloud (`Caddyfile` à la racine de l'application ; le build du monorepo par `CC_BUILD_COMMAND`, Bun y compris, reste à vérifier), une application de preview par PR (`etudes/2026-10-07/hebergement.md`), puis la bascule du DNS (étape manuelle).
 - **Hébergement** : délai de grâce SIGTERM d'au moins un tour de chat, et `DRAIN_MS` (`src/main.ts`, 5 s) recalé sur l'intervalle de la sonde de l'hébergeur ; stockage partagé du rate limit s'il y a plusieurs instances ; derrière le proxy de l'hébergeur, ses sauts de confiance pour la clé du rate limit, y compris celle de better-auth sur l'échange d'un code de jumelage (`advanced.ipAddress`, `platform/auth/pairing.ts`), sans quoi tous les clients partagent un même compteur (`platform/http/rate-limit.ts`, aujourd'hui l'adresse de la connexion) et pour `trustedProxies` de better-auth ; compression des fichiers du web par le build ou par le proxy, selon l'hébergeur.
 - **Appareils de l'élève** : l'élève voit ses appareils reliés sur son accueil ; reste à le prévenir sur ses appareils déjà reliés quand un nouvel appareil l'est (date, type d'appareil) ; décider, en concevant l'historique, si un appareil nouvellement relié ne montre que les séances commencées après son jumelage (revue de #425, `etudes/2026-10-07/foyer-eleve-age.md`, § 7).
 - **Client web** : mesures sur un vrai iPhone et un Android (`etudes/2026-10-06/client-web.md`).
@@ -107,6 +109,7 @@ supprime ou que l'étude couvre n'y figure plus.
 ### Lot 3 — l'app entre les mains des familles
 
 - **Après une détresse** : la revue humaine (Victor au départ), son délai et sa trace ; ce que voit l'élève ensuite, et qui lève la fermeture ; une photo seule n'est pas jugée (`etudes/2026-10-07/foyer-eleve-age.md`).
+- **Pages légales** : `confidentialite` et `cgu` décrivent encore l'avant-refonte : connexion Google, identifiant de l'enfant choisi par le parent, « aucun profil d'apprentissage » alors que la mémoire existe (#443), à réécrire avec l'AIPD (constat du portage en Astro).
 - **Conformité** : mention « vous parlez à une IA » dès la première interaction, consentement conjoint sous 15 ans, AIPD, résumé parent proportionné et connu de l'enfant, aucun lien avec un établissement sans réévaluer le haut risque (`etudes/2026-10-01/education-nationale.md`, c ; `tuteur.md` §11).
 - **Message au parent après revue** : le push web n'atteint qu'un parent qui a installé l'app (iOS) ; un message décidé après une détresse demande un canal garanti, l'e-mail par exemple, à décider avec le parcours parent ; une table d'envois à clé unique en tient l'idempotence et la trace (`etudes/2026-10-07/email-transactionnel.md`).
 - **Après la V1, primaire et lycée** : modes accompagné et autonome, transition à 15 puis 18 ans (`etudes/2026-10-07/foyer-eleve-age.md`, § 7) ; le primaire attend une mesure de la reconnaissance vocale sur des voix d'enfants français.
@@ -115,9 +118,8 @@ supprime ou que l'étude couvre n'y figure plus.
 
 ### Lot 4 — marque et lancement
 
-- **CSP de la landing** : avec son portage en Astro, le `<meta>` de `security.csp` et les directives du Caddyfile (`etudes/2026-10-07/hebergement.md`, « Architecture unifiée »).
 - **Tests e2e qui gardent l'identité rejetée** (`signs.spec.ts`, graisse des titres dans `type.spec.ts`, place de Tom dans `hero.spec.ts`), et ceux du web (`apps/web/tests/home.spec.ts`, nom et couleurs du manifest) : à revoir avec la nouvelle identité.
-- **`Scribble`** (`apps/landing/components/annotations/scribble.tsx`) : erreur d'hydratation sous mouvement réduit (`initial` différent entre serveur et client) ; correctif technique permis pendant le gel.
+- **`Scribble`** (`apps/landing/src/components/annotations/scribble.tsx`) : erreur d'hydratation sous mouvement réduit (`initial` différent entre serveur et client) ; correctif technique permis pendant le gel.
 
 ## Surveillance
 
@@ -143,11 +145,8 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
   figent la 1.2.1, touchée par GHSA-68fv-2mgg-jv7q (haute) ; l'override les force en `^1.2.2`.
   Le retirer quand les deux déclarent 1.2.2 ou plus. Même audit, dépendances de
   développement seulement : `braces` 3.0.3 (GHSA-vfj7-8cjw-p6xm), par
-  `@next/eslint-plugin-next` ; la porte d'audit de la CI ne regarde
+  `eslint-plugin-boundaries` ; la porte d'audit de la CI ne regarde
   que la production.
-- **Sentry v11** : `apps/landing/next.config.*` importe `withSentryConfig` depuis
-  `@sentry/nextjs`, déprécié (avertissement de `next typegen`) ; passer à
-  `@sentry/nextjs/config` avant de monter en v11.
 - **`@hono/bun`** (#355) échoue au critère d'adoption : paquet du monorepo Hono publié le
   2026-09-28, 704 téléchargements par semaine. Gardé car c'est la voie de migration avant
   Hono v5 ; revérifier son adoption avant la v5.
@@ -161,8 +160,7 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
   détecter ; Renovate ouvre toutes les PR.
 - Plafonds de version à lever à la main (Renovate ne les proposera pas) : TypeScript
   `<6.1.0` tant que `typescript-eslint` exige `typescript <6.1.0` ; `@types/node` `<25.0.0`
-  tant que le runtime est Node 24 (Vercel ne propose que 24.x, 22.x et 20.x ; Node 26 LTS le
-  2026-10-28).
+  tant que le runtime est Node 24 (Node 26 LTS le 2026-10-28).
 - **Catalogs Bun** : retirés à la bascule (#344) parce que Renovate ne les met pas à jour.
   Les remettre quand renovatebot/renovate#42909 est fusionnée.
 - **Bun.SQL** à la place de postgres.js : écarté le 2026-10-01. 34 bugs Postgres ouverts
