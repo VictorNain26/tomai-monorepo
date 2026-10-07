@@ -40,16 +40,17 @@ describe('isLevel', () => {
 
 describe('newStudentSchema', () => {
   it('takes a trimmed first name, a level and a month', () => {
-    expect(newStudentSchema.parse({ name: '  Léa ', level: 'sixieme', birthMonth: '2014-03' })).toEqual({
+    expect(newStudentSchema.parse({ name: '  Léa ', level: 'sixieme', birthMonth: '2014-03', memoryProposed: true })).toEqual({
       name: 'Léa',
       level: 'sixieme',
       birthMonth: '2014-03',
+      memoryProposed: true,
     });
   });
 
   it('refuses an empty name, no level, or a month out of the calendar', () => {
-    expect(newStudentSchema.safeParse({ name: ' ', level: 'sixieme', birthMonth: '2014-03' }).success).toBe(false);
-    expect(newStudentSchema.safeParse({ name: 'Léa', level: '', birthMonth: '2014-03' }).success).toBe(false);
-    expect(newStudentSchema.safeParse({ name: 'Léa', level: 'sixieme', birthMonth: '2014-13' }).success).toBe(false);
+    expect(newStudentSchema.safeParse({ name: ' ', level: 'sixieme', birthMonth: '2014-03', memoryProposed: false }).success).toBe(false);
+    expect(newStudentSchema.safeParse({ name: 'Léa', level: '', birthMonth: '2014-03', memoryProposed: false }).success).toBe(false);
+    expect(newStudentSchema.safeParse({ name: 'Léa', level: 'sixieme', birthMonth: '2014-13', memoryProposed: false }).success).toBe(false);
   });
 });

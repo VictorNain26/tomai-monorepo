@@ -1,6 +1,7 @@
 import { Button } from '@repo/ui';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { Link, createFileRoute, redirect, useNavigate } from '@tanstack/react-router';
+import { MemoryAnswer } from '../components/memory-answer';
 import { SignOut } from '../components/sign-out';
 import { Notice } from '../components/notice';
 import { Page } from '../components/page';
@@ -9,6 +10,7 @@ import { pairedDevicesQuery } from '../lib/auth';
 import { sessionsQuery } from '../lib/chat';
 import { deviceName, formatDay } from '../lib/device';
 import { meQuery } from '../lib/me';
+import { memoryQuery } from '../lib/memory';
 import { z } from '../lib/zod';
 
 /**
@@ -24,16 +26,22 @@ export const Route = createFileRoute('/')({
     if (!me) throw redirect({ to: '/connexion' });
     if (me.role === 'guardian') throw redirect({ to: '/foyer' });
   },
-  loader: ({ context }) => Promise.all([context.queryClient.query(sessionsQuery), context.queryClient.query(pairedDevicesQuery)]),
+  loader: ({ context }) =>
+    Promise.all([context.queryClient.query(sessionsQuery), context.queryClient.query(pairedDevicesQuery), context.queryClient.query(memoryQuery)]),
   component: StudentHome,
 });
 
 function StudentHome() {
   const { data: me } = useSuspenseQuery(meQuery);
+  const { data: memory } = useSuspenseQuery(memoryQuery);
 
   return (
     <Page title={`Bonjour ${me?.name ?? ''}`}>
+      {memory.state === 'asked' && <MemoryAnswer />}
       <Sessions />
+      <Link to="/memoire" className="min-h-11 py-3 text-sm text-primary underline">
+        Ce que Tom retient
+      </Link>
       <Devices />
     </Page>
   );

@@ -11,7 +11,7 @@ import { Page } from '../components/page';
 import { api, parseResponse } from '../lib/api';
 import { deviceName, formatDay, formatHour } from '../lib/device';
 import { formatCode } from '../lib/pairing';
-import { LEVEL_LABELS, devicesQuery, householdMessage, studentSchema, studentsQuery, type Student } from '../lib/household';
+import { LEVEL_LABELS, devicesQuery, householdMessage, memoryStatus, studentSchema, studentsQuery, type Student } from '../lib/household';
 
 const student = api.household.students[':id'];
 
@@ -37,6 +37,7 @@ function StudentPage() {
         Retour au foyer
       </Link>
       <Devices child={child} />
+      <Memory child={child} />
       <EditStudent child={child} />
       <DeleteStudent child={child} />
     </Page>
@@ -109,6 +110,35 @@ function Devices({ child }: { child: Student }) {
       <Button disabled={pairing.isPending} onClick={askCode}>
         {pending(devices) ? 'Nouveau code' : 'Relier un appareil'}
       </Button>
+    </section>
+  );
+}
+
+function Memory({ child }: { child: Student }) {
+  const queryClient = useQueryClient();
+  const propose = useMutation({
+    mutationFn: (memoryProposed: boolean) => parseResponse(student.$patch({ param: { id: child.id }, json: { memoryProposed } })),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: studentsQuery.queryKey }),
+  });
+
+  return (
+    <section aria-labelledby="memory" className="flex flex-col gap-3">
+      <h2 id="memory" className="text-xl font-bold text-foreground">
+        Ce que Tom retient
+      </h2>
+      <p className="text-muted-foreground">{memoryStatus(child)}</p>
+      {propose.error && <Notice tone="error">{householdMessage(propose.error)}</Notice>}
+      {!child.memory.decidesAlone && (
+        <Button
+          variant="outline"
+          disabled={propose.isPending}
+          onClick={() => {
+            propose.mutate(!child.memory.proposed);
+          }}
+        >
+          {child.memory.proposed ? 'Retirer et effacer la mémoire' : `Proposer la mémoire à ${child.name}`}
+        </Button>
+      )}
     </section>
   );
 }
