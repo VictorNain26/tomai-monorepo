@@ -33,13 +33,15 @@ bloquant levé). L'historique vit dans git et les PR.
   collège ; le parent ne connaît aucun identifiant de son enfant, qui relie son appareil par un code ;
   l'élève voit le résumé de son parent ; la détresse est relue par un humain avant tout message au
   parent.
-- **Prochaine action** : étape 4, le foyer et les comptes en mode guidé (#425 à reprendre : le
-  jumelage d'appareil remplace le nom d'utilisateur et le mot de passe de l'élève), puis l'e-mail des
-  gardiens ; l'étude des hébergeurs UE avance en parallèle. Test complet dans Chrome à la fin de
-  chaque étape.
+- **Étape 4 en cours**, en deux PR en cascade : le foyer, l'élève en mode guidé, son jumelage
+  d'appareil et la matrice d'accès (`feat/household-accounts`) ; puis l'e-mail des gardiens
+  (vérification, réinitialisation, suppression du compte) chez Scaleway TEM, choisi le 2026-10-07
+  (`etudes/2026-10-07/email-transactionnel.md`).
+- **Prochaine action** : la PR de l'e-mail des gardiens ; l'étude des hébergeurs UE avance en
+  parallèle. L'ordre complet est dans l'étude. Test complet dans Chrome à la fin de chaque étape.
 - **Décisions de Victor en attente**, au moment de l'étape qui en dépend : budgets du quota
   (étape 5) ; offre Mistral payante pour paralléliser l'évaluation et juge d'une autre famille,
-  seulement s'il est très bon marché (étape 8) ; fournisseur d'e-mail UE (étape 4).
+  seulement s'il est très bon marché (étape 8).
 - **PR ouvertes :** `gh pr list`.
 - **Landing en ligne gelée** jusqu'au lot 4, hors de la refonte : seuls des correctifs d'honnêteté
   ou techniques y entrent. L'identité visuelle est rejetée et se refait au lot 4.
@@ -53,13 +55,14 @@ supprime ou que l'étude couvre n'y figure plus.
 
 ### Refonte — comptes (étape 4)
 
-- **Sessions** : réinitialisation du mot de passe d'un gardien par e-mail avec `revokeSessionsOnPasswordReset` (better-auth 1.7, `init-options.d.mts`) ; un appareil d'élève déconnecté par le parent perd sa session.
+- **Réinitialisation du mot de passe d'un gardien** par e-mail, avec `revokeSessionsOnPasswordReset` (better-auth 1.7, `init-options.d.mts`) : la PR de l'e-mail des gardiens.
+- **Suppression du compte d'un gardien** : supprimer aussi le foyer et ses élèves, que `ON DELETE CASCADE` sur l'appartenance laisserait sans gardien (revue de #425) ; la PR de l'e-mail des gardiens.
 
 ### Refonte — préproduction (étape 7)
 
 - **Observabilité** : OpenTelemetry et Sentry côté serveur, avec une destination dans l'UE contrainte par la config (`refonte-architecture.md`, « Données et autorisation »).
 - **Postgres de l'hébergeur** : `verify-full` vérifie le certificat contre les CA du système ; une CA privée demande l'option `ssl` avec `ca` (`platform/db/client.ts`).
-- **Hébergement** : délai de grâce SIGTERM d'au moins un tour de chat, et `DRAIN_MS` (`src/main.ts`, 5 s) recalé sur l'intervalle de la sonde de l'hébergeur ; stockage partagé du rate limit s'il y a plusieurs instances ; derrière le proxy de l'hébergeur, ses sauts de confiance pour la clé du rate limit (`platform/http/rate-limit.ts`, aujourd'hui l'adresse de la connexion) et pour `trustedProxies` de better-auth ; compression des fichiers du web par le build ou par le proxy, selon l'hébergeur.
+- **Hébergement** : délai de grâce SIGTERM d'au moins un tour de chat, et `DRAIN_MS` (`src/main.ts`, 5 s) recalé sur l'intervalle de la sonde de l'hébergeur ; stockage partagé du rate limit s'il y a plusieurs instances ; derrière le proxy de l'hébergeur, ses sauts de confiance pour la clé du rate limit, y compris celle de better-auth sur l'échange d'un code de jumelage (`advanced.ipAddress`, `platform/auth/pairing.ts`), sans quoi tous les clients partagent un même compteur (`platform/http/rate-limit.ts`, aujourd'hui l'adresse de la connexion) et pour `trustedProxies` de better-auth ; compression des fichiers du web par le build ou par le proxy, selon l'hébergeur.
 - **Client web** : `ai` aligné sur la version qu'épingle `@ai-sdk/react`, avec l'étape 6 ; mesures sur un vrai iPhone et un Android (`etudes/2026-10-06/client-web.md`).
 - **Connexion** : la page d'erreur de better-auth (`/api/auth/error`) a un `<style>` en ligne que la CSP bloque ; `onAPIError.errorURL` vers une page du web, avec l'étape 6.
 
@@ -156,6 +159,7 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
 |---|---|---|
 | Recréer la base locale, qui porte l'ancien schéma : `docker compose down -v` puis `bun run setup` (skill `dev-bootstrap`) ; et dans `apps/server/.env`, `BETTER_AUTH_URL=http://localhost:3002` | Refonte, étape 2 | à faire |
 | Juger un échantillon de conversations sur la page prévue, par courtes séances | Vérifier le juge, lot 1 | quand la page existe |
+| Ouvrir une Organisation Scaleway pour l'e-mail (moyen de paiement, identité, projet dédié, clé IAM limitée à Transactional Email) ; publier SPF, DKIM, DMARC (`p=none` d'abord) et MX du sous-domaine d'envoi, puis vérifier le domaine dans la console (`etudes/2026-10-07/email-transactionnel.md`). Le domaine dépend du nom du produit | Préproduction, étape 7 | à faire |
 | Ouvrir le compte de l'hébergeur UE recommandé par l'étude | Préproduction, lot 3 | à faire, après l'étude |
 | Langfuse : la description de la file d'annotation `tom-judge-agreement` renvoie encore à `docs/agent.md`, devenu `docs/tuteur.md` ; la corriger dans l'interface (l'API n'a pas de mise à jour de file) | Évaluation | à faire |
 | Demander le Zero Data Retention : réservé au paiement à l'usage (« only with pay-as-you-go », [centre d'aide Mistral](https://help.mistral.ai/en/articles/347612-can-i-activate-zero-data-retention-zdr)), or le compte est sur l'offre gratuite (8,50 € d'API inclus par mois, paiement à l'usage désactivé, constaté le 2026-10-02). Activer le paiement à l'usage avec un plafond, puis envoyer la demande avec sa justification (mineurs, RGPD), et dans le même envoi la question sur la clause (c) des conditions commerciales : un service pour des 10-15 ans, avec l'accord de leurs parents, est-il permis ; vérifier ensuite Admin › API › Confidentialité. L'entraînement sur les appels API et les modèles Labs y sont désactivés | Porte avant ouverture | à faire |

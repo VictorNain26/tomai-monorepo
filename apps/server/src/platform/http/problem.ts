@@ -12,6 +12,9 @@ import type { Logger } from 'pino';
 import type { AppEnv } from './env';
 
 const PROBLEMS = {
+  INVALID_REQUEST: { status: 400, title: 'Requête invalide' },
+  UNAUTHENTICATED: { status: 401, title: 'Connexion requise' },
+  FORBIDDEN: { status: 403, title: 'Accès refusé' },
   NOT_FOUND: { status: 404, title: 'Ressource introuvable' },
   RATE_LIMITED: { status: 429, title: 'Trop de requêtes' },
   INTERNAL_ERROR: { status: 500, title: 'Erreur interne' },

@@ -42,6 +42,7 @@
       "name": "tomai-server",
       "version": "2.0.0",
       "dependencies": {
+        "@better-auth/core": "^1.7.5",
         "@hono/bun": "^1.0.0",
         "better-auth": "^1.7.5",
         "drizzle-orm": "^0.45.3",

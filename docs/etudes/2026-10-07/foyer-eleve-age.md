@@ -146,7 +146,7 @@ autre vérification. Un second parent peut rejoindre le foyer et s'opposer.
 | | Accompagné (CP à CM2) | Guidé (6e à 3e) | Autonome (seconde à terminale) |
 |---|---|---|---|
 | Qui ouvre la séance | Le parent, sur un appareil familial ; il est présent | L'élève, sur un appareil relié par un code à usage unique ; ou un profil protégé par le code de l'enfant sur l'appareil du parent | L'élève, avec son propre identifiant (e-mail et clé d'accès) ; invité par le parent ou rattaché par lui |
-| Ce que le parent connaît de la connexion | Il ouvre lui-même la séance | Rien : il peut déconnecter un appareil, jamais s'y connecter | Rien |
+| Ce que le parent connaît de la connexion | Il ouvre lui-même la séance | Aucun identifiant durable : il demande un code à usage unique et peut déconnecter un appareil. Il pourrait échanger ce code lui-même : tout appareil relié est visible de l'élève et lui est signalé | Rien |
 | Interaction | La voix d'abord, séances courtes (20 à 40 minutes au plus) | Texte, photo, voix | Texte, photo, voix |
 | Ce que voit le parent | Le résumé ; il est présent pendant la séance | Le résumé, que l'élève voit au même moment | Le résumé, que l'élève voit au même moment |
 | Détresse | Réponse immédiate à l'enfant, revue humaine, parent prévenu après revue | Réponse immédiate, revue humaine, l'élève prévenu avant le parent, aucun contenu transmis | Même règle, annoncée à l'inscription |

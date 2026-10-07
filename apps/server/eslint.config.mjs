@@ -6,6 +6,7 @@ import { nodeConfig } from '@repo/eslint-config/node';
 const elements = [
   { type: 'platform', pattern: 'src/platform/*', partialMatch: false, capture: ['part'] },
   { type: 'domain', pattern: 'src/domain', partialMatch: false },
+  { type: 'module', pattern: 'src/modules/*', partialMatch: false, capture: ['module'] },
   { type: 'referential', pattern: 'src/referential', partialMatch: false },
   { type: 'eval', pattern: 'src/eval', partialMatch: false },
   { type: 'testing', pattern: 'src/testing', partialMatch: false },
@@ -16,6 +17,12 @@ const files = [
   { pattern: '**/*.test.ts', category: 'test' },
   { pattern: ['src/main.ts', 'src/migrate.ts', 'src/app.ts'], category: 'root' },
   { pattern: 'src/config.ts', category: 'config' },
+  // In a module, routes → service → repository, and only the repository and the schema touch the database.
+  { pattern: 'src/modules/*/index.ts', category: 'module-index' },
+  { pattern: 'src/modules/*/routes.ts', category: 'routes' },
+  { pattern: 'src/modules/*/service.ts', category: 'service' },
+  { pattern: 'src/modules/*/repository.ts', category: 'repository' },
+  { pattern: 'src/modules/*/schema.ts', category: 'schema' },
 ];
 
 // A test passes its doubles in; replacing a module hides the wiring and breaks silently.
@@ -35,6 +42,11 @@ const NO_ENVIRONMENT = ['Bun', 'process'].map((object) => ({
 const element = (type) => ({ element: { type } });
 const file = (categories) => ({ file: { categories } });
 const allow = (from, ...to) => ({ from, allow: { to } });
+const sameModule = (categories) => ({
+  element: { type: 'module', captured: { module: '{{ from.element.captured.module }}' } },
+  file: { categories },
+});
+const inModule = (categories) => ({ element: { type: 'module' }, file: { categories } });
 
 /** @type {import("eslint").Linter.Config[]} */
 export default [
@@ -60,14 +72,21 @@ export default [
         'error',
         {
           default: 'disallow',
+          // Also between files of one element: the layers inside a module are checked too.
+          checkInternals: true,
           policies: [
-            allow(file('root'), file(['root', 'config']), element(['platform', 'domain'])),
+            allow(file('root'), file(['root', 'config']), element(['platform', 'domain']), inModule(['module-index'])),
+            allow(inModule(['module-index']), sameModule(['routes', 'service', 'repository']), element('platform')),
+            allow(inModule(['routes']), sameModule(['service']), element(['platform', 'domain'])),
+            allow(inModule(['service']), sameModule(['repository']), element(['platform', 'domain'])),
+            allow(inModule(['repository']), sameModule(['schema']), element(['platform', 'domain'])),
+            allow(inModule(['schema']), element(['platform', 'domain'])),
             allow(element('platform'), element('platform'), file('config')),
             allow(element('domain'), element('domain')),
             allow(element('referential'), element(['referential', 'domain'])),
             allow(element('eval'), element(['eval', 'referential', 'domain'])),
             allow(element('testing'), element(['testing', 'platform'])),
-            allow(file('test'), file(['root', 'config']), element(['platform', 'domain', 'referential', 'eval', 'testing'])),
+            allow(file('test'), file(['root', 'config']), element(['platform', 'domain', 'module', 'referential', 'eval', 'testing'])),
           ],
         },
       ],
