@@ -56,7 +56,8 @@ bloquant levé). L'historique vit dans git et les PR.
   refuse, ils en sortent (`tuteur.md` § 11).
 - **Hébergement** (`etudes/2026-10-07/hebergement.md`), décidé par Victor le 2026-10-07 : Clever
   Cloud en région Paris pour la préproduction, OVHcloud en repli ; HDS demandé à la CNIL, la zone
-  HDS (200 € par mois et ×1,4) seulement si la réponse l'exige, pour la production.
+  HDS (200 € par mois et ×1,4) seulement si la réponse l'exige, pour la production, qui y naîtrait
+  avant le premier vrai élève.
 - **Prochaine action** : l'étape 7, la préproduction sur Clever Cloud, une fois le compte ouvert
   par Victor.
 - **Rentabilité et quotas** (`etudes/2026-10-07/rentabilite.md`) : le gratuit décide de la
@@ -83,6 +84,14 @@ supprime ou que l'étude couvre n'y figure plus.
 - **Hébergement** : délai de grâce SIGTERM d'au moins un tour de chat, et `DRAIN_MS` (`src/main.ts`, 5 s) recalé sur l'intervalle de la sonde de l'hébergeur ; stockage partagé du rate limit s'il y a plusieurs instances ; derrière le proxy de l'hébergeur, ses sauts de confiance pour la clé du rate limit, y compris celle de better-auth sur l'échange d'un code de jumelage (`advanced.ipAddress`, `platform/auth/pairing.ts`), sans quoi tous les clients partagent un même compteur (`platform/http/rate-limit.ts`, aujourd'hui l'adresse de la connexion) et pour `trustedProxies` de better-auth ; compression des fichiers du web par le build ou par le proxy, selon l'hébergeur.
 - **Appareils de l'élève** : l'élève voit ses appareils reliés sur son accueil ; reste à le prévenir sur ses appareils déjà reliés quand un nouvel appareil l'est (date, type d'appareil) ; décider, en concevant l'historique, si un appareil nouvellement relié ne montre que les séances commencées après son jumelage (revue de #425, `etudes/2026-10-07/foyer-eleve-age.md`, § 7).
 - **Client web** : mesures sur un vrai iPhone et un Android (`etudes/2026-10-06/client-web.md`).
+- **Clever Cloud** (`etudes/2026-10-07/hebergement.md`), à tester sur la préproduction : un tour SSE
+  de 60 s à travers Sōzu (délai de 180 s documenté) ; le délai de grâce réel au SIGTERM pendant un
+  redéploiement, contre `SHUTDOWN_DEADLINE_MS` (25 s, `src/main.ts`) et un tour de 60 s ; la sonde
+  qui ne sert qu'au déploiement, pour `DRAIN_MS` ; la CA du Postgres pour `verify-full` ; le PITR
+  (pgBackRest, sur demande au support) et son prix ; la dernière entrée de X-Forwarded-For comme clé
+  du rate limit ; le port (3000 dans l'image, 8080 attendu par Clever Cloud : `PORT` ou
+  `CC_DOCKER_EXPOSED_HTTP_PORT`) ; l'accès à l'image GHCR, privée par défaut, et son digest publié
+  par la CI ; Postgres 18.4 chez Clever Cloud contre 18.6 en dev et en CI, à aligner.
 
 ### Lot 1 — harnais d'évaluation et observabilité
 
@@ -179,7 +188,7 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
 | Juger un échantillon de conversations sur la page prévue, par courtes séances | Vérifier le juge, lot 1 | quand la page existe |
 | Ouvrir une Organisation Scaleway pour l'e-mail (moyen de paiement, identité, projet dédié, clé IAM limitée à Transactional Email) ; publier SPF, DKIM, DMARC (`p=none` d'abord) et MX du sous-domaine d'envoi, puis vérifier le domaine dans la console (`etudes/2026-10-07/email-transactionnel.md`). Le domaine dépend du nom du produit | Préproduction, étape 7 | à faire |
 | Ouvrir le compte Clever Cloud (organisation, paiement, région Paris), signer le DPA, créer un jeton d'API pour GitHub Actions (`etudes/2026-10-07/hebergement.md`) | Préproduction, étape 7 | à faire |
-| Écrire à la CNIL sur HDS, avec le texte proposé dans `etudes/2026-10-07/hebergement.md` ; la réponse entre dans l'AIPD | Avant l'ouverture | à faire |
+| Écrire à la CNIL sur HDS, avec le texte proposé dans `etudes/2026-10-07/hebergement.md` ; la réponse entre dans l'AIPD | Porte avant ouverture | à faire |
 | Langfuse : la description de la file d'annotation `tom-judge-agreement` renvoie encore à `docs/agent.md`, devenu `docs/tuteur.md` ; la corriger dans l'interface (l'API n'a pas de mise à jour de file) | Évaluation | à faire |
 | Demander le Zero Data Retention : réservé au paiement à l'usage (« only with pay-as-you-go », [centre d'aide Mistral](https://help.mistral.ai/en/articles/347612-can-i-activate-zero-data-retention-zdr)), or le compte est sur l'offre gratuite (8,50 € d'API inclus par mois, paiement à l'usage désactivé, constaté le 2026-10-02). Activer le paiement à l'usage avec un plafond, puis envoyer la demande avec sa justification (mineurs, RGPD), et dans le même envoi la question sur la clause (c) des conditions commerciales : un service pour des 10-15 ans, avec l'accord de leurs parents, est-il permis ; vérifier ensuite Admin › API › Confidentialité. L'entraînement sur les appels API et les modèles Labs y sont désactivés | Porte avant ouverture | à faire |
 | Trancher avec un expert-comptable, en une consultation : rester micro-entrepreneur (recommandé, `etudes/2026-10-07/rentabilite.md`) ou créer une SASU (le GAR n'accepte que des personnes morales, `etudes/2026-10-01/statut-juridique.md`) ; BIC ou BNC ; taux de TVA de Tom, normal ou 5,5 % ; CFP ; accès au versement libératoire selon le revenu fiscal de référence de 2024 | Avant l'ouverture, au démarrage du lot 3 | à faire |

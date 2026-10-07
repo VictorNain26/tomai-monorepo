@@ -30,7 +30,7 @@ Sources lues le jour même. Prix HT ; « indirect » marque un fait déduit ou l
 | Postgres | 18.4 sur les offres dédiées ; sauvegarde quotidienne gardée 7 jours ; PITR par pgBackRest, sur demande au support ([doc](https://www.clever.cloud/developers/doc/deploy/databases/postgresql/)) ; la CA des connexions TLS n'est pas documentée | 15 à 18 ([capabilities](https://docs.ovhcloud.com/en/guides/public-cloud/databases/postgresql-capabilities)) ; PITR continu dans la rétention du plan, de 2 à 30 jours ([backups](https://docs.ovhcloud.com/en/guides/public-cloud/databases/backups)) |
 | Flux longs | Sōzu : « 180-second timeout for all backend operations » ([doc](https://www.clever.cloud/developers/doc/find-help/troubleshooting/)) | Load Balancer : 50 s par défaut, réglable |
 | Arrêt et sonde | Délai de grâce non documenté ; déploiement blue-green ; la sonde (`CC_HEALTH_CHECK_PATH`) ne sert qu'au déploiement | `terminationGracePeriodSeconds` et `readinessProbe` de Kubernetes, réglés par nous |
-| X-Forwarded-For | Le client en premier ; un saut à faire confiance (indirect, d'après le code de Sōzu) | Proxy Protocol ou Ingress nécessaires |
+| X-Forwarded-For | Sōzu ajoute l'adresse qu'il voit à la fin de la chaîne (indirect, d'après son code) : la clé du rate limit est l'entrée qu'il a ajoutée, la dernière, jamais la première, qu'un client peut écrire lui-même | Proxy Protocol ou Ingress nécessaires |
 | Préproduction / environ 1 000 élèves | Environ 21 € (instance XS et `xxs_sml`) / environ 105 € (2 × S et `s_sml`), PITR en plus ([grille](https://api.clever-cloud.com/v4/billing/price-system?zone_id=par)) | Environ 76 € / environ 199 € |
 | Certifications | ISO 27001 ; HDS sur ses 6 activités, jusqu'au 2027-12-19, en zone HDS et contrat dédié ; SecNumCloud en cours | ISO 27001 ; HDS sur Kubernetes, le registre et les bases |
 
@@ -52,7 +52,9 @@ multiplier on the standard rate applied to the resources consumed », et un cont
 ([health-hds](https://www.clever.cloud/health-hds/)). Environ 230 € par mois en préproduction au
 lieu de 21 €, et 350 € en production au lieu de 105 €. La préproduction ne la prend pas : elle ne
 reçoit aucun vrai élève, donc aucune donnée de santé réelle. La production la prend si la CNIL le
-demande, sans migration, et l'étude de rentabilité intègre alors ce coût fixe. Autre voie à peser
+demande, avant tout vrai élève : c'est une zone à part, sous un contrat dédié, où l'application et
+la base se recréent (sans données réelles à migrer à ce moment-là), et l'étude de rentabilité intègre
+alors ce coût fixe. Autre voie à peser
 avec la réponse de la CNIL : moins de données de santé, par exemple le texte d'un message de
 détresse effacé après sa relecture humaine.
 
@@ -64,18 +66,13 @@ détresse effacé après sa relecture humaine.
    de Victor, jamais aux données des élèves. C'est la différence avec Brevo, écarté parce que ses
    sous-traitants touchent les e-mails envoyés. À inscrire dans l'AIPD.
 3. **HDS** : Victor pose la question par écrit à la CNIL ; la réponse entre dans l'AIPD. D'ici là,
-   aucun vrai élève, ce que la porte avant ouverture impose déjà. Clever Cloud passe en zone HDS
-   sans migration si la réponse l'exige.
+   aucun vrai élève, ce que la porte avant ouverture impose déjà. Si la réponse l'exige, la production
+   naît dans la zone HDS de Clever Cloud, avant le premier vrai élève.
 
 ## À tester en préproduction
 
-- Un tour SSE de 60 s à travers Sōzu.
-- Le délai de grâce réel au SIGTERM pendant un redéploiement : `SHUTDOWN_DEADLINE_MS` vaut 25 s
-  (`apps/server/src/main.ts`), alors qu'un tour de chat dure jusqu'à 60 s.
-- `verify-full` contre la CA du Postgres de Clever Cloud.
-- Le PITR auprès du support : son activation et son prix.
-- Le nombre de sauts à faire confiance dans X-Forwarded-For, pour la clé du rate limit et
-  `trustedProxies` de better-auth.
+La liste vit dans `suivi.md`, « Refonte — préproduction (étape 7) », avec ce que l'étape 7 avait déjà
+à régler (sonde, rate limit, compression).
 
 ## Déploiement
 
@@ -84,7 +81,10 @@ ni secret ; GHCR ne touche donc pas la promesse « données en Europe ». Clever
 partir d'un Dockerfile poussé par git ([doc](https://www.clever.cloud/developers/doc/deploy/applications/docker/)) :
 un Dockerfile d'une ligne `FROM ghcr.io/…@sha256:…`, déployé par `clever deploy` depuis GitHub
 Actions ([CLI](https://www.clever.cloud/developers/doc/manage/cli/)), fait tourner l'image que la CI
-a construite et vérifiée. Aucune procédure de ce type n'est documentée : à vérifier.
+a construite et vérifiée. Aucune procédure de ce type n'est documentée : à vérifier, avec deux
+préalables. Un paquet GHCR est privé par défaut : Clever Cloud doit s'y connecter
+(`CC_DOCKER_LOGIN_*`) ou le paquet devenir public. Et la CI doit publier le digest de l'image, qu'elle
+ne relève pas aujourd'hui.
 
 ## Question à la CNIL (texte proposé)
 
@@ -92,7 +92,8 @@ a construite et vérifiée. Aucune procédure de ce type n'est documentée : à 
 > Quand un élève écrit un message qui laisse penser qu'il est en détresse, le service lui répond par
 > un message fixe avec les numéros d'aide, et enregistre l'événement (sa date et ce qui l'a
 > détecté, sans score), pour qu'un humain le relise avant d'en informer éventuellement un parent ;
-> le message de l'élève reste dans l'historique de sa séance. La
+> la séance est close, le message de l'élève reste dans son historique, et l'enregistrement du tour
+> garde les catégories que la modération a signalées (par exemple « automutilation »). La
 > finalité du service est l'aide aux devoirs, pas une activité de soin. L'hébergement de ces
 > événements relève-t-il de l'article L.1111-8 du Code de la santé publique, et donc d'un hébergeur
 > certifié HDS ?
