@@ -16,7 +16,8 @@ export function createAuth(db: Db, config: Pick<Config, 'publicUrl' | 'authSecre
   return betterAuth({
     baseURL: config.publicUrl,
     secret: config.authSecret,
-    database: drizzleAdapter(db, { provider: 'pg', schema: { user, session, account, verification } }),
+    // Transactions on: better-auth's own multi-step writes (and device pairing) are atomic.
+    database: drizzleAdapter(db, { provider: 'pg', schema: { user, session, account, verification }, transaction: true }),
     emailAndPassword: { enabled: true },
     // better-auth 1.7 skips its origin check when NODE_ENV is test (context/create-context.mjs):
     // on in every environment, the tests exercise the check production runs.

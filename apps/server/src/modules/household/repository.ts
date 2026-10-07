@@ -4,7 +4,7 @@
  * (OWASP Authorization Cheat Sheet): a student of another household is simply not found.
  */
 
-import { and, desc, eq, inArray } from 'drizzle-orm';
+import { and, desc, eq, gt, inArray } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import type { SchoolLevel } from '../../domain/levels';
 import { session, user } from '../../platform/auth/schema';
@@ -101,13 +101,13 @@ export function createHouseholdRepository(db: Db) {
       });
     },
 
-    /** A device is a session: when it was paired and last used, and its browser; never its token nor its address. */
+    /** A device is a live session: when it was paired and its browser; never its token nor its address. */
     async listDevices(guardianId: string, studentId: string) {
       return db
-        .select({ id: session.id, pairedAt: session.createdAt, lastActiveAt: session.updatedAt, userAgent: session.userAgent })
+        .select({ id: session.id, pairedAt: session.createdAt, userAgent: session.userAgent })
         .from(session)
-        .where(and(eq(session.userId, studentId), inArray(session.userId, studentsOf(guardianId))))
-        .orderBy(desc(session.updatedAt));
+        .where(and(eq(session.userId, studentId), gt(session.expiresAt, new Date()), inArray(session.userId, studentsOf(guardianId))))
+        .orderBy(desc(session.createdAt));
     },
 
     /** `false` when no such device of a student of the guardian's household. */

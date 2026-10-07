@@ -10,7 +10,7 @@ import pino from 'pino';
 import { createApp } from '../../app';
 import { createAuth } from '../../platform/auth/auth';
 import { PAIRING_PREFIX } from '../../platform/auth/pairing';
-import { account, user, verification } from '../../platform/auth/schema';
+import { account, session, user, verification } from '../../platform/auth/schema';
 import { createLifecycle } from '../../platform/lifecycle/shutdown';
 import { testDatabase } from '../../testing/database';
 import { householdMember, studentProfile } from './schema';
@@ -29,7 +29,6 @@ interface Student {
 interface Device {
   id: string;
   pairedAt: string;
-  lastActiveAt: string;
   userAgent: string | null;
 }
 
@@ -192,6 +191,7 @@ describe('a guardian creates a student', () => {
     ['level', 'seconde'],
     ['birthMonth', '2999-01'],
     ['birthMonth', new Date().toISOString().slice(0, 7)],
+    ['birthMonth', `${String(new Date().getUTCFullYear() - 3)}-01`],
     ['birthMonth', '1990-01'],
     ['birthMonth', '2014-13'],
     ['birthMonth', '2014-3'],
@@ -260,12 +260,33 @@ describe("pairing a student's device", () => {
     const devices = await api.devices(guardian, student.id);
     expect(devices).toHaveLength(1);
     expect(devices[0]).toMatchObject({ userAgent: 'test-device' });
-    expect(Object.keys(devices[0] ?? {}).sort()).toEqual(['id', 'lastActiveAt', 'pairedAt', 'userAgent']);
+    expect(Object.keys(devices[0] ?? {}).sort()).toEqual(['id', 'pairedAt', 'userAgent']);
 
     const res = await api.request('DELETE', `/api/household/students/${student.id}/devices/${devices[0]?.id ?? ''}`, { cookie: guardian });
     expect(res.status).toBe(204);
     expect(await api.sessionUser(device)).toBeUndefined();
     expect(await api.devices(guardian, student.id)).toEqual([]);
+  });
+
+  it('no longer lists a device whose session has expired', async () => {
+    const student = await api.student(guardian);
+    await api.pair(guardian, student.id);
+    await db
+      .update(session)
+      .set({ expiresAt: new Date(Date.now() - 1000) })
+      .where(eq(session.userId, student.id));
+    expect(await api.devices(guardian, student.id)).toEqual([]);
+  });
+
+  it('closes the session the device already held, so none stays behind', async () => {
+    const student = await api.student(guardian);
+    const parent = await api.guardian('tablette@example.com');
+    const parentId = (await api.sessionUser(parent))?.id ?? '';
+    const code = await api.pairingCode(guardian, student.id);
+
+    const res = await api.request('POST', '/api/auth/device-pairing/redeem', { cookie: parent, body: { code } });
+    expect(res.status).toBe(200);
+    expect(await db.select().from(session).where(eq(session.userId, parentId))).toEqual([]);
   });
 
   it('lets the student list their own devices', async () => {

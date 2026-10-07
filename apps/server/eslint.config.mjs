@@ -78,7 +78,7 @@ export default [
             allow(file('root'), file(['root', 'config']), element(['platform', 'domain']), inModule(['module-index'])),
             allow(inModule(['module-index']), sameModule(['routes', 'service', 'repository']), element('platform')),
             allow(inModule(['routes']), sameModule(['service']), element(['platform', 'domain'])),
-            allow(inModule(['service']), sameModule(['repository']), element(['platform', 'domain']), inModule(['module-index'])),
+            allow(inModule(['service']), sameModule(['repository']), element(['platform', 'domain'])),
             allow(inModule(['repository']), sameModule(['schema']), element(['platform', 'domain'])),
             allow(inModule(['schema']), element(['platform', 'domain'])),
             allow(element('platform'), element('platform'), file('config')),
