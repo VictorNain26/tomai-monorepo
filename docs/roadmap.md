@@ -49,7 +49,9 @@ consentement et mention IA, photo et voix, parcours parent, paiement, sur le mod
 Rien n'est ouvert à des élèves avant (obligations, pas des repères) :
 - art. 50(1) de l'AI Act traité dans le prompt et dans l'interface ;
 - détresse et modération mesurées par le harnais ;
-- endpoint UE et ZDR actifs ;
+- endpoint UE et ZDR actifs, et la clause des mineurs des conditions de Mistral clarifiée par
+  écrit (`etudes/2026-10-07/foyer-eleve-age.md`, § 1), demandées ensemble ;
+- la détresse relue par un humain, avec un délai tenu, avant tout message au parent ;
 - double consentement sous 15 ans ;
 - avis d'un conseil sur l'art. 50(2) ;
 - pages légales alignées sur l'hébergement réel ;
@@ -57,7 +59,10 @@ Rien n'est ouvert à des élèves avant (obligations, pas des repères) :
 
 ## Après la V1
 
-- **Lycée** (`etudes/2026-10-02/alignement.md`, § 9) : la même chaîne de référentiel et
+- **Primaire**, en mode accompagné (`etudes/2026-10-07/foyer-eleve-age.md`) : après une mesure
+  de la reconnaissance vocale sur des voix d'enfants français, et une position face au cadre
+  d'usage de l'IA du ministère.
+- **Lycée** (`etudes/2026-10-02/alignement.md`, § 9), en mode autonome : la même chaîne de référentiel et
   d'évaluation, par vagues. D'abord la vingtaine de couples (niveau, enseignement) les
   plus suivis de la voie générale, mathématiques en tête ; puis la série STMG et les
   matières générales de la voie professionnelle ; sujets du bac pour évaluer. Le
