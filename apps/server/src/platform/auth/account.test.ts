@@ -88,6 +88,13 @@ describe('invitation', () => {
     expect(await invitations('invitee@example.com')).toEqual([]);
   });
 
+  it('is kept by a sign-up that fails', async () => {
+    await invite(db, 'trop-court@example.com');
+    const short = await request('POST', '/api/auth/sign-up/email', { body: { name: 'Parent', email: 'trop-court@example.com', password: 'court' } });
+    expect(short.status).toBe(400);
+    expect((await signUp('trop-court@example.com')).status).toBe(200);
+  });
+
   it("refuses an account's address without one as any other: the answer tells no account", async () => {
     await guardian('deja@example.com');
     await refused(await signUp('deja@example.com'));

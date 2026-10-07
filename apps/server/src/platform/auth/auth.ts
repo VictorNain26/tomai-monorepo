@@ -107,14 +107,26 @@ export function createAuth(db: Db, config: Pick<Config, 'publicUrl' | 'authSecre
           throw new APIError('BAD_REQUEST', { message: 'Password required' });
         }
         // Closed beta (./invitation.ts), checked before better-auth looks the address up: an address
-        // without an invitation is refused alike, whether it has an account or not.
+        // without an invitation is refused alike, whether it has an account or not. Spent once the
+        // account exists (databaseHooks): a sign-up that fails keeps it.
         if (ctx.path === '/sign-up/email') {
           const email = field('email');
-          const invitation =
-            typeof email === 'string' ? await ctx.context.internalAdapter.consumeVerificationValue(invitationIdentifier(email)) : null;
-          if (!invitation) throw APIError.from('FORBIDDEN', { code: 'INVITATION_REQUIRED', message: 'Sign-up is by invitation only' });
+          const invitation = typeof email === 'string' ? await ctx.context.internalAdapter.findVerificationValue(invitationIdentifier(email)) : null;
+          if (!invitation || invitation.expiresAt <= new Date()) {
+            throw APIError.from('FORBIDDEN', { code: 'INVITATION_REQUIRED', message: 'Sign-up is by invitation only' });
+          }
         }
       }),
+    },
+    databaseHooks: {
+      // After the sign-up's transaction commits (better-auth's db/with-hooks.mjs).
+      user: {
+        create: {
+          after: async ({ email }, ctx) => {
+            await ctx?.context.internalAdapter.deleteVerificationByIdentifier(invitationIdentifier(email));
+          },
+        },
+      },
     },
     // A page of the web: better-auth's own error page has an inline style the CSP blocks.
     onAPIError: { errorURL: `${config.publicUrl}/erreur-connexion` },
