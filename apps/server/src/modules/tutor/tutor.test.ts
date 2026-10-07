@@ -39,6 +39,7 @@ const api = httpClient(
     background: createBackgroundTasks().run,
   }),
   mail,
+  db,
 );
 
 interface Session {

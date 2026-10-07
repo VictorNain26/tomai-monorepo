@@ -15,7 +15,7 @@ const elements = [
 // Single files are classified by file descriptors, folders by elements (jsboundaries.dev, « Elements »).
 const files = [
   { pattern: '**/*.test.ts', category: 'test' },
-  { pattern: ['src/main.ts', 'src/migrate.ts', 'src/app.ts', 'src/contract.ts'], category: 'root' },
+  { pattern: ['src/main.ts', 'src/migrate.ts', 'src/invite.ts', 'src/app.ts', 'src/contract.ts'], category: 'root' },
   { pattern: 'src/config.ts', category: 'config' },
   // In a module, routes → service → repository, and only the repository and the schema touch the database.
   { pattern: 'src/modules/*/index.ts', category: 'module-index' },
@@ -39,7 +39,7 @@ const NO_MOCK_MODULE = {
 const NO_ENVIRONMENT = ['Bun', 'process'].map((object) => ({
   object,
   property: 'env',
-  message: "L'environnement ne se lit que dans src/main.ts et src/migrate.ts : recevoir la config en paramètre.",
+  message: "L'environnement ne se lit que dans src/main.ts, src/migrate.ts et src/invite.ts : recevoir la config en paramètre.",
 }));
 
 const element = (type) => ({ element: { type } });
@@ -110,7 +110,7 @@ export default [
   },
   {
     files: ['src/**/*.ts'],
-    ignores: ['src/main.ts', 'src/migrate.ts', 'src/testing/**'],
+    ignores: ['src/main.ts', 'src/migrate.ts', 'src/invite.ts', 'src/testing/**'],
     rules: {
       'no-restricted-properties': ['error', NO_MOCK_MODULE, ...NO_ENVIRONMENT],
     },

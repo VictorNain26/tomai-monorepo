@@ -42,6 +42,7 @@ function client() {
       background: createBackgroundTasks().run,
     }),
     mail,
+    db,
   );
 }
 
