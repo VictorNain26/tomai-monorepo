@@ -70,27 +70,32 @@ test('a link without its token, or an expired one, says so', async ({ page }) =>
   await expect(page.getByRole('alert')).toContainText('Ce lien n’est plus valable');
 });
 
-test('a sign-out the server refuses says so, and keeps the parent signed in', async ({ page }) => {
-  const email = address('sortie');
-  await signUp(page, email);
-  await confirmEmail(email);
-  await signIn(page, email);
-  await expect(page).toHaveURL(/\/foyer$/);
+// page.route never sees what the service worker answers.
+test.describe('with the server failing', () => {
+  test.use({ serviceWorkers: 'block' });
 
-  await page.route('**/api/auth/sign-out', (route) => route.fulfill({ status: 429, json: { code: 'TOO_MANY_REQUESTS' } }));
-  await page.getByRole('button', { name: 'Se déconnecter' }).click();
-  await expect(page.getByRole('alert')).toContainText('Trop d’essais');
-  await expect(page).toHaveURL(/\/foyer$/);
-});
+  test('a sign-out the server refuses says so, and keeps the parent signed in', async ({ page }) => {
+    const email = address('sortie');
+    await signUp(page, email);
+    await confirmEmail(email);
+    await signIn(page, email);
+    await expect(page).toHaveURL(/\/foyer$/);
 
-test('a screen that cannot load says so in French, and loads on a retry', async ({ page }) => {
-  await page.route('**/api/me', (route) =>
-    route.fulfill({ status: 500, contentType: 'application/problem+json', json: { status: 500, code: 'INTERNAL_ERROR' } }),
-  );
-  await page.goto('/');
-  await expect(page.getByRole('heading', { name: 'Une erreur est survenue' })).toBeVisible();
+    await page.route('**/api/auth/sign-out', (route) => route.fulfill({ status: 429, json: { code: 'TOO_MANY_REQUESTS' } }));
+    await page.getByRole('button', { name: 'Se déconnecter' }).click();
+    await expect(page.getByRole('alert')).toContainText('Trop d’essais');
+    await expect(page).toHaveURL(/\/foyer$/);
+  });
 
-  await page.unroute('**/api/me');
-  await page.getByRole('button', { name: 'Réessayer' }).click();
-  await expect(page).toHaveURL(/\/connexion$/);
+  test('a screen that cannot load says so in French, and loads on a retry', async ({ page }) => {
+    await page.route('**/api/me', (route) =>
+      route.fulfill({ status: 500, contentType: 'application/problem+json', json: { status: 500, code: 'INTERNAL_ERROR' } }),
+    );
+    await page.goto('/');
+    await expect(page.getByRole('heading', { name: 'Une erreur est survenue' })).toBeVisible();
+
+    await page.unroute('**/api/me');
+    await page.getByRole('button', { name: 'Réessayer' }).click();
+    await expect(page).toHaveURL(/\/connexion$/);
+  });
 });

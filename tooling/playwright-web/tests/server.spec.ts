@@ -83,7 +83,8 @@ test.describe('after a deployment', () => {
     await page.goto('/');
 
     await expect(page.getByRole('heading', { name: 'Une erreur est survenue' })).toBeVisible();
-    expect(failed()).toBe(2);
+    // One reload, not a loop. WebKit asks no second time for a module it failed to load.
+    expect(failed()).toBeGreaterThanOrEqual(1);
     expect(loads).toBe(2);
   });
 });
