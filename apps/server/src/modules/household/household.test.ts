@@ -14,11 +14,11 @@ import { PAIRING_PREFIX } from '../../platform/auth/pairing';
 import { account, session, user, verification } from '../../platform/auth/schema';
 import { createLifecycle } from '../../platform/lifecycle/shutdown';
 import { testDatabase } from '../../testing/database';
+import { httpClient, ORIGIN, type Student } from '../../testing/http';
 import { memoryMailer } from '../../testing/mailer';
 import { accountDeletion } from './index';
 import { householdMember, studentProfile } from './schema';
 
-const ORIGIN = 'http://localhost:3002';
 const { db } = await testDatabase();
 const mail = memoryMailer();
 const auth = createAuth(
@@ -27,87 +27,18 @@ const auth = createAuth(
   { mailer: mail.mailer, logger: pino({ level: 'silent' }), background: createBackgroundTasks().run, deleteUser: accountDeletion(db) },
 );
 
-interface Student {
-  id: string;
-  name: string;
-  level: string;
-  birthMonth: string;
-}
-
-interface Device {
-  id: string;
-  pairedAt: string;
-  userAgent: string | null;
-}
-
 // One app per block: each has its own rate-limit budget, and every request here shares one address.
 function client() {
-  const app = createApp({
-    config: { production: false, webDistDir: undefined },
-    logger: pino({ level: 'silent' }),
-    db,
-    auth,
-    lifecycle: createLifecycle(),
-  });
-
-  const request = (method: string, path: string, { cookie, body }: { cookie?: string | undefined; body?: unknown } = {}) =>
-    app.request(`${ORIGIN}${path}`, {
-      method,
-      headers: {
-        'Content-Type': 'application/json',
-        Origin: ORIGIN,
-        'User-Agent': 'test-device',
-        ...(cookie === undefined ? {} : { Cookie: cookie }),
-      },
-      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
-    });
-
-  const cookieOf = (res: Response) =>
-    res.headers
-      .getSetCookie()
-      .find((cookie) => cookie.startsWith('better-auth.session_token='))
-      ?.split(';')[0] ?? '';
-
-  const api = {
-    request,
-    /** Signed up, the address confirmed by its link: the session that link opens. */
-    async guardian(email: string) {
-      const res = await request('POST', '/api/auth/sign-up/email', { body: { name: 'Parent', email, password: 'un mot de passe solide' } });
-      expect(res.status).toBe(200);
-      return cookieOf(await app.request(mail.linkTo(email, 'Confirmez')));
-    },
-    async student(cookie: string, overrides: Partial<Omit<Student, 'id'>> = {}) {
-      const res = await request('POST', '/api/household/students', {
-        cookie,
-        body: { name: 'Léa', level: 'cinquieme', birthMonth: '2014-03', ...overrides },
-      });
-      expect(res.status).toBe(201);
-      return (await res.json()) as Student;
-    },
-    async pairingCode(cookie: string, studentId: string) {
-      const res = await request('POST', `/api/household/students/${studentId}/pairing-code`, { cookie });
-      expect(res.status).toBe(201);
-      return ((await res.json()) as { code: string; expiresAt: string }).code;
-    },
-    async redeem(code: string) {
-      const res = await request('POST', '/api/auth/device-pairing/redeem', { body: { code } });
-      return { status: res.status, cookie: cookieOf(res) };
-    },
-    /** A guardian's code, redeemed on a new device: that device's session cookie. */
-    async pair(cookie: string, studentId: string) {
-      const { status, cookie: device } = await api.redeem(await api.pairingCode(cookie, studentId));
-      expect(status).toBe(200);
-      return device;
-    },
-    async sessionUser(cookie: string) {
-      const res = await request('GET', '/api/auth/get-session', { cookie });
-      return ((await res.json()) as { user: { id: string } } | null)?.user;
-    },
-    async devices(cookie: string, studentId: string) {
-      return (await (await request('GET', `/api/household/students/${studentId}/devices`, { cookie })).json()) as Device[];
-    },
-  };
-  return api;
+  return httpClient(
+    createApp({
+      config: { production: false, webDistDir: undefined },
+      logger: pino({ level: 'silent' }),
+      db,
+      auth,
+      lifecycle: createLifecycle(),
+    }),
+    mail,
+  );
 }
 
 const householdOf = async (userId: string) => (await db.select().from(householdMember).where(eq(householdMember.userId, userId)))[0]?.householdId;

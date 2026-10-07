@@ -18,6 +18,14 @@ export function householdModule({ db, auth }: { db: Db; auth: Auth }) {
   return { routes: householdRoutes({ auth, service }), authGuard: studentAuthGuard({ auth, service }) };
 }
 
+/** The signed-in student's profile, for the tutor; null for anyone who is not a student. */
+export function studentDirectory(db: Db) {
+  const repository = createHouseholdRepository(db);
+  return { find: async (userId: string) => (await repository.findProfile(userId)) ?? null };
+}
+
+export type StudentDirectory = ReturnType<typeof studentDirectory>;
+
 /** A user's deletion, with a sole guardian's household and students, in one transaction. */
 export function accountDeletion(db: Db) {
   const repository = createHouseholdRepository(db);

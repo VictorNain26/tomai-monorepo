@@ -4,7 +4,7 @@
  */
 
 import { validator } from 'hono/validator';
-import type { z } from 'zod';
+import { z } from 'zod';
 import { Problem } from './problem';
 
 export function jsonBody<T extends z.ZodType>(schema: T) {
@@ -14,5 +14,16 @@ export function jsonBody<T extends z.ZodType>(schema: T) {
       throw new Problem('INVALID_REQUEST', result.error.issues.map((issue) => `${issue.path.join('.') || 'body'}: ${issue.message}`).join('; '));
     }
     return result.data;
+  });
+}
+
+const uuid = z.uuid();
+
+/** A path parameter that must be a UUID: anything else names no resource, which the database would refuse with an error. */
+export function uuidParam<const N extends string>(name: N) {
+  return validator('param', (params: Record<string, string>): Record<N, string> => {
+    const value = params[name];
+    if (!uuid.safeParse(value).success || value === undefined) throw new Problem('NOT_FOUND');
+    return { [name]: value } as Record<N, string>;
   });
 }

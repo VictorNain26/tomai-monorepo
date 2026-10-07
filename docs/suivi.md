@@ -37,8 +37,9 @@ bloquant levé). L'historique vit dans git et les PR.
   (#425) ; l'e-mail des gardiens chez Scaleway TEM (`etudes/2026-10-07/email-transactionnel.md`) :
   adresse vérifiée avant toute connexion, réinitialisation qui ferme toutes les sessions,
   suppression confirmée par le mot de passe qui emporte le foyer d'un gardien seul.
-- **Étape 5 en cours**, le tuteur porté, en quatre PR : la plateforme IA et le faux Mistral (#430),
-  le cœur pur du tuteur, les séances et le tour complet, le quota par élève. L'étude des hébergeurs
+- **Étape 5 en cours**, le tuteur porté : la plateforme IA et le faux Mistral (#430), les
+  contrôles purs (#431), les étapes du tour, qui échouent fermées (#432), les séances et leurs
+  tables (3a) ; restent le tour en flux et son enregistrement (3b), puis le quota par élève. L'étude des hébergeurs
   UE avance en parallèle.
   L'ordre complet est dans l'étude. Test complet dans Chrome à la fin de chaque étape, la première
   à l'étape 6 avec les écrans.

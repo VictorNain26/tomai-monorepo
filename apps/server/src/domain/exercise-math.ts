@@ -193,7 +193,9 @@ export function compareEquations(proposal: string, statement: string): 'restated
   return part ? 'part' : 'different';
 }
 
-export type MathCheck = 'passed' | 'failed' | 'not-applicable';
+export const MATH_CHECKS = ['passed', 'failed', 'not-applicable'] as const;
+
+export type MathCheck = (typeof MATH_CHECKS)[number];
 
 /** The answer checked against the statement's equation, its roots computed once: an equation must have its roots, a value must be its only root. */
 export function checkAnswer(equation: string, answer: string): MathCheck {

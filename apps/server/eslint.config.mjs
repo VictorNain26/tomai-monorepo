@@ -79,12 +79,14 @@ export default [
           checkInternals: true,
           policies: [
             allow(file('root'), file(['root', 'config']), element(['platform', 'domain']), inModule(['module-index'])),
-            allow(inModule(['module-index']), sameModule(['routes', 'service', 'repository']), element('platform')),
+            // Another module is reached by its index.ts only.
+            allow(inModule(['module-index']), sameModule(['routes', 'service', 'repository']), inModule(['module-index']), element('platform')),
             allow(inModule(['routes']), sameModule(['service']), element(['platform', 'domain'])),
-            allow(inModule(['service']), sameModule(['repository', 'core']), element(['platform', 'domain'])),
+            allow(inModule(['service']), sameModule(['repository', 'core']), inModule(['module-index']), element(['platform', 'domain'])),
             allow(inModule(['core']), sameModule(['core']), element(['platform', 'domain', 'referential'])),
-            allow(inModule(['repository']), sameModule(['schema']), element(['platform', 'domain'])),
-            allow(inModule(['schema']), element(['platform', 'domain'])),
+            // The tables store the shapes core/ decides.
+            allow(inModule(['repository']), sameModule(['schema', 'core']), element(['platform', 'domain'])),
+            allow(inModule(['schema']), sameModule(['core']), element(['platform', 'domain'])),
             allow(element('platform'), element('platform'), file('config')),
             allow(element('domain'), element('domain')),
             allow(element('referential'), element(['referential', 'domain'])),
