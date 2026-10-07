@@ -18,6 +18,7 @@ const PROBLEMS = {
   NOT_FOUND: { status: 404, title: 'Ressource introuvable' },
   TURN_IN_PROGRESS: { status: 409, title: 'Un tour est déjà en cours dans cette séance' },
   RATE_LIMITED: { status: 429, title: 'Trop de requêtes' },
+  QUOTA_EXCEEDED: { status: 429, title: 'Le temps avec Tom est fini pour aujourd’hui' },
   INTERNAL_ERROR: { status: 500, title: 'Erreur interne' },
 } as const satisfies Record<string, { status: ContentfulStatusCode; title: string }>;
 

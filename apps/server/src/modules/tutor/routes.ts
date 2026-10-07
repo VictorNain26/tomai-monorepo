@@ -30,8 +30,8 @@ export function tutorRoutes({ auth, service, logger }: { auth: Auth; service: Tu
     .get('/', async (c) => c.json(await service.listSessions(c.var.userId)))
     .get('/:id/messages', uuidParam('id'), async (c) => c.json(await service.listMessages(c.var.userId, c.req.valid('param').id)))
     .post('/:id/messages', uuidParam('id'), jsonBody(turnBody), async (c) => {
-      const opened = await service.openTurn(c.var.userId, c.req.valid('param').id);
       const input = c.req.valid('json');
+      const opened = await service.openTurn(c.var.userId, c.req.valid('param').id, input);
       return createUIMessageStreamResponse({
         keepAliveMs: KEEP_ALIVE_MS,
         stream: createUIMessageStream({

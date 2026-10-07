@@ -55,7 +55,9 @@ voix) écrit son coût lui aussi : jamais un appel facturé hors du quota.
   (`MISTRAL_USD_TO_EUR`). Un modèle sans prix fait échouer `createAi`, donc le démarrage :
   l'ajouter à la table.
 - **Quota** : 2 c par élève et par jour en Gratuit, 10 c en Complet, voix comprise, remise à zéro
-  à 4 h (`docs/etudes/2026-10-07/rentabilite.md`) ; il revient avec l'étape 5 de la refonte.
+  à 4 h à Paris (`src/domain/quota.ts`, `docs/etudes/2026-10-07/rentabilite.md`), vérifié à
+  l'ouverture de chaque tour sur la somme d'`ai_cost`. Un nouvel appel facturé du tuteur compte
+  donc tout seul.
 - **Réduire le coût** : cache de prompt, clé = ID de session pour le chat, ID de workflow
   versionné pour les tâches templatées, contenu stable en tête du prompt ;
   `maxOutputTokens` fixé par tâche à l'appel, sauf sur un appel qui raisonne (la borne est alors

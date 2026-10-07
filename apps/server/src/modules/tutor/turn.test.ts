@@ -8,6 +8,7 @@ import { eq, sql } from 'drizzle-orm';
 import pino from 'pino';
 import { createApp } from '../../app';
 import { DISTRESS_REPLY } from '../../domain/distress';
+import { DAILY_BUDGET_MICRO_EUR, quotaDayStart } from '../../domain/quota';
 import { aiCost } from '../../platform/ai/schema';
 import { createAuth } from '../../platform/auth/auth';
 import { createBackgroundTasks } from '../../platform/lifecycle/background';
@@ -277,5 +278,54 @@ describe('refusals, before any model', () => {
     expect((await say(sessionId, '  \u0000 ')).status).toBe(400);
     expect((await say(sessionId, 'a'.repeat(4001))).status).toBe(400);
     expect(mistral.received).toEqual([]);
+  });
+});
+
+const spender = await api.student(guardian, { name: 'Noé', level: 'sixieme' });
+const asSpender = await api.pair(guardian, spender.id);
+
+describe('the daily quota', () => {
+  const sessionOf = async () => ((await (await api.request('POST', '/api/sessions', { cookie: asSpender })).json()) as { id: string }).id;
+  const spend = (costMicroEur: number, createdAt: Date) =>
+    db.insert(aiCost).values({
+      studentId: spender.id,
+      model: 'mistral-small-2603',
+      operation: 'chat',
+      inputTokens: 0,
+      cachedInputTokens: 0,
+      outputTokens: 0,
+      costMicroEur,
+      createdAt,
+    });
+  const today = quotaDayStart(new Date());
+
+  it('lets the turns of the day run under the budget, and does not count what was spent before 4 a.m.', async () => {
+    await spend(DAILY_BUDGET_MICRO_EUR, new Date(today.getTime() - 60_000));
+    await spend(DAILY_BUDGET_MICRO_EUR - 1, today);
+    mistral.chat.push(analysis(), { text: 'Bonjour Noé !' });
+    expect((await say(await sessionOf(), 'Bonjour', asSpender)).reply).toBe('Bonjour Noé !');
+  });
+
+  it('refuses a turn once the budget is spent, before any model writes, and frees the session', async () => {
+    const sessionId = await sessionOf();
+    mistral.received.length = 0;
+    const res = await api.request('POST', `/api/sessions/${sessionId}/messages`, { cookie: asSpender, body: { text: 'Encore une question' } });
+    expect(res.status).toBe(429);
+    expect(await res.json()).toMatchObject({ code: 'QUOTA_EXCEEDED', detail: 'Le quota du jour revient à 4 h.' });
+    expect(mistral.received.filter((r) => r.path === '/v1/chat/completions')).toEqual([]);
+    const [session] = await db.select({ turnStartedAt: studySession.turnStartedAt }).from(studySession).where(eq(studySession.id, sessionId));
+    expect(session?.turnStartedAt).toBeNull();
+  });
+
+  it('still answers a distress past the budget with the fixed reply, and records it', async () => {
+    const sessionId = await sessionOf();
+    mistral.received.length = 0;
+    expect((await say(sessionId, 'je veux mourir', asSpender)).reply).toBe(DISTRESS_REPLY);
+    expect(mistral.received.filter((r) => r.path === '/v1/chat/completions')).toEqual([]);
+    expect(await db.select({ detectedBy: distressEvent.detectedBy }).from(distressEvent).where(eq(distressEvent.sessionId, sessionId))).toEqual([
+      { detectedBy: 'rules' },
+    ]);
+    // The session closed, its fixed reply needs no budget.
+    expect((await say(sessionId, 'Bonjour', asSpender)).reply).toBe(DISTRESS_REPLY);
   });
 });

@@ -3,11 +3,12 @@
  * `ownSession`, a clause of the query itself: another student's session is simply not found.
  */
 
-import { and, asc, desc, eq, isNull, lt, or, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, isNull, lt, or, sql, sum } from 'drizzle-orm';
 import type { DistressSource } from '../../domain/distress';
 import type { MathCheck } from '../../domain/exercise-math';
 import type { SubjectFamily } from '../../domain/subjects';
 import type { ResponseMessage } from '../../platform/ai/client';
+import { aiCost } from '../../platform/ai/schema';
 import type { Db } from '../../platform/db/client';
 import type { ExerciseChange, ExerciseState } from './core/exercise-turn';
 import type { Hint } from './core/ladder';
@@ -141,6 +142,15 @@ export function createTutorRepository(db: Db) {
         .update(studySession)
         .set({ turnStartedAt: null })
         .where(and(eq(studySession.id, sessionId), eq(studySession.turnStartedAt, startedAt)));
+    },
+
+    /** What the student's AI calls cost since an instant, in micro-euros. */
+    async spentSince(studentId: string, since: Date) {
+      const [row] = await db
+        .select({ spent: sum(aiCost.costMicroEur).mapWith(Number) })
+        .from(aiCost)
+        .where(and(eq(aiCost.studentId, studentId), gte(aiCost.createdAt, since)));
+      return row?.spent ?? 0;
     },
 
     /** The last messages of the session, oldest first, with what the tutor's replay. */
