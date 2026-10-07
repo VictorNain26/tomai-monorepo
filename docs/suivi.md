@@ -54,12 +54,15 @@ bloquant levé). L'historique vit dans git et les PR.
 - **Le prénom et la mémoire chez Mistral** (Victor, 2026-10-07) : ils partent dans le prompt ;
   aucun vrai élève avant la réponse écrite de Mistral sur sa clause des moins de 15 ans ; s'il
   refuse, ils en sortent (`tuteur.md` § 11).
-- **Hébergement** (`etudes/2026-10-07/hebergement.md`), décidé par Victor le 2026-10-07 : Clever
-  Cloud en région Paris pour la préproduction, OVHcloud en repli ; HDS demandé à la CNIL, la zone
-  HDS (200 € par mois et ×1,4) seulement si la réponse l'exige, pour la production, qui y naîtrait
-  avant le premier vrai élève.
-- **Prochaine action** : l'étape 7, la préproduction sur Clever Cloud, une fois le compte ouvert
-  par Victor.
+- **Hébergement unifié** (`etudes/2026-10-07/hebergement.md`), décidé par Victor le 2026-10-07 :
+  tout chez Clever Cloud, région Paris ; `app.<nom>.fr` pour l'app, `<nom>.fr` pour la landing en
+  Astro dans une application statique ; Bugsink à la place de Sentry ; Vercel supprimé. HDS demandé
+  à la CNIL ; s'il est requis, la production naît en zone HDS ou chez Scalingo.
+- **Prochaine action** : porter la landing en Astro, décision de Victor du 2026-10-07 : un portage
+  fidèle, contrôlé par sa suite Playwright, qui sort de Vercel (son offre gratuite exclut l'usage
+  commercial), aligne les pages légales sur Clever Cloud et réécrit `.claude/rules/landing.md` ; le
+  lot 4 n'en réécrira que le contenu. Puis l'étape 7, la préproduction sur Clever Cloud, une fois le
+  compte ouvert par Victor.
 - **Rentabilité et quotas** (`etudes/2026-10-07/rentabilite.md`) : le gratuit décide de la
   rentabilité, la distribution est le vrai risque ; quotas proposés de 2 c (Gratuit) et 10 c
   (Complet) par élève et par jour, voix comprise, remis à zéro à 4 h, et l'année scolaire à 69 €
@@ -79,7 +82,8 @@ supprime ou que l'étude couvre n'y figure plus.
 
 ### Refonte — préproduction (étape 7)
 
-- **Observabilité** : OpenTelemetry et Sentry côté serveur, avec une destination dans l'UE contrainte par la config (`refonte-architecture.md`, « Données et autorisation »).
+- **Observabilité** : les erreurs du serveur vers Bugsink, auto-hébergé avec sa base, celles des navigateurs par le serveur (`tunnel`) ; les traces OpenTelemetry attendent un besoin mesuré (`etudes/2026-10-07/hebergement.md`).
+- **Cookies de session** : le préfixe `__Host-` pour ceux de better-auth, l'app et la landing étant du même site (à vérifier dans la config de better-auth).
 - **Postgres de l'hébergeur** : `verify-full` vérifie le certificat contre les CA du système ; une CA privée demande l'option `ssl` avec `ca` (`platform/db/client.ts`).
 - **Hébergement** : délai de grâce SIGTERM d'au moins un tour de chat, et `DRAIN_MS` (`src/main.ts`, 5 s) recalé sur l'intervalle de la sonde de l'hébergeur ; stockage partagé du rate limit s'il y a plusieurs instances ; derrière le proxy de l'hébergeur, ses sauts de confiance pour la clé du rate limit, y compris celle de better-auth sur l'échange d'un code de jumelage (`advanced.ipAddress`, `platform/auth/pairing.ts`), sans quoi tous les clients partagent un même compteur (`platform/http/rate-limit.ts`, aujourd'hui l'adresse de la connexion) et pour `trustedProxies` de better-auth ; compression des fichiers du web par le build ou par le proxy, selon l'hébergeur.
 - **Appareils de l'élève** : l'élève voit ses appareils reliés sur son accueil ; reste à le prévenir sur ses appareils déjà reliés quand un nouvel appareil l'est (date, type d'appareil) ; décider, en concevant l'historique, si un appareil nouvellement relié ne montre que les séances commencées après son jumelage (revue de #425, `etudes/2026-10-07/foyer-eleve-age.md`, § 7).
@@ -111,7 +115,7 @@ supprime ou que l'étude couvre n'y figure plus.
 
 ### Lot 4 — marque et lancement
 
-- **CSP de la landing** (`apps/landing/vercel.json`).
+- **CSP de la landing** : avec son portage en Astro, le `<meta>` de `security.csp` et les directives du Caddyfile (`etudes/2026-10-07/hebergement.md`, « Architecture unifiée »).
 - **Tests e2e qui gardent l'identité rejetée** (`signs.spec.ts`, graisse des titres dans `type.spec.ts`, place de Tom dans `hero.spec.ts`), et ceux du web (`apps/web/tests/home.spec.ts`, nom et couleurs du manifest) : à revoir avec la nouvelle identité.
 - **`Scribble`** (`apps/landing/components/annotations/scribble.tsx`) : erreur d'hydratation sous mouvement réduit (`initial` différent entre serveur et client) ; correctif technique permis pendant le gel.
 
@@ -188,6 +192,7 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
 | Juger un échantillon de conversations sur la page prévue, par courtes séances | Vérifier le juge, lot 1 | quand la page existe |
 | Ouvrir une Organisation Scaleway pour l'e-mail (moyen de paiement, identité, projet dédié, clé IAM limitée à Transactional Email) ; publier SPF, DKIM, DMARC (`p=none` d'abord) et MX du sous-domaine d'envoi, puis vérifier le domaine dans la console (`etudes/2026-10-07/email-transactionnel.md`). Le domaine dépend du nom du produit | Préproduction, étape 7 | à faire |
 | Ouvrir le compte Clever Cloud (organisation, paiement, région Paris), signer le DPA, créer un jeton d'API pour GitHub Actions (`etudes/2026-10-07/hebergement.md`) | Préproduction, étape 7 | à faire |
+| Une fois la landing en Astro en ligne chez Clever Cloud : faire pointer le DNS de `tomia.fr` vers elle, vérifier qu'elle répond, puis seulement supprimer le projet Vercel et l'organisation Sentry `home-drx` ; le domaine définitif suivra le nom du produit (`etudes/2026-10-07/hebergement.md`, « Architecture unifiée ») | Landing en Astro | à faire |
 | Écrire à la CNIL sur HDS, avec le texte proposé dans `etudes/2026-10-07/hebergement.md` ; la réponse entre dans l'AIPD | Porte avant ouverture | à faire |
 | Langfuse : la description de la file d'annotation `tom-judge-agreement` renvoie encore à `docs/agent.md`, devenu `docs/tuteur.md` ; la corriger dans l'interface (l'API n'a pas de mise à jour de file) | Évaluation | à faire |
 | Demander le Zero Data Retention : réservé au paiement à l'usage (« only with pay-as-you-go », [centre d'aide Mistral](https://help.mistral.ai/en/articles/347612-can-i-activate-zero-data-retention-zdr)), or le compte est sur l'offre gratuite (8,50 € d'API inclus par mois, paiement à l'usage désactivé, constaté le 2026-10-02). Activer le paiement à l'usage avec un plafond, puis envoyer la demande avec sa justification (mineurs, RGPD), et dans le même envoi la question sur la clause (c) des conditions commerciales : un service pour des 10-15 ans, avec l'accord de leurs parents, est-il permis ; vérifier ensuite Admin › API › Confidentialité. L'entraînement sur les appels API et les modèles Labs y sont désactivés | Porte avant ouverture | à faire |

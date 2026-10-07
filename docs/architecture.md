@@ -94,14 +94,22 @@ Cible :
 ## Observabilité
 
 - **En place** : logs pino avec le `requestId` de chaque requête et un sérialiseur d'erreurs en
-  liste blanche (aucun texte d'élève). OpenTelemetry et Sentry côté serveur arrivent avec la
-  préproduction, qui leur donne une destination dans l'UE.
+  liste blanche (aucun texte d'élève). Les erreurs iront à Bugsink, auto-hébergé chez Clever Cloud,
+  avec la préproduction ; les traces OpenTelemetry attendent un besoin mesuré
+  (`etudes/2026-10-07/hebergement.md`).
 - **À tenir dès leur retour** : l'AI SDK écrit le message d'erreur dans le span quel que soit
   `recordInputs`, et une erreur de validation y met la sortie du modèle ; les messages d'erreur
   se réécrivent avant tout export.
 - **Cible** (`etudes/2026-10-06/refonte-evaluation.md`, « Observabilité en production ») : traces et
   métriques sans identifiant ni texte, logs avec `trace_id`, erreurs dans un outil hébergé dans
-  l'UE, rétentions courtes, accès réservé ; la destination se tranche avec l'hébergeur.
+  l'UE, rétentions courtes, accès réservé ; les erreurs vont à Bugsink, chez l'hébergeur.
+
+## Hébergement
+
+Tranché le 2026-10-07 (`etudes/2026-10-07/hebergement.md`) : tout chez Clever Cloud, région Paris.
+`app.<nom>.fr` sert l'API et le web depuis l'image du serveur ; `<nom>.fr` est la landing, en
+Astro, dans une application statique à part. Les erreurs vont à Bugsink, l'e-mail part de Scaleway
+TEM, les photos iront dans Cellar.
 
 ## Décisions ouvertes
 
@@ -109,9 +117,7 @@ Elles sont tranchées au démarrage du lot qui en dépend, doc-first, pas avant�
 
 | Décision | Lot | Ce qui doit être vérifié |
 |---|---|---|
-| Hébergement web et serveur (UE) | 3 | Région UE, streaming SSE long, coût |
 | Fournisseur de paiement web | 3 | Conformité UE, abonnement familial multi-enfants, facturation sans piège réalisable telle que la vision la définit |
-| Landing : Astro à la place de Next.js (orientation du 2026-10-01 : site statique, SEO, HTML sans JavaScript par défaut, composants React en îlots) | 4 | Reprise de `@repo/ui` en îlots, hébergement, réécriture avec la nouvelle identité |
 | Nom du produit | 4 | Marques et domaines (vision, « Marque ») |
 
 ## Ordre des lots

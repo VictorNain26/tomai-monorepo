@@ -17,7 +17,13 @@ Sources lues le jour même. Prix HT ; « indirect » marque un fait déduit ou l
 |---|---|
 | Fly, Render, Railway, AWS, GCP, Azure, Vercel | Sociétés américaines : CLOUD Act |
 | Scaleway | Postgres managé en 17 au plus ([versions](https://www.scaleway.com/en/docs/managed-databases-for-postgresql-and-mysql/reference-content/pg-version-updates/)), PITR non trouvé, délai de grâce non documenté ; son HDS ne couvre ni les conteneurs serverless ni les bases ([HDS](https://www.scaleway.com/en/security-and-resilience/hds/)). Reste le fournisseur de l'e-mail |
-| Koyeb | Rejoint Mistral AI (2026-02-17, [blog](https://www.koyeb.com/blog/koyeb-is-joining-mistral-ai-to-build-the-future-of-ai-infrastructure)) ; AWS, GCP et Slack parmi ses sous-traitants ([DPA](https://www.koyeb.com/docs/legal/data-processing-agreement)) ; Postgres chez Neon (Databricks) |
+| Koyeb | Rejoint Mistral AI (2026-02-17, [blog](https://www.koyeb.com/blog/koyeb-is-joining-mistral-ai-to-build-the-future-of-ai-infrastructure)) ; ses régions tournent chez Equinix Metal, IBM Cloud, Scaleway et AWS, son plan de contrôle sur Google Cloud, avec Intercom et Slack ([DPA](https://www.koyeb.com/docs/legal/data-processing-agreement)) ; Postgres 14 à 17, à Francfort, Washington ou Singapour, sauvegardes non documentées ([doc](https://www.koyeb.com/docs/databases)) |
+| Upsun (Platform.sh) | Cloudflare et Sentry parmi ses sous-traitants ([liste](https://upsun.com/trust-center/privacy/subprocessor-list/)) ; régions UE sur OVH, Azure, AWS et Google ([regions](https://developer.upsun.com/docs/development/regions)) |
+| Infomaniak | Postgres managé « Available soon » ([page](https://www.infomaniak.com/en/hosting/public-cloud/database)) ; « no plans to become a certified Health Data Host » ([FAQ](https://www.infomaniak.com/en/support/faq/71/infomaniak-situation-and-certifications)) |
+| IONOS | Pas de PaaS, Kubernetes seulement, environ 100 € par mois en préproduction ; une filiale américaine ([prix](https://docs.ionos.com/cloud/support/general-information/price-list/ionos-cloud-eur-en.md)) |
+| Outscale | Aucun Postgres managé ([prix](https://en.outscale.com/pricing/)) |
+| Exoscale | Kubernetes seulement ; son Postgres est opéré par Aiven, dont les sous-traitants « back-end » sont Google Cloud, Sentry et Slack ([Aiven](https://aiven.io/subprocessors)) |
+| Northflank | Tourne sur Google Cloud ; « ISO 27001/27018: No » ([security](https://northflank.com/security)) |
 | Alwaysdata | Docker en Private Cloud seulement, 369 €/mois ([doc](https://help.alwaysdata.com/en/docs/development/docker/)) ; sous-traitants non publiés |
 | Hetzner, VPS nu ou Coolify | Société allemande, sans sous-traitant hors UE pour un site UE ([annexe 3](https://www.hetzner.com/AV/subunternehmer.pdf)). Mais rien de managé : archivage WAL, restaurations, bascule et patchs reviennent à un développeur seul. Coolify ne sauvegarde qu'en `pg_dump` ([doc](https://coolify.io/docs/databases/backups)) et a publié 16 alertes critiques en 2026 ([advisories](https://github.com/coollabsio/coolify/security/advisories)) ; pas de HDS |
 
@@ -33,6 +39,24 @@ Sources lues le jour même. Prix HT ; « indirect » marque un fait déduit ou l
 | X-Forwarded-For | Sōzu ajoute l'adresse qu'il voit à la fin de la chaîne (indirect, d'après son code) : la clé du rate limit est l'entrée qu'il a ajoutée, la dernière, jamais la première, qu'un client peut écrire lui-même | Proxy Protocol ou Ingress nécessaires |
 | Préproduction / environ 1 000 élèves | Environ 21 € (instance XS et `xxs_sml`) / environ 105 € (2 × S et `s_sml`), PITR en plus ([grille](https://api.clever-cloud.com/v4/billing/price-system?zone_id=par)) | Environ 76 € / environ 199 € |
 | Certifications | ISO 27001 ; HDS sur ses 6 activités, jusqu'au 2027-12-19, en zone HDS et contrat dédié ; SecNumCloud en cours | ISO 27001 ; HDS sur Kubernetes, le registre et les bases |
+
+### Scalingo, le recours si HDS est requis
+
+Société française, sur Outscale, son seul sous-traitant pour les données hébergées
+([DPA du 2026-10-06](https://scalingo.com/data-processing-agreement)) :
+- Postgres 14 à 18, et un PITR automatique dès le plan Starter, sur 7 jours
+  ([sauvegardes](https://doc.scalingo.com/databases/about/backup-policies)) ;
+- SIGTERM puis 30 s avant SIGKILL ([conteneurs](https://doc.scalingo.com/platform/internals/container-management)) ;
+- un flux doit envoyer quelque chose au moins toutes les 59 s, ce que fait le keep-alive
+  ([routing](https://doc.scalingo.com/platform/internals/routing)) ;
+- HDS compris, sans surcoût, en plan Business et sur au moins 2 conteneurs
+  ([prix](https://scalingo.com/pricing)) : environ 98 € par mois pour 1 000 élèves, contre environ
+  350 € dans la zone HDS de Clever Cloud.
+
+Il perd aujourd'hui sur un point bloquant. Il déploie par buildpacks, sans Docker documenté, et son
+buildpack Node.js officiel ne gère pas Bun ([README](https://github.com/Scalingo/nodejs-buildpack)).
+Le seul buildpack Bun a 0 étoile. L'image construite et vérifiée par la CI n'y tourne donc pas
+telle quelle.
 
 ## HDS : non tranché
 
@@ -61,13 +85,37 @@ détresse effacé après sa relecture humaine.
 ## Recommandation et décisions de Victor (2026-10-07)
 
 1. **Clever Cloud** pour la préproduction, en région Paris : une instance XS et un Postgres 18
-   dédié. Pour la production, Clever Cloud si les tests de préproduction passent, sinon OVHcloud.
+   dédié, puis tout le reste (« Architecture unifiée »). Pour la production, Clever Cloud si les tests
+   de préproduction passent ; OVHcloud si l'un d'eux échoue.
 2. **Twilio et Pipedrive acceptés** : ils servent au support et au CRM, donc aux données du compte
    de Victor, jamais aux données des élèves. C'est la différence avec Brevo, écarté parce que ses
    sous-traitants touchent les e-mails envoyés. À inscrire dans l'AIPD.
 3. **HDS** : Victor pose la question par écrit à la CNIL ; la réponse entre dans l'AIPD. D'ici là,
    aucun vrai élève, ce que la porte avant ouverture impose déjà. Si la réponse l'exige, la production
-   naît dans la zone HDS de Clever Cloud, avant le premier vrai élève.
+   naît avant le premier vrai élève dans la zone HDS de Clever Cloud, ou chez Scalingo, environ 3,5
+   fois moins cher. Scalingo construit par buildpack, pas depuis notre image : il faudrait que la CI
+   vérifie ce qu'il construit, e2e compris, avant de le retenir.
+
+## Architecture unifiée (décisions de Victor, 2026-10-07)
+
+Victor a demandé de « tout unifier si possible », refonte comprise, sans rien tenir pour acquis.
+
+| Brique | Choix | Raison |
+|---|---|---|
+| Hébergeur | Clever Cloud, région Paris, pour tout | Ci-dessus |
+| Domaines | Deux noms d'hôte : `<nom>.fr` pour la landing, `app.<nom>.fr` pour le serveur et le web | L'origine se joue à l'hôte ([MDN](https://developer.mozilla.org/en-US/docs/Web/Security/Same-origin_policy)) : aucun script de la vitrine ne tourne dans l'origine de la session du parent ; le service worker garde sa portée `/`. Mais les deux hôtes sont du même site : un script de la vitrine pourrait poser un cookie sur `<nom>.fr` que l'app recevrait. Les cookies de session prennent donc le préfixe `__Host-`, qui les attache à l'hôte |
+| Landing | Astro, site statique, dans une application statique Clever Cloud à part (instance pico, environ 4,50 € par mois, [doc](https://www.clever.cloud/developers/doc/applications/static/)) | Next.js en export statique marche, mais garde des scripts en ligne qu'une CSP stricte refuse sans un mécanisme encore expérimental ([doc](https://nextjs.org/docs/app/guides/content-security-policy)) ; Astro sort du HTML sans JavaScript, pose ses empreintes de scripts (`security.csp`, stable) et garde `@repo/ui` en îlots React. La fusionner dans `apps/web` demanderait TanStack Start et mettrait la vitrine sous le service worker de l'app. Elle reste en ligne quand l'app redémarre. Son Caddyfile porte les en-têtes de `vercel.json` (`X-Frame-Options`, `nosniff`, `Referrer-Policy`, `Permissions-Policy`), `frame-ancestors`, `object-src` et `base-uri` (un `<meta>` CSP ne peut pas les porter), et la redirection `/home` ; le `<meta>` d'Astro porte `script-src` et `style-src` |
+| Vercel | Supprimé | Son offre gratuite est réservée à un usage « non-commercial » ([fair use](https://vercel.com/docs/limits/fair-use-guidelines)), et la landing présente des prix ; société américaine |
+| Erreurs | Bugsink, auto-hébergé chez Clever Cloud, à la place de Sentry | Sentry passe par AWS, Cloudflare et Google, même en région UE ([sous-traitants](https://sentry.io/legal/subprocessors/)) ; Bugsink est néerlandais, un seul conteneur, compatible avec les SDK Sentry ([installation](https://www.bugsink.com/docs/installation/)), version 2.6.1 du 2026-09-25. Le disque d'une application Clever Cloud ne dure pas : il lui faut sa propre base (un Postgres `xxs_sml`, environ 5 € par mois, plus son instance). Les navigateurs lui envoient leurs erreurs par le serveur (l'option `tunnel` des SDK), sans origine de plus dans la CSP |
+| E-mail | Scaleway TEM, inchangé | Clever Cloud n'en a pas ; son extension MailPace envoie depuis le Royaume-Uni, sans liste de sous-traitants publiée ([DPA](https://mailpace.com/dpa)) |
+| Photos (lot 3) | Cellar, le S3 de Clever Cloud ([doc](https://www.clever.cloud/developers/doc/deploy/storage/cellar/)), l'envoi passant par le serveur | Pas de CORS ni de `connect-src` de plus |
+| Traces OpenTelemetry | Reportées | Clever Cloud a métriques, logs et alertes, mais ni APM ni traces ; les logs pino suffisent à l'étape 7 |
+| Langfuse | Inchangé, traces synthétiques seulement | Hébergé sur AWS en Irlande ([régions](https://langfuse.com/security/data-regions)) : jamais une donnée d'élève |
+| Previews de PR | Une application statique de la landing par PR, créée puis supprimée par `clever-tools` | L'action officielle de review apps n'est plus maintenue ([dépôt](https://github.com/CleverCloud/clever-cloud-review-app)) ; le serveur et le web restent couverts par l'e2e et la préproduction |
+
+Bun, Hono, Vite, TanStack Router et Turborepo restent : l'unification ne leur reproche rien. Les
+deux applications front aussi, avec deux modèles de rendu : du statique pour la vitrine, une SPA
+pour le produit.
 
 ## À tester en préproduction
 
