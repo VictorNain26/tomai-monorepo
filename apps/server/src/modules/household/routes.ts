@@ -12,6 +12,7 @@ import { schoolLevelSchema } from '../../domain/levels';
 import type { Auth } from '../../platform/auth/auth';
 import { requireSession, type SessionEnv } from '../../platform/auth/session';
 import type { AppEnv } from '../../platform/http/env';
+import { Problem } from '../../platform/http/problem';
 import { jsonBody } from '../../platform/http/validate';
 import type { HouseholdService } from './service';
 
@@ -37,14 +38,21 @@ const studentPatch = z
   .object({ name: name.optional(), level: schoolLevelSchema.optional() })
   .refine((patch) => patch.name !== undefined || patch.level !== undefined, 'au moins un champ');
 
-/** Before better-auth's handler: a signed-in student is refused every route but STUDENT_AUTH_PATHS. */
+/**
+ * Before better-auth's handler: a signed-in student is refused every route but STUDENT_AUTH_PATHS.
+ * A link opened on their device, a guardian's confirmation link say, goes to the sign-in page,
+ * which says whose the device is; the API and the web share one origin.
+ */
 export function studentAuthGuard({ auth, service }: { auth: Auth; service: HouseholdService }) {
   return createMiddleware<AppEnv>(async (c, next) => {
     if (!STUDENT_AUTH_PATHS.has(c.req.path)) {
       const session = await auth.api.getSession({ headers: c.req.raw.headers, query: { disableRefresh: true } });
-      if (session) await service.assertNotStudent(session.user.id);
+      if (session && (await service.isStudent(session.user.id))) {
+        if (c.req.method === 'GET') return c.redirect('/connexion');
+        throw new Problem('FORBIDDEN');
+      }
     }
-    await next();
+    return next();
   });
 }
 

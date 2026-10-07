@@ -35,6 +35,10 @@ export function createHouseholdService({ repository, createPairingCode }: Deps) 
   };
 
   return {
+    async isStudent(userId: string) {
+      return (await repository.roleOf(userId)) === 'student';
+    },
+
     /** A student reaches none of the guardian's routes. */
     async assertNotStudent(userId: string) {
       if ((await repository.roleOf(userId)) === 'student') throw new Problem('FORBIDDEN');
