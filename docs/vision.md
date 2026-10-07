@@ -100,7 +100,8 @@ surveillance de l'enfant. Pas de classement, pas de points, pas de séries.
   4,90 €, une heure d'Acadomia 24,40 € après crédit d'impôt.
 - **Facturation sans piège**, parce que c'est le premier reproche des parents dans les avis
   (`etudes/2026-10-01/parents.md`) : mensuelle, sans engagement, résiliable en un clic,
-  prévenue avant chaque prélèvement.
+  prévenue avant chaque prélèvement ; ou une année scolaire à 69 € payée d'avance, sans
+  renouvellement automatique (`etudes/2026-10-07/rentabilite.md`).
 
 ## Le foyer et l'âge
 
