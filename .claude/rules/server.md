@@ -30,6 +30,9 @@ Tuteur : `docs/tuteur.md`. Stack locale : skill `dev-bootstrap`. Appel IA 
 
 ## Pièges vérifiés
 
+- Le Postgres de Clever Cloud présente un certificat auto-signé, propre à chaque base :
+  `verify-full` contre les autorités du système le refuse. Il s'épingle par `DATABASE_CA`
+  (`platform/db/client.ts`), nom d'hôte vérifié.
 - better-auth 1.7 désactive son contrôle d'origine sous `NODE_ENV=test`
   (`context/create-context.mjs`) : `platform/auth/auth.ts` le force, sans quoi les tests ne
   vérifient pas ce que la production fait.

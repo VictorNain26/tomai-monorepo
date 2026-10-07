@@ -17,6 +17,8 @@ afterAll(() => {
   rmSync(empty, { recursive: true, force: true });
 });
 
+const CA = '-----BEGIN CERTIFICATE-----\nMIIBkTCB+wIJAKHBfp\n-----END CERTIFICATE-----';
+
 const MAIL = {
   SCW_ACCESS_KEY: 'SCWACCESSKEY',
   SCW_SECRET_KEY: 'secret',
@@ -41,6 +43,7 @@ describe('loadConfig', () => {
       logLevel: 'info',
       apiRateLimit: 100,
       databaseUrl: BASE.DATABASE_URL,
+      databaseCa: undefined,
       publicUrl: 'http://localhost:3002',
       authSecret: BASE.BETTER_AUTH_SECRET,
       webDistDir: undefined,
@@ -122,10 +125,17 @@ describe('loadConfig — every fault at once', () => {
 
 describe('loadDatabaseConfig', () => {
   it('needs the database only, not the server secrets', () => {
-    expect(loadDatabaseConfig({ DATABASE_URL: BASE.DATABASE_URL, NODE_ENV: 'production' })).toEqual({
+    expect(loadDatabaseConfig({ DATABASE_URL: BASE.DATABASE_URL, NODE_ENV: 'production', DATABASE_CA: CA })).toEqual({
       production: true,
       databaseUrl: BASE.DATABASE_URL,
+      databaseCa: CA,
     });
+  });
+
+  it('refuses a DATABASE_CA that is not a PEM certificate', () => {
+    expect(() => loadDatabaseConfig({ DATABASE_URL: BASE.DATABASE_URL, DATABASE_CA: 'MIIBkTCB+wIJAKHBfp' })).toThrow(
+      'DATABASE_CA doit être un certificat PEM',
+    );
   });
 
   it('refuses a missing DATABASE_URL', () => {
