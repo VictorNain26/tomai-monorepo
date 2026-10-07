@@ -19,10 +19,11 @@ import { writeChecked } from './core/controlled-turn';
 import { prepareExerciseTurn } from './core/exercise-turn';
 import { hintOf } from './core/ladder';
 import type { OutputCheckContext } from './core/output-check';
-import { promptVersion, studentBlock, subjectBlock, systemPrompt } from './core/prompt';
+import { studentBlock, subjectBlock, systemPrompt } from './core/prompt';
 import { routeReasoningEffort } from './core/reasoning';
 import { exerciseBlock, SHEET_PROMPT_VERSION } from './core/sheet';
-import type { TurnRecord, TutorRepository } from './repository';
+import { TURN_PROMPT_VERSION } from './core/version';
+import type { TutorRepository } from './repository';
 
 /** The messages of the session the tutor reads back; the summary of the older ones comes later. */
 const WINDOW = 20;
@@ -40,10 +41,10 @@ export interface TurnInput {
   inputMode: 'text' | 'voice';
 }
 
-/** A turn opened by `openTurn`: the student, their session, and the turn marked as running. */
+/** A turn opened by `openTurn`: the student, their session as the lock read it, and when the turn started. */
 export interface OpenTurn {
   student: { id: string; name: string; level: SchoolLevel };
-  session: { id: string; subject: TurnAnalysis['subject'] | null; closedAt: Date | null };
+  session: { id: string; subject: TurnAnalysis['subject'] | null; closedAt: Date | null; turnStartedAt: Date };
 }
 
 const analysisRecord = ({ error, ...analysis }: TurnAnalysis) => (error === undefined ? analysis : null);
@@ -65,12 +66,20 @@ export function createTutorService({ repository, students, ai, moderation, logge
 
   async function turn({ student: learner, session }: OpenTurn, input: TurnInput): Promise<string> {
     const studentText = input.text;
-    const fixed = { model, promptVersion: promptVersion(DISTRESS_REPLY), newExercise: false, findings: [] };
+    const fixed = { model, promptVersion: TURN_PROMPT_VERSION, newExercise: false, findings: [] };
+    const fixedReply = { studentText, tutorText: DISTRESS_REPLY, replay: null };
 
     // The conversation stopped at a distress: any later message gets the fixed reply again.
     if (session.closedAt) {
       await repository
-        .saveTurn(session.id, { studentText, tutorText: DISTRESS_REPLY, replay: null }, null, { ...fixed, outcome: 'closed' })
+        .saveTurn(session.id, {
+          exchange: fixedReply,
+          subject: null,
+          newExercise: null,
+          exerciseId: null,
+          progress: null,
+          record: { ...fixed, outcome: 'closed' },
+        })
         .catch((err: unknown) => {
           logger.error({ err }, 'Closed session turn not stored');
         });
@@ -79,34 +88,33 @@ export function createTutorService({ repository, students, ai, moderation, logge
 
     const [history, current] = await Promise.all([repository.window(session.id, WINDOW), repository.currentExercise(learner.id, session.id)]);
     const lastTutorText = history.findLast((row) => row.role === 'tutor')?.text ?? null;
-    // Run alongside, neither adding to the wait; the analysis is dropped on a distress.
-    const [analysis, inputModeration] = await Promise.all([
-      analyseTurn({ ai, logger }, { studentId: learner.id, studentText, lastTutorText, currentStatement: current?.sheet?.statement ?? null }),
-      moderateInput(lastTutorText, studentText),
-    ]);
+    // Started together; the distress waits for the moderation only, and drops the analysis.
+    const analysed = analyseTurn(
+      { ai, logger },
+      { studentId: learner.id, studentText, lastTutorText, currentStatement: current?.sheet?.statement ?? null },
+    );
+    const inputModeration = await moderateInput(lastTutorText, studentText);
 
     // Distress before anything else: no sheet, no tutor, the fixed reply. No failure to store it
     // keeps the reply from the student.
     const source = detectDistress(studentText, inputModeration?.flagged.includes('selfharm') ?? false);
     if (source) {
       await repository
-        .closeForDistress(
-          learner.id,
-          session.id,
-          source,
-          { studentText, tutorText: DISTRESS_REPLY, replay: null },
-          { ...fixed, inputFlagged: inputModeration?.flagged ?? null, outcome: 'distress' },
-        )
+        .closeForDistress(learner.id, session.id, source, fixedReply, {
+          ...fixed,
+          inputFlagged: inputModeration?.flagged ?? null,
+          outcome: 'distress',
+        })
         .catch((err: unknown) => {
           logger.error({ err }, 'Distress not stored');
         });
       return DISTRESS_REPLY;
     }
+    const analysis = await analysed;
 
     // The detected subject, else the session's: the first one named stays the session's.
     const detected = analysis.subject === 'general' ? null : analysis.subject;
     const subject = detected ?? session.subject ?? undefined;
-    if (detected && !session.subject) await repository.setSubject(session.id, detected);
 
     const exerciseTurn = await prepareExerciseTurn(
       { ai, logger },
@@ -123,16 +131,6 @@ export function createTutorService({ repository, students, ai, moderation, logge
       },
     );
     const { exercise, diagnosis, contract, change, hintLevel } = exerciseTurn;
-    const exerciseId =
-      exerciseTurn.isNew && exercise
-        ? await repository.createExercise(learner.id, session.id, {
-            sheet: exercise.sheet,
-            uncertain: exercise.uncertain,
-            drawnForms: exercise.drawnForms,
-            mathCheck: exerciseTurn.mathCheck ?? 'not-applicable',
-            promptVersion: SHEET_PROMPT_VERSION,
-          })
-        : current?.id;
 
     const system = systemPrompt(learner.level);
     const instruction = contract ?? turnInstruction(analysis);
@@ -167,26 +165,37 @@ export function createTutorService({ repository, students, ai, moderation, logge
       check,
     );
 
-    const record: TurnRecord = {
-      analysis: analysisRecord(analysis),
-      inputFlagged: inputModeration?.flagged ?? null,
-      exerciseId: exerciseId ?? null,
-      newExercise: exerciseTurn.isNew,
-      hintLevel,
-      verdict: diagnosis?.verdict ?? null,
-      decidedBy: diagnosis?.decidedBy ?? null,
-      reasoningEffort,
-      model,
-      promptVersion: promptVersion(system),
-      findings: reply.findings.map((finding) => finding.kind),
-      outcome: reply.outcome,
-    };
-    await repository.saveTurn(
-      session.id,
-      { studentText, tutorText: reply.text, replay: reply.replay },
-      change && exerciseId && hintLevel !== null ? { exerciseId, progress: { ...change, hint: hintOf(hintLevel, reply.text) } } : null,
-      record,
-    );
+    // A fixed reply gave none of the help the level allowed: the exercise does not move.
+    const helped = reply.outcome !== 'fallback';
+    await repository.saveTurn(session.id, {
+      exchange: { studentText, tutorText: reply.text, replay: reply.replay },
+      subject: session.subject ? null : detected,
+      newExercise:
+        exerciseTurn.isNew && exercise
+          ? {
+              sheet: exercise.sheet,
+              uncertain: exercise.uncertain,
+              drawnForms: exercise.drawnForms,
+              mathCheck: exerciseTurn.mathCheck ?? 'not-applicable',
+              promptVersion: SHEET_PROMPT_VERSION,
+            }
+          : null,
+      exerciseId: exerciseTurn.isNew ? null : (current?.id ?? null),
+      progress: helped && change && hintLevel !== null ? { ...change, hint: hintOf(hintLevel, reply.text) } : null,
+      record: {
+        analysis: analysisRecord(analysis),
+        inputFlagged: inputModeration?.flagged ?? null,
+        newExercise: exerciseTurn.isNew,
+        hintLevel,
+        verdict: diagnosis?.verdict ?? null,
+        decidedBy: diagnosis?.decidedBy ?? null,
+        reasoningEffort,
+        model,
+        promptVersion: TURN_PROMPT_VERSION,
+        findings: reply.findings.map((finding) => finding.kind),
+        outcome: reply.outcome,
+      },
+    });
     return reply.text;
   }
 
@@ -210,10 +219,11 @@ export function createTutorService({ repository, students, ai, moderation, logge
     /** Before the stream: the student, their session, and one turn at a time in it. */
     async openTurn(userId: string, sessionId: string): Promise<OpenTurn> {
       const learner = await student(userId);
-      const session = await repository.findSession(userId, sessionId);
-      if (!session) throw new Problem('NOT_FOUND');
-      if (!(await repository.startTurn(userId, sessionId))) throw new Problem('TURN_IN_PROGRESS');
-      return { student: learner, session };
+      const started = await repository.startTurn(userId, sessionId);
+      if (!started) throw new Problem((await repository.findSession(userId, sessionId)) ? 'TURN_IN_PROGRESS' : 'NOT_FOUND');
+      const { turnStartedAt } = started;
+      if (!turnStartedAt) throw new Error('Turn started without its time');
+      return { student: learner, session: { id: sessionId, subject: started.subject, closedAt: started.closedAt, turnStartedAt } };
     },
 
     /** The turn's reply; the session is free for the next turn whatever happens. */
@@ -221,7 +231,7 @@ export function createTutorService({ repository, students, ai, moderation, logge
       try {
         return await turn(opened, input);
       } finally {
-        await repository.endTurn(opened.session.id);
+        await repository.endTurn(opened.session.id, opened.session.turnStartedAt);
       }
     },
   };

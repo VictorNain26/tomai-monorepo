@@ -42,7 +42,7 @@ export interface ChatTurnParts {
   studentText: string;
 }
 
-const VOICE_MARKER = "[VOCAL] Ce tour a été dicté à l'oral — réponds en style parlé, sans markdown.";
+export const VOICE_MARKER = "[VOCAL] Ce tour a été dicté à l'oral — réponds en style parlé, sans markdown.";
 
 function textParts(content: UserContent) {
   return typeof content === 'string' ? [{ type: 'text' as const, text: content }] : content;

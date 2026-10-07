@@ -19,6 +19,7 @@ import { fakeMistral } from '../../testing/mistral';
 import { accountDeletion } from '../household';
 import type { TurnAnalysis } from './core/analysis';
 import { FALLBACK_REPLY } from './core/output-check';
+import { TURN_PROMPT_VERSION } from './core/version';
 import { distressEvent, exercise, studySession, turnRecord } from './schema';
 
 const { db } = await testDatabase();
@@ -178,6 +179,26 @@ describe('a turn', () => {
     expect(await db.select().from(distressEvent).where(eq(distressEvent.sessionId, sessionId))).toHaveLength(1);
   });
 
+  it('answers a distress without waiting for the analysis', async () => {
+    const sessionId = await newSession();
+    mistral.chat.push('hang');
+    mistral.moderations.push({ flagged: ['selfharm'] });
+    const start = Date.now();
+    expect((await say(sessionId, "j'en peux plus")).reply).toBe(DISTRESS_REPLY);
+    expect(Date.now() - start).toBeLessThan(1_000);
+  });
+
+  it('reads the session closed by the statement that locks the turn', async () => {
+    const sessionId = await newSession();
+    await db
+      .update(studySession)
+      .set({ closedAt: sql`now()` })
+      .where(eq(studySession.id, sessionId));
+    mistral.received.length = 0;
+    expect((await say(sessionId, 'Bonjour')).reply).toBe(DISTRESS_REPLY);
+    expect(mistral.received).toEqual([]);
+  });
+
   it('sees a distress the rules catch when moderation cannot answer', async () => {
     const sessionId = await newSession();
     mistral.chat.push(analysis());
@@ -213,10 +234,36 @@ describe('a turn', () => {
     expect((await say(sessionId, 'Bonjour ?')).reply).toBe('Me revoilà.');
   });
 
-  it('gives the fixed reply when even the regeneration gives the answer away', async () => {
+  it('gives the fixed reply when even the regeneration gives the answer away, the exercise left where it was', async () => {
     const sessionId = await newSession();
-    mistral.chat.push(analysis({ bringsExercise: true }), draft, draft, draft, { text: 'x = 5' }, { text: 'Bon, x = 5.' });
-    expect((await say(sessionId, 'Résous 3x + 5 = 20.')).reply).toBe(FALLBACK_REPLY);
+    mistral.chat.push(analysis({ bringsExercise: true }), draft, draft, draft, { text: 'Que fais-tu du + 5 ?' });
+    await say(sessionId, 'Résous 3x + 5 = 20.');
+    mistral.chat.push(
+      analysis({ proposesAnswer: true }),
+      { json: { verdict: 'incorrect', firstWrongStep: null, errorType: 'careless', proposalMath: 'x = 4' } },
+      { text: 'x = 5' },
+      { text: 'Bon, x = 5.' },
+    );
+    expect((await say(sessionId, 'x = 4 ?')).reply).toBe(FALLBACK_REPLY);
+    const [row] = await db.select().from(exercise).where(eq(exercise.sessionId, sessionId));
+    expect(row).toMatchObject({ hintLevel: 0, hints: [{ level: 0, text: 'Que fais-tu du + 5 ?' }] });
+    expect((await records(sessionId)).at(-1)).toMatchObject({ outcome: 'fallback', hintLevel: 1 });
+  });
+
+  it('keeps no exercise of a turn Mistral failed, nor any of its messages', async () => {
+    const sessionId = await newSession();
+    mistral.chat.push(analysis({ bringsExercise: true }), draft, draft, draft, { status: 400 });
+    expect((await say(sessionId, 'Résous 3x + 5 = 20.')).error).toBe("Tom n'a pas pu répondre. Réessaie dans un instant.");
+    expect(await db.select().from(exercise).where(eq(exercise.sessionId, sessionId))).toEqual([]);
+    expect(await messagesOf(sessionId)).toEqual([]);
+  });
+
+  it('records the version of every template the writer may receive', async () => {
+    const sessionId = await newSession();
+    mistral.chat.push(analysis(), { text: 'Bonjour !' });
+    await say(sessionId, 'Bonjour');
+    expect((await records(sessionId)).at(-1)?.promptVersion).toBe(TURN_PROMPT_VERSION);
+    expect(TURN_PROMPT_VERSION).toMatch(/^[0-9a-f]{12}$/);
   });
 });
 

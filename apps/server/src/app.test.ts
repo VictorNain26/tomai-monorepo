@@ -14,10 +14,10 @@ import { accountDeletion } from './modules/household';
 import { createAuth } from './platform/auth/auth';
 import { createLifecycle } from './platform/lifecycle/shutdown';
 import { testDatabase } from './testing/database';
+import { ORIGIN } from './testing/http';
 import { fakeMistral } from './testing/mistral';
 import { memoryMailer } from './testing/mailer';
 
-const ORIGIN = 'http://localhost:3002';
 const { db } = await testDatabase();
 const mistral = fakeMistral();
 const dist = mkdtempSync(join(tmpdir(), 'web-dist-'));

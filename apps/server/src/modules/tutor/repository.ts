@@ -21,7 +21,20 @@ const STALE_TURN = sql`interval '3 minutes'`;
 
 type Executor = Db | Parameters<Parameters<Db['transaction']>[0]>[0];
 
-export type TurnRecord = Omit<typeof turnRecord.$inferInsert, 'id' | 'sessionId' | 'createdAt'>;
+export type TurnRecord = Omit<typeof turnRecord.$inferInsert, 'id' | 'sessionId' | 'exerciseId' | 'createdAt'>;
+
+export interface SavedTurn {
+  exchange: Exchange;
+  /** The subject the analysis named, which the session takes if it has none. */
+  subject: Exclude<SubjectFamily, 'general'> | null;
+  /** The exercise the student brought this turn, at the first level. */
+  newExercise: (Pick<ExerciseState, 'sheet' | 'uncertain' | 'drawnForms'> & { mathCheck: MathCheck; promptVersion: string }) | null;
+  /** The exercise in progress, when no new one comes. */
+  exerciseId: string | null;
+  /** What the turn changes on the exercise, the student having read the help it allowed. */
+  progress: ExerciseProgress | null;
+  record: TurnRecord;
+}
 
 /** The two messages of a turn: what the student wrote, what they read, and how to replay it. */
 interface Exchange {
@@ -105,45 +118,29 @@ export function createTutorRepository(db: Db) {
       return { id, sheet, uncertain, drawnForms, hintLevel, stepsDone, stuckTurns, hints, solved: solvedAt !== null };
     },
 
-    /** A new exercise in the student's session, at the first level; undefined when the session is not theirs. */
-    async createExercise(
-      studentId: string,
-      sessionId: string,
-      fresh: Pick<ExerciseState, 'sheet' | 'uncertain' | 'drawnForms'> & { mathCheck: MathCheck; promptVersion: string },
-    ) {
-      return db.transaction(async (tx) => {
-        // The session read in the same transaction, and locked against its deletion until the insert.
-        const [owned] = await tx.select({ id: studySession.id }).from(studySession).where(ownSession(studentId, sessionId)).for('share');
-        if (!owned) return undefined;
-        const [created] = await tx
-          .insert(exercise)
-          .values({ sessionId: owned.id, ...fresh })
-          .returning({ id: exercise.id });
-        return created?.id;
-      });
-    },
-
     /**
-     * What a turn the student has seen changes on an exercise this module read for them. The level
-     * and the stuck turns are the turn's decision, from the state it read: one turn at a time runs
-     * in a session (`startTurn`). A step done counts in SQL, and only the last hints are kept.
+     * Marks a turn as running in the student's session, and reads the session in the same
+     * statement: a session closed by the turn before is seen closed. Undefined when a turn already
+     * runs, or when the session is not theirs.
      */
-    recordExerciseTurn: (exerciseId: string, progress: ExerciseProgress) => updateExercise(db, exerciseId, progress),
-
-    /** Marks a turn as running in the student's session; false when one already runs. */
     async startTurn(studentId: string, sessionId: string) {
-      const started = await db
+      const [started] = await db
         .update(studySession)
-        .set({ turnStartedAt: sql`now()` })
+        // To the millisecond, as a JavaScript Date holds it: endTurn compares it back.
+        .set({ turnStartedAt: sql`date_trunc('milliseconds', now())` })
         .where(
           and(ownSession(studentId, sessionId), or(isNull(studySession.turnStartedAt), lt(studySession.turnStartedAt, sql`now() - ${STALE_TURN}`))),
         )
-        .returning({ id: studySession.id });
-      return started.length > 0;
+        .returning({ subject: studySession.subject, closedAt: studySession.closedAt, turnStartedAt: studySession.turnStartedAt });
+      return started;
     },
 
-    async endTurn(sessionId: string) {
-      await db.update(studySession).set({ turnStartedAt: null }).where(eq(studySession.id, sessionId));
+    /** Frees the session, unless another turn took over a lock this one held too long. */
+    async endTurn(sessionId: string, startedAt: Date) {
+      await db
+        .update(studySession)
+        .set({ turnStartedAt: null })
+        .where(and(eq(studySession.id, sessionId), eq(studySession.turnStartedAt, startedAt)));
     },
 
     /** The last messages of the session, oldest first, with what the tutor's replay. */
@@ -157,20 +154,31 @@ export function createTutorRepository(db: Db) {
       return rows.reverse();
     },
 
-    /** The first subject the analysis names stays the session's; a later one does not replace it. */
-    async setSubject(sessionId: string, subject: Exclude<SubjectFamily, 'general'>) {
-      await db
-        .update(studySession)
-        .set({ subject })
-        .where(and(eq(studySession.id, sessionId), isNull(studySession.subject)));
-    },
-
-    /** A turn answered: its messages, its change on the exercise and its record, together. */
-    async saveTurn(sessionId: string, exchange: Exchange, change: { exerciseId: string; progress: ExerciseProgress } | null, record: TurnRecord) {
+    /**
+     * A turn answered, all of it or nothing: the subject the session takes from its first one, a
+     * new exercise, the exercise's change, the messages and the record. The session is the one the
+     * turn locked, through the student's ownership (`startTurn`).
+     */
+    async saveTurn(sessionId: string, turn: SavedTurn) {
       await db.transaction(async (tx) => {
-        await writeExchange(tx, sessionId, exchange);
-        if (change) await updateExercise(tx, change.exerciseId, change.progress);
-        await tx.insert(turnRecord).values({ sessionId, ...record });
+        if (turn.subject) {
+          await tx
+            .update(studySession)
+            .set({ subject: turn.subject })
+            .where(and(eq(studySession.id, sessionId), isNull(studySession.subject)));
+        }
+        const created = turn.newExercise
+          ? (
+              await tx
+                .insert(exercise)
+                .values({ sessionId, ...turn.newExercise })
+                .returning({ id: exercise.id })
+            )[0]?.id
+          : undefined;
+        const exerciseId = created ?? turn.exerciseId;
+        if (exerciseId && turn.progress) await updateExercise(tx, exerciseId, turn.progress);
+        await writeExchange(tx, sessionId, turn.exchange);
+        await tx.insert(turnRecord).values({ sessionId, exerciseId: exerciseId ?? null, ...turn.record });
       });
     },
 
@@ -186,7 +194,7 @@ export function createTutorRepository(db: Db) {
           .set({ closedAt: sql`now()` })
           .where(and(eq(studySession.id, sessionId), isNull(studySession.closedAt)));
         await writeExchange(tx, sessionId, exchange);
-        await tx.insert(turnRecord).values({ sessionId, ...record });
+        await tx.insert(turnRecord).values({ sessionId, exerciseId: null, ...record });
       });
     },
   };
