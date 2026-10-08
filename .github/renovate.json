@@ -123,6 +123,17 @@
       "matchManagers": ["dockerfile", "docker-compose"],
       "groupName": "docker",
       "commitMessagePrefix": "chore(docker)"
+    },
+    {
+      "description": "Playwright's CI image moves with @playwright/test: its browsers are the ones the tests drive (ci.yml, e2e-web).",
+      "matchPackageNames": ["@playwright/test", "mcr.microsoft.com/playwright"],
+      "groupName": "playwright"
+    },
+    {
+      "description": "Playwright's image tags read v1.63.0-noble: the distribution is the compatibility part.",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["mcr.microsoft.com/playwright"],
+      "versioning": "regex:^v(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)-(?<compatibility>.+)$"
     }
   ]
 }

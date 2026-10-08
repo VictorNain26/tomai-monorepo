@@ -29,13 +29,12 @@ jobs:
   check:
     name: Check
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
       - uses: ./.github/actions/setup-monorepo
-        with:
-          turbo-cache-key: check
       - run: bunx --no-install turbo run typecheck lint ${AFFECTED:+"$AFFECTED"}
       - run: bunx --no-install prettier --check .
       - run: bunx --no-install knip
@@ -45,6 +44,7 @@ jobs:
   actionlint:
     name: Actionlint
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       # Docker image method of https://github.com/rhysd/actionlint/blob/main/docs/usage.md.
@@ -55,6 +55,7 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     # The server's tests run on a real Postgres: a database per test file, copied from this run's
     # template (apps/server/src/testing).
     services:
@@ -71,8 +72,6 @@ jobs:
         with:
           fetch-depth: 0
       - uses: ./.github/actions/setup-monorepo
-        with:
-          turbo-cache-key: test
       - run: bunx --no-install turbo run test ${AFFECTED:+"$AFFECTED"}
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres
@@ -80,70 +79,89 @@ jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
       - uses: ./.github/actions/setup-monorepo
-        with:
-          turbo-cache-key: build
       - run: bunx --no-install turbo run build ${AFFECTED:+"$AFFECTED"}
 
-  # Browsers are installed, not cached: https://playwright.dev/docs/ci#caching-browsers
-  # (restoring takes as long as downloading, and the system dependencies are not cacheable).
-  e2e:
-    name: E2E (Playwright)
+  # The web's suite in Playwright's own image, its browsers and their system libraries inside: no
+  # apt on the runner, whose mirror has held a run up to 17 minutes (https://playwright.dev/docs/ci).
+  # The tag follows @playwright/test (renovate.json, group "playwright").
+  e2e-web:
+    name: E2E web (Playwright)
     runs-on: ubuntu-latest
-    timeout-minutes: 30
-    # The web's suite runs the built server on its own database (tooling/playwright-web).
+    timeout-minutes: 20
+    container:
+      image: mcr.microsoft.com/playwright:v1.63.0-noble@sha256:eff16c30e6f3f4af0a03fa4b706120d5e9b0891c344a27d64559aff5900a4a27
+      options: --user 1001
+    # The suite runs the built server on its own database (tooling/playwright-web).
     services:
       postgres:
         image: postgres:18.6
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
-        ports:
-          - 5432:5432
         options: --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-      - uses: ./.github/actions/setup-monorepo
-        with:
-          turbo-cache-key: e2e
-      - name: List the e2e tasks to run
-        id: tasks
+      # setup-bun unpacks with unzip, which the image lacks; npm is one of Bun's own installs
+      # (https://bun.com/docs/installation), at the version package.json pins.
+      - name: Install Bun
         run: |
-          TASKS=$(bunx --no-install turbo run test:e2e ${AFFECTED:+"$AFFECTED"} --dry=json | jq -r '[.tasks[] | select(.command != "<NONEXISTENT>") | .taskId] | join(" ")')
-          echo "tasks=$TASKS" >> "$GITHUB_OUTPUT"
-          echo "e2e tasks: ${TASKS:-none}"
-      # The web's suite runs on WebKit (iphone) and Chromium (android), the landing's on Chromium.
-      - name: Install browsers and their system dependencies
-        if: steps.tasks.outputs.tasks != ''
-        working-directory: tooling/playwright-web
-        run: bunx --no-install playwright install --with-deps chromium webkit
-      - name: Run e2e
-        if: steps.tasks.outputs.tasks != ''
-        run: bunx --no-install turbo run test:e2e ${AFFECTED:+"$AFFECTED"}
+          npm install --global --prefix "$HOME/.local" --no-fund --no-audit "$(node -p "require('./package.json').packageManager")"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: bun-${{ runner.os }}-
+      - run: bun install --frozen-lockfile
+      - run: bunx --no-install turbo run test:e2e --filter=@repo/playwright-web ${AFFECTED:+"$AFFECTED"}
         env:
-          E2E_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/tom_e2e
-      - name: Keep the web suite's report
-        if: failure() && steps.tasks.outputs.tasks != ''
+          E2E_DATABASE_URL: postgresql://postgres:postgres@postgres:5432/tom_e2e
+      - name: Keep the suite's report
+        if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: playwright-web-report
           path: tooling/playwright-web/playwright-report/
           retention-days: 7
 
+  # The landing's suite stays on the runner: its server is Caddy, started by `docker run`
+  # (apps/landing/playwright.config.ts). Chromium's headless shell only, the one browser it uses.
+  e2e-landing:
+    name: E2E landing (Playwright)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/setup-monorepo
+      - name: Is the landing affected
+        id: affected
+        run: |
+          TASKS=$(bunx --no-install turbo run test:e2e --filter=landing ${AFFECTED:+"$AFFECTED"} --dry=json | jq '[.tasks[] | select(.command != "<NONEXISTENT>")] | length')
+          echo "run=$([ "$TASKS" -gt 0 ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+      - name: Install Chromium's headless shell and its system dependencies
+        if: steps.affected.outputs.run == 'true'
+        working-directory: apps/landing
+        run: bunx --no-install playwright install --with-deps --only-shell chromium
+      - if: steps.affected.outputs.run == 'true'
+        run: bunx --no-install turbo run test:e2e --filter=landing
+
   migrations:
     name: Migration Sync
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-monorepo
-        with:
-          turbo-cache-key: migrations
       - name: The committed SQL matches the schema
         working-directory: apps/server
         run: |
@@ -158,6 +176,7 @@ jobs:
   image:
     name: Server image
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: read
       packages: write
@@ -211,6 +230,7 @@ jobs:
   secrets:
     name: Secret Detection
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -222,6 +242,7 @@ jobs:
   sast:
     name: SAST
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     container:
       image: semgrep/semgrep@sha256:acaac22ffc7b7cc5926de0751b223bce0b2491c33d18422fa72f632c78d81198 # 1.177.0
     steps:
@@ -233,11 +254,10 @@ jobs:
   audit:
     name: Dependency audit (prod, high+)
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-monorepo
-        with:
-          turbo-cache-key: audit
       - run: bun audit --audit-level=high --prod
 
   # The one required check. A job that needs another is skipped when that one fails, unless
@@ -246,8 +266,9 @@ jobs:
   ci-ok:
     name: ci-ok
     if: always()
-    needs: [check, actionlint, test, build, e2e, migrations, image, secrets, sast, audit]
+    needs: [check, actionlint, test, build, e2e-web, e2e-landing, migrations, image, secrets, sast, audit]
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - name: Every job succeeded
         env:
@@ -266,6 +287,7 @@ jobs:
     needs: [ci-ok, image]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     environment:
       name: staging
       url: https://staging.tomia.fr
