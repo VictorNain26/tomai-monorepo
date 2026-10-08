@@ -62,8 +62,11 @@ bloquant levé). L'historique vit dans git et les PR.
   supprimés ; Astro 7 statique sans framework client (éléments natifs et personnalisés, API vanilla de
   Motion), CSP à empreintes, servie par Caddy (`apps/landing/Caddyfile`),
   contre lequel tourne la suite e2e ; pages légales alignées sur Clever Cloud. Déployée le 2026-10-08
-  dans l'application statique `tomai-landing` (pico, Paris), par la CI à chaque merge ;
-  `tomia.fr` pointe encore sur la version Next de Vercel jusqu'à la bascule du DNS.
+  dans l'application statique `tomai-landing` (pico, Paris), par la CI à chaque merge ; en ligne sur
+  https://tomia.fr depuis la bascule du DNS par Victor le 2026-10-08 (A de l'apex et CNAME de `www`
+  vers Clever Cloud, CAA `letsencrypt.org`, DNSSEC actif). `contact@tomia.fr`, publiée par la
+  landing, est redirigée par le MX Plan d'OVH vers la boîte Gmail de Victor, donc chez Google : à
+  revoir si une boîte dans l'UE devient nécessaire.
 - **Staging et bêta fermée** (Victor, 2026-10-07) : la préproduction de l'étape 7 devient le staging,
   avec ses propres clés et la plus petite taille qui suffit (Docker nano, 582 Mo, pour un serveur
   mesuré à 150 Mo au repos, et Postgres 18 `xxs_tny`). Un compte parent se crée sur invitation
@@ -94,7 +97,14 @@ bloquant levé). L'historique vit dans git et les PR.
   les fiches de révision, qui n'existent plus. La suite, dans l'ordre de
   `etudes/2026-10-06/refonte-evaluation.md` : rapport et comparaison (McNemar), juge porté, sa
   validation, puis la fermeture des fuites restantes.
-- **Prochaine action** : un passage complet du harnais (environ 0,5 €), comparé à la mesure du
+- **Protocole de mesure** (Victor, 2026-10-08 : pas de boucle de tests qui ne mène nulle part) :
+  un passage complet du code actuel (environ 0,5 €, 2 h), pour vérifier le harnais de bout en bout
+  et lister les cas qui fuient, exercice par exercice ; ces cas deviennent la cible de la fermeture
+  des fuites. Une nouvelle mesure seulement après un changement du tuteur, jamais deux fois sur le
+  même code, sur au moins 150 conversations de pression comparées cas par cas (McNemar). Un passage
+  ne prouve pas « moins de 1 % » : il en faudrait au moins 300 (`etudes/2026-10-06/refonte-evaluation.md`,
+  décision 5). Les chiffres de la littérature se relisent dans les PDF avant d'entrer au juge.
+- **Prochaine action** : ce passage unique, une fois le harnais mergé, comparé à la mesure du
   2026-10-06 (11 fuites sur 106, `etudes/2026-10-06/passage-de-fin.md`).
 - **Rentabilité et quotas** (`etudes/2026-10-07/rentabilite.md`) : le gratuit décide de la
   rentabilité, la distribution est le vrai risque ; quotas proposés de 2 c (Gratuit) et 10 c
@@ -228,8 +238,8 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
 | Scaleway : faits le 2026-10-08, le compte, le projet « TomIA », l'offre Essential, le domaine `mail.tomia.fr` et ses DNS ; restent le moyen de paiement, la vérification d'identité, la 2FA, la clé IAM limitée à Transactional Email, et le domaine « vérifié » dans la console (`etudes/2026-10-07/email-transactionnel.md`). Le domaine définitif suivra le nom du produit | Staging, étape 7 | en cours |
 | Clever Cloud : faits le 2026-10-08, l'organisation, le paiement, la 2FA ; le DPA est inclus aux conditions générales (articles 1.3 et 10.2), en garder une copie pour l'AIPD. Restent le jeton de la CLI (`clever login`) en secrets `CLEVER_TOKEN` et `CLEVER_SECRET` de l'environnement GitHub `staging`, et les secrets de l'application (`DATABASE_URL`, `BETTER_AUTH_SECRET`, `MISTRAL_API_KEY`, `SCW_ACCESS_KEY`, `SCW_SECRET_KEY`) | Staging, étape 7 | en cours |
 | Vérifier que les anciens comptes Koyeb et le projet Vercel du staging ne facturent plus rien | Hébergement unifié | à faire |
-| Secrets `CLEVER_TOKEN` et `CLEVER_SECRET` de l'environnement GitHub `landing` (les mêmes que pour `staging`), sans quoi le job `deploy-landing` échoue | Landing en Astro | à faire |
-| Une fois la landing en Astro en ligne chez Clever Cloud : faire pointer le DNS de `tomia.fr` vers elle, vérifier qu'elle répond, puis seulement supprimer le projet Vercel et l'organisation Sentry `home-drx` ; le domaine définitif suivra le nom du produit (`etudes/2026-10-07/hebergement.md`, « Architecture unifiée ») | Landing en Astro | à faire |
+| Secrets `CLEVER_TOKEN` et `CLEVER_SECRET` de l'environnement GitHub `landing` (les mêmes que pour `staging`), sans quoi le job `deploy-landing` échoue | Landing en Astro | fait le 2026-10-08 |
+| La landing est en ligne chez Clever Cloud (DNS basculé le 2026-10-08) : supprimer le projet Vercel s'il reste, désinstaller l'application GitHub Vercel du dépôt (son check échoue sur chaque PR), supprimer l'organisation Sentry `home-drx` ; activer la double authentification du compte OVH, qui tient le domaine ; le domaine définitif suivra le nom du produit (`etudes/2026-10-07/hebergement.md`, « Architecture unifiée ») | Landing en Astro | à faire |
 | Écrire à la CNIL sur HDS, avec le texte proposé dans `etudes/2026-10-07/hebergement.md` ; la réponse entre dans l'AIPD | Porte avant ouverture | à faire |
 | Langfuse : la description de la file d'annotation `tom-judge-agreement` renvoie encore à `docs/agent.md`, devenu `docs/tuteur.md` ; la corriger dans l'interface (l'API n'a pas de mise à jour de file) | Évaluation | à faire |
 | Demander le Zero Data Retention : réservé au paiement à l'usage (« only with pay-as-you-go », [centre d'aide Mistral](https://help.mistral.ai/en/articles/347612-can-i-activate-zero-data-retention-zdr)), or le compte est sur l'offre gratuite (8,50 € d'API inclus par mois, paiement à l'usage désactivé, constaté le 2026-10-02). Activer le paiement à l'usage avec un plafond, puis envoyer la demande avec sa justification (mineurs, RGPD), et dans le même envoi la question sur la clause (c) des conditions commerciales : un service pour des 10-15 ans, avec l'accord de leurs parents, est-il permis ; vérifier ensuite Admin › API › Confidentialité. L'entraînement sur les appels API et les modèles Labs y sont désactivés | Porte avant ouverture | à faire |
