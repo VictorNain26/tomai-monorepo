@@ -11,7 +11,7 @@ import { findLeakForm } from '../../../domain/leak';
 import { wrongEqualities } from '../../../domain/written-equalities';
 import type { Moderation } from '../../../platform/ai/moderation';
 import type { Diagnosis } from './diagnosis';
-import { PROMPT_TAG } from './fences';
+import { PROMPT_TAG } from '../../../domain/prompt-tags';
 import type { ExerciseSheet } from './sheet';
 
 export interface OutputCheckContext {
