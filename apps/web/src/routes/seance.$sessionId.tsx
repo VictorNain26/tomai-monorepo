@@ -3,7 +3,7 @@ import { Button, Input } from '@repo/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Link, createFileRoute, redirect } from '@tanstack/react-router';
 import { DefaultChatTransport } from 'ai';
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { Notice } from '../components/notice';
 import { Page } from '../components/page';
 import { TomHead } from '../components/tom';
@@ -26,6 +26,7 @@ function Session() {
   const { sessionLost } = Route.useRouteContext();
   const { data: stored } = useSuspenseQuery(messagesQuery(sessionId));
   const [text, setText] = useState('');
+  const aiNoticeId = useId();
   // The server keeps the conversation: a turn sends the new message only, to the chat's session.
   const [transport] = useState(
     () =>
@@ -71,7 +72,7 @@ function Session() {
       </Link>
       <p className="flex items-center gap-3 text-sm text-muted-foreground">
         <TomHead className="size-8 shrink-0" />
-        Tom est une IA : il t’aide à trouver, il ne fait pas à ta place.
+        Tom t’aide à trouver, il ne fait pas à ta place.
       </p>
       <ol aria-label="Conversation" className="flex flex-col gap-5">
         {messages.map((message) =>
@@ -106,7 +107,7 @@ function Session() {
         <Input
           id="message"
           autoComplete="off"
-          aria-describedby="ai-notice"
+          aria-describedby={aiNoticeId}
           placeholder="Ta question, ou ton essai"
           value={text}
           onChange={(event) => {
@@ -117,7 +118,7 @@ function Session() {
           Envoyer
         </Button>
       </form>
-      <p id="ai-notice" className="text-sm text-muted-foreground">
+      <p id={aiNoticeId} className="text-sm text-muted-foreground">
         Tom est une IA : il peut se tromper, vérifie avec ton cours.
       </p>
     </Page>

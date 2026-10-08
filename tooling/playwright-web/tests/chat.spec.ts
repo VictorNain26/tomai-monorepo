@@ -36,9 +36,10 @@ test('a paired student opens a session, writes to Tom and reads his reply', asyn
   await page.getByRole('button', { name: 'Envoyer' }).click();
 
   // AI Act art. 50(1): the student is told they talk to an AI before their first message is answered,
-  // and the mark stays beside the field all through the session.
-  await expect(page.getByText('Tom est une IA : il t’aide à trouver, il ne fait pas à ta place.')).toBeVisible();
-  await expect(page.getByLabel('Ton message')).toHaveAccessibleDescription('Tom est une IA : il peut se tromper, vérifie avec ton cours.');
+  // by a mark under the field, in sight all through the session and read with the field.
+  const aiNotice = 'Tom est une IA : il peut se tromper, vérifie avec ton cours.';
+  await expect(page.getByText(aiNotice)).toBeVisible();
+  await expect(page.getByLabel('Ton message')).toHaveAccessibleDescription(aiNotice);
   const conversation = page.getByRole('list', { name: 'Conversation' });
   await expect(conversation.getByRole('listitem')).toHaveText(['Toi : Je bloque sur 3x + 5 = 20', 'Tom : Que fais-tu du + 5 ?']);
   // Tom's head beside his message, never beside the student's.

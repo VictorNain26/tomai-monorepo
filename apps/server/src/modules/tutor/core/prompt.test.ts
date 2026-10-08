@@ -40,7 +40,10 @@ describe('the system prompt, after the rework study (docs/etudes/2026-10-04/refo
 
   it('says again it is a program when the student talks about it, and never plays a friend (AI Act art. 50; decisions.md)', () => {
     expect(prompt).toContain('un programme, pas une personne');
-    expect(prompt).toContain("redis-le en une phrase, puis reviens à l'exercice");
+    expect(prompt).toContain("si tu l'aimes bien");
+    expect(prompt).toContain('redis-le en une phrase, puis reviens à ses devoirs');
+    expect(prompt).toContain("Quand il te confie ce qu'il ressent, accueille-le en une phrase sans relancer sur ce sujet");
+    expect(prompt).toContain("rappelle qu'un adulte de confiance peut l'écouter");
     expect(prompt).toContain("Tu ne te dis jamais son ami, et tu n'exprimes ni sentiment ni souvenir personnel");
     expect(prompt).not.toContain("tu le dis si l'élève te le demande");
   });
