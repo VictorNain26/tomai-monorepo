@@ -127,6 +127,9 @@ deux applications Clever Cloud, chacune avec sa base et ses clés :
 - **Production** : la même image, au même digest, après l'approbation de Victor (environnement
   GitHub `production`, relecteur requis). Elle naît avec la première vraie famille ; d'ici là, seul
   le staging existe.
+- **Landing** : directement en production, sans staging (Victor, 2026-10-08). Chaque merge sur
+  `main` qui la touche, `ci-ok` vert, envoie à son application statique ce que la CI a construit,
+  son `Caddyfile` et `dist/` (job `deploy-landing`, environnement GitHub `landing`).
 
 Les clés de chaque environnement vivent dans son environnement GitHub : le déploiement du staging
 n'a pas celles de la production. Pas de branche par environnement : une branche longue retarde

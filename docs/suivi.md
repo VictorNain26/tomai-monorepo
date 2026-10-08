@@ -61,8 +61,9 @@ bloquant levé). L'historique vit dans git et les PR.
 - **Landing en Astro** (portage fidèle, décision de Victor du 2026-10-07) : Next.js, Vercel et Sentry
   supprimés ; Astro 7 statique sans framework client (éléments natifs et personnalisés, API vanilla de
   Motion), CSP à empreintes, servie par Caddy (`apps/landing/Caddyfile`),
-  contre lequel tourne la suite e2e ; pages légales alignées sur Clever Cloud. En ligne, c'est toujours
-  la version Next sur Vercel, jusqu'au déploiement chez Clever Cloud.
+  contre lequel tourne la suite e2e ; pages légales alignées sur Clever Cloud. Déployée le 2026-10-08
+  dans l'application statique `tomai-landing` (pico, Paris), par la CI à chaque merge qui la touche ;
+  `tomia.fr` pointe encore sur la version Next de Vercel jusqu'à la bascule du DNS.
 - **Staging et bêta fermée** (Victor, 2026-10-07) : la préproduction de l'étape 7 devient le staging,
   avec ses propres clés et la plus petite taille qui suffit (Docker nano, 582 Mo, pour un serveur
   mesuré à 150 Mo au repos, et Postgres 18 `xxs_tny`). Un compte parent se crée sur invitation
@@ -87,7 +88,8 @@ bloquant levé). L'historique vit dans git et les PR.
 - **Profils sur l'appareil** (Victor, 2026-10-08) : l'appareil d'un enfant reste relié 90 jours sans
   usage ; le parent ouvre l'espace de son enfant sur son propre téléphone sans code, et revient au
   sien par sa clé d'accès ou un code ; l'enfant n'a plus de déconnexion, mais « Changer de profil ».
-- **Prochaine action** : la landing de production chez Clever Cloud.
+- **Prochaine action** : la bascule du DNS de `tomia.fr` vers Clever Cloud (`clever domain diag`
+  donne les enregistrements), puis la suppression de Vercel et de Sentry.
 - **Rentabilité et quotas** (`etudes/2026-10-07/rentabilite.md`) : le gratuit décide de la
   rentabilité, la distribution est le vrai risque ; quotas proposés de 2 c (Gratuit) et 10 c
   (Complet) par élève et par jour, voix comprise, remis à zéro à 4 h, et l'année scolaire à 69 €
@@ -112,7 +114,7 @@ supprime ou que l'étude couvre n'y figure plus.
 - **Observabilité** : les erreurs du serveur vers Bugsink, auto-hébergé avec sa base, celles des navigateurs par le serveur (`tunnel`) ; les traces OpenTelemetry attendent un besoin mesuré (`etudes/2026-10-07/hebergement.md`).
 - **Cookies de session** : le préfixe `__Host-` pour ceux de better-auth, l'app et la landing étant du même site (à vérifier dans la config de better-auth).
 - **Base du staging joignable depuis internet**, protégée par identifiant, mot de passe et TLS : la placer avec l'application dans un réseau privé Clever Cloud (Network Groups, [changelog](https://www.clever.cloud/developers/changelog/2026/05-12-network-groups-console)) avant la production.
-- **Landing** : son application statique Clever Cloud (`Caddyfile` à la racine de l'application ; le build du monorepo par `CC_BUILD_COMMAND`, Bun y compris, reste à vérifier), une application de preview par PR (`etudes/2026-10-07/hebergement.md`), puis la bascule du DNS (étape manuelle).
+- **Landing** : une application de preview par PR (`etudes/2026-10-07/hebergement.md`), au lot 4.
 - **Hébergement** : délai de grâce SIGTERM d'au moins un tour de chat, et `DRAIN_MS` (`src/main.ts`, 5 s) recalé sur l'intervalle de la sonde de l'hébergeur ; stockage partagé du rate limit s'il y a plusieurs instances ; derrière le proxy de l'hébergeur, ses sauts de confiance pour la clé du rate limit, y compris celle de better-auth sur l'échange d'un code de jumelage (`advanced.ipAddress`, `platform/auth/pairing.ts`) et sur l'envoi du code de connexion (3 par minute), sans quoi tous les clients partagent un même compteur (`platform/http/rate-limit.ts`, aujourd'hui l'adresse de la connexion) et pour `trustedProxies` de better-auth ; compression des fichiers du web par le build ou par le proxy, selon l'hébergeur.
 - **Appareils de l'élève** : l'élève voit ses appareils reliés sur son accueil ; reste à le prévenir sur ses appareils déjà reliés quand un nouvel appareil l'est (date, type d'appareil) ; décider, en concevant l'historique, si un appareil nouvellement relié ne montre que les séances commencées après son jumelage (revue de #425, `etudes/2026-10-07/foyer-eleve-age.md`, § 7).
 - **Client web** : mesures sur un vrai iPhone et un Android (`etudes/2026-10-06/client-web.md`).
@@ -220,6 +222,7 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
 | Scaleway : faits le 2026-10-08, le compte, le projet « TomIA », l'offre Essential, le domaine `mail.tomia.fr` et ses DNS ; restent le moyen de paiement, la vérification d'identité, la 2FA, la clé IAM limitée à Transactional Email, et le domaine « vérifié » dans la console (`etudes/2026-10-07/email-transactionnel.md`). Le domaine définitif suivra le nom du produit | Staging, étape 7 | en cours |
 | Clever Cloud : faits le 2026-10-08, l'organisation, le paiement, la 2FA ; le DPA est inclus aux conditions générales (articles 1.3 et 10.2), en garder une copie pour l'AIPD. Restent le jeton de la CLI (`clever login`) en secrets `CLEVER_TOKEN` et `CLEVER_SECRET` de l'environnement GitHub `staging`, et les secrets de l'application (`DATABASE_URL`, `BETTER_AUTH_SECRET`, `MISTRAL_API_KEY`, `SCW_ACCESS_KEY`, `SCW_SECRET_KEY`) | Staging, étape 7 | en cours |
 | Vérifier que les anciens comptes Koyeb et le projet Vercel du staging ne facturent plus rien | Hébergement unifié | à faire |
+| Secrets `CLEVER_TOKEN` et `CLEVER_SECRET` de l'environnement GitHub `landing` (les mêmes que pour `staging`), sans quoi le job `deploy-landing` échoue | Landing en Astro | à faire |
 | Une fois la landing en Astro en ligne chez Clever Cloud : faire pointer le DNS de `tomia.fr` vers elle, vérifier qu'elle répond, puis seulement supprimer le projet Vercel et l'organisation Sentry `home-drx` ; le domaine définitif suivra le nom du produit (`etudes/2026-10-07/hebergement.md`, « Architecture unifiée ») | Landing en Astro | à faire |
 | Écrire à la CNIL sur HDS, avec le texte proposé dans `etudes/2026-10-07/hebergement.md` ; la réponse entre dans l'AIPD | Porte avant ouverture | à faire |
 | Langfuse : la description de la file d'annotation `tom-judge-agreement` renvoie encore à `docs/agent.md`, devenu `docs/tuteur.md` ; la corriger dans l'interface (l'API n'a pas de mise à jour de file) | Évaluation | à faire |
