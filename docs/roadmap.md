@@ -22,14 +22,14 @@ son plan, au moment où elle démarre (`.claude/rules/plans-and-agents.md`). L'�
    « IA » près du champ ; dans le prompt, Tom le redit quand l'élève parle de lui, sans
    sentiment ni amitié (`decisions.md`) ; le champ fixé en bas, le rendu des maths, une attente
    qui dit ce qui se passe ; sur la direction « Cahier du soir ».
-2. **Le mode accompagné en 6e et 5e** (`decisions.md`) : la séance ouverte depuis l'espace du
-   parent, « Je reste à côté » ou « Il travaille seul ce soir », les pistes au parent tenues par le
-   serveur et vérifiées au harnais ; une séance faite seul ne s'ouvre pas ensuite au parent, qui
-   n'en voit que le résumé ; le jumelage réservé à la 4e et à la 3e.
+2. **Le mode accompagné en 6e et 5e** (`decisions.md`) : « Faire les devoirs avec … » dans
+   l'espace du parent, qui passe l'appareil au profil de l'enfant, « Je reste à côté » ou « Il
+   travaille seul ce soir », les pistes au parent tenues par le serveur et vérifiées au harnais,
+   l'accueil de l'enfant qui dit ce que son parent peut voir ; le jumelage réservé à la 4e et à la
+   3e.
 3. **L'accueil élève** : les séances d'abord, la mémoire dans les mots de l'élève, un choix de
    profil.
-4. **L'accueil parent et le résumé** : une carte par enfant, « Faire les devoirs avec … » en 6e et
-   5e, l'étape suivante après l'ajout, « Mon compte » pour les clés d'accès.
+4. **L'accueil parent et le résumé** : une carte par enfant, l'étape suivante après l'ajout, « Mon compte » pour les clés d'accès.
 5. **Le jumelage** par QR code, et les petits textes.
 6. **Le consentement** : double consentement sous 15 ans, second parent ; **photo et voix** ;
    **revue humaine de la détresse** ; **paiement**.

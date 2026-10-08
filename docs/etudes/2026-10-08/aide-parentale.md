@@ -22,7 +22,7 @@ APA PsycNet, Slate.
 
 1. **Au collège, aider davantage aux devoirs ne va pas avec de meilleurs résultats ; aider autrement,
    si.** Trois méta-analyses trouvent une corrélation nulle ou négative entre l'aide aux devoirs et les
-   résultats entre 11 et 14 ans (r = −.11 à −.15). Les études longitudinales qui mesurent la *façon*
+   résultats entre 11 et 14 ans (r = −.15 à 0). Les études longitudinales qui mesurent la *façon*
    d'aider trouvent l'inverse selon la forme : l'aide qui soutient l'autonomie va avec des progrès,
    l'aide intrusive avec des reculs, à niveau antérieur égal. L'item type de l'aide intrusive, dans le
    questionnaire le plus cité, est : « My parents sit next to me when I'm doing homework and
@@ -590,7 +590,7 @@ c'est le terrain de ParaTutor et de Venugopalan, sans mesure d'effet.
 - **L'effet sur les inégalités** : le mode pourrait profiter surtout aux parents disponibles et
   confiants (ParaTutor, limites ; Mayer 2019).
 - **Le seuil.** Aucune étude ne situe à 13 ans ni en 4e une rupture dans l'effet de l'implication
-  parentale. Le seuil vient d'ailleurs : cadre du ministère (usage autonome à partir de la 4e), UNESCO
+  parentale. Le seuil vient d'ailleurs : cadre du ministère (usage en classe, encadré par l'enseignant, à partir de la 4e), UNESCO
   (13 ans), décision du 2026-10-07 (le mode suit le niveau).
 - **La France** : preuves surtout qualitatives (Kakpo, Rayou) ; effets de Devoirs faits inconnus ;
   livre de Kakpo et article de 2009 non lus.
@@ -598,7 +598,8 @@ c'est le terrain de ParaTutor et de Venugopalan, sans mesure d'effet.
 ### (c) Recommandation sur le mode accompagné
 
 Ma position : **le mode accompagné en 6e-5e est défendable**, parce que la présence du parent répond
-à l'UNESCO et au ministère sans ouvrir les conversations au parent en son absence. Mais **la forme
+au ministère et, les soirs où il est là, à l'UNESCO, sans envoyer les conversations au parent ; un
+soir seul reste un écart à la recommandation de l'UNESCO pour les moins de 13 ans. Mais **la forme
 proposée, « le parent à côté », est exactement l'item d'aide intrusive le mieux documenté** si rien ne
 la cadre. Le mode tient seulement si Tom fait du parent un auditeur disponible, pas un correcteur, et
 si un soir sans parent ne coûte rien à l'enfant.
@@ -606,7 +607,8 @@ si un soir sans parent ne coûte rien à l'enfant.
 **1. La frontière : la 4e, par le niveau, sans exception d'âge.**
 - La recherche sur l'implication parentale ne donne pas de seuil (Barger : peu de variation avec
   l'âge ; Hill & Tyson : la 6e-8e année forme un bloc). Le seuil doit donc venir du cadre de l'IA : le
-  ministère autorise l'usage de l'IA par les élèves à partir de la 4e, avec la formation Pix
+  ministère autorise l'usage de l'IA par les élèves en classe, encadré par l'enseignant, à partir
+  de la 4e, avec la formation Pix
   (`accompagnement-ia.md` § 1.4), et la 4e coïncide avec les 13 ans de l'UNESCO.
 - Garder le niveau plutôt que l'âge, comme le décide déjà `decisions.md` (2026-10-07) : une même
   règle pour toute la classe, et une seule information à déclarer.
@@ -631,7 +633,8 @@ si un soir sans parent ne coûte rien à l'enfant.
   réexpliquer » (Common Sense, `accompagnement-ia.md` § 4.1) ; Haimovitz & Dweck 2016 sur l'échec.
 
 **3. Les pistes que Tom donne au parent.**
-- **Quatre types**, repris de ParaTutor : le rôle, la stratégie, la réparation, l'étape.
+- **Quatre types**, adaptés de ParaTutor (stratégie, langage, réparation, étape) : le langage y
+  devient le rôle, dit au lancement ; puis la stratégie, la réparation, l'étape.
 - **Exemples de formulations**, en vouvoiement, sans jargon (EEF, « thermal decomposition »),
   20 mots au plus (Venugopalan : messages trop longs) :
   - Début : « Ce soir, votre rôle : écouter et poser des questions. Les explications, c'est Tom. »

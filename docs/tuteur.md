@@ -225,7 +225,9 @@ rejouables par un tiers.
   à partir de 15 ans, l'élève décide seul. L'élève voit ce
   que Tom retient, notion par notion, le corrige ou l'efface ; le parent n'en voit que ce que
   dit le résumé.
-- **Le parent voit un résumé de la semaine, jamais les conversations** : les sept derniers
+- **Le parent voit un résumé de la semaine ; les conversations ne lui sont jamais envoyées** (en
+  6e et 5e, il peut ouvrir le profil de l'enfant sur l'appareil de la famille, ce que l'enfant
+  sait) : les sept derniers
   jours, calculés par le code sans modèle (`modules/tutor/core/week-summary.ts`) ; les matières,
   le temps passé (de l'ouverture de la séance, d'un message à l'autre, une pause au-delà de
   10 minutes, rien après une détresse), les notions qui résistent (dernier exercice travaillé dans
@@ -234,17 +236,19 @@ rejouables par un tiers.
   `GET /api/summary/:studentId`. À construire au lot 3 : l'écran, écrit comme des pistes de
   conversation, et l'arrêt à la demande de l'élève ; à partir de 15 ans, sa demande s'applique,
   le parent prévenu.
-- **En 6e et 5e, le mode accompagné** (à construire, lot 3 ; `decisions.md`) : la séance s'ouvre
-  depuis l'espace du parent, « Je reste à côté » ou « Il travaille seul ce soir ». À côté, Tom
-  propose au parent au plus trois ou quatre pistes par séance (rôle, stratégie, réparation,
-  étape), déclenchées par un blocage ou la fin, de vingt mots au plus, visibles de l'enfant ; une
+- **En 6e et 5e, le mode accompagné** (à construire, lot 3 ; `decisions.md`) : le parent lance la
+  séance, l'appareil passe au profil de l'enfant, « Je reste à côté » ou « Il travaille seul ce
+  soir ». À côté, Tom propose au parent au plus trois ou quatre pistes par séance (rôle au
+  lancement, puis stratégie, réparation, étape, adaptés des types de ParaTutor), au lancement, à
+  un blocage, à une frustration et à la fin, de vingt mots au plus, visibles de l'enfant ; une
   piste ne donne jamais plus que le cran courant de l'enfant, et le contrôle de sortie s'y applique
   comme à une réponse. Formulations et sources : `etudes/2026-10-08/aide-parentale.md`, § 6 (c).
 - **La détresse n'alerte pas le parent d'office** : un humain relit l'événement et décide (§4).
 - **Un second parent** peut rejoindre le foyer et s'opposer (à construire, lot 3, avec le
   consentement).
-- La façon d'accompagner suit le niveau (accompagné, guidé, autonome) :
-  `etudes/2026-10-07/foyer-eleve-age.md`.
+- La façon d'accompagner suit le niveau : accompagné du CP à la 5e, guidé en 4e et 3e, autonome
+  au lycée (`decisions.md`, revu le 2026-10-08 ; le modèle d'origine :
+  `etudes/2026-10-07/foyer-eleve-age.md`).
 
 ## 9. Conformité
 

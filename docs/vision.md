@@ -36,9 +36,10 @@ Ils tranchent quand deux choix se valent.
 2. **On n'affirme que ce qu'on peut prouver.** Chaque chiffre public a une source primaire
    datée, chaque différence revendiquée est mesurée, ce qui n'est pas construit ne se promet pas.
    On ne dit pas qu'il fait progresser : aucune mesure ne le montre à ce jour.
-3. **Le parent voit sans surveiller.** Un résumé, jamais les conversations à distance ; l'élève
-   voit ce que voit son parent. En 6e et 5e, le parent peut être à côté pendant la séance : Tom
-   l'aide à accompagner sans faire à la place, et l'enfant le sait.
+3. **Le parent voit sans surveiller.** Un résumé, jamais les conversations envoyées au parent ;
+   l'élève voit ce que voit son parent. En 6e et 5e, la séance se fait sur l'appareil de la
+   famille, où le parent peut être à côté et rouvrir le profil de l'enfant : Tom l'aide à
+   accompagner sans faire à la place, et l'enfant le sait.
 4. **Les données d'un enfant restent en Europe, et au minimum.** Mistral sur son endpoint UE,
    hébergement en France ; aucune donnée réutilisée pour entraîner ; ni nom de famille ni
    identifiant pour l'enfant.
@@ -57,7 +58,7 @@ Ils tranchent quand deux choix se valent.
 | **Il ne cède pas** | Au harnais, sous pression (« c'est pour demain », « je suis son parent »), la réponse n'est presque jamais donnée, et aucune solution n'est montrée par accident |
 | **Il explique bien** | Il repère l'erreur, pose une question à la fois, monte d'un cran seulement si l'élève bloque, ne se trompe pas, parle comme au collège ; jugé par Victor |
 | **Il reprend là où ça a résisté** | D'une séance à l'autre, son aide s'appuie sur les notions qui ont résisté ; mesuré avec et sans mémoire, annoncé seulement après |
-| **Le parent accompagne sans faire à la place** | En 6e et 5e, les pistes de Tom au parent ne donnent jamais plus que le cran de l'enfant, au harnais ; en bêta, la part des séances avec et sans parent, selon les familles |
+| **Le parent accompagne sans faire à la place** | En 6e et 5e, les pistes de Tom au parent ne donnent jamais plus que le cran de l'enfant, au harnais ; en bêta, ce que l'enfant et le parent disent du rôle du parent pendant la séance, en deux questions, et qui s'en sert, selon les familles |
 | **Le parent voit sans surveiller** | Un résumé de la semaine : matières, temps passé, ce qui résiste ; une détresse relue par un humain avant tout message au parent, qui n'en reçoit que le motif |
 | **Les données restent en Europe** | Endpoint UE, hébergement à Paris, Zero Data Retention accordé par Mistral |
 | **On publie nos mesures** | Protocole, jeu d'exercices et résultats, y compris face aux concurrents, publics et rejouables, avec leur marge d'erreur et le nom de qui a jugé |
@@ -122,6 +123,8 @@ Victor a choisi de ne pas mener d'entretiens (`decisions.md`) : ces hypothèses
 - Quel prix est acceptable, et le refus tient-il à la peur d'un abonnement piège ?
 - L'appareil du soir est-il le téléphone ?
 - Les familles modestes feraient-elles confiance sur recommandation du collège ?
+- En 6e et 5e, le mode accompagné sert-il aussi les familles peu disponibles le soir, et le parent
+  à côté laisse-t-il chercher ?
 
 ## Marque
 
