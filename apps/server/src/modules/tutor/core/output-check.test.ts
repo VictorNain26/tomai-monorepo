@@ -74,6 +74,11 @@ describe('checkOutput', () => {
     ]);
   });
 
+  it('ignores an empty or blank answer form, which would match any text', () => {
+    const blank = { ...sheet, answer: ' ', answerForms: ['', '  '] };
+    expect(checkOutput('Que fais-tu du + 5 ?', ctx({ sheet: blank }))).toEqual([]);
+  });
+
   it('has no form to look for in a written production, nor without a sheet', () => {
     expect(checkOutput('x = 5', ctx({ sheet: { ...sheet, kind: 'written' } }))).toEqual([]);
     expect(checkOutput('x = 5', ctx({ sheet: null }))).toEqual([]);
@@ -124,7 +129,26 @@ describe('regenerationInstruction', () => {
     expect(block.match(/réponse de l'exercice/g)).toHaveLength(1);
   });
 
-  it('has a fixed reply that gives nothing away', () => {
+  it('tells the writer a tag was held back, each line once, between the block and its close', () => {
+    expect(regenerationInstruction([{ kind: 'tag' }, { kind: 'tag' }])).toBe(
+      "<critical_instruction>\nUne première réponse à ce tour a été retenue par le serveur, l'élève ne l'a pas vue. Écris-en une nouvelle.\nElle contenait une balise interne : n'écris que ce qui s'adresse à l'élève.\n</critical_instruction>",
+    );
+  });
+
+  it('gives each reason held back its own line', () => {
+    const lines = regenerationInstruction([{ kind: 'answer' }, { kind: 'tag' }]).split('\n');
+    expect(lines).toContain("Elle donnait la réponse de l'exercice, ou l'une de ses formes : ne l'écris pas, même pour vérifier.");
+    expect(lines).toContain("Elle contenait une balise interne : n'écris que ce qui s'adresse à l'élève.");
+  });
+
+  it('has no line for an unmoderated text, which is never regenerated', () => {
+    expect(regenerationInstruction([{ kind: 'unmoderated' }])).toBe(
+      "<critical_instruction>\nUne première réponse à ce tour a été retenue par le serveur, l'élève ne l'a pas vue. Écris-en une nouvelle.\n\n</critical_instruction>",
+    );
+  });
+
+  it('has a fixed reply that gives nothing away, and says something', () => {
+    expect(FALLBACK_REPLY.trim()).not.toBe('');
     expect(checkOutput(FALLBACK_REPLY, ctx())).toEqual([]);
   });
 });
