@@ -1,6 +1,6 @@
 ---
 name: dev-bootstrap
-description: Démarrer le monorepo depuis un clone neuf, ou réparer une stack locale qui ne monte pas — postgres, migrations Drizzle. À utiliser quand le serveur refuse de démarrer, qu'une table manque, qu'une base locale porte un ancien schéma, ou qu'on part d'une base vide.
+description: Démarrer le monorepo depuis un clone neuf, ou réparer une stack locale qui ne monte pas — postgres, migrations Drizzle. À utiliser quand le serveur refuse de démarrer, qu'une table manque, ou qu'on part d'une base vide.
 ---
 
 # Premier démarrage, et réparation d'une stack locale
@@ -22,18 +22,6 @@ serveur tourne sur l'hôte, pas en conteneur.
 Il refuse tant qu'une migration du journal (`apps/server/drizzle/`) n'est pas appliquée, et le
 dit dans son log (« Migrations not applied »). `bun run db:migrate` (`apps/server`) les
 applique. Il n'y a pas de `db:push` : il contournerait le journal que le serveur vérifie.
-
-## Une base locale qui porte un ancien schéma
-
-La refonte du 2026-10-06 repart d'une baseline neuve : une base créée avant, avec l'ancien
-schéma, fait échouer la migration (« relation already exists »). Il faut la recréer. Ce sont des
-données locales, sans élève réel, mais leur suppression ne se rattrape pas : la commande se
-lance à la main.
-
-```bash
-docker compose down -v   # détruit le volume postgres, donc les données locales
-bun run setup
-```
 
 ## `.env` qui suffit à démarrer
 

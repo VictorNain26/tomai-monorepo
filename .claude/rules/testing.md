@@ -16,6 +16,7 @@ demandent le Postgres de `docker compose` (`DATABASE_URL`).
 | Suite | Runner | Commande | Emplacement |
 |-------|--------|----------|-------------|
 | Serveur | Bun, Postgres | `cd apps/server && bun test` | à côté du code, `<fichier>.test.ts` |
+| Web | Bun | `cd apps/web && bun run test` | `apps/web/src/**/<fichier>.test.ts` |
 | Tokens | Bun | `bun run test` | `packages/tokens/contrast.test.mjs` |
 | Web, de bout en bout | Playwright | `bunx turbo run test:e2e --filter=@repo/playwright-web` | `tooling/playwright-web/tests/` |
 | Landing | Playwright | `bunx turbo run test:e2e --filter=landing` | `apps/landing/tests/` |
@@ -37,5 +38,5 @@ demandent le Postgres de `docker compose` (`DATABASE_URL`).
   formulaire et de liste d'attente, menu mobile, page 404, en-têtes, redirections, canonical et
   CSP sans refus.
 
-Les suites Playwright tournent en CI (job `E2E (Playwright)`, tâche turbo `test:e2e`, sur les
-paquets touchés), pas avant un commit.
+Les suites Playwright tournent en CI (jobs `E2E web (Playwright)` et `E2E landing (Playwright)`,
+tâche turbo `test:e2e`, sur les paquets touchés), pas avant un commit.
