@@ -225,10 +225,14 @@ rejouables par un tiers.
   à partir de 15 ans, l'élève décide seul. L'élève voit ce
   que Tom retient, notion par notion, le corrige ou l'efface ; le parent n'en voit que ce que
   dit le résumé.
-- **Le parent voit un résumé de la semaine, jamais les conversations** (à construire, lot 3) :
-  les matières, le temps passé, ce qui résiste, écrit comme des pistes de conversation. L'élève voit le même
-  résumé, au même moment, et peut en demander l'arrêt ; à partir de 15 ans, sa demande
-  s'applique, le parent prévenu.
+- **Le parent voit un résumé de la semaine, jamais les conversations** : les sept derniers
+  jours, calculés par le code sans modèle (`modules/tutor/core/week-summary.ts`) ; les matières,
+  le temps passé (les écarts entre messages, une pause au-delà de 10 minutes), les notions qui
+  résistent (dernier exercice non résolu, ou résolu avec une aide allée jusqu'à « Étape
+  intermédiaire »). L'élève voit le même résumé (`GET /api/summary`), son parent par
+  `GET /api/summary/:studentId`. À construire au lot 3 : l'écran, écrit comme des pistes de
+  conversation, et l'arrêt à la demande de l'élève ; à partir de 15 ans, sa demande s'applique,
+  le parent prévenu.
 - **La détresse n'alerte pas le parent d'office** : un humain relit l'événement et décide (§4).
 - **Un second parent** peut rejoindre le foyer et s'opposer (à construire, lot 3, avec le
   consentement).

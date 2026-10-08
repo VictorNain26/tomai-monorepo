@@ -20,9 +20,8 @@ son plan, au moment où elle démarre (`.claude/rules/plans-and-agents.md`). L'�
 **Lot 3**, dans cet ordre (`etudes/2026-10-08/interfaces.md` pour les constats) :
 1. **Les fondations de la direction artistique** avec Victor : couleurs, typographie, place de
    Tom dans l'interface, ton ; deux ou trois directions essayées sur les vrais écrans de séance
-   et d'accueil, puis tokens dans `@repo/tokens`. En parallèle, sans dépendre d'elle : le service
-   du résumé parent côté serveur, et l'accueil de Tom qui dit qu'il est une IA (AI Act,
-   art. 50(1)).
+   et d'accueil, puis tokens dans `@repo/tokens`. En parallèle, sans dépendre d'elle : l'accueil
+   de Tom qui dit qu'il est une IA (AI Act, art. 50(1)).
 2. **La séance** : accueil et avatar de Tom, champ fixé en bas, rendu des maths, une attente qui
    dit ce qui se passe.
 3. **L'accueil élève** : les séances d'abord, la mémoire dans les mots de l'élève, un choix de

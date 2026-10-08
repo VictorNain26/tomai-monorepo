@@ -34,7 +34,9 @@ Une décision prise en séance entre ici dans la PR qui la suit, pas dans une m�
 - **Fiches de révision hors V1** (2026-10-08). Le Complet, c'est plus d'échanges par jour ; ni le
   site ni la vision ne promettent de fiches.
 - **Le résumé parent dit les matières, le temps passé et ce qui résiste** (2026-10-08). Jamais
-  les conversations ; l'élève voit le même résumé.
+  les conversations ; l'élève voit le même résumé. Calculé par le code, sans modèle : rien
+  d'inventé, rien à payer ; sur les sept derniers jours. Le parent ne voit rien d'autre de la
+  mémoire d'apprentissage, qui reste à l'élève (tranché le 2026-10-08).
 - **Le second parent au lot 3, avec le consentement** (2026-10-08). Il rejoint le foyer et peut
   s'opposer, parce que le double consentement sous 15 ans engage les titulaires de l'autorité
   parentale.
@@ -117,7 +119,6 @@ Tranchées au moment du lot qui en dépend, doc d'abord :
 
 | Décision | Lot | Ce qui la tranche |
 |---|---|---|
-| Ce que le parent voit de la mémoire d'apprentissage | 3 | Le parcours parent ; la vision dit « ce que dit le résumé » |
 | Canal du message au parent après une détresse | 3 | Un canal garanti (l'e-mail), avec la revue humaine |
 | Fournisseur de paiement | 3 | Conformité UE, abonnement familial, facturation sans piège |
 | Statut juridique (micro-entreprise ou société), TVA | 3 | Une consultation d'un expert-comptable, avant le paiement |

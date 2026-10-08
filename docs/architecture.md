@@ -34,7 +34,7 @@ En place (`apps/server/src`) :
   que l'arrêt attend.
 - `modules/tutor` : les séances, le tour (`POST /api/sessions/:id/messages`), qui échoue fermé, le
   quota par élève, le résumé et le titre en tâche de fond, la mémoire d'apprentissage
-  (`/api/memory`) ; ses règles dans `tuteur.md`.
+  (`/api/memory`), le résumé de la semaine (`/api/summary`) ; ses règles dans `tuteur.md`.
 - `platform/ai` : les appels à Mistral et à sa modération, le coût de chacun.
 - `platform/auth/pairing.ts` : le jumelage d'un appareil d'élève, un code à usage unique demandé
   par le gardien, haché par better-auth, qui ouvre une session pour l'élève.
