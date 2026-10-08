@@ -18,18 +18,15 @@ son plan, au moment où elle démarre (`.claude/rules/plans-and-agents.md`). L'�
 ## Maintenant
 
 **Lot 3**, dans cet ordre (`etudes/2026-10-08/interfaces.md` pour les constats) :
-1. **Les fondations de la direction artistique** avec Victor : couleurs, typographie, place de
-   Tom dans l'interface, ton ; deux ou trois directions essayées sur les vrais écrans de séance
-   et d'accueil, puis tokens dans `@repo/tokens`. En parallèle, sans dépendre d'elle : l'accueil
-   de Tom qui dit qu'il est une IA (AI Act, art. 50(1)).
-2. **La séance** : accueil et avatar de Tom, champ fixé en bas, rendu des maths, une attente qui
-   dit ce qui se passe.
-3. **L'accueil élève** : les séances d'abord, la mémoire dans les mots de l'élève, un choix de
+1. **La séance** : l'accueil de Tom qui dit qu'il est une IA (AI Act, art. 50(1)) et une marque
+   « IA » près du champ, le champ fixé en bas, le rendu des maths, une attente qui dit ce qui se
+   passe ; sur la direction « Cahier du soir » (`decisions.md`).
+2. **L'accueil élève** : les séances d'abord, la mémoire dans les mots de l'élève, un choix de
    profil.
-4. **L'accueil parent et le résumé** : une carte par enfant, l'étape suivante après l'ajout,
+3. **L'accueil parent et le résumé** : une carte par enfant, l'étape suivante après l'ajout,
    « Mon compte » pour les clés d'accès.
-5. **Le jumelage** par QR code, et les petits textes.
-6. **Le consentement** : double consentement sous 15 ans, second parent ; **photo et voix** ;
+4. **Le jumelage** par QR code, et les petits textes.
+5. **Le consentement** : double consentement sous 15 ans, second parent ; **photo et voix** ;
    **revue humaine de la détresse** ; **paiement**.
 
 **Lot 1**, dès que le paiement à l'usage de Mistral est actif : le passage unique du harnais sur
