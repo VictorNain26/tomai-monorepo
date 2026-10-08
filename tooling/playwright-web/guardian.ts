@@ -6,8 +6,12 @@ import { codeSince, logMark } from './server-log';
 
 // iPhone and Android run side by side on one database: each test has its own address, in
 // lowercase ASCII, as better-auth stores it.
-/** The birth month of a child this old this year: a fixed year would leave the accepted ages one day. */
-export const birthMonthAged = (years: number) => `${String(new Date().getUTCFullYear() - years)}-03`;
+/**
+ * The birth month of a child exactly this old all year, up to 19: December of the year before,
+ * since a birthday counts once its month is over (domain/memory-consent.ts). A fixed year would
+ * leave the accepted ages one day.
+ */
+export const birthMonthAged = (years: number, now = new Date()) => `${String(now.getUTCFullYear() - years - 1)}-12`;
 
 export const address = (name: string) =>
   `${name
