@@ -11,7 +11,7 @@ bloquant levé). L'historique vit dans git et les PR.
 
 ## Où on en est
 
-- **Dernière mise à jour :** 2026-10-07.
+- **Dernière mise à jour :** 2026-10-08.
 - **Lot en cours : 0, la refonte** (`roadmap.md`). Victor a demandé le 2026-10-06 de reprendre toute
   la codebase sur des pratiques établies, sans rien garder de l'ancienne architecture. Quatre
   audits et l'architecture cible : `etudes/2026-10-06/refonte-architecture.md` (#418), sept
@@ -79,9 +79,10 @@ bloquant levé). L'historique vit dans git et les PR.
   l'envoi, `tomai-staging-mail`). Les entrées DNS mortes de Koyeb sont supprimées.
 - **Entrée sans mot de passe** (Victor, 2026-10-08) : pas de connexion Google, qui ferait savoir à
   une société américaine qui utilise Tom ; le parent entre par un code à 6 chiffres envoyé à son
-  adresse, le premier créant son compte sur invitation, puis donne son prénom. Les passkeys suivront,
-  une fois `@better-auth/passkey` vérifié.
-- **Prochaine action** : le test d'inscription de Victor sur le staging, puis les passkeys ; la
+  adresse, le premier créant son compte sur invitation, puis donne son prénom. Il peut ensuite créer
+  une clé d'accès depuis son foyer et entrer par le verrouillage de son appareil
+  (`@better-auth/passkey`, vérifié le 2026-10-08) ; le code reste pour un appareil neuf.
+- **Prochaine action** : le test d'inscription de Victor sur le staging, clé d'accès comprise ; la
   landing de production chez Clever Cloud ensuite.
 - **Rentabilité et quotas** (`etudes/2026-10-07/rentabilite.md`) : le gratuit décide de la
   rentabilité, la distribution est le vrai risque ; quotas proposés de 2 c (Gratuit) et 10 c

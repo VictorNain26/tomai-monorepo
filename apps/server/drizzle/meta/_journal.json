@@ -71,6 +71,13 @@
       "when": 1791406461479,
       "tag": "0009_memory_positions_contract",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1791455625505,
+      "tag": "0010_passkey",
+      "breakpoints": true
     }
   ]
 }

@@ -1,9 +1,10 @@
 /**
  * The tables of better-auth 1.7, field for field as its core declares them
- * (@better-auth/core `getAuthTables`): required there is NOT NULL here.
+ * (@better-auth/core `getAuthTables`, and @better-auth/passkey's schema): required there is NOT
+ * NULL here.
  */
 
-import { boolean, index, pgTable, text, timestamp } from 'drizzle-orm/pg-core';
+import { boolean, index, integer, pgTable, text, timestamp } from 'drizzle-orm/pg-core';
 
 const timestamps = {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
@@ -66,4 +67,24 @@ export const verification = pgTable(
     ...timestamps,
   },
   (table) => [index('verification_identifier_idx').on(table.identifier)],
+);
+
+export const passkey = pgTable(
+  'passkey',
+  {
+    id: text('id').primaryKey(),
+    name: text('name'),
+    publicKey: text('public_key').notNull(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    credentialID: text('credential_id').notNull(),
+    counter: integer('counter').notNull(),
+    deviceType: text('device_type').notNull(),
+    backedUp: boolean('backed_up').notNull(),
+    transports: text('transports'),
+    createdAt: timestamp('created_at', { withTimezone: true }),
+    aaguid: text('aaguid'),
+  },
+  (table) => [index('passkey_user_id_idx').on(table.userId), index('passkey_credential_id_idx').on(table.credentialID)],
 );
