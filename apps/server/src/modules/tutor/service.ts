@@ -17,7 +17,7 @@ import type { StudentDirectory } from '../household';
 import { analyseTurn, turnInstruction, type TurnAnalysis } from './core/analysis';
 import { assembleChatPrompt, replayable, type HistoryTurn } from './core/assembler';
 import { writeChecked } from './core/controlled-turn';
-import { prepareExerciseTurn } from './core/exercise-turn';
+import { drawsSheet, prepareExerciseTurn } from './core/exercise-turn';
 import { hintOf } from './core/ladder';
 import { learnerMemoryBlock, notionMemories, notionView, schoolYearStart } from './core/memory';
 import type { OutputCheckContext } from './core/output-check';
@@ -203,6 +203,7 @@ export function createTutorService({ repository, students, ai, moderation, logge
     const detected = analysis.subject === 'general' ? null : analysis.subject;
     const subject = detected ?? session.subject ?? undefined;
 
+    if (drawsSheet({ analysis, current: current ?? null, studentText })) onStep('exercise');
     const exerciseTurn = await prepareExerciseTurn(
       { ai, logger },
       {
@@ -215,9 +216,6 @@ export function createTutorService({ repository, students, ai, moderation, logge
         lastTutorText,
         attachedFilesBlock: null,
         now: new Date(),
-        onDraw: () => {
-          onStep('exercise');
-        },
       },
     );
     const { exercise, diagnosis, contract, change, hintLevel } = exerciseTurn;

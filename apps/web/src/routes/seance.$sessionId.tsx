@@ -3,13 +3,13 @@ import { Button, Input } from '@repo/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Link, createFileRoute, redirect } from '@tanstack/react-router';
 import { DefaultChatTransport } from 'ai';
-import { useId, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { Notice } from '../components/notice';
 import { Page } from '../components/page';
 import { TomHead } from '../components/tom';
 import { api, isProblem } from '../lib/api';
 import type { TurnStep } from 'tomai-server/contract';
-import { chatMessage, messagesQuery, textOf, toUIMessage, waitingText, type ChatMessage, type TurnBody } from '../lib/chat';
+import { chatMessage, isTurnStep, messagesQuery, textOf, toUIMessage, waitingText, type ChatMessage, type TurnBody } from '../lib/chat';
 import { meQuery } from '../lib/me';
 
 /** A session with Tom: what was said, then the chat. */
@@ -44,7 +44,7 @@ function Session() {
     messages: stored.map(toUIMessage),
     transport,
     onData: (part) => {
-      setStep(part.data);
+      if (isTurnStep(part.data)) setStep(part.data);
     },
     // A refused or failed turn stored nothing: its message leaves the conversation and comes back
     // to the field, to be sent again.
@@ -61,6 +61,12 @@ function Session() {
       });
     },
   });
+
+  // The field stays in sight up in the conversation: what a send brings comes into sight with it.
+  const endRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ block: 'end' });
+  }, [messages.length, status, error]);
 
   const busy = status === 'submitted' || status === 'streaming';
   const send = () => {
@@ -100,6 +106,7 @@ function Session() {
       </ol>
       {status === 'submitted' && <Notice tone="info">{waitingText(step)}</Notice>}
       {error && <Notice tone="error">{chatMessage(error)}</Notice>}
+      <div ref={endRef} />
       <div className="sticky bottom-0 flex flex-col gap-2 bg-background pt-2 pb-3">
         <form
           className="flex gap-2"

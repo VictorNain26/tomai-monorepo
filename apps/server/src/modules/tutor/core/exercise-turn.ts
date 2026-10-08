@@ -67,22 +67,25 @@ export interface ExerciseTurnRequest {
   lastTutorText: string | null;
   attachedFilesBlock: string | null;
   now: Date;
-  /** Before a new sheet is drawn, the long part of a turn. */
-  onDraw: () => void;
 }
 
 const MIN_RESTATED = 12;
 
+/**
+ * Whether the turn draws a new sheet, the long part of a turn. The statement in progress pasted
+ * again with a new try is the same exercise, which the analysis took for a new one (measured
+ * 2026-10-05): a new sheet would reset the level. A short statement (« Conjugue », the rest on a
+ * photo) would match any message.
+ */
+export function drawsSheet({ analysis, current, studentText }: Pick<ExerciseTurnRequest, 'analysis' | 'current' | 'studentText'>): boolean {
+  const statement = current?.sheet?.statement.trim() ?? '';
+  const restated = statement.length >= MIN_RESTATED && findLeakForm(studentText, [statement]) !== null;
+  return analysis.bringsExercise && !restated;
+}
+
 export async function prepareExerciseTurn(deps: { ai: Ai; logger: Logger }, request: ExerciseTurnRequest): Promise<ExerciseTurn> {
   const { analysis, current } = request;
-  // The statement in progress pasted again with a new try is the same exercise, which the analysis
-  // took for a new one (measured 2026-10-05): a new sheet would reset the level. A short statement
-  // (« Conjugue », the rest on a photo) would match any message.
-  const statement = current?.sheet?.statement.trim() ?? '';
-  const restated = statement.length >= MIN_RESTATED && findLeakForm(request.studentText, [statement]) !== null;
-  const draws = analysis.bringsExercise && !restated;
-  if (draws) request.onDraw();
-  const drawn = draws ? await prepareSheet(deps, request) : null;
+  const drawn = drawsSheet(request) ? await prepareSheet(deps, request) : null;
   // Draws that all failed never replace a watched exercise: its answer stays watched.
   const prepared = drawn?.sheet === null && current?.sheet ? null : drawn;
   if (drawn && !prepared) deps.logger.warn('Sheet failed: the exercise in progress stays');

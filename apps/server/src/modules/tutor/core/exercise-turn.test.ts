@@ -9,7 +9,7 @@ import { aiCost } from '../../../platform/ai/schema';
 import { testAi } from '../../../testing/ai';
 import type { TurnAnalysis } from './analysis';
 import type { Diagnosis } from './diagnosis';
-import { prepareExerciseTurn, type ExerciseState, type ExerciseTurnRequest } from './exercise-turn';
+import { drawsSheet, prepareExerciseTurn, type ExerciseState, type ExerciseTurnRequest } from './exercise-turn';
 import type { ExerciseSheet } from './sheet';
 
 const { ai, db, logger, logs, mistral, sent, studentId } = await testAi();
@@ -61,7 +61,6 @@ const request = (overrides: Partial<ExerciseTurnRequest> = {}): ExerciseTurnRequ
   lastTutorText: 'Que cherches-tu ?',
   attachedFilesBlock: null,
   now: new Date('2026-10-07T18:00:00Z'),
-  onDraw: () => undefined,
   ...overrides,
 });
 const verdict = (v: Diagnosis['verdict'], proposalMath: string | null) => ({
@@ -135,19 +134,13 @@ describe('prepareExerciseTurn', () => {
 
   it('keeps the exercise in progress when its statement comes back with a new try, the level with it', async () => {
     mistral.chat.push(verdict('incorrect', 'x = 6'));
-    let draws = 0;
-    const turn = await prepareExerciseTurn(
-      deps,
-      request({
-        current: state({ hintLevel: 2 }),
-        analysis: analysis({ bringsExercise: true, proposesAnswer: true }),
-        studentText: 'Résous 3x + 5 = 20. x = 6 ?',
-        onDraw: () => {
-          draws += 1;
-        },
-      }),
-    );
-    expect(draws).toBe(0);
+    const restated = request({
+      current: state({ hintLevel: 2 }),
+      analysis: analysis({ bringsExercise: true, proposesAnswer: true }),
+      studentText: 'Résous 3x + 5 = 20. x = 6 ?',
+    });
+    expect(drawsSheet(restated)).toBe(false);
+    const turn = await prepareExerciseTurn(deps, restated);
     expect(turn.isNew).toBe(false);
     expect(turn.hintLevel).toBe(3);
     expect(mistral.received).toHaveLength(1);
@@ -160,20 +153,14 @@ describe('prepareExerciseTurn', () => {
       { json: draft({ answer: '6', answerForms: ['6'], mathAnswer: '6' }) },
       verdict('incorrect', 'x = 4'),
     );
-    let draws = 0;
-    const turn = await prepareExerciseTurn(
-      deps,
-      request({
-        current: null,
-        analysis: analysis({ bringsExercise: true, proposesAnswer: true }),
-        studentText: 'Résous 3x + 5 = 20. J’ai trouvé x = 4',
-        onDraw: () => {
-          draws += 1;
-        },
-      }),
-    );
-    // The student is told before the draws, the long part of the turn.
-    expect(draws).toBe(1);
+    const brought = request({
+      current: null,
+      analysis: analysis({ bringsExercise: true, proposesAnswer: true }),
+      studentText: 'Résous 3x + 5 = 20. J’ai trouvé x = 4',
+    });
+    // What the service tells the student before the draws, the long part of the turn.
+    expect(drawsSheet(brought)).toBe(true);
+    const turn = await prepareExerciseTurn(deps, brought);
     expect(turn.isNew).toBe(true);
     expect(turn.exercise).toMatchObject({ sheet: { answer: 'x = 5' }, uncertain: false, hintLevel: 0 });
     expect(new Set(turn.exercise?.drawnForms)).toEqual(new Set(['x = 5', '5', '6']));

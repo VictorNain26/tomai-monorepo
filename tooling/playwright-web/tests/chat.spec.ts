@@ -52,20 +52,55 @@ test('a paired student opens a session, writes to Tom and reads his reply', asyn
   await expect(page.getByRole('link', { name: /Séance sans titre/ })).toBeVisible();
 });
 
-test('while Tom answers, the student is told what he does', async ({ page, browser }, testInfo) => {
+test('while Tom answers, the student is told what he does, step by step', async ({ page, browser }, testInfo) => {
   await pairedStudent(page, browser, testInfo, 'Lou');
-  let answer = () => undefined as unknown;
-  await page.route('**/api/sessions/*/messages', (route) => {
-    if (route.request().method() !== 'POST') return route.fallback();
-    answer = () => route.fulfill({ status: 409, contentType: 'application/problem+json', json: { status: 409, code: 'TURN_IN_PROGRESS' } });
-    return undefined;
-  });
+  // A turn the test streams chunk by chunk, as the server does: page.route can only answer whole.
+  const { headers } = createUIMessageStreamResponse({ stream: createUIMessageStream({ execute: () => undefined }) });
+  await page.evaluate((streamHeaders) => {
+    const encoder = new TextEncoder();
+    const original = window.fetch.bind(window);
+    window.fetch = (input, init) => {
+      const url = input instanceof Request ? input.url : String(input);
+      if (init?.method !== 'POST' || !url.endsWith('/messages')) return original(input, init);
+      const body = new ReadableStream<Uint8Array>({
+        start: (controller) => {
+          Object.assign(window, {
+            pushChunk: (chunk: unknown) => {
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify(chunk)}\n\n`));
+            },
+            endStream: () => {
+              controller.close();
+            },
+          });
+        },
+      });
+      return Promise.resolve(new Response(body, { headers: streamHeaders }));
+    };
+  }, Object.fromEntries(headers));
+  const push = (chunk: object) =>
+    page.evaluate((sent) => {
+      (window as unknown as { pushChunk: (chunk: unknown) => void }).pushChunk(sent);
+    }, chunk);
 
   await page.getByRole('button', { name: 'Nouvelle séance' }).click();
   await page.getByLabel('Ton message').fill('Résous 3x + 5 = 20');
   await page.getByRole('button', { name: 'Envoyer' }).click();
   await expect(page.getByText('Tom lit ton message…')).toBeVisible();
-  await answer();
+  await push({ type: 'data-step', data: 'exercise', transient: true });
+  await expect(page.getByText('Tom prépare ton exercice, ça prend quelques secondes…')).toBeVisible();
+  await push({ type: 'data-step', data: 'writing', transient: true });
+  await expect(page.getByText('Tom écrit sa réponse…')).toBeVisible();
+  await push({ type: 'text-start', id: 'reply' });
+  await push({ type: 'text-delta', id: 'reply', delta: 'Que fais-tu du + 5 ?' });
+  await push({ type: 'text-end', id: 'reply' });
+  await page.evaluate(() => {
+    (window as unknown as { endStream: () => void }).endStream();
+  });
+
+  const conversation = page.getByRole('list', { name: 'Conversation' });
+  // The steps are never kept in the conversation.
+  await expect(conversation.getByRole('listitem')).toHaveText(['Toi : Résous 3x + 5 = 20', 'Tom : Que fais-tu du + 5 ?']);
+  await expect(page.getByText('Tom écrit sa réponse…')).toHaveCount(0);
 });
 
 test('in a long conversation, the field and the AI mark stay at the bottom of the screen', async ({ page, browser }, testInfo) => {
@@ -82,6 +117,11 @@ test('in a long conversation, the field and the AI mark stay at the bottom of th
   await expect(page.getByRole('heading', { name: 'Séance avec Tom' })).toBeInViewport();
   await expect(page.getByLabel('Ton message')).toBeInViewport();
   await expect(page.getByText('Tom est une IA : il peut se tromper, vérifie avec ton cours.')).toBeInViewport();
+
+  // Sent from up in the conversation, the message, the wait and the reply come into sight.
+  await page.getByLabel('Ton message').fill('Et la ligne 3 ?');
+  await page.getByRole('button', { name: 'Envoyer' }).click();
+  await expect(page.getByRole('list', { name: 'Conversation' }).getByRole('listitem').last()).toBeInViewport();
 });
 
 test('a day past the quota is told in French, without the server’s message', async ({ page, browser }, testInfo) => {

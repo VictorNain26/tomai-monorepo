@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import { APICallError } from 'ai';
-import { chatMessage, textOf, toUIMessage, waitingText } from './chat';
+import { chatMessage, isTurnStep, textOf, toUIMessage, waitingText } from './chat';
 
 const refused = (status: number, responseBody?: string) =>
   new APICallError({
@@ -45,5 +45,14 @@ describe('waitingText', () => {
     expect(waitingText('reading')).toBe('Tom lit ton message…');
     expect(waitingText('exercise')).toBe('Tom prépare ton exercice, ça prend quelques secondes…');
     expect(waitingText('writing')).toBe('Tom écrit sa réponse…');
+  });
+});
+
+describe('isTurnStep', () => {
+  it('takes only a step the web knows: a value the server adds later shows nothing wrong', () => {
+    expect(isTurnStep('exercise')).toBe(true);
+    expect(isTurnStep('checking')).toBe(false);
+    expect(isTurnStep('toString')).toBe(false);
+    expect(isTurnStep(3)).toBe(false);
   });
 });

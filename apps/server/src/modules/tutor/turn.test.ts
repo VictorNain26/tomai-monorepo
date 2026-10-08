@@ -65,15 +65,12 @@ async function say(sessionId: string, text: string, cookie = asStudent) {
     .split('\n')
     .filter((line) => line.startsWith('data: {'))
     .map((line) => JSON.parse(line.slice(6)) as { type: string; delta?: string; errorText?: string; data?: unknown; transient?: boolean });
+  // What the student is told while they wait comes before the reply's first word, if any.
+  const replyStart = chunks.findIndex((chunk) => chunk.type === 'text-start');
+  const beforeReply = replyStart === -1 ? chunks : chunks.slice(0, replyStart);
   return {
     status: res.status,
-    // What the student is told while they wait, before the reply's first word.
-    steps: chunks
-      .slice(
-        0,
-        chunks.findIndex((chunk) => chunk.type === 'text-start'),
-      )
-      .flatMap((chunk) => (chunk.type === 'data-step' ? [chunk.data] : [])),
+    steps: beforeReply.flatMap((chunk) => (chunk.type === 'data-step' ? [chunk.data] : [])),
     transientSteps: chunks.filter((chunk) => chunk.type === 'data-step').every((chunk) => chunk.transient === true),
     reply: chunks.flatMap((chunk) => (chunk.type === 'text-delta' && chunk.delta ? [chunk.delta] : [])).join(''),
     error: chunks.find((chunk) => chunk.type === 'error')?.errorText,

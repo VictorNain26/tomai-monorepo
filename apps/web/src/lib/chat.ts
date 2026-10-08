@@ -35,12 +35,17 @@ export const textOf = (message: UIMessage | undefined) => (message?.parts ?? [])
 /** A message of the session; the server streams the step of the turn as a transient `data-step` part. */
 export type ChatMessage = UIMessage<unknown, { step: TurnStep }>;
 
-/** What Tom does while the student waits, before the first step has arrived too. */
-export function waitingText(step: TurnStep | null): string {
-  if (step === 'exercise') return 'Tom prépare ton exercice, ça prend quelques secondes…';
-  if (step === 'writing') return 'Tom écrit sa réponse…';
-  return 'Tom lit ton message…';
-}
+const WAITING: Record<TurnStep, string> = {
+  reading: 'Tom lit ton message…',
+  exercise: 'Tom prépare ton exercice, ça prend quelques secondes…',
+  writing: 'Tom écrit sa réponse…',
+};
+
+/** Whether a streamed value is a step the web can say: the type holds at compile time only. */
+export const isTurnStep = (value: unknown): value is TurnStep => typeof value === 'string' && Object.hasOwn(WAITING, value);
+
+/** What Tom does while the student waits; he reads before the first step has arrived. */
+export const waitingText = (step: TurnStep | null): string => WAITING[step ?? 'reading'];
 
 /** A failed turn, in words a student reads; the server's own message never shows. */
 export function chatMessage(error: Error): string {
