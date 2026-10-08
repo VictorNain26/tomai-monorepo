@@ -43,6 +43,12 @@ test('a visitor on plain HTTP is sent to HTTPS, as the load balancer reports it'
   expect(response.headers()['location']).toMatch(/^https:\/\/[^/]+\/aide\?x=1$/);
 });
 
+test('www.tomia.fr redirects permanently to tomia.fr, path and query kept', async ({ request }) => {
+  const response = await request.get('/aide?x=1', { maxRedirects: 0, headers: { host: 'www.tomia.fr' } });
+  expect(response.status()).toBe(308);
+  expect(response.headers()['location']).toBe('https://tomia.fr/aide?x=1');
+});
+
 for (const path of ['/aide.html', '/index', '/404']) {
   test(`${path}, a file of the build, is not a URL`, async ({ request }) => {
     expect((await request.get(path)).status()).toBe(404);
