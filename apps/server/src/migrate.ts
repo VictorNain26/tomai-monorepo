@@ -7,5 +7,5 @@ import { loadDatabaseConfig } from './config';
 import { runMigrations } from './platform/db/migrations';
 
 const config = loadDatabaseConfig(Bun.env);
-await runMigrations(config.databaseUrl, { production: config.production });
+await runMigrations(config.databaseUrl, { production: config.production, ca: config.databaseCa });
 console.log('Migrations applied');

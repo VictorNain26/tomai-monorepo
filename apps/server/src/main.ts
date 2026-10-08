@@ -34,7 +34,7 @@ function fatal(error: unknown, message: string): never {
 process.on('uncaughtException', (error) => fatal(error, 'Uncaught exception'));
 process.on('unhandledRejection', (reason) => fatal(reason, 'Unhandled rejection'));
 
-const database = createDb(config.databaseUrl, { production: config.production });
+const database = createDb(config.databaseUrl, { production: config.production, ca: config.databaseCa });
 
 const pending = await pendingMigrations(database.db).catch((error: unknown) => fatal(error, 'Database unreachable at boot'));
 if (pending.length > 0) {

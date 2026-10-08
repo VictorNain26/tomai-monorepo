@@ -21,6 +21,9 @@ const fields = z.object({
   // Requests per minute a client address may send to the API; the e2e suite, whose browsers share one address, raises it.
   API_RATE_LIMIT: z.coerce.number().int().positive().default(100),
   DATABASE_URL: z.url({ protocol: /^postgres(ql)?$/ }),
+  // The PEM certificate of a database that signs its own (Clever Cloud's Postgres): pinned, it
+  // replaces the system's authorities in the TLS check (platform/db/client.ts).
+  DATABASE_CA: z.string().startsWith('-----BEGIN CERTIFICATE-----', 'DATABASE_CA doit être un certificat PEM').optional(),
   // The one public origin, of the API and the web alike. In development, the Vite dev server,
   // whose proxy forwards /api here: better-auth's redirects land on the web.
   BETTER_AUTH_URL: z.url().optional(),
@@ -53,7 +56,7 @@ const fields = z.object({
   MISTRAL_RETRY_ATTEMPTS: z.coerce.number().int().min(0).max(5).default(2),
 });
 
-const databaseFields = fields.pick({ NODE_ENV: true, DATABASE_URL: true });
+const databaseFields = fields.pick({ NODE_ENV: true, DATABASE_URL: true, DATABASE_CA: true });
 
 // Zod skips a refinement once a field has failed: these checks run apart, so that one error
 // names every variable at fault.
@@ -82,6 +85,7 @@ export interface Config {
   readonly logLevel: LogLevel;
   readonly apiRateLimit: number;
   readonly databaseUrl: string;
+  readonly databaseCa: string | undefined;
   readonly publicUrl: string;
   readonly authSecret: string;
   readonly webDistDir: string | undefined;
@@ -119,6 +123,7 @@ export function loadConfig(environment: Environment): Config {
     logLevel: env.LOG_LEVEL,
     apiRateLimit: env.API_RATE_LIMIT,
     databaseUrl: env.DATABASE_URL,
+    databaseCa: env.DATABASE_CA,
     publicUrl: env.BETTER_AUTH_URL ?? 'http://localhost:3002',
     authSecret: env.BETTER_AUTH_SECRET,
     webDistDir: env.WEB_DIST_DIR,
@@ -138,7 +143,7 @@ export function loadConfig(environment: Environment): Config {
 }
 
 /** What the migration script needs: it runs before the server, without the server's secrets. */
-export function loadDatabaseConfig(environment: Environment): Pick<Config, 'production' | 'databaseUrl'> {
+export function loadDatabaseConfig(environment: Environment): Pick<Config, 'production' | 'databaseUrl' | 'databaseCa'> {
   const env = parse(databaseFields, environment);
-  return Object.freeze({ production: env.NODE_ENV === 'production', databaseUrl: env.DATABASE_URL });
+  return Object.freeze({ production: env.NODE_ENV === 'production', databaseUrl: env.DATABASE_URL, databaseCa: env.DATABASE_CA });
 }

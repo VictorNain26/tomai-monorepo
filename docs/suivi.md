@@ -72,9 +72,15 @@ bloquant levé). L'historique vit dans git et les PR.
   seule, chaque merge déployé en staging ; la production, avec la première vraie famille, reçoit la
   même image sur l'approbation de Victor. Clever Cloud jugé fiable pour cet usage : pannes publiées
   et suivies d'un compte rendu, la dernière à Paris le 2026-09-30 (57 min) ; Scalingo reste le plan B.
-- **Prochaine action** : l'étape 7, le staging sur Clever Cloud. Organisation « TomIA » en cours de
-  création par Victor (2FA faite ; restent la facturation, le paiement et le DPA) ; puis la PR du
-  déploiement, avec la landing de production.
+- **Staging, créé le 2026-10-08** : chez Clever Cloud, région Paris, l'application `tomai-staging`
+  (Docker nano) et sa base `tomai-staging-db` (PostgreSQL 18, `XXS_TNY`, disque chiffré) ; le domaine
+  `staging.tomia.fr` (CNAME chez OVH) ; chez Scaleway, le projet « TomIA », l'e-mail en offre
+  Essential et le domaine d'envoi `mail.tomia.fr`, dont SPF, DKIM, DMARC et MX sont publiés chez OVH.
+  Les entrées DNS mortes de Koyeb (`api`, `api-staging`) sont supprimées. Le déploiement par la CI
+  et le certificat épinglé du Postgres : `ci/deploy-staging`.
+- **Prochaine action** : le premier déploiement du staging, une fois ses secrets posés (étapes
+  manuelles ci-dessous), puis sa vérification de bout en bout dans Chrome ; la landing de
+  production ensuite.
 - **Rentabilité et quotas** (`etudes/2026-10-07/rentabilite.md`) : le gratuit décide de la
   rentabilité, la distribution est le vrai risque ; quotas proposés de 2 c (Gratuit) et 10 c
   (Complet) par élève et par jour, voix comprise, remis à zéro à 4 h, et l'année scolaire à 69 €
@@ -96,7 +102,7 @@ supprime ou que l'étude couvre n'y figure plus.
 
 - **Observabilité** : les erreurs du serveur vers Bugsink, auto-hébergé avec sa base, celles des navigateurs par le serveur (`tunnel`) ; les traces OpenTelemetry attendent un besoin mesuré (`etudes/2026-10-07/hebergement.md`).
 - **Cookies de session** : le préfixe `__Host-` pour ceux de better-auth, l'app et la landing étant du même site (à vérifier dans la config de better-auth).
-- **Postgres de l'hébergeur** : `verify-full` vérifie le certificat contre les CA du système ; une CA privée demande l'option `ssl` avec `ca` (`platform/db/client.ts`).
+- **Base du staging joignable depuis internet**, protégée par identifiant, mot de passe et TLS : la placer avec l'application dans un réseau privé Clever Cloud (Network Groups, [changelog](https://www.clever.cloud/developers/changelog/2026/05-12-network-groups-console)) avant la production.
 - **Landing** : son application statique Clever Cloud (`Caddyfile` à la racine de l'application ; le build du monorepo par `CC_BUILD_COMMAND`, Bun y compris, reste à vérifier), une application de preview par PR (`etudes/2026-10-07/hebergement.md`), puis la bascule du DNS (étape manuelle).
 - **Hébergement** : délai de grâce SIGTERM d'au moins un tour de chat, et `DRAIN_MS` (`src/main.ts`, 5 s) recalé sur l'intervalle de la sonde de l'hébergeur ; stockage partagé du rate limit s'il y a plusieurs instances ; derrière le proxy de l'hébergeur, ses sauts de confiance pour la clé du rate limit, y compris celle de better-auth sur l'échange d'un code de jumelage (`advanced.ipAddress`, `platform/auth/pairing.ts`), sans quoi tous les clients partagent un même compteur (`platform/http/rate-limit.ts`, aujourd'hui l'adresse de la connexion) et pour `trustedProxies` de better-auth ; compression des fichiers du web par le build ou par le proxy, selon l'hébergeur.
 - **Appareils de l'élève** : l'élève voit ses appareils reliés sur son accueil ; reste à le prévenir sur ses appareils déjà reliés quand un nouvel appareil l'est (date, type d'appareil) ; décider, en concevant l'historique, si un appareil nouvellement relié ne montre que les séances commencées après son jumelage (revue de #425, `etudes/2026-10-07/foyer-eleve-age.md`, § 7).
@@ -104,11 +110,10 @@ supprime ou que l'étude couvre n'y figure plus.
 - **Clever Cloud** (`etudes/2026-10-07/hebergement.md`), à tester sur la préproduction : un tour SSE
   de 60 s à travers Sōzu (délai de 180 s documenté) ; le délai de grâce réel au SIGTERM pendant un
   redéploiement, contre `SHUTDOWN_DEADLINE_MS` (25 s, `src/main.ts`) et un tour de 60 s ; la sonde
-  qui ne sert qu'au déploiement, pour `DRAIN_MS` ; la CA du Postgres pour `verify-full` ; le PITR
+  qui ne sert qu'au déploiement, pour `DRAIN_MS` ; le PITR
   (pgBackRest, sur demande au support) et son prix ; la dernière entrée de X-Forwarded-For comme clé
   du rate limit ; le port (3000 dans l'image, 8080 attendu par Clever Cloud : `PORT` ou
-  `CC_DOCKER_EXPOSED_HTTP_PORT`) ; l'accès à l'image GHCR, privée par défaut, et son digest publié
-  par la CI ; Postgres 18.4 chez Clever Cloud contre 18.6 en dev et en CI, à aligner.
+  `CC_DOCKER_EXPOSED_HTTP_PORT`) ; Postgres 18.4 chez Clever Cloud contre 18.6 en dev et en CI, à aligner.
 
 ### Lot 1 — harnais d'évaluation et observabilité
 
@@ -135,6 +140,9 @@ supprime ou que l'étude couvre n'y figure plus.
 
 Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pas.
 
+- **Jeton de la CLI Clever Cloud** (`CLEVER_TOKEN`, `CLEVER_SECRET`, environnement GitHub `staging`) :
+  il expire le 2027-10-08, un an après sa création ([doc](https://www.clever.cloud/developers/doc/tools/ci-cd/)) ; le
+  renouveler avant, sans quoi le déploiement du staging échoue.
 - **TypeScript 7** : pas avant que `typescript-eslint` accepte une version au-delà de 6.0.
 - **typescript-eslint 8.71** (groupe `eslint` de Renovate) : les presets typés y activent
   `no-unsafe-enum-assignment`, qui signalait trois lignes de l'ancien serveur le 2026-10-06 ;
@@ -198,8 +206,9 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
 |---|---|---|
 | Recréer la base locale, qui porte l'ancien schéma : `docker compose down -v` puis `bun run setup` (skill `dev-bootstrap`) ; et dans `apps/server/.env`, `BETTER_AUTH_URL=http://localhost:3002` | Refonte, étape 2 | à faire |
 | Juger un échantillon de conversations sur la page prévue, par courtes séances | Vérifier le juge, lot 1 | quand la page existe |
-| Ouvrir une Organisation Scaleway pour l'e-mail (moyen de paiement, identité, projet dédié, clé IAM limitée à Transactional Email) ; publier SPF, DKIM, DMARC (`p=none` d'abord) et MX du sous-domaine d'envoi, puis vérifier le domaine dans la console (`etudes/2026-10-07/email-transactionnel.md`). Le domaine dépend du nom du produit | Préproduction, étape 7 | à faire |
-| Ouvrir le compte Clever Cloud (organisation, paiement, région Paris), signer le DPA, créer un jeton d'API pour GitHub Actions (`etudes/2026-10-07/hebergement.md`) | Préproduction, étape 7 | à faire |
+| Scaleway : faits le 2026-10-08, le compte, le projet « TomIA », l'offre Essential, le domaine `mail.tomia.fr` et ses DNS ; restent le moyen de paiement, la vérification d'identité, la 2FA, la clé IAM limitée à Transactional Email, et le domaine « vérifié » dans la console (`etudes/2026-10-07/email-transactionnel.md`). Le domaine définitif suivra le nom du produit | Staging, étape 7 | en cours |
+| Clever Cloud : faits le 2026-10-08, l'organisation, le paiement, la 2FA ; le DPA est inclus aux conditions générales (articles 1.3 et 10.2), en garder une copie pour l'AIPD. Restent le jeton de la CLI (`clever login`) en secrets `CLEVER_TOKEN` et `CLEVER_SECRET` de l'environnement GitHub `staging`, et les secrets de l'application (`DATABASE_URL`, `BETTER_AUTH_SECRET`, `MISTRAL_API_KEY`, `SCW_ACCESS_KEY`, `SCW_SECRET_KEY`) | Staging, étape 7 | en cours |
+| Vérifier que les anciens comptes Koyeb et le projet Vercel du staging ne facturent plus rien | Hébergement unifié | à faire |
 | Une fois la landing en Astro en ligne chez Clever Cloud : faire pointer le DNS de `tomia.fr` vers elle, vérifier qu'elle répond, puis seulement supprimer le projet Vercel et l'organisation Sentry `home-drx` ; le domaine définitif suivra le nom du produit (`etudes/2026-10-07/hebergement.md`, « Architecture unifiée ») | Landing en Astro | à faire |
 | Écrire à la CNIL sur HDS, avec le texte proposé dans `etudes/2026-10-07/hebergement.md` ; la réponse entre dans l'AIPD | Porte avant ouverture | à faire |
 | Langfuse : la description de la file d'annotation `tom-judge-agreement` renvoie encore à `docs/agent.md`, devenu `docs/tuteur.md` ; la corriger dans l'interface (l'API n'a pas de mise à jour de file) | Évaluation | à faire |

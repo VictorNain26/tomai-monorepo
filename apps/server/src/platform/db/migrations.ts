@@ -6,7 +6,7 @@
 import { sql } from 'drizzle-orm';
 import { readMigrationFiles } from 'drizzle-orm/migrator';
 import { migrate } from 'drizzle-orm/postgres-js/migrator';
-import { createDb, type Db } from './client';
+import { createDb, type Db, type DbOptions } from './client';
 
 /** Relative to apps/server, the directory every script and the image run the server from. */
 export const MIGRATIONS_FOLDER = 'drizzle';
@@ -16,8 +16,8 @@ export const MIGRATIONS_FOLDER = 'drizzle';
  * the session, so the migrations run on a client of their own with a single connection: one
  * instance migrates, the others wait and then find nothing left to apply.
  */
-export async function runMigrations(url: string, { production }: { production: boolean }, migrationsFolder = MIGRATIONS_FOLDER): Promise<void> {
-  const { db, close } = createDb(url, { production, max: 1 });
+export async function runMigrations(url: string, options: Omit<DbOptions, 'max'>, migrationsFolder = MIGRATIONS_FOLDER): Promise<void> {
+  const { db, close } = createDb(url, { ...options, max: 1 });
   try {
     await db.execute(sql`SELECT pg_advisory_lock(hashtext('drizzle_migrate'))`);
     const migrated = await migrate(db, { migrationsFolder }).then(

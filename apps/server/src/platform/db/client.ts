@@ -1,7 +1,9 @@
 /**
  * The database: postgres.js under Drizzle. In production the TLS certificate and host name are
  * verified: postgres.js 3.4 only turns verification off for 'require', 'allow' and 'prefer'.
- * Elsewhere the URL's own `sslmode` decides.
+ * Against the system's authorities, or against `ca` for a database whose certificate is its own
+ * authority, as Clever Cloud signs each Postgres it hosts. Elsewhere the URL's own `sslmode`
+ * decides, unless a `ca` is given.
  */
 
 import { drizzle, type PostgresJsDatabase } from 'drizzle-orm/postgres-js';
@@ -15,9 +17,17 @@ export interface Database {
   close: () => Promise<void>;
 }
 
-export function createDb(url: string, { production, max }: { production: boolean; max?: number }): Database {
+export interface DbOptions {
+  production: boolean;
+  /** The PEM certificate the server's must chain to, its host name checked as well. */
+  ca?: string | undefined;
+  max?: number;
+}
+
+export function createDb(url: string, { production, ca, max }: DbOptions): Database {
+  const ssl = ca === undefined ? (production ? 'verify-full' : undefined) : { ca };
   const client = postgres(url, {
-    ...(production ? { ssl: 'verify-full' } : {}),
+    ...(ssl === undefined ? {} : { ssl }),
     ...(max === undefined ? {} : { max }),
     onnotice: () => undefined,
   });

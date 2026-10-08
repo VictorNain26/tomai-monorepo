@@ -15,7 +15,7 @@ if (!email.success) {
 }
 
 const config = loadDatabaseConfig(Bun.env);
-const { db, close } = createDb(config.databaseUrl, { production: config.production, max: 1 });
+const { db, close } = createDb(config.databaseUrl, { production: config.production, ca: config.databaseCa, max: 1 });
 try {
   const { expiresAt } = await invite(db, email.data);
   console.log(`Invitation de ${email.data} valable jusqu'au ${expiresAt.toISOString()}`);

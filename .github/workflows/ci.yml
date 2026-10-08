@@ -161,6 +161,8 @@ jobs:
     permissions:
       contents: read
       packages: write
+    outputs:
+      image: ${{ steps.publish.outputs.image }}
     services:
       postgres:
         image: postgres:18.6
@@ -197,12 +199,14 @@ jobs:
           docker logs server
           exit 1
       - name: Publish
+        id: publish
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo "$GITHUB_TOKEN" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
           docker push "$IMAGE:$GITHUB_SHA"
+          echo "image=$(docker inspect -f '{{index .RepoDigests 0}}' "$IMAGE:$GITHUB_SHA")" >> "$GITHUB_OUTPUT"
 
   secrets:
     name: Secret Detection
@@ -253,3 +257,40 @@ jobs:
           for result in $RESULTS; do
             if [ "$result" != "success" ]; then exit 1; fi
           done
+
+  # The staging takes every merge on main once everything passed: the image the CI built and ran,
+  # by its digest. Clever Cloud only pulls it, nothing is built there, so no secret reaches a build
+  # (docs/architecture.md, « Environnements et livraison »). The keys are the staging environment's.
+  deploy-staging:
+    name: Deploy staging
+    needs: [ci-ok, image]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment:
+      name: staging
+      url: https://staging.tomia.fr
+    concurrency:
+      group: deploy-staging
+      cancel-in-progress: false
+    env:
+      CLEVER_TOKEN: ${{ secrets.CLEVER_TOKEN }}
+      CLEVER_SECRET: ${{ secrets.CLEVER_SECRET }}
+      APP_ID: app_d529cc6c-ffcb-4cf4-9aef-09c68f93b42f
+      IMAGE: ${{ needs.image.outputs.image }}
+    steps:
+      - name: Deploy the image
+        run: |
+          # Two merges close together can finish their CI out of order: only main's head deploys,
+          # so that an older image never replaces a newer one.
+          head="$(git ls-remote "https://github.com/$GITHUB_REPOSITORY" refs/heads/main | cut -f1)"
+          if [ "$head" != "$GITHUB_SHA" ]; then
+            echo "::notice::$GITHUB_SHA is no longer main's head ($head): the run of the head deploys"
+            exit 0
+          fi
+          mkdir release && cd release
+          echo "FROM $IMAGE" > Dockerfile
+          git init -q
+          git add Dockerfile
+          git -c user.name=ci -c user.email=ci@users.noreply.github.com commit -qm "$GITHUB_SHA"
+          npx --yes clever-tools@5.1.0 link "$APP_ID"
+          npx --yes clever-tools@5.1.0 deploy --force
