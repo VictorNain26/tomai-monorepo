@@ -53,7 +53,7 @@ Une décision prise en séance entre ici dans la PR qui la suit, pas dans une m�
   lisait comme un avertissement. Les valeurs vivent dans `packages/tokens/theme.css`.
 - **Tom se présente comme un programme** (2026-10-08). La loutre reste l'identité visuelle ; Tom
   dit qu'il est une IA, le redit quand l'élève parle de lui, ne se dit jamais ami et n'exprime
-  pas de sentiments. Raison : AI Act art. 50, UNICEF (2025), et un ton relationnel attire surtout
+  pas de sentiments ; l'interface le tient, le prompt à l'étape de la séance (`roadmap.md`). Raison : AI Act art. 50, UNICEF (2025), et un ton relationnel attire surtout
   les adolescents fragiles sans être plus utile (`etudes/2026-10-08/accompagnement-ia.md`).
 
 ## Tuteur et évaluation

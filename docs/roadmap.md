@@ -19,7 +19,8 @@ son plan, au moment où elle démarre (`.claude/rules/plans-and-agents.md`). L'�
 
 **Lot 3**, dans cet ordre (`etudes/2026-10-08/interfaces.md` pour les constats) :
 1. **La séance** : l'accueil de Tom qui dit qu'il est une IA (AI Act, art. 50(1)) et une marque
-   « IA » près du champ, le champ fixé en bas, le rendu des maths, une attente qui dit ce qui se
+   « IA » près du champ ; dans le prompt, Tom le redit quand l'élève parle de lui, sans
+   sentiment ni amitié (`decisions.md`) ; le champ fixé en bas, le rendu des maths, une attente qui dit ce qui se
    passe ; sur la direction « Cahier du soir » (`decisions.md`).
 2. **L'accueil élève** : les séances d'abord, la mémoire dans les mots de l'élève, un choix de
    profil.

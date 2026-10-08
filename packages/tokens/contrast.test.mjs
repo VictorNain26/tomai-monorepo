@@ -5,11 +5,18 @@ import { readFileSync } from 'node:fs';
 const read = (file) => readFileSync(new URL(file, import.meta.url), 'utf8');
 const colors = (css) => Object.fromEntries([...css.matchAll(/--color-([a-z-]+):\s*(#[0-9A-Fa-f]{6})/g)].map(([, name, hex]) => [name, hex]));
 
-// The dark mode overrides the light tokens it names: each mode is checked whole. The landing keeps
-// its own palette until lot 4.
-const [lightCss, darkCss] = read('./theme.css').split('@media (prefers-color-scheme: dark)');
-const light = colors(lightCss);
-const modes = Object.entries({ light, dark: { ...light, ...colors(darkCss) }, landing: colors(read('./landing.css')) });
+// The dark block wherever it sits in the file; every other color is light. The landing keeps its
+// own palette until lot 4.
+const theme = read('./theme.css');
+const darkBlock = /@media\s*\(prefers-color-scheme:\s*dark\)\s*\{([\s\S]*?)\n\}/.exec(theme);
+const light = colors(theme.replace(darkBlock?.[0] ?? '', ''));
+const dark = colors(darkBlock?.[1] ?? '');
+const modes = Object.entries({ light, dark, landing: colors(read('./landing.css')) });
+
+test('the dark mode gives every light color its own value', () => {
+  assert.ok(darkBlock, 'no @media (prefers-color-scheme: dark) block in theme.css');
+  assert.deepEqual(Object.keys(dark).sort(), Object.keys(light).sort());
+});
 
 function luminance(hex) {
   const channel = (i) => {

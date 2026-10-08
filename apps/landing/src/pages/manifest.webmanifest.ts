@@ -1,6 +1,6 @@
 import { BRAND_NAME } from '@/lib/brand';
 
-// A manifest can't read CSS variables: copied from packages/tokens/theme.css.
+// A manifest can't read CSS variables: copied from packages/tokens/landing.css.
 const PAPER = '#FAF7F0';
 
 export function GET() {
