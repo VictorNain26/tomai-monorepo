@@ -88,8 +88,14 @@ bloquant levé). L'historique vit dans git et les PR.
 - **Profils sur l'appareil** (Victor, 2026-10-08) : l'appareil d'un enfant reste relié 90 jours sans
   usage ; le parent ouvre l'espace de son enfant sur son propre téléphone sans code, et revient au
   sien par sa clé d'accès ou un code ; l'enfant n'a plus de déconnexion, mais « Changer de profil ».
-- **Prochaine action** : la bascule du DNS de `tomia.fr` vers Clever Cloud (`clever domain diag`
-  donne les enregistrements), puis la suppression de Vercel et de Sentry.
+- **Étape 8 commencée, le harnais rebranché** (2026-10-08) : `bun run eval` rejoue les scénarios sur
+  le vrai tuteur par la route, un élève neuf par conversation, et juge par le code la fuite, les
+  artefacts et la détresse, chaque taux avec son intervalle de Wilson. S4 sort du jeu : il vérifiait
+  les fiches de révision, qui n'existent plus. La suite, dans l'ordre de
+  `etudes/2026-10-06/refonte-evaluation.md` : rapport et comparaison (McNemar), juge porté, sa
+  validation, puis la fermeture des fuites restantes.
+- **Prochaine action** : un passage complet du harnais (environ 0,5 €), comparé à la mesure du
+  2026-10-06 (11 fuites sur 106, `etudes/2026-10-06/passage-de-fin.md`).
 - **Rentabilité et quotas** (`etudes/2026-10-07/rentabilite.md`) : le gratuit décide de la
   rentabilité, la distribution est le vrai risque ; quotas proposés de 2 c (Gratuit) et 10 c
   (Complet) par élève et par jour, voix comprise, remis à zéro à 4 h, et l'année scolaire à 69 €
