@@ -3,11 +3,12 @@
  * host. No cookieCache: a cached session would outlive a deleted account for its whole maxAge. A
  * student has no credential: their device is paired by a guardian's code (./pairing.ts). A
  * guardian has no password either: a code sent to their address lets them in, and the first one
- * creates their account, on an invitation (./invitation.ts). Deleting the account asks for a
- * session opened by a code a few minutes before.
+ * creates their account, on an invitation (./invitation.ts), and a passkey then saves them the
+ * code. Deleting the account, or adding a passkey, asks for a session opened a few minutes before.
  */
 
 import type { GenericEndpointContext } from '@better-auth/core';
+import { passkey } from '@better-auth/passkey';
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { APIError } from 'better-auth/api';
@@ -18,7 +19,7 @@ import type { Db } from '../db/client';
 import type { Mailer } from '../email/mailer';
 import { invitationIdentifier } from './invitation';
 import { devicePairing, PAIRING_PREFIX } from './pairing';
-import { account, session, user, verification } from './schema';
+import { account, passkey as passkeyTable, session, user, verification } from './schema';
 
 interface AuthDeps {
   mailer: Mailer;
@@ -39,6 +40,7 @@ export function createAuth(db: Db, config: Pick<Config, 'publicUrl' | 'authSecre
     if (email.to.endsWith('.invalid')) return;
     await mailer(email);
   };
+  const { hostname: rpID, origin } = new URL(config.publicUrl);
 
   // Closed beta: an address without an account needs a live invitation, whatever creates the user.
   const invited = async ({ context }: GenericEndpointContext, email: string) => {
@@ -50,7 +52,7 @@ export function createAuth(db: Db, config: Pick<Config, 'publicUrl' | 'authSecre
     baseURL: config.publicUrl,
     secret: config.authSecret,
     // Transactions on: better-auth's own multi-step writes (and device pairing) are atomic.
-    database: drizzleAdapter(db, { provider: 'pg', schema: { user, session, account, verification }, transaction: true }),
+    database: drizzleAdapter(db, { provider: 'pg', schema: { user, session, account, verification, passkey: passkeyTable }, transaction: true }),
     // better-auth's own messages, a failed email among them, go to pino; only an error's own
     // fields, through pino's serializer, never the other arguments, which can hold a user.
     logger: {
@@ -79,7 +81,7 @@ export function createAuth(db: Db, config: Pick<Config, 'publicUrl' | 'authSecre
         },
       },
     },
-    // Deleting the account needs a session at most this old: a code asked for just before.
+    // Deleting the account, or adding a passkey, needs a session at most this old.
     session: { freshAge: 10 * 60 },
     databaseHooks: {
       user: {
@@ -114,6 +116,9 @@ export function createAuth(db: Db, config: Pick<Config, 'publicUrl' | 'authSecre
     ],
     plugins: [
       devicePairing(),
+      // Bound to the public origin, never to the one a request claims; a discoverable credential,
+      // which the browser offers in the address field.
+      passkey({ rpID, rpName: 'Tom', origin, authenticatorSelection: { residentKey: 'required', userVerification: 'preferred' } }),
       emailOTP({
         otpLength: 6,
         expiresIn: 5 * 60,
