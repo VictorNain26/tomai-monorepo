@@ -47,6 +47,13 @@ describe('rate limit', () => {
     expect(res.status).toBe(429);
   });
 
+  it('counts an IPv6 client by its /64, the block one connection holds', async () => {
+    const limited = app(1, 1);
+    await limited.request('/', { headers: { 'X-Forwarded-For': '2001:db8:0:1::7' } });
+    const res = await limited.request('/', { headers: { 'X-Forwarded-For': '2001:db8:0:1:ffff::9' } });
+    expect(res.status).toBe(429);
+  });
+
   it('ignores the forwarding headers a client can write, without a proxy', async () => {
     const limited = app(1);
     await limited.request('/', { headers: { 'X-Forwarded-For': '203.0.113.1', 'X-Real-IP': '203.0.113.1' } });
