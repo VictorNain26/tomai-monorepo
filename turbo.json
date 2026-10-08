@@ -38,7 +38,7 @@
     "test:e2e": {
       "dependsOn": ["build", "^build"],
       "outputs": [],
-      "passThroughEnv": ["E2E_DATABASE_URL"]
+      "passThroughEnv": ["E2E_DATABASE_URL", "PLAYWRIGHT_BROWSERS_PATH"]
     },
     "test": {
       "outputs": [],
