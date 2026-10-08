@@ -107,14 +107,22 @@ bloquant levé). L'historique vit dans git et les PR.
   même code, sur au moins 150 conversations de pression comparées cas par cas (McNemar). Un passage
   ne prouve pas « moins de 1 % » : il en faudrait au moins 300 (`etudes/2026-10-06/refonte-evaluation.md`,
   décision 5). Les chiffres de la littérature se relisent dans les PDF avant d'entrer au juge.
-- **Prochaine action** : ce passage unique, une fois le harnais mergé, comparé à la mesure du
-  2026-10-06 (11 fuites sur 106, `etudes/2026-10-06/passage-de-fin.md`).
+- **Étape 8 en pause** (Victor, 2026-10-08) : le passage s'est arrêté à 3 conversations sur 104,
+  sans fichier de résultats ; il ne compte pas comme mesure. En mode gratuit, Mistral plafonne à
+  100 000 tokens par minute, et une fiche d'exercice en prend environ 78 000 (trois tirages de
+  26 000 tokens d'entrée, en parallèle) : la fiche suivante, dans la même minute, échoue. Ce
+  passage unique, comparé à la mesure du 2026-10-06 (11 fuites sur 106,
+  `etudes/2026-10-06/passage-de-fin.md`), reprend une fois le paiement à l'usage actif (bloquant
+  ci-dessous), et avant la première famille.
+- **Prochaine action** : le lot 3 en parallèle, les retours de Victor sur le staging, écran par
+  écran.
 - **Rentabilité et quotas** (`etudes/2026-10-07/rentabilite.md`) : le gratuit décide de la
   rentabilité, la distribution est le vrai risque ; quotas proposés de 2 c (Gratuit) et 10 c
   (Complet) par élève et par jour, voix comprise, remis à zéro à 4 h, et l'année scolaire à 69 €
   payée d'avance, sans renouvellement : recommandations retenues par Victor le 2026-10-07.
-- **Décisions de Victor en attente**, au moment de l'étape qui en dépend : offre Mistral payante pour paralléliser l'évaluation et juge d'une autre famille,
-  seulement s'il est très bon marché (étape 8).
+- **Décisions de Victor en attente**, au moment de l'étape qui en dépend : juge d'une autre
+  famille, seulement s'il est très bon marché (étape 8). Le paiement à l'usage de Mistral est
+  décidé (2026-10-08).
 - **PR ouvertes :** `gh pr list`.
 - **Landing en ligne gelée** jusqu'au lot 4, hors de la refonte : seuls des correctifs d'honnêteté
   ou techniques y entrent. L'identité visuelle est rejetée et se refait au lot 4.
@@ -229,6 +237,7 @@ Conditions à guetter, sans PR propriétaire tant qu'elles ne se déclenchent pa
 | Bloquant | Effet | Qui | Comment lever |
 |---|---|---|---|
 | Zero Data Retention non demandé | Mistral peut conserver textes et audio d'élèves selon sa rétention par défaut ; bloque tout utilisateur réel, pas le merge | Victor | Étape manuelle ci-dessous |
+| Mistral en mode gratuit : 100 000 tokens par minute pour l'organisation, mesuré le 2026-10-08 (en-tête `x-ratelimit-limit-tokens-minute`), et ce mode est fait « pour l'évaluation et le prototypage » ([centre d'aide Mistral](https://help.mistral.ai/en/articles/698531-why-am-i-hitting-api-rate-limits-and-how-do-i-increase-them)) | Une fiche d'exercice prend environ 78 000 tokens : le harnais, ou deux élèves dans la même minute, voient la fiche échouer et l'aide rester basse ; bloque l'étape 8 et tout utilisateur réel | Victor | Activer le paiement à l'usage avec un plafond (Tier 1 tout de suite), puis relire Admin › Limites ; le même geste ouvre la demande de ZDR |
 | Clause des mineurs des conditions de Mistral (usages interdits, (c)) : pas de données personnelles d'enfants sous l'âge du consentement numérique, 15 ans en France ; lue à la lettre, presque tout le collège | Bloque tout utilisateur réel de moins de 15 ans, pas le merge | Victor | Clarification écrite de Mistral, demandée avec le ZDR (`etudes/2026-10-07/foyer-eleve-age.md`, § 1) |
 
 ## Étapes manuelles (Victor)
