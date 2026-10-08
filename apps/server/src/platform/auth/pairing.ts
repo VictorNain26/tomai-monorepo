@@ -6,13 +6,15 @@
  * an existing session and its device authorization gives the session to whoever approves: neither
  * opens one for another user. This plugin is made of better-auth's own parts: verification values
  * (single use, hashed by `storeIdentifier`), sessions, the signed session cookie and its
- * transactions.
+ * transactions. A device handed to a student keeps no guardian session: the multi-session plugin
+ * switches to any session a device holds, so switching back asks for the guardian's code or passkey.
  */
 
+import type { GenericEndpointContext } from '@better-auth/core';
 import { runWithTransaction } from '@better-auth/core/context';
 import type { BetterAuthPlugin } from 'better-auth';
-import { APIError, createAuthEndpoint, getSessionFromCtx } from 'better-auth/api';
-import { setSessionCookie } from 'better-auth/cookies';
+import { APIError, createAuthEndpoint, createAuthMiddleware, getSessionFromCtx } from 'better-auth/api';
+import { expireCookie, parseCookies, setSessionCookie } from 'better-auth/cookies';
 import { z } from 'zod';
 import type { Auth } from './auth';
 
@@ -30,6 +32,22 @@ function generatePairingCode(): string {
   // 256 is a multiple of 32: every character is equally likely.
   const bytes = crypto.getRandomValues(new Uint8Array(CODE_LENGTH));
   return Array.from(bytes, (byte) => ALPHABET[byte % ALPHABET.length]).join('');
+}
+
+/** A student's address is the RFC 6761 `.invalid` one better-auth makes for an account without email. */
+export const isStudentEmail = (email: string) => email.endsWith('.invalid');
+
+/** Deletes every guardian session the request's device holds, and expires its cookie. */
+async function closeGuardianSessions(ctx: GenericEndpointContext) {
+  const { sessionToken } = ctx.context.authCookies;
+  for (const name of parseCookies(ctx.headers?.get('cookie') ?? '').keys()) {
+    if (!name.startsWith(`${sessionToken.name}_multi-`)) continue;
+    const token = await ctx.getSignedCookie(name, ctx.context.secret);
+    const held = token ? await ctx.context.internalAdapter.findSession(token) : null;
+    if (!held || isStudentEmail(held.user.email)) continue;
+    await ctx.context.internalAdapter.deleteSession(held.session.token);
+    expireCookie(ctx, { name, attributes: sessionToken.attributes });
+  }
 }
 
 /** A code that opens a session for `userId` on the device that sends it, within ten minutes. */
@@ -63,10 +81,22 @@ export function devicePairing() {
             return { user, session: await internalAdapter.createSession(user.id) };
           });
           if (!paired) throw new APIError('BAD_REQUEST', { message: 'Invalid or expired code' });
+          await closeGuardianSessions(ctx);
           await setSessionCookie(ctx, paired);
           return ctx.json({ user: { id: paired.user.id, name: paired.user.name } });
         },
       ),
+    },
+    hooks: {
+      after: [
+        {
+          matcher: (ctx) => ctx.path === '/multi-session/set-active',
+          handler: createAuthMiddleware(async (ctx) => {
+            const active = ctx.context.newSession;
+            if (active && isStudentEmail(active.user.email)) await closeGuardianSessions(ctx);
+          }),
+        },
+      ],
     },
     // Keyed by the client's address, which better-auth reads behind the host's proxy once its
     // trusted hops are set (docs/suivi.md, preproduction step).
