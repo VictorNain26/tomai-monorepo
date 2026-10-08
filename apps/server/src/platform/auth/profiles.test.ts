@@ -78,6 +78,16 @@ describe("a guardian on their child's device", () => {
     expect((await held(tablet)).map(({ user }) => user.id).sort()).toEqual([guardianId, lea.id].sort());
   });
 
+  it('leaves the device to the child, their session kept, when the guardian leaves it', async () => {
+    const { guardianId, lea, tablet } = await family('repart@example.com');
+    await tablet.signIn('repart@example.com');
+    const own = (await held(tablet)).find(({ user }) => user.id === guardianId)?.session.token ?? '';
+
+    expect((await tablet.send('POST', '/api/auth/multi-session/revoke', { sessionToken: own })).status).toBe(200);
+    expect((await api.sessionUser(tablet.cookie()))?.id).toBe(lea.id);
+    expect(await sessionsOf(guardianId)).toHaveLength(1);
+  });
+
   it('may ask for a passkey sign-in there', async () => {
     const { tablet } = await family('cle-sur-la-tablette@example.com');
     expect((await tablet.send('GET', '/api/auth/passkey/generate-authenticate-options')).status).toBe(200);
@@ -118,6 +128,22 @@ describe('a device handed to the child', () => {
     expect((await guardian.redeem(await api.pairingCode(guardian.cookie(), lea.id))).status).toBe(200);
     expect((await api.sessionUser(guardian.cookie()))?.id).toBe(lea.id);
     expect(await sessionsOf(guardianId)).toEqual([]);
+  });
+
+  it('keeps one cookie per account the device holds, however often the guardian hands it over', async () => {
+    const phone = api.device();
+    await invite(db, 'souvent@example.com');
+    await phone.signIn('souvent@example.com');
+    const lea = await api.student(phone.cookie());
+    for (let round = 0; round < 3; round++) {
+      expect((await phone.redeem(await api.pairingCode(phone.cookie(), lea.id))).status).toBe(200);
+      expect((await phone.signIn('souvent@example.com')).status).toBe(200);
+    }
+    const multi = phone
+      .cookie()
+      .split('; ')
+      .filter((cookie) => cookie.includes('_multi-'));
+    expect(multi).toHaveLength(2);
   });
 
   it("does not let the child switch to another account's session", async () => {
