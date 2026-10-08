@@ -85,7 +85,7 @@ export function createTutorService({ repository, students, ai, moderation, logge
   /** What the student's exercises before `before` say of `notions` (of every notion when null): what Tom reads, what the student sees. */
   async function memoriesOf(learner: Student, notions: readonly string[] | null, before: number | null) {
     const [past, resets] = await Promise.all([
-      repository.pastExercises(learner.id, { since: schoolYearStart(new Date()), after: learner.memory.resetAfter }, before, notions),
+      repository.pastExercises(learner.id, { since: schoolYearStart(new Date()), after: learner.memory.resetAfter, by: 'start' }, before, notions),
       repository.notionResets(learner.id),
     ]);
     return notionMemories(past, resets);
@@ -96,7 +96,7 @@ export function createTutorService({ repository, students, ai, moderation, logge
     const since = weekStart(new Date());
     const [messages, exercises, resets] = await Promise.all([
       repository.messagesSince(studentId, since),
-      repository.pastExercises(studentId, { since, after: 0 }, null, null),
+      repository.pastExercises(studentId, { since, after: 0, by: 'turn' }, null, null),
       repository.notionResets(studentId),
     ]);
     return weekSummary(messages, exercises, resets);

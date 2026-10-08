@@ -227,8 +227,9 @@ rejouables par un tiers.
   dit le résumé.
 - **Le parent voit un résumé de la semaine, jamais les conversations** : les sept derniers
   jours, calculés par le code sans modèle (`modules/tutor/core/week-summary.ts`) ; les matières,
-  le temps passé (les écarts entre messages, une pause au-delà de 10 minutes), les notions qui
-  résistent (dernier exercice non résolu, ou résolu avec une aide allée jusqu'à « Étape
+  le temps passé (de l'ouverture de la séance, d'un message à l'autre, une pause au-delà de
+  10 minutes, rien après une détresse), les notions qui résistent (dernier exercice travaillé dans
+  la semaine non résolu après une aide, ou résolu avec une aide allée jusqu'à « Étape
   intermédiaire »). L'élève voit le même résumé (`GET /api/summary`), son parent par
   `GET /api/summary/:studentId`. À construire au lot 3 : l'écran, écrit comme des pistes de
   conversation, et l'arrêt à la demande de l'élève ; à partir de 15 ans, sa demande s'applique,

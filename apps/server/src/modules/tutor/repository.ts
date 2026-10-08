@@ -3,7 +3,7 @@
  * `ownSession`, a clause of the query itself: another student's session is simply not found.
  */
 
-import { and, asc, count, desc, eq, getTableName, gt, gte, isNotNull, isNull, lt, notExists, sql, sum } from 'drizzle-orm';
+import { and, asc, count, desc, eq, exists, getTableName, gt, gte, isNotNull, isNull, lt, notExists, or, sql, sum } from 'drizzle-orm';
 import type { DistressSource } from '../../domain/distress';
 import type { MathCheck } from '../../domain/exercise-math';
 import type { SubjectFamily } from '../../domain/subjects';
@@ -148,14 +148,15 @@ export function createTutorRepository(db: Db) {
     },
 
     /**
-     * The student's exercises since `since` and after the position `after`, before the one at
-     * `before` (all of them when null), on one of `notions` (any when null), oldest first, with
-     * their notions and the error types of their turns: what the learner memory and the summary of
-     * the week read. Through the student's own sessions only.
+     * The student's exercises since `since`, begun then (`by: 'start'`) or with a turn then
+     * (`by: 'turn'`), after the position `after`, before the one at `before` (all of them when
+     * null), on one of `notions` (any when null), oldest first, with their notions and the error
+     * types of their turns: what the learner memory and the summary of the week read. Through the
+     * student's own sessions only.
      */
     async pastExercises(
       studentId: string,
-      { since, after }: { since: Date; after: number },
+      { since, after, by }: { since: Date; after: number; by: 'start' | 'turn' },
       before: number | null,
       notions: readonly string[] | null,
     ): Promise<PastExercise[]> {
@@ -175,7 +176,14 @@ export function createTutorRepository(db: Db) {
         .where(
           and(
             eq(studySession.studentId, studentId),
-            gte(exercise.createdAt, since),
+            by === 'start'
+              ? gte(exercise.createdAt, since)
+              : exists(
+                  db
+                    .select({ one: sql`1` })
+                    .from(turnRecord)
+                    .where(and(eq(turnRecord.exerciseId, exercise.id), gte(turnRecord.createdAt, since))),
+                ),
             gt(exercise.position, after),
             isNotNull(exercise.sheet),
             ...(before === null ? [] : [lt(exercise.position, before)]),
@@ -199,13 +207,22 @@ export function createTutorRepository(db: Db) {
       }));
     },
 
-    /** The times of the student's messages since `since`, with their session's subject, grouped by session, in their order. */
+    /**
+     * The times of the student's messages since `since`, with their session's subject and opening,
+     * grouped by session, in their order; none from the distress that closed a session on.
+     */
     async messagesSince(studentId: string, since: Date): Promise<WeekMessage[]> {
       return db
-        .select({ sessionId: message.sessionId, subject: studySession.subject, at: message.createdAt })
+        .select({ sessionId: message.sessionId, subject: studySession.subject, startedAt: studySession.createdAt, at: message.createdAt })
         .from(message)
         .innerJoin(studySession, eq(studySession.id, message.sessionId))
-        .where(and(eq(studySession.studentId, studentId), gte(message.createdAt, since)))
+        .where(
+          and(
+            eq(studySession.studentId, studentId),
+            gte(message.createdAt, since),
+            or(isNull(studySession.closedAt), lt(message.createdAt, studySession.closedAt)),
+          ),
+        )
         .orderBy(asc(message.sessionId), asc(message.position));
     },
 

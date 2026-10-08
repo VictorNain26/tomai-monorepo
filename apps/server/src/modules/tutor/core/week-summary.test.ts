@@ -9,9 +9,9 @@ if (!first || !second) throw new Error('the referential has no maths for the qua
 const T0 = Date.parse('2026-10-05T17:00:00Z');
 const minutes = (n: number) => n * 60_000;
 
-/** A session's messages, `at` in minutes after T0. */
-const session = (sessionId: string, subject: WeekMessage['subject'], at: number[]): WeekMessage[] =>
-  at.map((offset) => ({ sessionId, subject, at: new Date(T0 + minutes(offset)) }));
+/** A session's messages, `at` in minutes after T0; the session opened with its first message unless `startedAt` says otherwise. */
+const session = (sessionId: string, subject: WeekMessage['subject'], at: number[], startedAt = at[0] ?? 0): WeekMessage[] =>
+  at.map((offset) => ({ sessionId, subject, startedAt: new Date(T0 + minutes(startedAt)), at: new Date(T0 + minutes(offset)) }));
 
 const exercise = (overrides: Partial<PastExercise>): PastExercise => ({
   position: 10,
@@ -35,9 +35,17 @@ describe('weekSummary, the time', () => {
   });
 
   it('counts a gap of ten minutes exactly, not a second more', () => {
-    const at = (ms: number) => ({ sessionId: 'a', subject: 'francais' as const, at: new Date(T0 + ms) });
+    const at = (ms: number) => ({ sessionId: 'a', subject: 'francais' as const, startedAt: new Date(T0), at: new Date(T0 + ms) });
     expect(weekSummary([at(0), at(minutes(10))], [], new Map()).minutes).toBe(10);
     expect(weekSummary([at(0), at(minutes(10) + 1000)], [], new Map()).minutes).toBe(0);
+  });
+
+  it('counts the first message from the opening of the session, written while the reply is awaited', () => {
+    expect(weekSummary(session('a', 'mathematiques', [6, 6], 0), [], new Map()).minutes).toBe(5);
+  });
+
+  it('counts a session opened long before its first message from that message only', () => {
+    expect(weekSummary(session('a', 'mathematiques', [30, 36], 0), [], new Map()).minutes).toBe(5);
   });
 
   it('never adds a gap between two sessions', () => {
@@ -45,13 +53,23 @@ describe('weekSummary, the time', () => {
     expect(summary).toMatchObject({ minutes: 0, sessions: 2 });
   });
 
-  it('rounds each subject to the nearest five minutes, and the total is their sum', () => {
+  it('rounds each subject to the nearest five minutes', () => {
     const summary = weekSummary([...session('a', 'mathematiques', [0, 7]), ...session('b', 'francais', [0, 8])], [], new Map());
     expect(summary.subjects).toEqual([
       { subject: 'francais', minutes: 10 },
       { subject: 'mathematiques', minutes: 5 },
     ]);
-    expect(summary.minutes).toBe(15);
+  });
+
+  it('rounds the total time itself, not the sum of rounded subjects', () => {
+    const subjects = ['mathematiques', 'francais', 'langues', 'sciences'] as const;
+    const summary = weekSummary(
+      subjects.flatMap((subject) => session(subject, subject, [0, 2])),
+      [],
+      new Map(),
+    );
+    expect(summary.subjects.map(({ minutes: spent }) => spent)).toEqual([0, 0, 0, 0]);
+    expect(summary.minutes).toBe(10);
   });
 
   it('puts a session without a subject under general, and keeps a subject worked under a minute', () => {
@@ -68,16 +86,20 @@ describe('weekSummary, the time', () => {
 });
 
 describe('weekSummary, what resists', () => {
-  it('keeps a notion whose last exercise is not solved, or solved with help up to an intermediate step', () => {
+  it('keeps a notion whose last exercise is not solved after some help, or solved with help up to an intermediate step', () => {
     const summary = weekSummary(
       [],
-      [exercise({ position: 10, entries: [first.id], hintLevel: 0, solved: false }), exercise({ position: 11, entries: [second.id], hintLevel: 3 })],
+      [exercise({ position: 10, entries: [first.id], hintLevel: 1, solved: false }), exercise({ position: 11, entries: [second.id], hintLevel: 3 })],
       new Map(),
     );
     expect(summary.resisting.map(({ notionId, lastSolved, lastHelp }) => [notionId, lastSolved, lastHelp])).toEqual([
-      [first.id, false, 'Relance'],
+      [first.id, false, 'Indice conceptuel'],
       [second.id, true, 'Étape intermédiaire'],
     ]);
+  });
+
+  it('leaves out an exercise brought and left without any help: nothing says it resisted', () => {
+    expect(weekSummary([], [exercise({ hintLevel: 0, solved: false })], new Map()).resisting).toEqual([]);
   });
 
   it('leaves out a notion solved with a targeted hint at most', () => {
@@ -90,12 +112,12 @@ describe('weekSummary, what resists', () => {
   });
 
   it('names the error to watch, seen twice', () => {
-    const [notion] = weekSummary([], [exercise({ solved: false, errorTypes: ['careless', 'careless'] })], new Map()).resisting;
+    const [notion] = weekSummary([], [exercise({ hintLevel: 1, solved: false, errorTypes: ['careless', 'careless'] })], new Map()).resisting;
     expect(notion?.watch).toBe("les erreurs d'inattention");
   });
 
   it('leaves out the exercises up to the notion the student marked as understood', () => {
-    const summary = weekSummary([], [exercise({ position: 10, solved: false })], new Map([[first.id, 10]]));
+    const summary = weekSummary([], [exercise({ position: 10, hintLevel: 1, solved: false })], new Map([[first.id, 10]]));
     expect(summary.resisting).toEqual([]);
   });
 });
