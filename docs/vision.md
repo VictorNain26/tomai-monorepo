@@ -3,7 +3,8 @@
 Statut : validée par Victor le 2026-10-01, revue le 2026-10-06 (contraintes, preuve jugée par le
 fondateur, critères mesurables) et le 2026-10-07 (le foyer et l'âge, la détresse,
 `etudes/2026-10-07/foyer-eleve-age.md` ; la mémoire d'une séance à l'autre,
-`etudes/2026-10-07/memoire-entre-seances.md`). Source de vérité du produit : pour qui, quelle
+`etudes/2026-10-07/memoire-entre-seances.md`) et le 2026-10-08 (l'entrée sans mot de passe, l'appareil
+de la famille). Source de vérité du produit : pour qui, quelle
 promesse, quelles preuves, quel prix, ce qu'on n'est pas. Les specs techniques
 (`architecture.md`, `tuteur.md`) et la roadmap en découlent. Les
 faits viennent des études du 2026-10-01 (`docs/etudes/`), qui portent les
@@ -115,6 +116,12 @@ son appareil par un code du parent), autonome au lycée (son propre identifiant)
 niveau ; l'élève voit le résumé de son parent et peut en demander l'arrêt, une demande qui
 s'applique d'elle-même à partir de 15 ans. À 18 ans, le lien parental prend fin. Rien ne bascule
 sans prévenir l'élève et le parent (`etudes/2026-10-07/foyer-eleve-age.md`).
+
+Personne n'a de mot de passe : le parent entre par un code reçu par e-mail, puis par une clé
+d'accès sur son téléphone ; l'enfant n'a aucun identifiant. Un appareil relié le reste tant qu'il
+sert, un été sans l'ouvrir compris ; seul le parent le délie. Sur le téléphone de la famille, le
+parent ouvre l'espace de son enfant sans code à recopier, et revient au sien par sa clé ou un code :
+l'enfant ne peut pas passer chez le parent, ni se couper seul par mégarde.
 
 ## Périmètre V1
 
