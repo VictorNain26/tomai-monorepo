@@ -71,6 +71,10 @@ Une décision prise en séance entre ici dans la PR qui la suit, pas dans une m�
   de ses messages, Tom qui se dit IA et jamais ami. Écartées : une direction chaleureuse qui
   jouait la relation (« ta loutre des devoirs »), une direction sombre seulement au jaune qui se
   lisait comme un avertissement. Les valeurs vivent dans `packages/tokens/theme.css`.
+- **Des formules, pas de schémas, dans la séance** (2026-10-08, choix délégué par Victor). Le
+  texte de Tom est rendu en Markdown et ses formules en MathML (KaTeX) ; ni HTML, ni lien, ni
+  image venus du modèle. Pas de schémas Mermaid : lourds sur téléphone, et refusés par la CSP ;
+  le prompt ne les annonce plus. À reprendre si la bêta montre qu'ils manquent.
 - **Tom se présente comme un programme** (2026-10-08). La loutre reste l'identité visuelle ; Tom
   dit qu'il est une IA, le redit quand l'élève parle de lui, ne se dit jamais ami et n'exprime
   pas de sentiments ; l'interface le tient, le prompt à l'étape de la séance (`roadmap.md`). Raison : AI Act art. 50, UNICEF (2025), et un ton relationnel attire surtout
