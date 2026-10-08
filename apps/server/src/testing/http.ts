@@ -11,6 +11,13 @@ import type { memoryMailer } from './mailer';
 
 export const ORIGIN = 'http://localhost:3002';
 
+/**
+ * The birth month of a child exactly this old all year, up to 19: December of the year before,
+ * since a birthday counts once its month is over (domain/memory-consent.ts). A fixed year would
+ * leave the accepted ages one day.
+ */
+export const birthMonthAged = (years: number, now = new Date()) => `${String(now.getUTCFullYear() - years - 1)}-12`;
+
 interface App {
   request: (input: string, init?: RequestInit) => Response | Promise<Response>;
 }
@@ -29,7 +36,11 @@ interface Device {
 }
 
 export function httpClient(app: App, mail: ReturnType<typeof memoryMailer>, db: Db) {
-  const request = (method: string, path: string, { cookie, body }: { cookie?: string | undefined; body?: unknown } = {}) =>
+  const request = (
+    method: string,
+    path: string,
+    { cookie, body, headers }: { cookie?: string | undefined; body?: unknown; headers?: Record<string, string> } = {},
+  ) =>
     app.request(`${ORIGIN}${path}`, {
       method,
       headers: {
@@ -37,6 +48,7 @@ export function httpClient(app: App, mail: ReturnType<typeof memoryMailer>, db: 
         Origin: ORIGIN,
         'User-Agent': 'test-device',
         ...(cookie === undefined ? {} : { Cookie: cookie }),
+        ...headers,
       },
       ...(body === undefined ? {} : { body: JSON.stringify(body) }),
     });
@@ -65,7 +77,7 @@ export function httpClient(app: App, mail: ReturnType<typeof memoryMailer>, db: 
     async student(cookie: string, overrides: Partial<Omit<Student, 'id'>> = {}) {
       const res = await request('POST', '/api/household/students', {
         cookie,
-        body: { name: 'Léa', level: 'cinquieme', birthMonth: '2014-03', ...overrides },
+        body: { name: 'Léa', level: 'cinquieme', birthMonth: birthMonthAged(12), ...overrides },
       });
       expect(res.status).toBe(201);
       return (await res.json()) as Student;

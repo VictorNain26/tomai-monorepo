@@ -3,12 +3,14 @@ import { Hono } from 'hono';
 import { requestId } from 'hono/request-id';
 import pino from 'pino';
 import type { AppEnv } from './env';
+import { clientAddress } from './client-address';
 import { notFound, problemHandler } from './problem';
 import { rateLimit } from './rate-limit';
 
-function app(points: number) {
+function app(points: number, trustedProxyHops = 0) {
   return new Hono<AppEnv>()
     .use(requestId())
+    .use(clientAddress(trustedProxyHops))
     .use(rateLimit({ points, durationSeconds: 60 }))
     .get('/', (c) => c.text('ok'))
     .onError(problemHandler(pino({ level: 'silent' })))
@@ -32,7 +34,27 @@ describe('rate limit', () => {
     expect(Number(res.headers.get('retry-after'))).toBeGreaterThan(0);
   });
 
-  it('ignores the forwarding headers a client can write', async () => {
+  it('gives each client behind the proxy its own budget', async () => {
+    const limited = app(1, 1);
+    expect((await limited.request('/', { headers: { 'X-Forwarded-For': '203.0.113.1' } })).status).toBe(200);
+    expect((await limited.request('/', { headers: { 'X-Forwarded-For': '203.0.113.2' } })).status).toBe(200);
+  });
+
+  it('keeps counting a client behind the proxy whatever entries it writes before the proxy’s', async () => {
+    const limited = app(1, 1);
+    await limited.request('/', { headers: { 'X-Forwarded-For': '203.0.113.1' } });
+    const res = await limited.request('/', { headers: { 'X-Forwarded-For': '198.51.100.7, 203.0.113.1' } });
+    expect(res.status).toBe(429);
+  });
+
+  it('counts an IPv6 client by its /64, the block one connection holds', async () => {
+    const limited = app(1, 1);
+    await limited.request('/', { headers: { 'X-Forwarded-For': '2001:db8:0:1::7' } });
+    const res = await limited.request('/', { headers: { 'X-Forwarded-For': '2001:db8:0:1:ffff::9' } });
+    expect(res.status).toBe(429);
+  });
+
+  it('ignores the forwarding headers a client can write, without a proxy', async () => {
     const limited = app(1);
     await limited.request('/', { headers: { 'X-Forwarded-For': '203.0.113.1', 'X-Real-IP': '203.0.113.1' } });
     const res = await limited.request('/', { headers: { 'X-Forwarded-For': '198.51.100.7', 'X-Real-IP': '198.51.100.7' } });

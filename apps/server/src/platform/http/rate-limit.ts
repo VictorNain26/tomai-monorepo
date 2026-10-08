@@ -1,25 +1,20 @@
 /**
- * A request budget per client address, in memory: right while the server runs as one instance.
- * The address is the connection's own, never a forwarding header a client could write; behind
- * the host's proxy, its trusted hops are configured at the preproduction step.
+ * A request budget per client address (./client-address.ts), an IPv6 one by its /64, the block a
+ * single connection holds, as better-auth counts it; in memory: right while the server runs as one
+ * instance.
  */
 
-import { getConnInfo } from '@hono/bun';
-import type { Context, MiddlewareHandler } from 'hono';
+import { normalizeIP } from '@better-auth/core/utils/ip';
+import type { MiddlewareHandler } from 'hono';
 import { RateLimiterMemory, RateLimiterRes } from 'rate-limiter-flexible';
 import type { AppEnv } from './env';
 import { Problem } from './problem';
-
-// Under app.request, in tests, there is no Bun server behind the context and no address.
-function clientAddress(c: Context<AppEnv>): string {
-  return c.env ? (getConnInfo(c).remote.address ?? 'unknown') : 'unknown';
-}
 
 export function rateLimit({ points, durationSeconds }: { points: number; durationSeconds: number }): MiddlewareHandler<AppEnv> {
   const limiter = new RateLimiterMemory({ points, duration: durationSeconds });
   return async (c, next) => {
     try {
-      await limiter.consume(clientAddress(c));
+      await limiter.consume(normalizeIP(c.var.clientAddress));
     } catch (rejection) {
       // consume() rejects with a RateLimiterRes when the budget is spent, with an Error otherwise.
       if (!(rejection instanceof RateLimiterRes)) throw rejection;

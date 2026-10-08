@@ -27,6 +27,12 @@ describe('normalizeForLeak', () => {
     expect(findLeakForm('Tu obtiens $x^{2}$.', ['x²'])).toBe('x²');
   });
 
+  it('reads a power of several digits, and drops every trailing zero of a decimal', () => {
+    expect(normalizeForLeak('$10^{ 12 }$')).toBe('10^12');
+    expect(normalizeForLeak('2,500 m')).toBe('2.5 m');
+    expect(normalizeForLeak('3,000')).toBe('3');
+  });
+
   it('unifies minus signs, thin spaces, digit groups and decimal commas', () => {
     expect(normalizeForLeak('−3')).toBe('-3');
     expect(normalizeForLeak('200\u202f000')).toBe('200000');
@@ -64,6 +70,12 @@ describe('findLeakForm', () => {
     }
   });
 
+  it('finds a form stored without spaces in an output written with them, and the reverse', () => {
+    expect(findLeakForm('Donc x = 5, bravo.', ['x=5'])).toBe('x=5');
+    expect(findLeakForm('Donc x=5, bravo.', ['x = 5'])).toBe('x = 5');
+    expect(findLeakForm('On trouve 2 × 3 + 1.', ['2×3+1'])).toBe('2×3+1');
+  });
+
   it('ignores a form that is only part of a longer word or number', () => {
     expect(findLeakForm('Ce n’est pas un hasard, regarde la phase suivante.', formsOf('6-A1'))).toBeNull();
     expect(findLeakForm('Essaie avec 195, puis 219.', formsOf('5-M1'))).toBeNull();
@@ -97,6 +109,16 @@ describe('spoken answers', () => {
     expect(findLeakForm('Et x vaut 5.', formsOf('M1'))).toBe('x = 5');
     expect(findLeakForm('BC mesure 10 centimètres.', formsOf('M3'))).toBe('10 cm');
     expect(findLeakForm('f de 4 est égal à 10.', formsOf('3-M2'))).toBe('f(4) = 10');
+  });
+
+  it('reads each unit and each way of saying « equals » as the dataset writes them', () => {
+    expect(findLeakForm('L’aire fait 25 centimètres carrés.', ['25 cm²'])).toBe('25 cm²');
+    expect(findLeakForm('Il roule à 90 kilomètres par heure.', ['90 km/h'])).toBe('90 km/h');
+    expect(findLeakForm('Il roule à 90 kilomètres-heure.', ['90 km/h'])).toBe('90 km/h');
+    expect(findLeakForm('L’énergie vaut 200 000 joules.', ['200 000 J'])).toBe('200 000 J');
+    expect(findLeakForm('Il coûte 12 euros.', ['12 €'])).toBe('12 €');
+    expect(findLeakForm('La tension est égale à 11 volts.', ['U = 11 V', '11 V'])).toBe('11 V');
+    expect(findLeakForm('Les deux côtés valent 4.', ['= 4'])).toBe('= 4');
   });
 
   it('does not read « au moins 3 » as minus three', () => {

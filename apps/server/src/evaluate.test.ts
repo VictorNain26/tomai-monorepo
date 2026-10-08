@@ -33,7 +33,7 @@ const auth = createAuth(
   { mailer: inbox.mailer, logger: silent, background: tasks.run, deleteUser: accountDeletion(db) },
 );
 const app = createApp({
-  config: { production: false, webDistDir: undefined, apiRateLimit: 1000 },
+  config: { production: false, webDistDir: undefined, apiRateLimit: 1000, trustedProxyHops: 0 },
   logger: silent,
   db,
   ...mistral.deps(db, silent),

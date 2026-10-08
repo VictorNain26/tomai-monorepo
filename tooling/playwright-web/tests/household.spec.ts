@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { addChild, childPhone, guardian, signIn } from '../guardian';
+import { addChild, birthMonthAged, childPhone, guardian, signIn } from '../guardian';
 
 test('a guardian adds a child, changes their class, then deletes their account', async ({ page }) => {
   await guardian(page, 'foyer');
@@ -61,7 +61,7 @@ test.describe('with the session gone', () => {
     );
     await page.getByLabel('Son prénom', { exact: true }).fill('Léo');
     await page.getByLabel('Sa classe', { exact: true }).selectOption({ label: 'Sixième' });
-    await page.getByLabel('Son mois de naissance').fill('2015-09');
+    await page.getByLabel('Son mois de naissance').fill(birthMonthAged(11));
     await page.getByRole('button', { name: 'Ajouter' }).click();
     await expect(page).toHaveURL(/\/connexion$/);
   });
