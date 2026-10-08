@@ -23,3 +23,9 @@ export function tutorModule({ db, auth, ai, moderation, logger, background }: De
   const service = createTutorService({ repository: createTutorRepository(db), students: studentDirectory(db), ai, moderation, logger, background });
   return { routes: tutorRoutes({ auth, service, logger }), memory: memoryRoutes({ auth, service }) };
 }
+
+/** The records of a session's turns, for the harness, which plays the route as a student does (src/evaluate.ts). */
+export function turnRecords(db: Db) {
+  const repository = createTutorRepository(db);
+  return (sessionId: string) => repository.records(sessionId);
+}
