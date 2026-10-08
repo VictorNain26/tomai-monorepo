@@ -6,7 +6,7 @@ test('a guardian adds a child, changes their class, then deletes their account',
   await expect(page.getByText('Ajoutez votre enfant')).toBeVisible();
   await addChild(page, 'Léa');
 
-  await page.getByLabel('Sa classe', { exact: true }).selectOption({ label: 'Quatrième' });
+  await page.getByLabel('Sa classe', { exact: true }).selectOption({ label: 'Troisième' });
   await page.getByRole('button', { name: 'Enregistrer' }).click();
   await expect(page.getByRole('status')).toHaveText('Enregistré.');
   await page.getByLabel('Son prénom', { exact: true }).fill('Léa-Rose');
@@ -107,5 +107,7 @@ test('in 5e, the parent does the homework with the child on the family phone, an
   await expect(page.getByRole('button', { name: 'Sans mon parent ce soir' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Nouvelle séance' })).toHaveCount(0);
   // The child knows what their parent can see on this device.
-  await expect(page.getByText('Sur cet appareil, ton parent peut ouvrir ton espace et relire tes séances.')).toBeVisible();
+  await expect(
+    page.getByText('Quand tu travailles sur l’appareil de ta famille, ton parent peut ouvrir ton espace et relire tes séances.'),
+  ).toBeVisible();
 });

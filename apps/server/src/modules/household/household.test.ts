@@ -104,11 +104,15 @@ describe('access matrix', () => {
     })[];
     expect(lea).toMatchObject({ level: 'cinquieme', accompanied: true });
     await api.request('PATCH', `/api/household/students/${studentOfA.id}`, { cookie: guardianA, body: { level: 'quatrieme' } });
-    const [later] = (await (await api.request('GET', '/api/household/students', { cookie: guardianA })).json()) as (Student & {
-      accompanied: boolean;
-    })[];
-    expect(later).toMatchObject({ level: 'quatrieme', accompanied: false });
-    await api.request('PATCH', `/api/household/students/${studentOfA.id}`, { cookie: guardianA, body: { level: 'cinquieme' } });
+    try {
+      const [later] = (await (await api.request('GET', '/api/household/students', { cookie: guardianA })).json()) as (Student & {
+        accompanied: boolean;
+      })[];
+      expect(later).toMatchObject({ level: 'quatrieme', accompanied: false });
+    } finally {
+      // Léa stays in 5e for the tests after this one.
+      await api.request('PATCH', `/api/household/students/${studentOfA.id}`, { cookie: guardianA, body: { level: 'cinquieme' } });
+    }
   });
 });
 

@@ -162,7 +162,7 @@ describe('a turn', () => {
     expect(await say(sessionId, 'Résous 3x + 5 = 20.')).toMatchObject({ steps: ['reading', 'exercise', 'writing'] });
   });
 
-  it('gives the parent beside a cue at the launch and at a frustration, nothing when all goes well, four at most', async () => {
+  it('gives the parent beside a cue at the launch and at a frustration, nothing when all goes well, never the same twice in a row', async () => {
     const sessionId = await companionSession(true);
     mistral.chat.push(analysis(), { text: 'Que travailles-tu ?' });
     expect((await say(sessionId, 'Bonjour', asCompanion)).cues).toEqual([{ cue: PARENT_CUES.launch('Sam'), transient: true }]);
@@ -173,7 +173,18 @@ describe('a turn', () => {
       mistral.chat.push(analysis({ saysStuck: true }), { text: 'Qu’est-ce qui te bloque ?' });
       frustrated.push((await say(sessionId, 'je sais pas', asCompanion)).cues.length);
     }
-    expect(frustrated).toEqual([1, 1, 1, 0]);
+    expect(frustrated).toEqual([1, 0, 0, 0]);
+  });
+
+  it('gives no cue once the child is moved up to the 4e, though the session was opened beside', async () => {
+    const moving = await api.student(guardian, { name: 'Ali', level: 'cinquieme' });
+    const asMoving = await api.pair(guardian, moving.id);
+    const { id: sessionId } = (await (await api.request('POST', '/api/sessions', { cookie: asMoving, body: { accompanied: true } })).json()) as {
+      id: string;
+    };
+    await api.request('PATCH', `/api/household/students/${moving.id}`, { cookie: guardian, body: { level: 'quatrieme' } });
+    mistral.chat.push(analysis(), { text: 'Que travailles-tu ?' });
+    expect((await say(sessionId, 'Bonjour', asMoving)).cues).toEqual([]);
   });
 
   it('gives no cue to a child working alone', async () => {

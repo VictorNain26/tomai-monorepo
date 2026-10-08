@@ -11,6 +11,8 @@ export const MAX_PARENT_CUES = 4;
 /** What the turn did, as the cues read it. */
 export interface CueTurn {
   first: boolean;
+  /** The reply gave the help its level allowed: a fixed reply moved nothing on the exercise. */
+  helped: boolean;
   newExercise: boolean;
   /** The help climbed a step: the child is stuck. */
   levelUp: boolean;
@@ -28,13 +30,24 @@ export const PARENT_CUES = {
   end: (name: string) => `Demandez à ${name} de vous réexpliquer en une phrase comment l’exercice a été résolu.`,
 };
 
-/** The cue of the turn, one at most: the launch first, then the end, a block, a frustration, a new exercise. */
-export function parentCue(turn: CueTurn, shown: number, name: string): string | null {
-  if (shown >= MAX_PARENT_CUES) return null;
-  if (turn.first) return PARENT_CUES.launch(name);
-  if (turn.solved) return PARENT_CUES.end(name);
-  if (turn.levelUp) return PARENT_CUES.block(name);
-  if (turn.frustrated) return PARENT_CUES.frustration(name);
-  if (turn.newExercise) return PARENT_CUES.newExercise(name);
+export type CueKind = keyof typeof PARENT_CUES;
+
+/** The kind of cue the turn calls for, the launch first, then the end, a block, a frustration, a new exercise. */
+function kindOf(turn: CueTurn): CueKind | null {
+  if (turn.first) return 'launch';
+  if (turn.helped && turn.solved) return 'end';
+  if (turn.helped && turn.levelUp) return 'block';
+  if (turn.frustrated) return 'frustration';
+  if (turn.newExercise) return 'newExercise';
   return null;
+}
+
+/**
+ * The cue of the turn, one at most, under the session's cap; never the same twice in a row, so
+ * that a child stuck a while leaves cues for the end of the exercise.
+ */
+export function parentCue(turn: CueTurn, session: { shown: number; last: CueKind | null }, name: string): { kind: CueKind; text: string } | null {
+  const kind = kindOf(turn);
+  if (!kind || kind === session.last || session.shown >= MAX_PARENT_CUES) return null;
+  return { kind, text: PARENT_CUES[kind](name) };
 }

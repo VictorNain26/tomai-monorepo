@@ -13,6 +13,7 @@ import type { Db } from '../../platform/db/client';
 import type { ExerciseChange, ExerciseState } from './core/exercise-turn';
 import type { Hint } from './core/ladder';
 import type { PastExercise } from './core/memory';
+import type { CueKind } from './core/parent-cues';
 import type { WeekMessage } from './core/week-summary';
 import { distressEvent, exercise, learnerNotionReset, message, studySession, turnRecord } from './schema';
 
@@ -37,8 +38,8 @@ export interface SavedTurn {
   /** What the turn changes on the exercise, the student having read the help it allowed. */
   progress: ExerciseProgress | null;
   record: TurnRecord;
-  /** A cue was given to the parent beside the child: one more toward the session's cap. */
-  parentCue?: true;
+  /** The cue given to the parent beside the child: one more toward the session's cap, the last one. */
+  parentCue?: CueKind;
 }
 
 /** The two messages of a turn: what the student wrote, what they read, and how to replay it. */
@@ -117,7 +118,23 @@ export function createTutorRepository(db: Db) {
         .orderBy(desc(studySession.createdAt))
         .limit(1);
       if (empty) {
-        const [reopened] = await db.update(studySession).set({ accompanied }).where(eq(studySession.id, empty.id)).returning(sessionColumns);
+        // Still empty and idle when it takes the new choice: a first turn running keeps its mode.
+        const [reopened] = await db
+          .update(studySession)
+          .set({ accompanied })
+          .where(
+            and(
+              eq(studySession.id, empty.id),
+              isNull(studySession.turnStartedAt),
+              notExists(
+                db
+                  .select({ one: sql`1` })
+                  .from(message)
+                  .where(eq(message.sessionId, studySession.id)),
+              ),
+            ),
+          )
+          .returning(sessionColumns);
         if (reopened) return reopened;
       }
       const [created] = await db.insert(studySession).values({ studentId, accompanied }).returning(sessionColumns);
@@ -293,6 +310,7 @@ export function createTutorRepository(db: Db) {
             closedAt: studySession.closedAt,
             accompanied: studySession.accompanied,
             parentCues: studySession.parentCues,
+            lastParentCue: studySession.lastParentCue,
             turnStartedAt: studySession.turnStartedAt,
           });
         return started;
@@ -383,7 +401,7 @@ export function createTutorRepository(db: Db) {
         if (turn.parentCue) {
           await tx
             .update(studySession)
-            .set({ parentCues: sql`${studySession.parentCues} + 1` })
+            .set({ parentCues: sql`${studySession.parentCues} + 1`, lastParentCue: turn.parentCue })
             .where(eq(studySession.id, sessionId));
         }
         if (turn.subject) {

@@ -21,7 +21,7 @@ import { writeChecked } from './core/controlled-turn';
 import { drawsSheet, prepareExerciseTurn } from './core/exercise-turn';
 import { hintOf } from './core/ladder';
 import { learnerMemoryBlock, notionMemories, notionView, schoolYearStart } from './core/memory';
-import { parentCue } from './core/parent-cues';
+import { parentCue, type CueKind } from './core/parent-cues';
 import type { OutputCheckContext } from './core/output-check';
 import { studentBlock, subjectBlock, systemPrompt } from './core/prompt';
 import { routeReasoningEffort } from './core/reasoning';
@@ -75,6 +75,7 @@ export interface OpenTurn {
     closedAt: Date | null;
     accompanied: boolean;
     parentCues: number;
+    lastParentCue: CueKind | null;
     turnStartedAt: Date;
   };
   /** A distress already seen past the quota: the turn answers it, and nothing else. */
@@ -270,19 +271,22 @@ export function createTutorService({ repository, students, ai, moderation, logge
     // A fixed reply gave none of the help the level allowed: the exercise does not move.
     const helped = reply.outcome !== 'fallback';
     const first = history.length === 0;
-    const cue = session.accompanied
-      ? parentCue(
-          {
-            first,
-            newExercise: exerciseTurn.isNew,
-            levelUp: !exerciseTurn.isNew && change !== null && current !== undefined && change.hintLevel > current.hintLevel,
-            solved: change?.solved === true,
-            frustrated: analysis.asksSolution || analysis.saysStuck,
-          },
-          session.parentCues,
-          learner.name,
-        )
-      : null;
+    // The class read again: a child moved up to the 4e meanwhile works alone.
+    const cue =
+      session.accompanied && isAccompaniedLevel(learner.level)
+        ? parentCue(
+            {
+              first,
+              helped,
+              newExercise: exerciseTurn.isNew,
+              levelUp: !exerciseTurn.isNew && change !== null && current !== undefined && change.hintLevel > current.hintLevel,
+              solved: change?.solved === true,
+              frustrated: analysis.asksSolution || analysis.saysStuck,
+            },
+            { shown: session.parentCues, last: session.lastParentCue },
+            learner.name,
+          )
+        : null;
     await repository.saveTurn(session.id, {
       exchange: { studentText, tutorText: reply.text, replay: reply.replay },
       subject: session.subject ? null : detected,
@@ -312,9 +316,13 @@ export function createTutorService({ repository, students, ai, moderation, logge
         findings: reply.findings.map((finding) => finding.kind),
         outcome: reply.outcome,
       },
-      ...(cue && { parentCue: true }),
+      ...(cue && { parentCue: cue.kind }),
     });
-    return { text: reply.text, cue, after: () => afterTurn(learner.id, session, { studentText, tutorText: reply.text, check, first }) };
+    return {
+      text: reply.text,
+      cue: cue?.text ?? null,
+      after: () => afterTurn(learner.id, session, { studentText, tutorText: reply.text, check, first }),
+    };
   }
 
   return {
@@ -394,6 +402,7 @@ export function createTutorService({ repository, students, ai, moderation, logge
           closedAt: started.closedAt,
           accompanied: started.accompanied,
           parentCues: started.parentCues,
+          lastParentCue: started.lastParentCue,
           turnStartedAt,
         },
         distress: null,

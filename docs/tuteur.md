@@ -240,8 +240,9 @@ rejouables par un tiers.
 - **En 6e et 5e, le mode accompagné** (`decisions.md`) : le parent lance la séance par « Faire les
   devoirs avec … », l'appareil passe au profil de l'enfant, qui choisit « Avec mon parent à
   côté » ou « Sans mon parent ce soir » (`study_session.accompanied`, refusé en 4e et 3e). À
-  côté, Tom donne au parent quatre pistes au plus par séance, une au plus par tour : au lancement,
-  à la fin d'un exercice, à un blocage, à une frustration, à un nouvel exercice
+  côté, Tom donne au parent quatre pistes au plus par séance, une au plus par tour, jamais la même
+  deux fois de suite : au lancement, à la fin d'un exercice, à un blocage, à une frustration, à un
+  nouvel exercice ; la fin et le blocage seulement quand la réponse a vraiment aidé
   (`modules/tutor/core/parent-cues.ts`). Ce sont des phrases fixes choisies par le code, jamais un
   mot du modèle : elles ne peuvent porter ni l'exercice ni sa réponse. Transmises en partie
   `data-cue` transitoire, montrées sous la réponse jusqu'au message suivant, visibles de

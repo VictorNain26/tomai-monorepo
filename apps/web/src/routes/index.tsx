@@ -80,7 +80,7 @@ function Sessions() {
             Sans mon parent ce soir
           </Button>
           <p className="text-sm text-muted-foreground">
-            Sur cet appareil, ton parent peut ouvrir ton espace et relire tes séances. Il reçoit aussi un résumé de ta semaine.
+            Quand tu travailles sur l’appareil de ta famille, ton parent peut ouvrir ton espace et relire tes séances.
           </p>
         </>
       ) : (

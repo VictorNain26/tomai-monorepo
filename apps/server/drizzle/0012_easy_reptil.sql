@@ -1,0 +1,1 @@
+ALTER TABLE "study_session" ADD COLUMN "last_parent_cue" text;

@@ -123,6 +123,16 @@ describe('sessions', () => {
     expect((await api.request('POST', '/api/sessions', { cookie: asQuatrieme })).status).toBe(400);
   });
 
+  it('leaves the mode of an empty session alone while its first turn runs: another tap opens a new one', async () => {
+    const running = (await (await api.request('POST', '/api/sessions', { cookie: asStudentA, body: { accompanied: true } })).json()) as Session;
+    await db.update(studySession).set({ turnStartedAt: new Date() }).where(eq(studySession.id, running.id));
+    const other = (await (await api.request('POST', '/api/sessions', { cookie: asStudentA, body: { accompanied: false } })).json()) as Session;
+    expect(other.id).not.toBe(running.id);
+    const [kept] = await db.select({ accompanied: studySession.accompanied }).from(studySession).where(eq(studySession.id, running.id));
+    expect(kept?.accompanied).toBe(true);
+    await db.update(studySession).set({ turnStartedAt: null }).where(eq(studySession.id, running.id));
+  });
+
   it('opens the latest session again while nothing was said in it, and a new one once something was', async () => {
     const empty = await start(asStudentB);
     expect((await start(asStudentB)).id).toBe(empty.id);
