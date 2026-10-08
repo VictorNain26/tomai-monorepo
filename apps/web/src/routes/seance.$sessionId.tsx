@@ -106,6 +106,7 @@ function Session() {
         <Input
           id="message"
           autoComplete="off"
+          aria-describedby="ai-notice"
           placeholder="Ta question, ou ton essai"
           value={text}
           onChange={(event) => {
@@ -116,6 +117,9 @@ function Session() {
           Envoyer
         </Button>
       </form>
+      <p id="ai-notice" className="text-sm text-muted-foreground">
+        Tom est une IA : il peut se tromper, vérifie avec ton cours.
+      </p>
     </Page>
   );
 }
