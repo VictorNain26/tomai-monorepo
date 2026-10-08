@@ -6,6 +6,9 @@ import { codeSince, logMark } from './server-log';
 
 // iPhone and Android run side by side on one database: each test has its own address, in
 // lowercase ASCII, as better-auth stores it.
+/** The birth month of a child this old this year: a fixed year would leave the accepted ages one day. */
+export const birthMonthAged = (years: number) => `${String(new Date().getUTCFullYear() - years)}-03`;
+
 export const address = (name: string) =>
   `${name
     .normalize('NFD')
@@ -51,7 +54,7 @@ export async function addChild(page: Page, name: string, { memory = false } = {}
   await page.getByLabel('Son prénom', { exact: true }).fill(name);
   if (memory) await page.getByLabel('Proposer que Tom retienne ce qui a résisté').check();
   await page.getByLabel('Sa classe', { exact: true }).selectOption({ label: 'Cinquième' });
-  await page.getByLabel('Son mois de naissance').fill('2014-03');
+  await page.getByLabel('Son mois de naissance').fill(birthMonthAged(12));
   await page.getByRole('button', { name: 'Ajouter' }).click();
   await page.getByRole('link', { name: new RegExp(`^${name}`) }).click();
   await expect(page.getByRole('heading', { level: 1, name })).toBeVisible();

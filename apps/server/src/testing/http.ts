@@ -11,6 +11,9 @@ import type { memoryMailer } from './mailer';
 
 export const ORIGIN = 'http://localhost:3002';
 
+/** The birth month of a child this old this year: a fixed year would leave the accepted ages one day. */
+export const birthMonthAged = (years: number) => `${String(new Date().getUTCFullYear() - years)}-03`;
+
 interface App {
   request: (input: string, init?: RequestInit) => Response | Promise<Response>;
 }
@@ -65,7 +68,7 @@ export function httpClient(app: App, mail: ReturnType<typeof memoryMailer>, db: 
     async student(cookie: string, overrides: Partial<Omit<Student, 'id'>> = {}) {
       const res = await request('POST', '/api/household/students', {
         cookie,
-        body: { name: 'Léa', level: 'cinquieme', birthMonth: '2014-03', ...overrides },
+        body: { name: 'Léa', level: 'cinquieme', birthMonth: birthMonthAged(12), ...overrides },
       });
       expect(res.status).toBe(201);
       return (await res.json()) as Student;
