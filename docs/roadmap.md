@@ -18,10 +18,9 @@ son plan, au moment où elle démarre (`.claude/rules/plans-and-agents.md`). L'�
 ## Maintenant
 
 **Lot 3**, dans cet ordre (`etudes/2026-10-08/interfaces.md` pour les constats) :
-1. **La séance** : l'accueil de Tom qui dit qu'il est une IA (AI Act, art. 50(1)) et une marque
-   « IA » près du champ ; dans le prompt, Tom le redit quand l'élève parle de lui, sans
-   sentiment ni amitié (`decisions.md`) ; le champ fixé en bas, le rendu des maths, une attente
-   qui dit ce qui se passe ; sur la direction « Cahier du soir ».
+1. **La séance** : le rendu des formules et des schémas que le prompt annonce (KaTeX, Mermaid),
+   par une bibliothèque vérifiée ; Tom qui se dit IA, le champ fixé en bas et l'attente qui dit
+   ce qui se passe sont faits.
 2. **Le mode accompagné en 6e et 5e** (`decisions.md`) : « Faire les devoirs avec … » dans
    l'espace du parent, qui passe l'appareil au profil de l'enfant, « Je reste à côté » ou « Il
    travaille seul ce soir », les pistes au parent tenues par le serveur et vérifiées au harnais,

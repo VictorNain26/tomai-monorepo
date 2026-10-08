@@ -32,7 +32,8 @@ En place (`apps/server/src`) :
   (`multiSession`), et ne garde aucune session de parent une fois rendu à l'enfant
   (`platform/auth/pairing.ts`). Les envois partent après la réponse (`platform/lifecycle/background.ts`),
   que l'arrêt attend.
-- `modules/tutor` : les séances, le tour (`POST /api/sessions/:id/messages`), qui échoue fermé, le
+- `modules/tutor` : les séances, le tour (`POST /api/sessions/:id/messages`), qui dit ses étapes à
+  l'élève pendant l'attente (parties `data-step` transitoires du flux) et échoue fermé, le
   quota par élève, le résumé et le titre en tâche de fond, la mémoire d'apprentissage
   (`/api/memory`), le résumé de la semaine (`/api/summary`) ; ses règles dans `tuteur.md`.
 - `platform/ai` : les appels à Mistral et à sa modération, le coût de chacun.
