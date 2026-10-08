@@ -15,6 +15,7 @@ import { Route as ErreurConnexionRouteImport } from './routes/erreur-connexion'
 import { Route as FoyerRouteImport } from './routes/foyer'
 import { Route as JumelerRouteImport } from './routes/jumeler'
 import { Route as MemoireRouteImport } from './routes/memoire'
+import { Route as ParentBienvenueRouteImport } from './routes/_parent.bienvenue'
 import { Route as ParentConnexionRouteImport } from './routes/_parent.connexion'
 import { Route as FoyerIndexRouteImport } from './routes/foyer.index'
 import { Route as FoyerStudentIdRouteImport } from './routes/foyer.$studentId'
@@ -49,6 +50,11 @@ const MemoireRoute = MemoireRouteImport.update({
   path: '/memoire',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ParentBienvenueRoute = ParentBienvenueRouteImport.update({
+  id: '/bienvenue',
+  path: '/bienvenue',
+  getParentRoute: () => ParentRoute,
+} as any)
 const ParentConnexionRoute = ParentConnexionRouteImport.update({
   id: '/connexion',
   path: '/connexion',
@@ -76,6 +82,7 @@ export interface FileRoutesByFullPath {
   '/foyer': typeof FoyerRouteWithChildren
   '/jumeler': typeof JumelerRoute
   '/memoire': typeof MemoireRoute
+  '/bienvenue': typeof ParentBienvenueRoute
   '/connexion': typeof ParentConnexionRoute
   '/foyer/$studentId': typeof FoyerStudentIdRoute
   '/seance/$sessionId': typeof SeanceSessionIdRoute
@@ -86,6 +93,7 @@ export interface FileRoutesByTo {
   '/erreur-connexion': typeof ErreurConnexionRoute
   '/jumeler': typeof JumelerRoute
   '/memoire': typeof MemoireRoute
+  '/bienvenue': typeof ParentBienvenueRoute
   '/connexion': typeof ParentConnexionRoute
   '/foyer/$studentId': typeof FoyerStudentIdRoute
   '/seance/$sessionId': typeof SeanceSessionIdRoute
@@ -99,6 +107,7 @@ export interface FileRoutesById {
   '/foyer': typeof FoyerRouteWithChildren
   '/jumeler': typeof JumelerRoute
   '/memoire': typeof MemoireRoute
+  '/_parent/bienvenue': typeof ParentBienvenueRoute
   '/_parent/connexion': typeof ParentConnexionRoute
   '/foyer/$studentId': typeof FoyerStudentIdRoute
   '/seance/$sessionId': typeof SeanceSessionIdRoute
@@ -112,6 +121,7 @@ export interface FileRouteTypes {
     | '/foyer'
     | '/jumeler'
     | '/memoire'
+    | '/bienvenue'
     | '/connexion'
     | '/foyer/$studentId'
     | '/seance/$sessionId'
@@ -122,6 +132,7 @@ export interface FileRouteTypes {
     | '/erreur-connexion'
     | '/jumeler'
     | '/memoire'
+    | '/bienvenue'
     | '/connexion'
     | '/foyer/$studentId'
     | '/seance/$sessionId'
@@ -134,6 +145,7 @@ export interface FileRouteTypes {
     | '/foyer'
     | '/jumeler'
     | '/memoire'
+    | '/_parent/bienvenue'
     | '/_parent/connexion'
     | '/foyer/$studentId'
     | '/seance/$sessionId'
@@ -194,6 +206,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MemoireRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_parent/bienvenue': {
+      id: '/_parent/bienvenue'
+      path: '/bienvenue'
+      fullPath: '/bienvenue'
+      preLoaderRoute: typeof ParentBienvenueRouteImport
+      parentRoute: typeof ParentRoute
+    }
     '/_parent/connexion': {
       id: '/_parent/connexion'
       path: '/connexion'
@@ -226,10 +245,12 @@ declare module '@tanstack/react-router' {
 }
 
 interface ParentRouteChildren {
+  ParentBienvenueRoute: typeof ParentBienvenueRoute
   ParentConnexionRoute: typeof ParentConnexionRoute
 }
 
 const ParentRouteChildren: ParentRouteChildren = {
+  ParentBienvenueRoute: ParentBienvenueRoute,
   ParentConnexionRoute: ParentConnexionRoute,
 }
 

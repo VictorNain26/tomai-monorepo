@@ -279,14 +279,6 @@ describe("pairing a student's device", () => {
     expect(res.status).toBe(200);
     expect(await db.select().from(session).where(eq(session.userId, parentId))).toEqual([]);
   });
-
-  it('lets the student list their own devices', async () => {
-    const student = await api.student(guardian);
-    const device = await api.pair(guardian, student.id);
-    const res = await api.request('GET', '/api/auth/list-sessions', { cookie: device });
-    expect(res.status).toBe(200);
-    expect(((await res.json()) as unknown[]).length).toBe(1);
-  });
 });
 
 const management = client();

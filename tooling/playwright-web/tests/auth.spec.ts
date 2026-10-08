@@ -7,6 +7,9 @@ test('an invited parent gets in by the code their address received, names themse
   invite(email);
   await signIn(page, email);
   await expect(page.getByRole('heading', { name: 'Bienvenue' })).toBeVisible();
+  // Signed in but nameless: the household sends them back until they give it.
+  await page.goto('/foyer');
+  await expect(page.getByRole('heading', { name: 'Bienvenue' })).toBeVisible();
   await page.getByLabel('Votre prénom').fill('Claire');
   await page.getByRole('button', { name: 'Continuer' }).click();
   await expect(page).toHaveURL(/\/foyer$/);

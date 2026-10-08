@@ -19,7 +19,7 @@ import type { HouseholdService } from './service';
 // From the CP to the terminale and beyond for a student who repeated: five to twenty years old.
 const MIN_AGE_YEARS = 5;
 const MAX_AGE_YEARS = 20;
-const STUDENT_AUTH_PATHS = new Set(['/api/auth/device-pairing/redeem', '/api/auth/get-session', '/api/auth/list-sessions', '/api/auth/sign-out']);
+const STUDENT_AUTH_PATHS = new Set(['/api/auth/device-pairing/redeem', '/api/auth/get-session', '/api/auth/sign-out']);
 
 const name = z.string().trim().min(1).max(50);
 

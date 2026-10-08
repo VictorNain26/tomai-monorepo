@@ -13,7 +13,7 @@ import { meQuery } from '../lib/me';
 
 /**
  * The guardian's one way in, without a password: their address, then the code it receives. The
- * first code creates the account, on an invitation (closed beta), and asks for a first name.
+ * first code creates the account, on an invitation (closed beta); /bienvenue then asks its name.
  */
 export const Route = createFileRoute('/_parent/connexion')({ component: SignIn });
 
@@ -24,23 +24,17 @@ const codeSchema = z.object({
     .trim()
     .regex(/^\d{6}$/, 'Le code à 6 chiffres reçu par e-mail.'),
 });
-const nameSchema = z.object({ name: z.string().trim().min(1, 'Votre prénom.').max(50, '50 caractères au plus.') });
 
 const sendCode = (email: string) => authClient.emailOtp.sendVerificationOtp({ email, type: 'sign-in' });
 
 function SignIn() {
   const [email, setEmail] = useState<string | null>(null);
-  const [naming, setNaming] = useState(false);
-  if (naming) return <NameStep />;
   if (email) {
     return (
       <CodeStep
         email={email}
         onOtherAddress={() => {
           setEmail(null);
-        }}
-        onFirstSignIn={() => {
-          setNaming(true);
         }}
       />
     );
@@ -76,7 +70,7 @@ function EmailStep({ onSent }: { onSent: (email: string) => void }) {
   );
 }
 
-function CodeStep({ email, onOtherAddress, onFirstSignIn }: { email: string; onOtherAddress: () => void; onFirstSignIn: () => void }) {
+function CodeStep({ email, onOtherAddress }: { email: string; onOtherAddress: () => void }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [failure, setFailure] = useState<string | null>(null);
@@ -85,13 +79,9 @@ function CodeStep({ email, onOtherAddress, onFirstSignIn }: { email: string; onO
 
   const submit = form.handleSubmit(async ({ otp }) => {
     setFailure(null);
-    const { data, error } = await authClient.signIn.emailOtp({ email, otp });
+    const { error } = await authClient.signIn.emailOtp({ email, otp });
     if (error) {
       setFailure(authMessage(error));
-      return;
-    }
-    if (data.user.name === '') {
-      onFirstSignIn();
       return;
     }
     await queryClient.invalidateQueries({ queryKey: meQuery.queryKey });
@@ -132,36 +122,6 @@ function CodeStep({ email, onOtherAddress, onFirstSignIn }: { email: string; onO
           Changer d’adresse
         </button>
       </div>
-    </Page>
-  );
-}
-
-function NameStep() {
-  const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const [failure, setFailure] = useState<string | null>(null);
-  const form = useForm({ resolver: zodResolver(nameSchema), defaultValues: { name: '' } });
-
-  const submit = form.handleSubmit(async ({ name }) => {
-    setFailure(null);
-    const { error } = await authClient.updateUser({ name });
-    if (error) {
-      setFailure(authMessage(error));
-      return;
-    }
-    await queryClient.invalidateQueries({ queryKey: meQuery.queryKey });
-    await navigate({ to: '/' });
-  });
-
-  return (
-    <Page title="Bienvenue">
-      <form noValidate onSubmit={(event) => void submit(event)} className="flex flex-col gap-4">
-        <Field label="Votre prénom" autoComplete="given-name" {...form.register('name')} error={form.formState.errors.name?.message} />
-        {failure && <Notice tone="error">{failure}</Notice>}
-        <Button type="submit" disabled={form.formState.isSubmitting}>
-          Continuer
-        </Button>
-      </form>
     </Page>
   );
 }
