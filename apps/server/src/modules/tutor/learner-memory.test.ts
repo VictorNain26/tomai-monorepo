@@ -33,7 +33,7 @@ const auth = createAuth(
 );
 const api = httpClient(
   createApp({
-    config: { production: false, webDistDir: undefined, apiRateLimit: 1000 },
+    config: { production: false, webDistDir: undefined, apiRateLimit: 1000, trustedProxyHops: 0 },
     logger: silent,
     db,
     ...mistral.deps(db, silent),

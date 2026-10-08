@@ -32,7 +32,8 @@ const auth = createAuth(
 );
 const api = httpClient(
   createApp({
-    config: { production: false, webDistDir: undefined, apiRateLimit: 1000 },
+    // Behind one proxy, as at Clever Cloud.
+    config: { production: false, webDistDir: undefined, apiRateLimit: 1000, trustedProxyHops: 1 },
     logger: pino({ level: 'silent' }),
     db,
     ...mistral.deps(db, pino({ level: 'silent' })),
@@ -71,6 +72,22 @@ describe('sign-in by code', () => {
     expect(res.status).toBe(200);
     expect((await accounts('nouvelle@example.com'))[0]?.emailVerified).toBe(true);
     expect(await invitations('nouvelle@example.com')).toEqual([]);
+  });
+
+  it('records the address the proxy appended, never one the client wrote before it', async () => {
+    await invite(db, 'adresse@example.com');
+    const otp = mail.codeIn(await asked('adresse@example.com'));
+    const res = await api.request('POST', '/api/auth/sign-in/email-otp', {
+      body: { email: 'adresse@example.com', otp },
+      headers: { 'X-Forwarded-For': '198.51.100.7, 203.0.113.50' },
+    });
+    expect(res.status).toBe(200);
+    const [opened] = await db
+      .select({ ipAddress: session.ipAddress })
+      .from(session)
+      .innerJoin(user, eq(user.id, session.userId))
+      .where(eq(user.email, 'adresse@example.com'));
+    expect(opened?.ipAddress).toBe('203.0.113.50');
   });
 
   it('lets a known address in by its code, with no invitation left', async () => {
