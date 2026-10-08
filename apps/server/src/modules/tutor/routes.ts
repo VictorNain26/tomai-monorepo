@@ -74,3 +74,14 @@ export function memoryRoutes({ auth, service }: { auth: Auth; service: TutorServ
       return c.body(null, 204);
     });
 }
+
+/**
+ * /api/summary: the summary of the week (`docs/vision.md`, principle 3), the signed-in student's
+ * own, or a student's for a guardian of their household; the same for both.
+ */
+export function summaryRoutes({ auth, service }: { auth: Auth; service: TutorService }) {
+  return new Hono<SessionEnv>()
+    .use(requireSession(auth))
+    .get('/', async (c) => c.json(await service.summary(c.var.userId)))
+    .get('/:studentId', async (c) => c.json(await service.summaryFor(c.var.userId, c.req.param('studentId'))));
+}

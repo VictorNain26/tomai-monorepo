@@ -20,7 +20,8 @@ export function householdModule({ db, auth }: { db: Db; auth: Auth }) {
 
 /**
  * The signed-in student's profile, for the tutor: their learner memory's state and last reset
- * with it; null for anyone who is not a student. The tutor records the student's answer here.
+ * with it; null for anyone who is not a student. The tutor records the student's answer here,
+ * and asks whether a guardian may read a student's summary.
  */
 export function studentDirectory(db: Db) {
   const repository = createHouseholdRepository(db);
@@ -33,6 +34,8 @@ export function studentDirectory(db: Db) {
     },
     answerMemory: (studentId: string, answer: MemoryAnswer, afterPosition: number) => repository.answerMemory(studentId, answer, afterPosition),
     resetMemory: (studentId: string, afterPosition: number) => repository.resetMemory(studentId, afterPosition),
+    /** Whether the student is in the household where `guardianId` is a guardian. */
+    inHousehold: async (guardianId: string, studentId: string) => (await repository.findStudent(guardianId, studentId)) !== undefined,
   };
 }
 

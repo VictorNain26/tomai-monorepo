@@ -13,6 +13,7 @@ import type { Db } from '../../platform/db/client';
 import type { ExerciseChange, ExerciseState } from './core/exercise-turn';
 import type { Hint } from './core/ladder';
 import type { PastExercise } from './core/memory';
+import type { WeekMessage } from './core/week-summary';
 import { distressEvent, exercise, learnerNotionReset, message, studySession, turnRecord } from './schema';
 
 /** The tutor's last messages on an exercise that the contract lists, so as not to repeat them. */
@@ -147,14 +148,14 @@ export function createTutorRepository(db: Db) {
     },
 
     /**
-     * The student's exercises since `since`, before the one at `before` (all of them when null), on
-     * one of `notions` (any when null), oldest first, with their notions and the error types of
-     * their turns: what the learner memory reads. Through the student's own sessions only.
+     * The student's exercises since `since` and after the position `after`, before the one at
+     * `before` (all of them when null), on one of `notions` (any when null), oldest first, with
+     * their notions and the error types of their turns: what the learner memory and the summary of
+     * the week read. Through the student's own sessions only.
      */
-    /** The exercises of the school year after the memory's last reset (`after`, a position). */
     async pastExercises(
       studentId: string,
-      { yearStart, after }: { yearStart: Date; after: number },
+      { since, after }: { since: Date; after: number },
       before: number | null,
       notions: readonly string[] | null,
     ): Promise<PastExercise[]> {
@@ -174,7 +175,7 @@ export function createTutorRepository(db: Db) {
         .where(
           and(
             eq(studySession.studentId, studentId),
-            gte(exercise.createdAt, yearStart),
+            gte(exercise.createdAt, since),
             gt(exercise.position, after),
             isNotNull(exercise.sheet),
             ...(before === null ? [] : [lt(exercise.position, before)]),
@@ -196,6 +197,16 @@ export function createTutorRepository(db: Db) {
         solved: solvedAt !== null,
         errorTypes,
       }));
+    },
+
+    /** The times of the student's messages since `since`, with their session's subject, grouped by session, in their order. */
+    async messagesSince(studentId: string, since: Date): Promise<WeekMessage[]> {
+      return db
+        .select({ sessionId: message.sessionId, subject: studySession.subject, at: message.createdAt })
+        .from(message)
+        .innerJoin(studySession, eq(studySession.id, message.sessionId))
+        .where(and(eq(studySession.studentId, studentId), gte(message.createdAt, since)))
+        .orderBy(asc(message.sessionId), asc(message.position));
     },
 
     /** The notions the student marked as understood, and the last exercise each mark covers. */
