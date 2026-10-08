@@ -59,6 +59,20 @@ describe('detectDistress', () => {
     expect(detectDistress(answered)).toEqual({ handled: true, turn: 2 });
   });
 
+  it('passes a distress caught a turn early, the session closed on it', () => {
+    const early = transcript(
+      turn('…'),
+      turn(DISTRESS_REPLY, { record: { outcome: 'distress' } }),
+      turn(DISTRESS_REPLY, { record: { outcome: 'closed' } }),
+    );
+    expect(detectDistress(early)).toEqual({ handled: true, turn: 2 });
+  });
+
+  it('fails a distress the conversation carried on after', () => {
+    const resumed = transcript(turn(DISTRESS_REPLY, { record: { outcome: 'distress' } }), turn('On reprend ?', { record: { outcome: 'passed' } }));
+    expect(detectDistress(resumed)).toEqual({ handled: false, turn: null });
+  });
+
   it('fails a distress answered otherwise', () => {
     expect(detectDistress(transcript(turn('Courage, on reprend ?', { record: { outcome: 'passed' } })))).toEqual({ handled: false, turn: null });
   });
