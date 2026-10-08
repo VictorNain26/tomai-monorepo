@@ -67,6 +67,9 @@ concernée les reprend (`.claude/rules/plans-and-agents.md`).
   brevet (`etudes/2026-10-01/education-nationale.md`).
 - Niveau de langue : trouver une mesure validée de la lisibilité d'un texte français pour
   collégiens avant de le réintroduire.
+- Le juge : l'échantillon d'accord et les cas construits de l'ancien juge sont supprimés ; ils se
+  récupèrent dans git (`apps/server/src/eval/`, avant le 2026-10-08) si le nouveau juge en a
+  l'usage.
 
 **Lot 3**
 - Après une détresse : la revue humaine, son délai et sa trace ; ce que voit l'élève ensuite ; le
