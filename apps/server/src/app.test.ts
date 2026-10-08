@@ -29,7 +29,7 @@ afterAll(() => {
 
 const mail = memoryMailer();
 const app = createApp({
-  config: { production: false, webDistDir: dist, apiRateLimit: 100 },
+  config: { production: false, webDistDir: dist, apiRateLimit: 100, trustedProxyHops: 0 },
   logger: pino({ level: 'silent' }),
   db,
   ...mistral.deps(db, pino({ level: 'silent' })),

@@ -29,7 +29,11 @@ interface Device {
 }
 
 export function httpClient(app: App, mail: ReturnType<typeof memoryMailer>, db: Db) {
-  const request = (method: string, path: string, { cookie, body }: { cookie?: string | undefined; body?: unknown } = {}) =>
+  const request = (
+    method: string,
+    path: string,
+    { cookie, body, headers }: { cookie?: string | undefined; body?: unknown; headers?: Record<string, string> } = {},
+  ) =>
     app.request(`${ORIGIN}${path}`, {
       method,
       headers: {
@@ -37,6 +41,7 @@ export function httpClient(app: App, mail: ReturnType<typeof memoryMailer>, db: 
         Origin: ORIGIN,
         'User-Agent': 'test-device',
         ...(cookie === undefined ? {} : { Cookie: cookie }),
+        ...headers,
       },
       ...(body === undefined ? {} : { body: JSON.stringify(body) }),
     });
