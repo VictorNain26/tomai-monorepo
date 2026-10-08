@@ -5,7 +5,7 @@ import tailwindcss from '@tailwindcss/vite';
 import { VitePWA } from 'vite-plugin-pwa';
 
 // Manifest colors can't read CSS variables: --color-background in packages/tokens/theme.css.
-const PAPER = '#FAF7F0';
+const PAPER = '#F6F6F3';
 
 const DEV_PORT = 3002;
 const API = 'http://localhost:3000';

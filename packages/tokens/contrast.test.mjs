@@ -5,7 +5,11 @@ import { readFileSync } from 'node:fs';
 const read = (file) => readFileSync(new URL(file, import.meta.url), 'utf8');
 const colors = (css) => Object.fromEntries([...css.matchAll(/--color-([a-z-]+):\s*(#[0-9A-Fa-f]{6})/g)].map(([, name, hex]) => [name, hex]));
 
-const palette = colors(read('./theme.css'));
+// The dark mode overrides the light tokens it names: each mode is checked whole. The landing keeps
+// its own palette until lot 4.
+const [lightCss, darkCss] = read('./theme.css').split('@media (prefers-color-scheme: dark)');
+const light = colors(lightCss);
+const modes = Object.entries({ light, dark: { ...light, ...colors(darkCss) }, landing: colors(read('./landing.css')) });
 
 function luminance(hex) {
   const channel = (i) => {
@@ -47,26 +51,26 @@ const PAIRS = [
   ['annotation', 'secondary'],
 ];
 
-for (const [fg, bg] of PAIRS) {
-  test(`${fg} on ${bg} meets WCAG AA (4.5:1)`, () => {
-    assert.ok(palette[fg], `missing --color-${fg}`);
-    assert.ok(palette[bg], `missing --color-${bg}`);
-    const ratio = contrast(palette[fg], palette[bg]);
-    assert.ok(ratio >= 4.5, `${palette[fg]} on ${palette[bg]} = ${ratio.toFixed(2)}`);
-  });
-}
-
 const CONTROL_PAIRS = [
   ['input', 'background'],
   ['input', 'card'],
   ['input', 'secondary'],
+  ['ring', 'background'],
+  ['ring', 'card'],
 ];
 
-for (const [fg, bg] of CONTROL_PAIRS) {
-  test(`${fg} on ${bg} meets WCAG 1.4.11 (3:1)`, () => {
-    assert.ok(palette[fg], `missing --color-${fg}`);
-    assert.ok(palette[bg], `missing --color-${bg}`);
-    const ratio = contrast(palette[fg], palette[bg]);
-    assert.ok(ratio >= 3, `${palette[fg]} on ${palette[bg]} = ${ratio.toFixed(2)}`);
-  });
+for (const [mode, palette] of modes) {
+  for (const [pairs, minimum, criterion] of [
+    [PAIRS, 4.5, 'WCAG AA (4.5:1)'],
+    [CONTROL_PAIRS, 3, 'WCAG 1.4.11 (3:1)'],
+  ]) {
+    for (const [fg, bg] of pairs) {
+      test(`${mode}: ${fg} on ${bg} meets ${criterion}`, () => {
+        assert.ok(palette[fg], `missing --color-${fg}`);
+        assert.ok(palette[bg], `missing --color-${bg}`);
+        const ratio = contrast(palette[fg], palette[bg]);
+        assert.ok(ratio >= minimum, `${palette[fg]} on ${palette[bg]} = ${ratio.toFixed(2)}`);
+      });
+    }
+  }
 }

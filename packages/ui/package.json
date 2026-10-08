@@ -13,7 +13,8 @@
     "./classes": {
       "types": "./src/classes.ts",
       "import": "./src/classes.ts"
-    }
+    },
+    "./assets/*": "./assets/*"
   },
   "scripts": {
     "lint": "eslint . --max-warnings 0",

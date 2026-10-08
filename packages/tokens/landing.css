@@ -1,0 +1,55 @@
+/* @repo/tokens — l'identité rejetée, que la landing garde, gelée jusqu'au lot 4 : elle reçoit
+ * alors theme.css, et ce fichier se supprime (docs/roadmap.md).
+ * Importer APRÈS l'import de Tailwind de la landing.
+ * Contrastes AA vérifiés par contrast.test.mjs. */
+
+/* inline : la landing pose --font-nunito et --font-caveat par le composant <Font>
+ * d'Astro ; sans inline, la fonte se résoudrait là où le token est défini. Une app
+ * sans ces variables charge la fonte par Fontsource : la valeur de repli de var() porte son nom, sinon
+ * toute la pile serait invalide et le navigateur retomberait sur sa serif. */
+@theme inline {
+  --font-sans: var(--font-nunito, 'Nunito Variable'), ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--font-nunito, 'Nunito Variable'), ui-sans-serif, system-ui, sans-serif;
+  --font-hand: var(--font-caveat, 'Caveat Variable'), cursive;
+}
+
+@theme {
+  /* Rayon des cartes ; boutons, champs et badges prennent rounded-full
+   * (utilitaire Tailwind). */
+  --radius-2xl: 20px;
+
+  /* Couleurs sémantiques (light) — stylo Bic quatre couleurs sur papier crème */
+  --color-background: #faf7f0;
+  --color-foreground: #1d1d22;
+  --color-primary: #1f3f9e;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #f0eadd;
+  --color-secondary-foreground: #1d1d22;
+  --color-muted: #f0eadd;
+  --color-muted-foreground: #5c5c66;
+  --color-accent: #f0eadd;
+  --color-accent-foreground: #1d1d22;
+  --color-card: #fffdf8;
+  --color-card-foreground: #1d1d22;
+  --color-popover: #fffdf8;
+  --color-popover-foreground: #1d1d22;
+  --color-destructive: #b42318;
+  --color-destructive-foreground: #ffffff;
+  --color-success: #1b7337;
+  --color-success-foreground: #ffffff;
+  --color-warning: #e0a43a;
+  --color-warning-foreground: #1d1d22;
+  --color-highlight: #f9e08b;
+  --color-annotation: #c0282d;
+  --color-border: #e3dacb;
+  --color-input: #8a7f6c;
+  --color-ring: #1f3f9e;
+  --color-overlay: #000000;
+
+  /* Motion — fast: micro-feedback (press, toggle) ; base: transitions
+   * standard ; slow: entrées d'écran ; pulse: demi-cycle skeleton. */
+  --duration-fast: 150ms;
+  --duration-base: 250ms;
+  --duration-slow: 400ms;
+  --duration-pulse: 1000ms;
+}

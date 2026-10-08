@@ -5,7 +5,8 @@ import { RouterProvider, createRouter } from '@tanstack/react-router';
 import { Failure } from './components/failure';
 import { isProblem } from './lib/api';
 import { routeTree } from './routeTree.gen';
-import '@fontsource-variable/nunito';
+import '@fontsource/andika/400.css';
+import '@fontsource/andika/700.css';
 import './styles.css';
 
 // A session gone while a screen is open (expired, revoked elsewhere): back to the sign-in, then
