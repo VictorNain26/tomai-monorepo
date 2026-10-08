@@ -121,7 +121,7 @@ function Passkeys() {
   const add = useMutation({
     mutationFn: async () => {
       setFailure(null);
-      const { error } = await authClient.passkey.addPasskey({ name: deviceName(navigator.userAgent) });
+      const { error } = await authClient.passkey.addPasskey();
       if (!error) return refresh();
       if (hasCode(error, 'SESSION_NOT_FRESH')) setStale(true);
       else if (!isCancelled(error)) setFailure(authMessage(error));
@@ -159,7 +159,7 @@ function Passkeys() {
           {passkeys.map((passkey) => (
             <li key={passkey.id} className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card p-4 text-card-foreground">
               <span className="flex flex-col">
-                <span className="font-bold">{passkey.name ?? 'Clé d’accès'}</span>
+                <span className="font-bold">{deviceName(passkey.name)}</span>
                 <span className="text-sm text-muted-foreground">Créée le {formatDay(passkey.createdAt)}</span>
               </span>
               <Button

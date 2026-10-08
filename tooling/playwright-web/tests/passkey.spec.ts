@@ -9,7 +9,7 @@ test.skip(({ browserName }) => browserName !== 'chromium', 'The virtual authenti
 async function phoneLock(page: Page) {
   const devtools = await page.context().newCDPSession(page);
   await devtools.send('WebAuthn.enable');
-  await devtools.send('WebAuthn.addVirtualAuthenticator', {
+  const { authenticatorId } = await devtools.send('WebAuthn.addVirtualAuthenticator', {
     options: {
       protocol: 'ctap2',
       transport: 'internal',
@@ -19,16 +19,19 @@ async function phoneLock(page: Page) {
       automaticPresenceSimulation: true,
     },
   });
+  /** The names the phone files its passkeys under, as its own list shows them. */
+  return async () => (await devtools.send('WebAuthn.getCredentials', { authenticatorId })).credentials.map(({ userName }) => userName);
 }
 
 const makePasskey = (page: Page) => page.getByRole('button', { name: 'Créer une clé d’accès sur cet appareil' }).click();
 
 test('a parent makes a passkey on their phone, then gets in with it, without a code', async ({ page }) => {
-  await phoneLock(page);
-  await guardian(page, 'cle');
+  const filedUnder = await phoneLock(page);
+  const email = await guardian(page, 'cle');
   await makePasskey(page);
   await expect(page.getByText('Android · Chrome')).toBeVisible();
   await expect(page.getByText(/^Créée le /)).toBeVisible();
+  expect(await filedUnder()).toEqual([email]);
 
   await page.getByRole('button', { name: 'Se déconnecter' }).click();
   await expect(page).toHaveURL(/\/connexion$/);
@@ -59,13 +62,13 @@ test.describe('past the minutes after entering', () => {
     await phoneLock(page);
     const email = await guardian(page, 'cle-tardive');
     // The server's own refusal of an old session is proven in its suite: here, the screen's answer.
-    await page.route('**/api/auth/passkey/generate-register-options?*', (route) =>
+    await page.route('**/api/auth/passkey/generate-register-options*', (route) =>
       route.fulfill({ status: 403, json: { code: 'SESSION_NOT_FRESH', message: 'Session is not fresh' } }),
     );
     await makePasskey(page);
     await expect(page.getByText('Par sécurité, une clé d’accès se crée dans les 10 minutes')).toBeVisible();
 
-    await page.unroute('**/api/auth/passkey/generate-register-options?*');
+    await page.unroute('**/api/auth/passkey/generate-register-options*');
     const mark = logMark();
     await page.getByRole('button', { name: 'Recevoir un code' }).click();
     let code: string | undefined;

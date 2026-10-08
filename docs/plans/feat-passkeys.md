@@ -3,7 +3,8 @@
 Écarts du pré-vol : le plugin exige `better-auth` ^1.7.7 (monté depuis 1.7.5, correctifs sans
 migration) ; `@simplewebauthn/server` déclaré pour que `build:types` nomme ses types ; l'élève est
 déjà refusé par `studentAuthGuard`, sans hook de plus ; une clé porte le nom de l'appareil où elle
-est créée (`deviceName`), l'AAGUID étant nul chez Apple.
+est créée, son user agent posé par le serveur (`afterVerification`) et lu par `deviceName`, l'AAGUID
+étant nul chez Apple ; un nom envoyé par le client remplacerait l'adresse dans la liste du navigateur.
 
 ## Problème
 

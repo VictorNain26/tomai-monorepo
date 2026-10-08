@@ -117,8 +117,16 @@ export function createAuth(db: Db, config: Pick<Config, 'publicUrl' | 'authSecre
     plugins: [
       devicePairing(),
       // Bound to the public origin, never to the one a request claims; a discoverable credential,
-      // which the browser offers in the address field.
-      passkey({ rpID, rpName: 'Tom', origin, authenticatorSelection: { residentKey: 'required', userVerification: 'preferred' } }),
+      // which the browser offers in the address field. Its name in Tom is the browser that made it,
+      // as a session's: a name the client sends would also replace, in the browser's own list, the
+      // guardian's address the passkey is filed under.
+      passkey({
+        rpID,
+        rpName: 'Tom',
+        origin,
+        authenticatorSelection: { residentKey: 'required', userVerification: 'preferred' },
+        registration: { afterVerification: ({ ctx }) => ({ name: ctx.headers?.get('user-agent') ?? 'Clé d’accès' }) },
+      }),
       emailOTP({
         otpLength: 6,
         expiresIn: 5 * 60,
