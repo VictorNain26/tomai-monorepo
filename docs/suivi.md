@@ -82,8 +82,9 @@ bloquant levé). L'historique vit dans git et les PR.
   adresse, le premier créant son compte sur invitation, puis donne son prénom. Il peut ensuite créer
   une clé d'accès depuis son foyer et entrer par le verrouillage de son appareil
   (`@better-auth/passkey`, vérifié le 2026-10-08) ; le code reste pour un appareil neuf.
-- **Prochaine action** : le test d'inscription de Victor sur le staging, clé d'accès comprise ; la
-  landing de production chez Clever Cloud ensuite.
+- **Test du staging par Victor, le 2026-10-08** : inscription sur invitation, code, prénom et clé
+  d'accès marchent de bout en bout ; ses retours d'interface et de parcours vont au lot 3.
+- **Prochaine action** : la landing de production chez Clever Cloud.
 - **Rentabilité et quotas** (`etudes/2026-10-07/rentabilite.md`) : le gratuit décide de la
   rentabilité, la distribution est le vrai risque ; quotas proposés de 2 c (Gratuit) et 10 c
   (Complet) par élève et par jour, voix comprise, remis à zéro à 4 h, et l'année scolaire à 69 €
@@ -126,6 +127,8 @@ supprime ou que l'étude couvre n'y figure plus.
 - La file `tom-judge-agreement` de Langfuse reste ouverte jusqu'au 2026-11-02.
 
 ### Lot 3 — l'app entre les mains des familles
+
+- **Interface et parcours** : Victor a relevé des défauts importants en testant le staging le 2026-10-08 (connexion, foyer, clés d'accès) ; à reprendre écran par écran avec lui, avec le parcours parent.
 
 - **Après une détresse** : la revue humaine (Victor au départ), son délai et sa trace ; ce que voit l'élève ensuite, et qui lève la fermeture ; une photo seule n'est pas jugée (`etudes/2026-10-07/foyer-eleve-age.md`).
 - **Conformité** : mention « vous parlez à une IA » dès la première interaction, consentement conjoint sous 15 ans, AIPD, résumé parent proportionné et connu de l'enfant, aucun lien avec un établissement sans réévaluer le haut risque (`etudes/2026-10-01/education-nationale.md`, c ; `tuteur.md` §11).

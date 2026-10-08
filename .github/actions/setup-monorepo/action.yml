@@ -1,14 +1,9 @@
-# Composite action: Setup Bun + Node.js + Turbo cache + install
-# Used by all CI jobs to avoid repeating 5 setup steps
+# Composite action: Bun, Node.js, Bun's download cache and the install, for the jobs on the runner.
+# No cache of `.turbo`: a directory per commit, never pruned, hit almost never, it outgrew the
+# repository's 10 GB and evicted Bun's (https://docs.github.com/en/actions/reference/workflows-and-actions/dependency-caching).
 
 name: Setup Monorepo
-description: Install Bun and Node.js (Astro and Playwright run on it), restore caches, and install dependencies with bun
-
-inputs:
-  turbo-cache-key:
-    description: Suffix for turbo cache key
-    required: false
-    default: default
+description: Install Bun and Node.js (Astro and Playwright run on it), restore Bun's cache, and install dependencies with bun
 
 runs:
   using: composite
@@ -27,12 +22,6 @@ runs:
         path: ~/.bun/install/cache
         key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
         restore-keys: bun-${{ runner.os }}-
-
-    - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-      with:
-        path: .turbo
-        key: turbo-${{ runner.os }}-${{ inputs.turbo-cache-key }}-${{ github.sha }}
-        restore-keys: turbo-${{ runner.os }}-${{ inputs.turbo-cache-key }}-
 
     - run: bun install --frozen-lockfile
       shell: bash

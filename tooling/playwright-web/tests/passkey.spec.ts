@@ -5,7 +5,10 @@ import { guardian } from '../guardian';
 // The browser's ceremony, against Chromium's virtual authenticator, a DevTools domain WebKit lacks.
 test.skip(({ browserName }) => browserName !== 'chromium', 'The virtual authenticator is Chromium’s');
 
-/** This page's own phone lock: it says yes at once, as a person who unlocks it. */
+/**
+ * This page's own phone lock: it says yes at once, as a person who unlocks it, to the address
+ * field's offer too, which then lets them in by itself. Its presence held back, it waits.
+ */
 async function phoneLock(page: Page) {
   const devtools = await page.context().newCDPSession(page);
   await devtools.send('WebAuthn.enable');
@@ -19,26 +22,41 @@ async function phoneLock(page: Page) {
       automaticPresenceSimulation: true,
     },
   });
-  /** The names the phone files its passkeys under, as its own list shows them. */
-  return async () => (await devtools.send('WebAuthn.getCredentials', { authenticatorId })).credentials.map(({ userName }) => userName);
+  return {
+    /** The names the phone files its passkeys under, as its own list shows them. */
+    filedUnder: async () => (await devtools.send('WebAuthn.getCredentials', { authenticatorId })).credentials.map(({ userName }) => userName),
+    present: (enabled: boolean) => devtools.send('WebAuthn.setAutomaticPresenceSimulation', { authenticatorId, enabled }),
+  };
 }
 
 const makePasskey = (page: Page) => page.getByRole('button', { name: 'Créer une clé d’accès sur cet appareil' }).click();
 
-test('a parent makes a passkey on their phone, then gets in with it, without a code', async ({ page }) => {
-  const filedUnder = await phoneLock(page);
+test('a parent makes a passkey on their phone, filed under their address, and the address field lets them in with it', async ({ page }) => {
+  const lock = await phoneLock(page);
   const email = await guardian(page, 'cle');
   await makePasskey(page);
   await expect(page.getByText('Android · Chrome')).toBeVisible();
   await expect(page.getByText(/^Créée le /)).toBeVisible();
-  expect(await filedUnder()).toEqual([email]);
+  expect(await lock.filedUnder()).toEqual([email]);
 
+  await page.getByRole('button', { name: 'Se déconnecter' }).click();
+  await expect(page).toHaveURL(/\/foyer$/);
+  await expect(page.getByRole('heading', { name: 'Bonjour Claire' })).toBeVisible();
+});
+
+test('the button gets a parent in with their passkey, without a code', async ({ page }) => {
+  const lock = await phoneLock(page);
+  await guardian(page, 'cle-bouton');
+  await makePasskey(page);
+  await expect(page.getByText(/^Créée le /)).toBeVisible();
+
+  await lock.present(false);
   await page.getByRole('button', { name: 'Se déconnecter' }).click();
   await expect(page).toHaveURL(/\/connexion$/);
   await expect(page.getByLabel('Adresse e-mail')).toHaveAttribute('autocomplete', 'username webauthn');
   await page.getByRole('button', { name: 'Entrer avec une clé d’accès' }).click();
+  await lock.present(true);
   await expect(page).toHaveURL(/\/foyer$/);
-  await expect(page.getByRole('heading', { name: 'Bonjour Claire' })).toBeVisible();
 });
 
 test('a passkey the parent deleted no longer gets them in, and the screen sends them to the code', async ({ page }) => {
@@ -49,7 +67,6 @@ test('a passkey the parent deleted no longer gets them in, and the screen sends 
   await expect(page.getByText(/^Créée le /)).toHaveCount(0);
 
   await page.getByRole('button', { name: 'Se déconnecter' }).click();
-  await page.getByRole('button', { name: 'Entrer avec une clé d’accès' }).click();
   await expect(page.getByRole('alert')).toHaveText('Tom ne connaît plus cette clé d’accès : entrez avec un code reçu par e-mail.');
   await expect(page).toHaveURL(/\/connexion$/);
 });
