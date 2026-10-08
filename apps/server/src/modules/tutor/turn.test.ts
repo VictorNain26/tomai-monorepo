@@ -35,7 +35,7 @@ const auth = createAuth(
 );
 const api = httpClient(
   createApp({
-    config: { production: false, webDistDir: undefined, apiRateLimit: 100 },
+    config: { production: false, webDistDir: undefined, apiRateLimit: 100, trustedProxyHops: 0 },
     logger: silent,
     db,
     ...mistral.deps(db, silent),
@@ -186,6 +186,26 @@ describe('a turn', () => {
     expect(await db.select().from(distressEvent).where(eq(distressEvent.sessionId, sessionId))).toHaveLength(1);
   });
 
+  it('still gives a distress its fixed reply when the database refuses to store it', async () => {
+    const sessionId = await newSession();
+    mistral.chat.push(analysis());
+    mistral.moderations.push({ flagged: ['selfharm'], scores: { selfharm: 0.95 } });
+    // A real failure of the database, for this session's distress only.
+    await db.execute(
+      sql.raw(`create function refuse_distress() returns trigger language plpgsql as $$
+        begin if new.session_id = '${sessionId}' then raise exception 'refused'; end if; return new; end $$;
+        create trigger refuse_distress before insert on distress_event for each row execute function refuse_distress()`),
+    );
+    try {
+      expect((await say(sessionId, "j'en peux plus")).reply).toBe(DISTRESS_REPLY);
+      expect(await db.select().from(distressEvent).where(eq(distressEvent.sessionId, sessionId))).toEqual([]);
+      const [session] = await db.select({ closedAt: studySession.closedAt }).from(studySession).where(eq(studySession.id, sessionId));
+      expect(session?.closedAt).toBeNull();
+    } finally {
+      await db.execute(sql.raw('drop trigger refuse_distress on distress_event; drop function refuse_distress()'));
+    }
+  });
+
   it('answers a distress without waiting for the analysis', async () => {
     const sessionId = await newSession();
     mistral.chat.push('hang');
@@ -292,7 +312,8 @@ const asSpender = await api.pair(guardian, spender.id);
 
 describe('the daily quota', () => {
   const sessionOf = async () => ((await (await api.request('POST', '/api/sessions', { cookie: asSpender })).json()) as { id: string }).id;
-  const today = quotaDayStart(new Date());
+  // Read in each test, at its start: a run that crosses 4 a.m. would otherwise test yesterday.
+  const today = () => quotaDayStart(new Date());
   /** The student's spending reset to what the test states. */
   const spent = async (...rows: { costMicroEur: number; createdAt: Date }[]) => {
     await db.delete(aiCost).where(eq(aiCost.studentId, spender.id));
@@ -310,16 +331,17 @@ describe('the daily quota', () => {
   };
 
   it('lets a turn run under the budget, and does not count what was spent before 4 a.m.', async () => {
+    const start = today();
     await spent(
-      { costMicroEur: DAILY_BUDGET_MICRO_EUR, createdAt: new Date(today.getTime() - 60_000) },
-      { costMicroEur: DAILY_BUDGET_MICRO_EUR - 1, createdAt: today },
+      { costMicroEur: DAILY_BUDGET_MICRO_EUR, createdAt: new Date(start.getTime() - 60_000) },
+      { costMicroEur: DAILY_BUDGET_MICRO_EUR - 1, createdAt: start },
     );
     mistral.chat.push(analysis(), { text: 'Bonjour Noé !' });
     expect((await say(await sessionOf(), 'Bonjour', asSpender)).reply).toBe('Bonjour Noé !');
   });
 
   it('refuses a turn once the budget is spent, before any model writes, and frees the session', async () => {
-    await spent({ costMicroEur: DAILY_BUDGET_MICRO_EUR, createdAt: today });
+    await spent({ costMicroEur: DAILY_BUDGET_MICRO_EUR, createdAt: today() });
     const sessionId = await sessionOf();
     mistral.received.length = 0;
     const res = await api.request('POST', `/api/sessions/${sessionId}/messages`, { cookie: asSpender, body: { text: 'Encore une question' } });
@@ -331,7 +353,7 @@ describe('the daily quota', () => {
   });
 
   it('still answers a distress past the budget, moderated with the tutor’s last message, and records it', async () => {
-    await spent({ costMicroEur: DAILY_BUDGET_MICRO_EUR, createdAt: today });
+    await spent({ costMicroEur: DAILY_BUDGET_MICRO_EUR, createdAt: today() });
     const sessionId = await sessionOf();
     await db.insert(message).values({ sessionId, role: 'tutor', text: 'Comment te sens-tu ce soir ?' });
     mistral.received.length = 0;

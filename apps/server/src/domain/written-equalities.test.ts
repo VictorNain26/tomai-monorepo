@@ -65,6 +65,11 @@ describe('writtenEqualities', () => {
     expect(found('U = R × I. R = 220 Ω')).toEqual([]);
     expect(found('f(4) = 3 × 4 − 2 = 10')).toEqual([['3 * 4 - 2', '10', false]]);
   });
+
+  it('leaves alone an implicit product, which a student may mean otherwise', () => {
+    expect(found('2(3) = 5')).toEqual([]);
+    expect(found('2 3 = 23')).toEqual([]);
+  });
 });
 
 describe('isWrong', () => {
@@ -72,6 +77,16 @@ describe('isWrong', () => {
     expect(isWrong({ left: '20 / 3', right: '6.67' })).toBe(false);
     expect(isWrong({ left: '20 / 3', right: '6.6' })).toBe(true);
     expect(isWrong({ left: '20 / 3', right: '6.70' })).toBe(true);
+  });
+
+  it('accepts a result exactly half a unit of its last place away, the rounding of 1/8 to 0.13', () => {
+    expect(isWrong({ left: '1 / 8', right: '0.13' })).toBe(false);
+    expect(isWrong({ left: '1 / 8', right: '0.14' })).toBe(true);
+  });
+
+  it('does not judge an equality one side of which it cannot compute', () => {
+    expect(isWrong({ left: 'x + 1', right: '3' })).toBe(false);
+    expect(isWrong({ left: '2 + 1', right: 'trois' })).toBe(false);
   });
 
   it('wants a whole result exact', () => {

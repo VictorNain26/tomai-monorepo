@@ -17,6 +17,7 @@ import type { Logger } from 'pino';
 import type { Config } from '../../config';
 import type { Db } from '../db/client';
 import type { Mailer } from '../email/mailer';
+import { CLIENT_ADDRESS_HEADER } from '../http/client-address';
 import { invitationIdentifier } from './invitation';
 import { devicePairing, isStudentEmail, PAIRING_PREFIX } from './pairing';
 import { account, passkey as passkeyTable, session, user, verification } from './schema';
@@ -104,7 +105,8 @@ export function createAuth(db: Db, config: Pick<Config, 'publicUrl' | 'authSecre
     onAPIError: { errorURL: `${config.publicUrl}/erreur-connexion` },
     // better-auth 1.7 skips its origin check when NODE_ENV is test (context/create-context.mjs):
     // on in every environment, the tests exercise the check production runs.
-    advanced: { disableOriginCheck: false, backgroundTasks: { handler: background } },
+    // The client's address, as the server reads it behind the host's proxy (app.ts).
+    advanced: { disableOriginCheck: false, backgroundTasks: { handler: background }, ipAddress: { ipAddressHeaders: [CLIENT_ADDRESS_HEADER] } },
     // A pairing code is a credential: stored hashed, like a password, never in clear.
     verification: { storeIdentifier: { default: 'plain', overrides: { [PAIRING_PREFIX]: 'hashed' } } },
     // The code's own routes for what Tom does not use: no password to reset, no other check.
