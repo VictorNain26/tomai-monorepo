@@ -7,7 +7,7 @@ import type { Auth } from '../../platform/auth/auth';
 import type { Db } from '../../platform/db/client';
 import { studentDirectory } from '../household';
 import { createTutorRepository } from './repository';
-import { memoryRoutes, tutorRoutes } from './routes';
+import { memoryRoutes, summaryRoutes, tutorRoutes } from './routes';
 import { createTutorService } from './service';
 
 interface Deps {
@@ -21,7 +21,7 @@ interface Deps {
 
 export function tutorModule({ db, auth, ai, moderation, logger, background }: Deps) {
   const service = createTutorService({ repository: createTutorRepository(db), students: studentDirectory(db), ai, moderation, logger, background });
-  return { routes: tutorRoutes({ auth, service, logger }), memory: memoryRoutes({ auth, service }) };
+  return { routes: tutorRoutes({ auth, service, logger }), memory: memoryRoutes({ auth, service }), summary: summaryRoutes({ auth, service }) };
 }
 
 /** The records of a session's turns, for the harness, which plays the route as a student does (src/evaluate.ts). */

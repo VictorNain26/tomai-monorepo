@@ -2,8 +2,8 @@
  * What a signed-in student does with their sessions, and a turn of the tutor: the student's
  * message filtered (moderation and distress), understood (the analysis), anchored (the exercise's
  * sheet), decided (diagnosis and level, by the code), written, checked, then stored with the
- * record of what was decided. Only a student reaches them: a guardian follows the work through
- * the parent's summary, never the conversations.
+ * record of what was decided. Only a student reaches them, but the summary of the week, which a
+ * guardian of their household reads too: never the conversations.
  */
 
 import type { Logger } from 'pino';
@@ -26,6 +26,7 @@ import { routeReasoningEffort } from './core/reasoning';
 import { exerciseBlock, notionText, SHEET_PROMPT_VERSION } from './core/sheet';
 import { RECENT_MESSAGES, SUMMARY_BACKLOG, summarize } from './core/summary';
 import { titleFor } from './core/title';
+import { weekStart, weekSummary } from './core/week-summary';
 import { TURN_PROMPT_VERSION } from './core/version';
 import type { TutorRepository } from './repository';
 
@@ -84,10 +85,21 @@ export function createTutorService({ repository, students, ai, moderation, logge
   /** What the student's exercises before `before` say of `notions` (of every notion when null): what Tom reads, what the student sees. */
   async function memoriesOf(learner: Student, notions: readonly string[] | null, before: number | null) {
     const [past, resets] = await Promise.all([
-      repository.pastExercises(learner.id, { yearStart: schoolYearStart(new Date()), after: learner.memory.resetAfter }, before, notions),
+      repository.pastExercises(learner.id, { since: schoolYearStart(new Date()), after: learner.memory.resetAfter, by: 'start' }, before, notions),
       repository.notionResets(learner.id),
     ]);
     return notionMemories(past, resets);
+  }
+
+  /** The student's summary of the week: the same for them and for their guardian. */
+  async function summaryOf(studentId: string) {
+    const since = weekStart(new Date());
+    const [messages, exercises, resets] = await Promise.all([
+      repository.messagesSince(studentId, since),
+      repository.pastExercises(studentId, { since, after: 0, by: 'turn' }, null, null),
+      repository.notionResets(studentId),
+    ]);
+    return weekSummary(messages, exercises, resets);
   }
 
   /** The learner memory of the exercise's notions, from the exercises before it; null while it is not active. */
@@ -299,6 +311,17 @@ export function createTutorService({ repository, students, ai, moderation, logge
       const learner = await student(userId);
       if (!notionText(notionId)) throw new Problem('NOT_FOUND');
       await repository.resetNotion(learner.id, notionId);
+    },
+
+    /** The signed-in student's summary of the week. */
+    async summary(userId: string) {
+      return summaryOf((await student(userId)).id);
+    },
+
+    /** A student's summary of the week, for a guardian of their household; anyone else finds no such student. */
+    async summaryFor(guardianId: string, studentId: string) {
+      if (!(await students.inHousehold(guardianId, studentId))) throw new Problem('NOT_FOUND');
+      return summaryOf(studentId);
     },
 
     async startSession(userId: string) {

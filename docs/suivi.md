@@ -72,6 +72,9 @@ concernée les reprend (`.claude/rules/plans-and-agents.md`).
   l'usage.
 
 **Lot 3**
+- Résumé de la semaine : son écran (étape 4 de `roadmap.md`), écrit comme des pistes de
+  conversation, et son arrêt à la demande de l'élève ; le serveur le calcule déjà
+  (`/api/summary`).
 - Après une détresse : la revue humaine, son délai et sa trace ; ce que voit l'élève ensuite ; le
   canal du message au parent (`decisions.md`, « Ouvertes »), avec une table d'envois idempotente.
 - Voix : la `Permissions-Policy` interdit le micro, à ouvrir à `self` ; la transcription impose le

@@ -69,6 +69,7 @@ export function createApp({ config, logger, db, auth, ai, moderation, lifecycle,
     .route('/api/household', household.routes)
     .route('/api/sessions', tutor.routes)
     .route('/api/memory', tutor.memory)
+    .route('/api/summary', tutor.summary)
     .route('/health', healthRoutes({ db, lifecycle, logger }))
     .onError(problemHandler(logger))
     .notFound(notFound);
