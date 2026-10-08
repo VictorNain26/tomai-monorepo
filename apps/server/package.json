@@ -18,6 +18,7 @@
     "db:generate": "bun --bun drizzle-kit generate --config=drizzle.config.ts",
     "db:migrate": "bun src/migrate.ts",
     "invite": "bun src/invite.ts",
+    "eval": "API_RATE_LIMIT=100000 bun src/evaluate.ts",
     "db:check": "bun --bun drizzle-kit check --config=drizzle.config.ts",
     "db:studio": "bunx drizzle-kit studio",
     "referential:extract": "bun src/referential/extract.ts",

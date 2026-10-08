@@ -1,36 +1,10 @@
 /**
  * The fences that keep untrusted text, a student's message or an attached file, from reading as
- * instructions; and every tag of the prompt template, which such a text may not hold.
+ * instructions; such a text may not hold a tag of the prompt template (domain/prompt-tags.ts).
  */
 
-const TAG_NAMES = [
-  'student_message',
-  'conversation_summary',
-  'attached_file',
-  'attachments',
-  'critical_instruction',
-  'tutor_message',
-  'current_exercise',
-  'exercise',
-  'exercise_statement',
-  'programme',
-  'later_programme',
-  'contrat',
-  'fiche',
-  'role',
-  'student',
-  'tone',
-  'honesty',
-  'pedagogy',
-  'visualization',
-  'response_format',
-  'safety',
-  'level_adaptation',
-  'subject_specifics',
-];
+import { PROMPT_TAG } from '../../../domain/prompt-tags';
 
-/** An opening or closing tag of the prompt, attributes included. */
-export const PROMPT_TAG = new RegExp(`</?(?:${TAG_NAMES.join('|')})\\b[^>]*>`, 'i');
 const PROMPT_TAGS = new RegExp(PROMPT_TAG.source, 'gi');
 
 /**

@@ -64,6 +64,11 @@ bun run db:generate                # migration SQL d'un changement de schéma
 
 Migrations : `.claude/rules/database-migrations.md` ; stack locale : skill `dev-bootstrap`.
 
+Harnais d'évaluation : `cd apps/server && bun run eval [--scenario S2] [--exercise M1] [--repeat 2]` rejoue
+le jeu de `src/eval` sur le vrai tuteur et le vrai Mistral, sur la base locale seulement, et écrit
+transcriptions, verdicts et taux avec leur intervalle de Wilson dans `eval-results/`. Il est payant :
+environ 0,5 € et 2 h pour le jeu entier.
+
 ## Git
 
 `main` est la seule branche permanente, sans branche par environnement ; la façon d'y entrer est dans `CLAUDE.md`, « Interdits ».

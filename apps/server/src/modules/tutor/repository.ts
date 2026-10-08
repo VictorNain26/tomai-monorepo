@@ -316,6 +316,11 @@ export function createTutorRepository(db: Db) {
       return replaced.length > 0;
     },
 
+    /** The records of a session's turns, in their order: what the harness reads (src/evaluate.ts). */
+    async records(sessionId: string) {
+      return db.select().from(turnRecord).where(eq(turnRecord.sessionId, sessionId)).orderBy(turnRecord.createdAt);
+    },
+
     /** The session's title, unless it already has one. */
     async setTitle(sessionId: string, title: string) {
       await db
