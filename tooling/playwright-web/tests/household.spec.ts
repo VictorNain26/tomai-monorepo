@@ -69,10 +69,8 @@ test.describe('with the session gone', () => {
 
 test('a shared device: the parent is told whose it is, signs the child out, then signs in', async ({ page, browser }, testInfo) => {
   const parentEmail = await pairedStudent(page, browser, testInfo, 'Zoé');
-  for (const screen of ['/inscription', '/connexion']) {
-    await page.goto(screen);
-    await expect(page.getByRole('status')).toContainText('Cet appareil est relié au compte de Zoé');
-  }
+  await page.goto('/connexion');
+  await expect(page.getByRole('status')).toContainText('Cet appareil est relié au compte de Zoé');
   await expect(page.getByRole('link', { name: 'Revenir à l’espace de Zoé' })).toBeVisible();
   await page.getByRole('button', { name: 'Déconnecter Zoé de cet appareil' }).click();
   await expect(page.getByLabel('Adresse e-mail')).toBeVisible();

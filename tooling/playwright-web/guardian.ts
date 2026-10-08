@@ -1,44 +1,43 @@
-/** A guardian's account in the suite's database: signed up, confirmed, signed in. */
+/** A guardian's account in the suite's database: invited, in by the code their address received. */
 
 import { devices, expect, type Browser, type Page, type TestInfo } from '@playwright/test';
-import { confirmEmail, invite } from './database';
+import { invite } from './database';
+import { codeSince, logMark } from './server-log';
 
-// iPhone and Android run side by side on one database: each test has its own address.
-// In lowercase ASCII, as better-auth stores an address: confirmEmail finds it by its text.
+// iPhone and Android run side by side on one database: each test has its own address, in
+// lowercase ASCII, as better-auth stores it.
 export const address = (name: string) =>
   `${name
     .normalize('NFD')
     .replace(/[^a-zA-Z0-9-]/g, '')
     .toLowerCase()}-${crypto.randomUUID().slice(0, 8)}@example.com`;
 
-export async function fillSignUp(page: Page, email: string) {
-  await page.goto('/inscription');
-  await page.getByLabel('Votre prénom').fill('Claire');
-  await page.getByLabel('Adresse e-mail').fill(email);
-  await page.getByLabel('Mot de passe').fill('un mot de passe solide');
-  await page.getByRole('button', { name: 'Créer le compte' }).click();
-}
-
-/** Invited, then signed up: asked to confirm the address. */
-export async function signUp(page: Page, email: string) {
-  invite(email);
-  await fillSignUp(page, email);
-  await expect(page.getByRole('heading', { name: 'Vérifiez votre e-mail' })).toBeVisible();
-}
-
-export async function signIn(page: Page, email: string) {
+/** The address asked for its code on the sign-in screen: the code the server logged for it. */
+export async function askCode(page: Page, email: string) {
   await page.goto('/connexion');
   await page.getByLabel('Adresse e-mail').fill(email);
-  await page.getByLabel('Mot de passe').fill('un mot de passe solide');
-  await page.getByRole('button', { name: 'Se connecter' }).click();
+  const mark = logMark();
+  await page.getByRole('button', { name: 'Recevoir mon code' }).click();
+  await expect(page.getByRole('heading', { name: 'Votre code' })).toBeVisible();
+  let code: string | undefined;
+  await expect.poll(() => (code = codeSince(mark, email))).toBeDefined();
+  return code ?? '';
 }
 
-/** A guardian at home, on their household: their address. */
+/** In by the code: an account that exists lands on its home, a first one is asked for a first name. */
+export async function signIn(page: Page, email: string) {
+  const code = await askCode(page, email);
+  await page.getByLabel('Le code reçu par e-mail').fill(code);
+  await page.getByRole('button', { name: 'Entrer' }).click();
+}
+
+/** A guardian at home, on their household, named Claire: their address. */
 export async function guardian(page: Page, name: string) {
   const email = address(name);
-  await signUp(page, email);
-  await confirmEmail(email);
+  invite(email);
   await signIn(page, email);
+  await page.getByLabel('Votre prénom').fill('Claire');
+  await page.getByRole('button', { name: 'Continuer' }).click();
   await expect(page).toHaveURL(/\/foyer$/);
   return email;
 }
