@@ -55,7 +55,7 @@ test.describe('after a deployment', () => {
   // lazily, not a chunk the entry shares, whose loss would stop the whole app.
   async function failRouteChunk(page: Page, times: number) {
     let failed = 0;
-    await page.route('/assets/_parent.connexion-*.js', async (route) => {
+    await page.route('/assets/connexion-*.js', async (route) => {
       if (failed >= times) return route.fallback();
       failed++;
       return route.fulfill({ status: 404, body: '' });

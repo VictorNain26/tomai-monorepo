@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { addChild, childPhone, guardian, pairedStudent, signIn } from '../guardian';
+import { addChild, childPhone, guardian, signIn } from '../guardian';
 
 test('a guardian adds a child, changes their class, then deletes their account', async ({ page }) => {
   await guardian(page, 'foyer');
@@ -67,23 +67,24 @@ test.describe('with the session gone', () => {
   });
 });
 
-test('a shared device: the parent is told whose it is, signs the child out, then signs in', async ({ page, browser }, testInfo) => {
-  const parentEmail = await pairedStudent(page, browser, testInfo, 'Zoé');
-  await page.goto('/connexion');
-  await expect(page.getByRole('status')).toContainText('Cet appareil est relié au compte de Zoé');
-  await expect(page.getByRole('link', { name: 'Revenir à l’espace de Zoé' })).toBeVisible();
-  await page.getByRole('button', { name: 'Déconnecter Zoé de cet appareil' }).click();
-  await expect(page.getByLabel('Adresse e-mail')).toBeVisible();
+test('on the family phone, the parent opens the child’s space without a code, and enters back by their own', async ({ page }) => {
+  const email = await guardian(page, 'famille');
+  await addChild(page, 'Zoé');
+  const openZoe = page.getByRole('button', { name: 'Ouvrir l’espace de Zoé sur cet appareil' });
+  await openZoe.click();
+  await expect(page.getByRole('heading', { name: 'Bonjour Zoé' })).toBeVisible();
+  // A child does not cut themselves off by mistake: their parent unpairs a device.
+  await expect(page.getByRole('button', { name: /déconnecter/i })).toHaveCount(0);
 
-  await signIn(page, parentEmail);
+  await page.getByRole('link', { name: 'Changer de profil' }).click();
+  await expect(page).toHaveURL(/\/connexion$/);
+  await expect(page.getByRole('status').first()).toContainText('Cet appareil est relié au compte de Zoé');
+  await signIn(page, email);
   await expect(page).toHaveURL(/\/foyer$/);
-  await expect(page.getByRole('link', { name: /^Zoé/ })).toBeVisible();
-});
 
-test('a student signs out of a device, which then opens nothing of theirs', async ({ page, browser }, testInfo) => {
-  await pairedStudent(page, browser, testInfo, 'Tim');
-  await page.getByRole('button', { name: 'Me déconnecter de cet appareil' }).click();
-  await expect(page).toHaveURL(/\/connexion$/);
-  await page.goto('/');
-  await expect(page).toHaveURL(/\/connexion$/);
+  await page.getByRole('link', { name: /^Zoé/ }).click();
+  await openZoe.click();
+  await expect(page.getByRole('heading', { name: 'Bonjour Zoé' })).toBeVisible();
+  // The same session, switched back to: no second pairing.
+  await expect(page.getByText(/^Relié le /)).toHaveCount(1);
 });

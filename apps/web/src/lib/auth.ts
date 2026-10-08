@@ -2,14 +2,14 @@
 
 import { passkeyClient } from '@better-auth/passkey/client';
 import type { BetterAuthClientPlugin } from 'better-auth/client';
-import { emailOTPClient } from 'better-auth/client/plugins';
+import { emailOTPClient, multiSessionClient } from 'better-auth/client/plugins';
 import { createAuthClient } from 'better-auth/react';
 import type { DevicePairing } from 'tomai-server/contract';
 
 // The server's device pairing, its endpoints inferred (https://better-auth.com/docs/concepts/plugins).
 const devicePairing = { id: 'device-pairing', $InferServerPlugin: {} as DevicePairing } satisfies BetterAuthClientPlugin;
 
-export const authClient = createAuthClient({ plugins: [devicePairing, emailOTPClient(), passkeyClient()] });
+export const authClient = createAuthClient({ plugins: [devicePairing, emailOTPClient(), passkeyClient(), multiSessionClient()] });
 
 interface AuthError {
   code?: string | undefined;
