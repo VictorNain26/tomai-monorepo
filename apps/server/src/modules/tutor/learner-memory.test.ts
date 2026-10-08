@@ -12,7 +12,7 @@ import { createBackgroundTasks } from '../../platform/lifecycle/background';
 import { createLifecycle } from '../../platform/lifecycle/shutdown';
 import { programmeFor } from '../../referential';
 import { testDatabase } from '../../testing/database';
-import { httpClient, ORIGIN } from '../../testing/http';
+import { birthMonthAged, httpClient, ORIGIN } from '../../testing/http';
 import { memoryMailer } from '../../testing/mailer';
 import { fakeMistral } from '../../testing/mistral';
 import { accountDeletion } from '../household';
@@ -33,7 +33,7 @@ const auth = createAuth(
 );
 const api = httpClient(
   createApp({
-    config: { production: false, webDistDir: undefined, apiRateLimit: 1000 },
+    config: { production: false, webDistDir: undefined, apiRateLimit: 1000, trustedProxyHops: 0 },
     logger: silent,
     db,
     ...mistral.deps(db, silent),
@@ -50,10 +50,10 @@ const [notion] = programmeFor('quatrieme', 'mathematiques', schoolYearOf(new Dat
 if (!notion) throw new Error('the referential has no maths for the quatrième');
 
 const guardian = await api.guardian('parent@example.com');
-const lea = await api.student(guardian, { name: 'Léa', level: 'quatrieme', birthMonth: '2013-03' });
+const lea = await api.student(guardian, { name: 'Léa', level: 'quatrieme', birthMonth: birthMonthAged(13) });
 const asLea = await api.pair(guardian, lea.id);
 const otherGuardian = await api.guardian('autre@example.com');
-const noe = await api.student(otherGuardian, { name: 'Noé', level: 'quatrieme', birthMonth: '2013-03' });
+const noe = await api.student(otherGuardian, { name: 'Noé', level: 'quatrieme', birthMonth: birthMonthAged(13) });
 const asNoe = await api.pair(otherGuardian, noe.id);
 
 const sheet = (entries: string[]): ExerciseSheet => ({
@@ -239,7 +239,7 @@ describe('the learner memory', () => {
   });
 
   it('lets a student of 15 decide alone, the guardian neither proposing nor erasing it, and erases it when they decline', async () => {
-    const tom = await api.student(guardian, { name: 'Tom', level: 'troisieme', birthMonth: '2011-01' });
+    const tom = await api.student(guardian, { name: 'Tom', level: 'troisieme', birthMonth: birthMonthAged(15) });
     const asTom = await api.pair(guardian, tom.id);
     expect(await memoryOf(asTom)).toMatchObject({ state: 'asked', mayAnswer: true });
     expect((await answer(asTom, 'accepted')).status).toBe(200);

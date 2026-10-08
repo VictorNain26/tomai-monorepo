@@ -88,6 +88,9 @@ bloquant levé). L'historique vit dans git et les PR.
 - **Profils sur l'appareil** (Victor, 2026-10-08) : l'appareil d'un enfant reste relié 90 jours sans
   usage ; le parent ouvre l'espace de son enfant sur son propre téléphone sans code, et revient au
   sien par sa clé d'accès ou un code ; l'enfant n'a plus de déconnexion, mais « Changer de profil ».
+- **Adresse du client** (2026-10-08) : le proxy de Clever Cloud ajoute l'adresse réelle à droite de
+  `X-Forwarded-For` (mesuré sur le staging) ; le serveur fait confiance à `TRUSTED_PROXY_HOPS` sauts
+  (1 sur le staging) pour son rate limit et pour better-auth (`platform/http/client-address.ts`).
 - **Prochaine action** : la bascule du DNS de `tomia.fr` vers Clever Cloud (`clever domain diag`
   donne les enregistrements), puis la suppression de Vercel et de Sentry.
 - **Rentabilité et quotas** (`etudes/2026-10-07/rentabilite.md`) : le gratuit décide de la
@@ -109,21 +112,20 @@ supprime ou que l'étude couvre n'y figure plus.
 
 ### Refonte — préproduction (étape 7)
 
-- **Trous des tests, mesurés le 2026-10-08** (couverture Bun 99 % des lignes, sans branches ; mutation StrykerJS et `@hughescr/stryker-bun-runner` sur trois modules purs : 76,9 %), à combler en TDD : `domain/leak.ts` (une réponse sans espaces que le tuteur écrit avec, chaque forme parlée : volts, cm², euros, « f de n ») ; `written-equalities.ts` (produit implicite « 2(3) = 5 », côté non évaluable, frontière de l'arrondi) ; `output-check.ts` (consigne de régénération pour une balise, formes vides) ; la réponse de détresse quand son enregistrement échoue (`tutor/service.ts`) ; le rate limit par adresse réelle (`rate-limit.test.ts` ne passe jamais par `getConnInfo`) ; mois de naissance fixes qui expireront (`household.test.ts`, `household.spec.ts`), un test qui dépend de l'ordre (`household.test.ts`), un quota calculé au chargement (`turn.test.ts`).
+- **Trous des tests, mesurés le 2026-10-08** (couverture Bun 99 % des lignes, sans branches ; mutation StrykerJS et `@hughescr/stryker-bun-runner` sur trois modules purs : 76,9 %) : comblés en TDD le jour même pour `leak.ts`, `written-equalities.ts`, `output-check.ts` (chaque mutant survivant appliqué à la main et tué ; deux restent, équivalents : `>`/`>=` sous la marge de 1e-9, le filtre des formes vides que l'énoncé écarte déjà), la réponse de détresse quand la base refuse de l'enregistrer, les mois de naissance relatifs, la matrice d'accès sans ordre, le jour du quota lu par test. Reste : l'adresse de connexion (`platform/http/client-address.ts`, `getConnInfo`) n'est exercée par aucun test, faute d'un vrai `Bun.serve`.
 
 - **Observabilité** : les erreurs du serveur vers Bugsink, auto-hébergé avec sa base, celles des navigateurs par le serveur (`tunnel`) ; les traces OpenTelemetry attendent un besoin mesuré (`etudes/2026-10-07/hebergement.md`).
 - **Cookies de session** : le préfixe `__Host-` pour ceux de better-auth, l'app et la landing étant du même site (à vérifier dans la config de better-auth).
 - **Base du staging joignable depuis internet**, protégée par identifiant, mot de passe et TLS : la placer avec l'application dans un réseau privé Clever Cloud (Network Groups, [changelog](https://www.clever.cloud/developers/changelog/2026/05-12-network-groups-console)) avant la production.
 - **Landing** : une application de preview par PR (`etudes/2026-10-07/hebergement.md`), au lot 4.
-- **Hébergement** : délai de grâce SIGTERM d'au moins un tour de chat, et `DRAIN_MS` (`src/main.ts`, 5 s) recalé sur l'intervalle de la sonde de l'hébergeur ; stockage partagé du rate limit s'il y a plusieurs instances ; derrière le proxy de l'hébergeur, ses sauts de confiance pour la clé du rate limit, y compris celle de better-auth sur l'échange d'un code de jumelage (`advanced.ipAddress`, `platform/auth/pairing.ts`) et sur l'envoi du code de connexion (3 par minute), sans quoi tous les clients partagent un même compteur (`platform/http/rate-limit.ts`, aujourd'hui l'adresse de la connexion) et pour `trustedProxies` de better-auth ; compression des fichiers du web par le build ou par le proxy, selon l'hébergeur.
+- **Hébergement** : délai de grâce SIGTERM d'au moins un tour de chat, et `DRAIN_MS` (`src/main.ts`, 5 s) recalé sur l'intervalle de la sonde de l'hébergeur ; stockage partagé du rate limit s'il y a plusieurs instances ; compression des fichiers du web par le build ou par le proxy, selon l'hébergeur.
 - **Appareils de l'élève** : l'élève voit ses appareils reliés sur son accueil ; reste à le prévenir sur ses appareils déjà reliés quand un nouvel appareil l'est (date, type d'appareil) ; décider, en concevant l'historique, si un appareil nouvellement relié ne montre que les séances commencées après son jumelage (revue de #425, `etudes/2026-10-07/foyer-eleve-age.md`, § 7).
 - **Client web** : mesures sur un vrai iPhone et un Android (`etudes/2026-10-06/client-web.md`).
 - **Clever Cloud** (`etudes/2026-10-07/hebergement.md`), à tester sur la préproduction : un tour SSE
   de 60 s à travers Sōzu (délai de 180 s documenté) ; le délai de grâce réel au SIGTERM pendant un
   redéploiement, contre `SHUTDOWN_DEADLINE_MS` (25 s, `src/main.ts`) et un tour de 60 s ; la sonde
   qui ne sert qu'au déploiement, pour `DRAIN_MS` ; le PITR
-  (pgBackRest, sur demande au support) et son prix ; la dernière entrée de X-Forwarded-For comme clé
-  du rate limit ; le port (3000 dans l'image, 8080 attendu par Clever Cloud : `PORT` ou
+  (pgBackRest, sur demande au support) et son prix ; le port (3000 dans l'image, 8080 attendu par Clever Cloud : `PORT` ou
   `CC_DOCKER_EXPOSED_HTTP_PORT`) ; Postgres 18.4 chez Clever Cloud contre 18.6 en dev et en CI, à aligner.
 
 ### Lot 1 — harnais d'évaluation et observabilité

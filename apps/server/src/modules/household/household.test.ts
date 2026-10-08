@@ -15,7 +15,7 @@ import { account, session, user, verification } from '../../platform/auth/schema
 import { createLifecycle } from '../../platform/lifecycle/shutdown';
 import { testDatabase } from '../../testing/database';
 import { fakeMistral } from '../../testing/mistral';
-import { httpClient, ORIGIN, type Student } from '../../testing/http';
+import { birthMonthAged, httpClient, ORIGIN, type Student } from '../../testing/http';
 import { memoryMailer } from '../../testing/mailer';
 import { accountDeletion } from './index';
 import { householdMember, studentProfile } from './schema';
@@ -33,7 +33,7 @@ const auth = createAuth(
 function client() {
   return httpClient(
     createApp({
-      config: { production: false, webDistDir: undefined, apiRateLimit: 100 },
+      config: { production: false, webDistDir: undefined, apiRateLimit: 100, trustedProxyHops: 0 },
       logger: pino({ level: 'silent' }),
       db,
       ...mistral.deps(db, pino({ level: 'silent' })),
@@ -56,17 +56,19 @@ const studentOfB = await matrix.student(guardianB);
 const asStudentA = await matrix.pair(guardianA, studentOfA.id);
 const asStudentB = await matrix.pair(guardianB, studentOfB.id);
 const [deviceOfA] = await matrix.devices(guardianA, studentOfA.id);
+// Without it the device route would read « /devices/ », refused all the same: the matrix would prove nothing.
+if (!deviceOfA) throw new Error('The student of A has no paired device');
 
 describe('access matrix', () => {
   const api = matrix;
   const target = `/api/household/students/${studentOfA.id}`;
   const routes = [
     { method: 'GET', path: '/api/household/students' },
-    { method: 'POST', path: '/api/household/students', body: { name: 'X', level: 'sixieme', birthMonth: '2015-01' } },
+    { method: 'POST', path: '/api/household/students', body: { name: 'X', level: 'sixieme', birthMonth: birthMonthAged(11) } },
     { method: 'PATCH', path: target, body: { name: 'Changé' } },
     { method: 'POST', path: `${target}/pairing-code` },
     { method: 'GET', path: `${target}/devices` },
-    { method: 'DELETE', path: `${target}/devices/${deviceOfA?.id ?? ''}` },
+    { method: 'DELETE', path: `${target}/devices/${deviceOfA.id}` },
     { method: 'DELETE', path: target },
   ];
   const refused = [
@@ -78,19 +80,16 @@ describe('access matrix', () => {
 
   for (const { actor, cookie, status, routes: denied } of refused) {
     for (const { method, path, body } of denied) {
-      it(`refuses ${method} ${path.replace(studentOfA.id, ':id').replace(deviceOfA?.id ?? '-', ':device')} to ${actor} with ${String(status)}`, async () => {
+      it(`refuses ${method} ${path.replace(studentOfA.id, ':id').replace(deviceOfA.id, ':device')} to ${actor} with ${String(status)}, the student of A untouched`, async () => {
         const res = await api.request(method, path, { cookie, body });
         expect(res.status).toBe(status);
         expect(res.headers.get('content-type')).toStartWith('application/problem+json');
+        const [row] = await db.select({ name: user.name }).from(user).where(eq(user.id, studentOfA.id));
+        expect(row?.name).toBe('Léa');
+        expect((await api.sessionUser(asStudentA))?.id).toBe(studentOfA.id);
       });
     }
   }
-
-  it('left the student of A untouched, their device still signed in', async () => {
-    const [row] = await db.select({ name: user.name }).from(user).where(eq(user.id, studentOfA.id));
-    expect(row?.name).toBe('Léa');
-    expect((await api.sessionUser(asStudentA))?.id).toBe(studentOfA.id);
-  });
 
   it('lists to each guardian only the students of their household', async () => {
     const listA = (await (await api.request('GET', '/api/household/students', { cookie: guardianA })).json()) as Student[];
@@ -102,7 +101,7 @@ describe('access matrix', () => {
 
 const creation = client();
 const creator = await creation.guardian('createur@example.com');
-const leo = await creation.student(creator, { name: 'Léo', level: 'sixieme', birthMonth: '2015-09' });
+const leo = await creation.student(creator, { name: 'Léo', level: 'sixieme', birthMonth: birthMonthAged(11) });
 
 describe('/api/me', () => {
   it('tells who is signed in and as what, a guardian without a household yet included', async () => {
@@ -139,7 +138,7 @@ describe('a guardian creates a student', () => {
   const guardian = creator;
 
   it('returns the student: a first name, a level and a month of birth', () => {
-    expect(leo).toMatchObject({ name: 'Léo', level: 'sixieme', birthMonth: '2015-09' });
+    expect(leo).toMatchObject({ name: 'Léo', level: 'sixieme', birthMonth: birthMonthAged(11) });
   });
 
   it('gives the student no credential: a non-routable address, no password', async () => {
@@ -174,7 +173,7 @@ describe('a guardian creates a student', () => {
     ['name', 'a'.repeat(51)],
   ] as const) {
     it(`refuses ${field} ${JSON.stringify(value).slice(0, 20)}`, async () => {
-      const body = { name: 'Léa', level: 'cinquieme', birthMonth: '2014-03', [field]: value };
+      const body = { name: 'Léa', level: 'cinquieme', birthMonth: birthMonthAged(12), [field]: value };
       const res = await api.request('POST', '/api/household/students', { cookie: guardian, body });
       expect(res.status).toBe(400);
       expect(((await res.json()) as { detail: string }).detail).toStartWith(`${field}:`);

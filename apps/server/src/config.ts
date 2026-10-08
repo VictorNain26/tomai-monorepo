@@ -20,6 +20,9 @@ const fields = z.object({
   LOG_LEVEL: z.enum(LOG_LEVELS).default('info'),
   // Requests per minute a client address may send to the API; the e2e suite, whose browsers share one address, raises it.
   API_RATE_LIMIT: z.coerce.number().int().positive().default(100),
+  // The proxies in front of the server whose X-Forwarded-For entry is trusted: 1 at Clever Cloud
+  // (platform/http/client-address.ts), none locally.
+  TRUSTED_PROXY_HOPS: z.coerce.number().int().min(0).default(0),
   DATABASE_URL: z.url({ protocol: /^postgres(ql)?$/ }),
   // The PEM certificate of a database that signs its own (Clever Cloud's Postgres): pinned, it
   // replaces the system's authorities in the TLS check (platform/db/client.ts).
@@ -84,6 +87,7 @@ export interface Config {
   readonly port: number;
   readonly logLevel: LogLevel;
   readonly apiRateLimit: number;
+  readonly trustedProxyHops: number;
   readonly databaseUrl: string;
   readonly databaseCa: string | undefined;
   readonly publicUrl: string;
@@ -122,6 +126,7 @@ export function loadConfig(environment: Environment): Config {
     port: env.PORT,
     logLevel: env.LOG_LEVEL,
     apiRateLimit: env.API_RATE_LIMIT,
+    trustedProxyHops: env.TRUSTED_PROXY_HOPS,
     databaseUrl: env.DATABASE_URL,
     databaseCa: env.DATABASE_CA,
     publicUrl: env.BETTER_AUTH_URL ?? 'http://localhost:3002',

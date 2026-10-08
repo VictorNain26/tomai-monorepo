@@ -14,6 +14,7 @@ import type { Moderation } from './platform/ai/moderation';
 import type { Auth } from './platform/auth/auth';
 import type { Db } from './platform/db/client';
 import type { AppEnv } from './platform/http/env';
+import { CLIENT_ADDRESS_HEADER, clientAddress } from './platform/http/client-address';
 import { notFound, problemHandler } from './platform/http/problem';
 import { rateLimit } from './platform/http/rate-limit';
 import { securityHeaders } from './platform/http/security-headers';
@@ -22,7 +23,7 @@ import { healthRoutes } from './platform/lifecycle/health';
 import type { Lifecycle } from './platform/lifecycle/shutdown';
 
 export interface AppDeps {
-  config: Pick<Config, 'production' | 'webDistDir' | 'apiRateLimit'>;
+  config: Pick<Config, 'production' | 'webDistDir' | 'apiRateLimit' | 'trustedProxyHops'>;
   logger: Logger;
   db: Db;
   auth: Auth;
@@ -48,6 +49,7 @@ export function createApp({ config, logger, db, auth, ai, moderation, lifecycle,
       await next();
     })
     .use(securityHeaders({ hsts: config.production }))
+    .use(clientAddress(config.trustedProxyHops))
     .use('/api/*', budget)
     .use('/health/*', budget)
     // A response of the API is a user's own data: no cache keeps it (OWASP REST Security Cheat Sheet).
@@ -56,7 +58,13 @@ export function createApp({ config, logger, db, auth, ai, moderation, lifecycle,
       c.header('Cache-Control', 'no-store');
     })
     .use('/api/auth/*', household.authGuard)
-    .on(['GET', 'POST'], '/api/auth/*', (c) => auth.handler(c.req.raw))
+    .on(['GET', 'POST'], '/api/auth/*', (c) => {
+      // better-auth reads the client's address from this header alone, written here whatever the
+      // client sent.
+      const headers = new Headers(c.req.raw.headers);
+      headers.set(CLIENT_ADDRESS_HEADER, c.var.clientAddress);
+      return auth.handler(new Request(c.req.raw, { headers }));
+    })
     .route('/api/me', household.me)
     .route('/api/household', household.routes)
     .route('/api/sessions', tutor.routes)
