@@ -6,8 +6,8 @@ Où on en est, réécrit dans chaque PR qui fait avancer ; ce qui est fini en so
 ## Où on en est
 
 - **Mis à jour le** 2026-10-08.
-- **Lot en cours : 3** : la direction artistique « Cahier du soir » est posée ; ensuite la séance
-  (`roadmap.md`, « Maintenant »).
+- **Lot en cours : 3** : la direction artistique « Cahier du soir » est posée, le mode accompagné
+  en 6e et 5e décidé ; ensuite la séance, puis ce mode (`roadmap.md`, « Maintenant »).
 - **Lot 1 en pause** : le harnais `bun run eval` est mergé ; son passage unique attend le paiement
   à l'usage de Mistral (bloquant ci-dessous). Le premier essai s'est arrêté à 3 conversations sur
   104 et ne compte pas comme mesure. Référence de comparaison : 11 fuites sur 106, le 2026-10-06
@@ -72,7 +72,7 @@ concernée les reprend (`.claude/rules/plans-and-agents.md`).
   l'usage.
 
 **Lot 3**
-- Résumé de la semaine : son écran (étape 3 de `roadmap.md`), écrit comme des pistes de
+- Résumé de la semaine : son écran (étape 4 de `roadmap.md`), écrit comme des pistes de
   conversation, et son arrêt à la demande de l'élève ; le serveur le calcule déjà
   (`/api/summary`).
 - Après une détresse : la revue humaine, son délai et sa trace ; ce que voit l'élève ensuite ; le

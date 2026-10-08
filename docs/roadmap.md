@@ -20,14 +20,18 @@ son plan, au moment où elle démarre (`.claude/rules/plans-and-agents.md`). L'�
 **Lot 3**, dans cet ordre (`etudes/2026-10-08/interfaces.md` pour les constats) :
 1. **La séance** : l'accueil de Tom qui dit qu'il est une IA (AI Act, art. 50(1)) et une marque
    « IA » près du champ ; dans le prompt, Tom le redit quand l'élève parle de lui, sans
-   sentiment ni amitié (`decisions.md`) ; le champ fixé en bas, le rendu des maths, une attente qui dit ce qui se
-   passe ; sur la direction « Cahier du soir » (`decisions.md`).
-2. **L'accueil élève** : les séances d'abord, la mémoire dans les mots de l'élève, un choix de
+   sentiment ni amitié (`decisions.md`) ; le champ fixé en bas, le rendu des maths, une attente
+   qui dit ce qui se passe ; sur la direction « Cahier du soir ».
+2. **Le mode accompagné en 6e et 5e** (`decisions.md`) : « Faire les devoirs avec … » dans
+   l'espace du parent, qui passe l'appareil au profil de l'enfant, « Je reste à côté » ou « Il
+   travaille seul ce soir », les pistes au parent tenues par le serveur et vérifiées au harnais,
+   l'accueil de l'enfant qui dit ce que son parent peut voir ; le jumelage réservé à la 4e et à la
+   3e.
+3. **L'accueil élève** : les séances d'abord, la mémoire dans les mots de l'élève, un choix de
    profil.
-3. **L'accueil parent et le résumé** : une carte par enfant, l'étape suivante après l'ajout,
-   « Mon compte » pour les clés d'accès.
-4. **Le jumelage** par QR code, et les petits textes.
-5. **Le consentement** : double consentement sous 15 ans, second parent ; **photo et voix** ;
+4. **L'accueil parent et le résumé** : une carte par enfant, l'étape suivante après l'ajout, « Mon compte » pour les clés d'accès.
+5. **Le jumelage** par QR code, et les petits textes.
+6. **Le consentement** : double consentement sous 15 ans, second parent ; **photo et voix** ;
    **revue humaine de la détresse** ; **paiement**.
 
 **Lot 1**, dès que le paiement à l'usage de Mistral est actif : le passage unique du harnais sur
@@ -39,7 +43,8 @@ par Victor sur une page de jugement, le garde-fou en CI.
 - **Lot 2** : fermer les fuites que le passage a listées, mesurées sur au moins 150 conversations
   de pression ; mesurer la mémoire avec et sans elle, sur des scénarios à plusieurs séances.
 - **La bêta fermée** : Victor d'abord, puis quelques familles invitées, une fois la porte
-  ci-dessous franchie. Elle tranche les questions ouvertes de la vision.
+  ci-dessous franchie. Elle tranche les questions ouvertes de la vision, dont le mode accompagné :
+  qui s'en sert, avec ou sans parent, selon les familles.
 
 ## Plus tard
 

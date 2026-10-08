@@ -11,10 +11,30 @@ Une décision prise en séance entre ici dans la PR qui la suit, pas dans une m�
   source primaire à l'appui. Source : `vision.md`.
 - **Pas d'entretiens avec des familles avant la bêta** (2026-10-02). Les hypothèses de la vision
   restent des hypothèses jusqu'à l'usage réel de la bêta fermée.
-- **Le foyer et l'âge** (2026-10-07). Le parent ouvre le foyer et conclut le contrat ; trois
-  façons d'accompagner, du CP à la terminale, la V1 en mode guidé au collège ; l'enfant n'a aucun
-  identifiant ; la détresse est relue par un humain avant tout message au parent. Source :
+- **Le foyer et l'âge** (2026-10-07, revu le 2026-10-08). Le parent ouvre le foyer et conclut le
+  contrat ; trois façons d'accompagner, du CP à la terminale, le mode suivant le niveau ; la V1 au
+  collège, en mode accompagné en 6e et 5e, guidé en 4e et 3e ; l'enfant n'a aucun identifiant ; la
+  détresse est relue par un humain avant tout message au parent. Source :
   `etudes/2026-10-07/foyer-eleve-age.md`.
+- **Le mode accompagné en 6e et 5e** (2026-10-08). Le découpage des modes devient : accompagné
+  du CP à la 5e, guidé en 4e et 3e, autonome au lycée (l'étude du 2026-10-07 plaçait la 6e et la
+  5e en guidé). Avant la 4e, pas d'appareil propre à l'enfant : le parent lance la séance sur
+  l'appareil de la famille, qui passe au profil de l'enfant (« Les profils sur l'appareil de la
+  famille »), avec « Je reste à côté » ou « Il travaille seul ce soir » ; le profil reste ouvert
+  pour les soirs suivants, et revenir au parent demande sa clé ou un code. À côté, le parent écoute
+  et reste disponible, il ne corrige pas au fil de l'eau ; Tom lui propose au plus trois ou quatre
+  pistes par séance, de vingt mots au plus, au lancement, à un blocage, à une frustration et à la
+  fin, visibles de l'enfant, jamais plus d'aide que le cran de l'enfant, ce que le serveur
+  garantit. Seul, l'enfant a le même Tom, sans pistes ; aucun compteur ni reproche des soirs sans
+  parent. Le jumelage d'un appareil à l'enfant ouvre en 4e. Raisons : l'école ne fait utiliser
+  l'IA générative aux élèves, en classe et encadrée par l'enseignant, qu'à partir de la 4e ; au
+  collège, l'aide aux devoirs qui laisse chercher va avec des progrès, l'aide intrusive avec des
+  reculs. Écart assumé : l'UNESCO recommande 13 ans pour converser seul avec une IA générative, et
+  un soir seul, un élève de 6e le fait, sur le choix de son parent, avec un Tom tenu par le serveur.
+  Sur l'appareil de la famille, les séances restent dans le profil de l'enfant, que le parent peut
+  ouvrir : l'enfant le sait dès son accueil. Source : `etudes/2026-10-08/aide-parentale.md`. À revoir
+  en bêta si le mode ne sert que les familles déjà disponibles, ou si des familles n'ont pas
+  d'appareil commun le soir.
 - **Une mémoire d'apprentissage d'une séance à l'autre** (2026-10-07). Tirée des exercices,
   acceptée par le parent et l'enfant, visible et effaçable par l'élève, remise à zéro à la
   rentrée ; promise seulement après sa mesure. Remplace « pas de mémoire ». Source :
