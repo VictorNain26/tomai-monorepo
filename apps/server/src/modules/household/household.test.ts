@@ -243,6 +243,22 @@ describe("pairing a student's device", () => {
     expect(await api.devices(guardian, student.id)).toEqual([]);
   });
 
+  it('shows the student their own devices, however long ago they were paired', async () => {
+    const student = await api.student(guardian);
+    const device = await api.pair(guardian, student.id);
+    // better-auth's /list-sessions refuses a session older than its freshAge: this one is two days old.
+    await db
+      .update(session)
+      .set({ createdAt: new Date(Date.now() - 2 * 86_400_000) })
+      .where(eq(session.userId, student.id));
+    const res = await api.request('GET', '/api/me/devices', { cookie: device });
+    expect(res.status).toBe(200);
+    const devices = (await res.json()) as { id: string; userAgent: string }[];
+    expect(devices).toHaveLength(1);
+    expect(devices[0]).toMatchObject({ userAgent: 'test-device' });
+    expect(Object.keys(devices[0] ?? {}).sort()).toEqual(['id', 'pairedAt', 'userAgent']);
+  });
+
   it('no longer lists a device whose session has expired', async () => {
     const student = await api.student(guardian);
     await api.pair(guardian, student.id);
@@ -262,14 +278,6 @@ describe("pairing a student's device", () => {
     const res = await api.request('POST', '/api/auth/device-pairing/redeem', { cookie: parent, body: { code } });
     expect(res.status).toBe(200);
     expect(await db.select().from(session).where(eq(session.userId, parentId))).toEqual([]);
-  });
-
-  it('lets the student list their own devices', async () => {
-    const student = await api.student(guardian);
-    const device = await api.pair(guardian, student.id);
-    const res = await api.request('GET', '/api/auth/list-sessions', { cookie: device });
-    expect(res.status).toBe(200);
-    expect(((await res.json()) as unknown[]).length).toBe(1);
   });
 });
 

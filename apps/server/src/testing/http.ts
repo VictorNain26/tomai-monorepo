@@ -1,6 +1,7 @@
 /**
- * The HTTP calls of a test, as the web makes them: a guardian invited, signed up and confirmed, a student
- * created, a device paired by the guardian's code. `app` is the test's app, built by createApp.
+ * The HTTP calls of a test, as the web makes them: a guardian invited and in by the code their
+ * address received, a student created, a device paired by the guardian's code. `app` is the
+ * test's app, built by createApp.
  */
 
 import { expect } from 'bun:test';
@@ -48,12 +49,18 @@ export function httpClient(app: App, mail: ReturnType<typeof memoryMailer>, db: 
 
   const api = {
     request,
-    /** Invited, signed up, the address confirmed by its link: the session that link opens. */
+    /** Invited, then in by the code their address received: the session it opens. */
     async guardian(email: string) {
       await invite(db, email);
-      const res = await request('POST', '/api/auth/sign-up/email', { body: { name: 'Parent', email, password: 'un mot de passe solide' } });
+      return api.signIn(email);
+    },
+    /** In by the code the address receives, named on a first sign-in: the session cookie. */
+    async signIn(email: string) {
+      const received = mail.next(email);
+      expect((await request('POST', '/api/auth/email-otp/send-verification-otp', { body: { email, type: 'sign-in' } })).status).toBe(200);
+      const res = await request('POST', '/api/auth/sign-in/email-otp', { body: { email, otp: mail.codeIn(await received), name: 'Parent' } });
       expect(res.status).toBe(200);
-      return cookieOf(await app.request(mail.linkTo(email, 'Confirmez')));
+      return cookieOf(res);
     },
     async student(cookie: string, overrides: Partial<Omit<Student, 'id'>> = {}) {
       const res = await request('POST', '/api/household/students', {

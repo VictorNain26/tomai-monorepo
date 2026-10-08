@@ -15,10 +15,8 @@ import { Route as ErreurConnexionRouteImport } from './routes/erreur-connexion'
 import { Route as FoyerRouteImport } from './routes/foyer'
 import { Route as JumelerRouteImport } from './routes/jumeler'
 import { Route as MemoireRouteImport } from './routes/memoire'
+import { Route as ParentBienvenueRouteImport } from './routes/_parent.bienvenue'
 import { Route as ParentConnexionRouteImport } from './routes/_parent.connexion'
-import { Route as ParentInscriptionRouteImport } from './routes/_parent.inscription'
-import { Route as ParentMotDePasseOublieRouteImport } from './routes/_parent.mot-de-passe-oublie'
-import { Route as ParentNouveauMotDePasseRouteImport } from './routes/_parent.nouveau-mot-de-passe'
 import { Route as FoyerIndexRouteImport } from './routes/foyer.index'
 import { Route as FoyerStudentIdRouteImport } from './routes/foyer.$studentId'
 import { Route as SeanceSessionIdRouteImport } from './routes/seance.$sessionId'
@@ -52,24 +50,14 @@ const MemoireRoute = MemoireRouteImport.update({
   path: '/memoire',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ParentBienvenueRoute = ParentBienvenueRouteImport.update({
+  id: '/bienvenue',
+  path: '/bienvenue',
+  getParentRoute: () => ParentRoute,
+} as any)
 const ParentConnexionRoute = ParentConnexionRouteImport.update({
   id: '/connexion',
   path: '/connexion',
-  getParentRoute: () => ParentRoute,
-} as any)
-const ParentInscriptionRoute = ParentInscriptionRouteImport.update({
-  id: '/inscription',
-  path: '/inscription',
-  getParentRoute: () => ParentRoute,
-} as any)
-const ParentMotDePasseOublieRoute = ParentMotDePasseOublieRouteImport.update({
-  id: '/mot-de-passe-oublie',
-  path: '/mot-de-passe-oublie',
-  getParentRoute: () => ParentRoute,
-} as any)
-const ParentNouveauMotDePasseRoute = ParentNouveauMotDePasseRouteImport.update({
-  id: '/nouveau-mot-de-passe',
-  path: '/nouveau-mot-de-passe',
   getParentRoute: () => ParentRoute,
 } as any)
 const FoyerIndexRoute = FoyerIndexRouteImport.update({
@@ -94,10 +82,8 @@ export interface FileRoutesByFullPath {
   '/foyer': typeof FoyerRouteWithChildren
   '/jumeler': typeof JumelerRoute
   '/memoire': typeof MemoireRoute
+  '/bienvenue': typeof ParentBienvenueRoute
   '/connexion': typeof ParentConnexionRoute
-  '/inscription': typeof ParentInscriptionRoute
-  '/mot-de-passe-oublie': typeof ParentMotDePasseOublieRoute
-  '/nouveau-mot-de-passe': typeof ParentNouveauMotDePasseRoute
   '/foyer/$studentId': typeof FoyerStudentIdRoute
   '/seance/$sessionId': typeof SeanceSessionIdRoute
   '/foyer/': typeof FoyerIndexRoute
@@ -107,10 +93,8 @@ export interface FileRoutesByTo {
   '/erreur-connexion': typeof ErreurConnexionRoute
   '/jumeler': typeof JumelerRoute
   '/memoire': typeof MemoireRoute
+  '/bienvenue': typeof ParentBienvenueRoute
   '/connexion': typeof ParentConnexionRoute
-  '/inscription': typeof ParentInscriptionRoute
-  '/mot-de-passe-oublie': typeof ParentMotDePasseOublieRoute
-  '/nouveau-mot-de-passe': typeof ParentNouveauMotDePasseRoute
   '/foyer/$studentId': typeof FoyerStudentIdRoute
   '/seance/$sessionId': typeof SeanceSessionIdRoute
   '/foyer': typeof FoyerIndexRoute
@@ -123,10 +107,8 @@ export interface FileRoutesById {
   '/foyer': typeof FoyerRouteWithChildren
   '/jumeler': typeof JumelerRoute
   '/memoire': typeof MemoireRoute
+  '/_parent/bienvenue': typeof ParentBienvenueRoute
   '/_parent/connexion': typeof ParentConnexionRoute
-  '/_parent/inscription': typeof ParentInscriptionRoute
-  '/_parent/mot-de-passe-oublie': typeof ParentMotDePasseOublieRoute
-  '/_parent/nouveau-mot-de-passe': typeof ParentNouveauMotDePasseRoute
   '/foyer/$studentId': typeof FoyerStudentIdRoute
   '/seance/$sessionId': typeof SeanceSessionIdRoute
   '/foyer/': typeof FoyerIndexRoute
@@ -139,10 +121,8 @@ export interface FileRouteTypes {
     | '/foyer'
     | '/jumeler'
     | '/memoire'
+    | '/bienvenue'
     | '/connexion'
-    | '/inscription'
-    | '/mot-de-passe-oublie'
-    | '/nouveau-mot-de-passe'
     | '/foyer/$studentId'
     | '/seance/$sessionId'
     | '/foyer/'
@@ -152,10 +132,8 @@ export interface FileRouteTypes {
     | '/erreur-connexion'
     | '/jumeler'
     | '/memoire'
+    | '/bienvenue'
     | '/connexion'
-    | '/inscription'
-    | '/mot-de-passe-oublie'
-    | '/nouveau-mot-de-passe'
     | '/foyer/$studentId'
     | '/seance/$sessionId'
     | '/foyer'
@@ -167,10 +145,8 @@ export interface FileRouteTypes {
     | '/foyer'
     | '/jumeler'
     | '/memoire'
+    | '/_parent/bienvenue'
     | '/_parent/connexion'
-    | '/_parent/inscription'
-    | '/_parent/mot-de-passe-oublie'
-    | '/_parent/nouveau-mot-de-passe'
     | '/foyer/$studentId'
     | '/seance/$sessionId'
     | '/foyer/'
@@ -230,32 +206,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MemoireRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_parent/bienvenue': {
+      id: '/_parent/bienvenue'
+      path: '/bienvenue'
+      fullPath: '/bienvenue'
+      preLoaderRoute: typeof ParentBienvenueRouteImport
+      parentRoute: typeof ParentRoute
+    }
     '/_parent/connexion': {
       id: '/_parent/connexion'
       path: '/connexion'
       fullPath: '/connexion'
       preLoaderRoute: typeof ParentConnexionRouteImport
-      parentRoute: typeof ParentRoute
-    }
-    '/_parent/inscription': {
-      id: '/_parent/inscription'
-      path: '/inscription'
-      fullPath: '/inscription'
-      preLoaderRoute: typeof ParentInscriptionRouteImport
-      parentRoute: typeof ParentRoute
-    }
-    '/_parent/mot-de-passe-oublie': {
-      id: '/_parent/mot-de-passe-oublie'
-      path: '/mot-de-passe-oublie'
-      fullPath: '/mot-de-passe-oublie'
-      preLoaderRoute: typeof ParentMotDePasseOublieRouteImport
-      parentRoute: typeof ParentRoute
-    }
-    '/_parent/nouveau-mot-de-passe': {
-      id: '/_parent/nouveau-mot-de-passe'
-      path: '/nouveau-mot-de-passe'
-      fullPath: '/nouveau-mot-de-passe'
-      preLoaderRoute: typeof ParentNouveauMotDePasseRouteImport
       parentRoute: typeof ParentRoute
     }
     '/foyer/': {
@@ -283,17 +245,13 @@ declare module '@tanstack/react-router' {
 }
 
 interface ParentRouteChildren {
+  ParentBienvenueRoute: typeof ParentBienvenueRoute
   ParentConnexionRoute: typeof ParentConnexionRoute
-  ParentInscriptionRoute: typeof ParentInscriptionRoute
-  ParentMotDePasseOublieRoute: typeof ParentMotDePasseOublieRoute
-  ParentNouveauMotDePasseRoute: typeof ParentNouveauMotDePasseRoute
 }
 
 const ParentRouteChildren: ParentRouteChildren = {
+  ParentBienvenueRoute: ParentBienvenueRoute,
   ParentConnexionRoute: ParentConnexionRoute,
-  ParentInscriptionRoute: ParentInscriptionRoute,
-  ParentMotDePasseOublieRoute: ParentMotDePasseOublieRoute,
-  ParentNouveauMotDePasseRoute: ParentNouveauMotDePasseRoute,
 }
 
 const ParentRouteWithChildren =

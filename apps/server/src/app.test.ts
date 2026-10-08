@@ -52,55 +52,33 @@ const post = (path: string, body: unknown, headers: Record<string, string> = {})
 const sessionCookie = (res: Response) => res.headers.getSetCookie().find((cookie) => cookie.startsWith('better-auth.session_token='));
 
 describe('auth', () => {
-  const account = { name: 'Victor', email: 'victor@example.com', password: 'un mot de passe solide' };
+  const email = 'victor@example.com';
+  let cookie = '';
 
-  it('signs up an invited address with a password, and sends it a link to confirm it', async () => {
-    await invite(db, account.email);
-    const res = await post('/api/auth/sign-up/email', account);
+  it('opens a session by the code the address received, its cookie for this host only', async () => {
+    await invite(db, email);
+    const received = mail.next(email);
+    expect((await post('/api/auth/email-otp/send-verification-otp', { email, type: 'sign-in' })).status).toBe(200);
+    const res = await post('/api/auth/sign-in/email-otp', { email, otp: mail.codeIn(await received) });
     expect(res.status).toBe(200);
-    expect(sessionCookie(res)).toBeUndefined();
-    expect(mail.linkTo(account.email, 'Confirmez')).toStartWith(`${ORIGIN}/api/auth/verify-email?token=`);
-  });
+    const set = sessionCookie(res);
+    expect(set).toContain('HttpOnly');
+    expect(set).toContain('SameSite=Lax');
+    expect(set).not.toContain('Domain=');
+    cookie = set?.split(';')[0] ?? '';
 
-  it('refuses to sign in before the address is confirmed', async () => {
-    const res = await post('/api/auth/sign-in/email', { email: account.email, password: account.password });
-    expect(res.status).toBe(403);
-  });
-
-  it('confirms the address by the link, which opens a session for this host only', async () => {
-    const res = await app.request(mail.linkTo(account.email, 'Confirmez'));
-    const cookie = sessionCookie(res);
-    expect(cookie).toBeDefined();
-    expect(cookie).toContain('HttpOnly');
-    expect(cookie).toContain('SameSite=Lax');
-    expect(cookie).not.toContain('Domain=');
-  });
-
-  it('signs in, and the cookie opens the session', async () => {
-    const res = await post('/api/auth/sign-in/email', { email: account.email, password: account.password });
-    expect(res.status).toBe(200);
-    const token = sessionCookie(res)?.split(';')[0] ?? '';
-
-    const session = await app.request(`${ORIGIN}/api/auth/get-session`, { headers: { Cookie: token } });
-    expect(((await session.json()) as { user: { email: string } }).user.email).toBe(account.email);
-  });
-
-  it('refuses a wrong password', async () => {
-    const res = await post('/api/auth/sign-in/email', { email: account.email, password: 'pas le bon' });
-    expect(res.status).toBe(401);
+    const session = await app.request(`${ORIGIN}/api/auth/get-session`, { headers: { Cookie: cookie } });
+    expect(((await session.json()) as { user: { email: string } }).user.email).toBe(email);
   });
 
   it('refuses a request from another origin', async () => {
-    const res = await post('/api/auth/sign-in/email', { email: account.email, password: account.password }, { Origin: 'https://evil.example' });
+    const res = await post('/api/auth/email-otp/send-verification-otp', { email, type: 'sign-in' }, { Origin: 'https://evil.example' });
     expect(res.status).toBe(403);
   });
 
   it('ends the session on sign-out', async () => {
-    const signIn = await post('/api/auth/sign-in/email', { email: account.email, password: account.password });
-    const token = sessionCookie(signIn)?.split(';')[0] ?? '';
-    await post('/api/auth/sign-out', {}, { Cookie: token });
-
-    const session = await app.request(`${ORIGIN}/api/auth/get-session`, { headers: { Cookie: token } });
+    await post('/api/auth/sign-out', {}, { Cookie: cookie });
+    const session = await app.request(`${ORIGIN}/api/auth/get-session`, { headers: { Cookie: cookie } });
     expect(await session.json()).toBeNull();
   });
 });

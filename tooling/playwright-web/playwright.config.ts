@@ -1,6 +1,7 @@
 import { resolve } from 'node:path';
 import { defineConfig, devices } from '@playwright/test';
 import { DATABASE_URL } from './database';
+import { SERVER_LOG } from './server-log';
 
 const PORT = 3012;
 const baseURL = `http://localhost:${String(PORT)}`;
@@ -21,7 +22,8 @@ export default defineConfig({
     { name: 'android', use: { ...devices['Pixel 7'] } },
   ],
   webServer: {
-    command: `bun ${resolve(import.meta.dirname, 'reset-database.ts')} ${DATABASE_URL} && bun --no-env-file dist/migrate.js && bun --no-env-file dist/main.js`,
+    // The server's log goes to a file, its emails with it: a test reads there the code an address was sent.
+    command: `bun ${resolve(import.meta.dirname, 'reset-database.ts')} ${DATABASE_URL} && bun --no-env-file dist/migrate.js && bun --no-env-file dist/main.js > ${SERVER_LOG}`,
     cwd: '../../apps/server',
     url: `${baseURL}/health/ready`,
     env: {
@@ -32,7 +34,7 @@ export default defineConfig({
       PORT: String(PORT),
       BETTER_AUTH_URL: baseURL,
       WEB_DIST_DIR: resolve(import.meta.dirname, '../../apps/web/dist'),
-      LOG_LEVEL: 'warn',
+      LOG_LEVEL: 'info',
       API_RATE_LIMIT: '10000',
     },
     reuseExistingServer: false,

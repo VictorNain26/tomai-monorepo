@@ -6,8 +6,8 @@ import { SignOut } from '../components/sign-out';
 import { meQuery } from '../lib/me';
 
 /**
- * The guardian's sign-in, sign-up and passwords. A device paired to a student takes none of them,
- * the server's guard refusing it: these screens say whose the device is instead.
+ * The guardian's way in. A device paired to a student cannot take it, the server's guard
+ * refusing it: the screen says whose the device is instead.
  */
 export const Route = createFileRoute('/_parent')({ component: ParentScreens });
 

@@ -6,27 +6,22 @@ import { SignOut } from '../components/sign-out';
 import { Notice } from '../components/notice';
 import { Page } from '../components/page';
 import { api, parseResponse } from '../lib/api';
-import { pairedDevicesQuery } from '../lib/auth';
 import { sessionsQuery } from '../lib/chat';
 import { deviceName, formatDay } from '../lib/device';
-import { meQuery } from '../lib/me';
+import { devicesQuery, meQuery } from '../lib/me';
 import { memoryQuery } from '../lib/memory';
-import { z } from '../lib/zod';
 
 /**
  * The home: the sign-in for a visitor, the household for a guardian, their space for a student:
- * their sessions with Tom, and every device paired to their account. A confirmation link that
- * failed lands here with its error (better-auth's `callbackURL`), shown on the error page.
+ * their sessions with Tom, and every device paired to their account.
  */
 export const Route = createFileRoute('/')({
-  validateSearch: z.object({ error: z.string().optional() }),
-  beforeLoad: async ({ context, search }) => {
-    if (search.error) throw redirect({ to: '/erreur-connexion', search: { error: search.error } });
+  beforeLoad: async ({ context }) => {
     const me = await context.queryClient.query(meQuery);
     if (!me) throw redirect({ to: '/connexion' });
     if (me.role === 'guardian') throw redirect({ to: '/foyer' });
   },
-  loader: ({ context }) => Promise.all([context.queryClient.query(sessionsQuery), context.queryClient.query(pairedDevicesQuery)]),
+  loader: ({ context }) => Promise.all([context.queryClient.query(sessionsQuery), context.queryClient.query(devicesQuery)]),
   component: StudentHome,
 });
 
@@ -90,7 +85,7 @@ function Sessions() {
 }
 
 function Devices() {
-  const { data: devices } = useSuspenseQuery(pairedDevicesQuery);
+  const { data: devices } = useSuspenseQuery(devicesQuery);
 
   return (
     <section aria-labelledby="devices" className="flex flex-col gap-3">
@@ -101,7 +96,7 @@ function Devices() {
         {devices.map((device) => (
           <li key={device.id} className="flex flex-col rounded-lg border border-border bg-card p-4 text-card-foreground">
             <span className="font-bold">{deviceName(device.userAgent)}</span>
-            <span className="text-sm text-muted-foreground">Relié le {formatDay(device.createdAt)}</span>
+            <span className="text-sm text-muted-foreground">Relié le {formatDay(device.pairedAt)}</span>
           </li>
         ))}
       </ul>

@@ -1,6 +1,7 @@
 /**
- * A guardian's account on a real database, through the HTTP API: the password reset, which ends
- * every session, and the deletion given the password, which takes a sole guardian's household and
+ * A guardian's account on a real database, through the HTTP API: in by a code sent to their
+ * address, the first one creating the account on an invitation; refused alike for any address; and
+ * the deletion, by a session opened minutes before, which takes a sole guardian's household and
  * students with it. A student's `.invalid` address is never sent to.
  */
 
@@ -12,7 +13,7 @@ import { createApp } from '../../app';
 import { accountDeletion } from '../../modules/household';
 import { household, householdMember } from '../../modules/household/schema';
 import { testDatabase } from '../../testing/database';
-import { ORIGIN } from '../../testing/http';
+import { httpClient, ORIGIN } from '../../testing/http';
 import { fakeMistral } from '../../testing/mistral';
 import { memoryMailer } from '../../testing/mailer';
 import { createLifecycle } from '../lifecycle/shutdown';
@@ -20,96 +21,129 @@ import { createAuth } from './auth';
 import { invitationIdentifier, invite } from './invitation';
 import { session, user, verification } from './schema';
 
-const PASSWORD = 'un mot de passe solide';
 const { db } = await testDatabase();
 const mistral = fakeMistral();
 const mail = memoryMailer();
+const tasks = createBackgroundTasks();
 const auth = createAuth(
   db,
   { publicUrl: ORIGIN, authSecret: 'x'.repeat(32) },
-  { mailer: mail.mailer, logger: pino({ level: 'silent' }), background: createBackgroundTasks().run, deleteUser: accountDeletion(db) },
+  { mailer: mail.mailer, logger: pino({ level: 'silent' }), background: tasks.run, deleteUser: accountDeletion(db) },
 );
-const app = createApp({
-  config: { production: false, webDistDir: undefined, apiRateLimit: 100 },
-  logger: pino({ level: 'silent' }),
+const api = httpClient(
+  createApp({
+    config: { production: false, webDistDir: undefined, apiRateLimit: 1000 },
+    logger: pino({ level: 'silent' }),
+    db,
+    ...mistral.deps(db, pino({ level: 'silent' })),
+    auth,
+    lifecycle: createLifecycle(),
+    background: createBackgroundTasks().run,
+  }),
+  mail,
   db,
-  ...mistral.deps(db, pino({ level: 'silent' })),
-  auth,
-  lifecycle: createLifecycle(),
-  background: createBackgroundTasks().run,
-});
+);
 
-const request = (method: string, path: string, { cookie, body }: { cookie?: string; body?: unknown } = {}) =>
-  app.request(path.startsWith('http') ? path : `${ORIGIN}${path}`, {
-    method,
-    headers: { 'Content-Type': 'application/json', Origin: ORIGIN, ...(cookie === undefined ? {} : { Cookie: cookie }) },
-    ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+const sendCode = (email: string) => api.request('POST', '/api/auth/email-otp/send-verification-otp', { body: { email, type: 'sign-in' } });
+const signIn = (email: string, otp: string) => api.request('POST', '/api/auth/sign-in/email-otp', { body: { email, otp } });
+/** The email the address receives once it asks for a code. */
+const asked = async (email: string) => {
+  const received = mail.next(email);
+  expect(await (await sendCode(email)).json()).toEqual({ success: true });
+  return received;
+};
+const accounts = (email: string) => db.select().from(user).where(eq(user.email, email));
+const invitations = (email: string) =>
+  db
+    .select()
+    .from(verification)
+    .where(eq(verification.identifier, invitationIdentifier(email)));
+const expire = (email: string) =>
+  db
+    .update(verification)
+    .set({ expiresAt: new Date(Date.now() - 1000) })
+    .where(eq(verification.identifier, invitationIdentifier(email)));
+
+describe('sign-in by code', () => {
+  it("creates an invited address's account at its first code, the address proven, the invitation spent", async () => {
+    await invite(db, ' Nouvelle@Example.com ');
+    const res = await signIn('nouvelle@example.com', mail.codeIn(await asked('nouvelle@example.com')));
+    expect(res.status).toBe(200);
+    expect((await accounts('nouvelle@example.com'))[0]?.emailVerified).toBe(true);
+    expect(await invitations('nouvelle@example.com')).toEqual([]);
   });
 
-const cookieOf = (res: Response) =>
-  res.headers
-    .getSetCookie()
-    .find((cookie) => cookie.startsWith('better-auth.session_token='))
-    ?.split(';')[0] ?? '';
+  it('lets a known address in by its code, with no invitation left', async () => {
+    await api.guardian('connu@example.com');
+    const cookie = await api.signIn('connu@example.com');
+    expect(await api.sessionUser(cookie)).toBeDefined();
+  });
 
-const signUp = async (email: string) => request('POST', '/api/auth/sign-up/email', { body: { name: 'Parent', email, password: PASSWORD } });
+  it('tells an address without account nor invitation of the closed beta, with no code, and creates nothing', async () => {
+    const email = await asked('inconnu@example.com');
+    expect(email.subject).toBe('Tom est en bêta fermée');
+    expect(email.subject + email.text).not.toMatch(/\b\d{6}\b/);
+    expect((await signIn('inconnu@example.com', '000000')).status).toBe(400);
+    expect(await accounts('inconnu@example.com')).toEqual([]);
+  });
 
-async function guardian(email: string) {
-  await invite(db, email);
-  await signUp(email);
-  return cookieOf(await app.request(mail.linkTo(email, 'Confirmez')));
-}
+  it('tells an expired invitation of the closed beta', async () => {
+    await invite(db, 'en-retard@example.com');
+    await expire('en-retard@example.com');
+    expect((await asked('en-retard@example.com')).subject).toBe('Tom est en bêta fermée');
+  });
 
-const signIn = async (email: string, password: string) => request('POST', '/api/auth/sign-in/email', { body: { email, password } });
-const sessionUser = async (cookie: string) =>
-  ((await (await request('GET', '/api/auth/get-session', { cookie })).json()) as { user: { id: string } } | null)?.user;
-
-describe('invitation', () => {
-  const invitations = (email: string) =>
-    db
-      .select()
-      .from(verification)
-      .where(eq(verification.identifier, invitationIdentifier(email)));
-  const refused = async (res: Response) => {
+  it('creates no account once the invitation has expired, even with a valid code', async () => {
+    await invite(db, 'trop-tard@example.com');
+    const email = await asked('trop-tard@example.com');
+    await expire('trop-tard@example.com');
+    const res = await signIn('trop-tard@example.com', mail.codeIn(email));
     expect(res.status).toBe(403);
     expect(((await res.json()) as { code: string }).code).toBe('INVITATION_REQUIRED');
-  };
+    expect(await accounts('trop-tard@example.com')).toEqual([]);
+  });
 
-  it('refuses an address without one, creating and sending nothing', async () => {
+  it("answers a student's address as any other, sending it nothing", async () => {
+    const parent = await api.guardian('parent-eleve@example.com');
+    const { id } = await api.student(parent);
+    const [student] = await db.select({ email: user.email }).from(user).where(eq(user.id, id));
     const sentBefore = mail.sent.length;
-    await refused(await signUp('pas-invite@example.com'));
-    expect(await db.select().from(user).where(eq(user.email, 'pas-invite@example.com'))).toEqual([]);
+    expect(await (await sendCode(student?.email ?? '')).json()).toEqual({ success: true });
+    await tasks.settled();
     expect(mail.sent.length).toBe(sentBefore);
   });
 
-  it('opens one sign-up, whatever the case of the address, and is spent by it', async () => {
-    await invite(db, ' Invitee@Example.com ');
-    expect((await signUp('invitee@example.com')).status).toBe(200);
-    expect(await invitations('invitee@example.com')).toEqual([]);
+  it('refuses the right code after three wrong ones', async () => {
+    await invite(db, 'maladroit@example.com');
+    const code = mail.codeIn(await asked('maladroit@example.com'));
+    const wrong = code === '111111' ? '222222' : '111111';
+    for (let attempt = 0; attempt < 3; attempt++) expect((await signIn('maladroit@example.com', wrong)).status).toBe(400);
+    expect((await signIn('maladroit@example.com', code)).status).toBe(403);
+    expect(await accounts('maladroit@example.com')).toEqual([]);
   });
 
-  it('is kept by a sign-up that fails', async () => {
-    await invite(db, 'trop-court@example.com');
-    const short = await request('POST', '/api/auth/sign-up/email', { body: { name: 'Parent', email: 'trop-court@example.com', password: 'court' } });
-    expect(short.status).toBe(400);
-    expect((await signUp('trop-court@example.com')).status).toBe(200);
+  it('stores the code hashed, never in clear', async () => {
+    await invite(db, 'secret@example.com');
+    const code = mail.codeIn(await asked('secret@example.com'));
+    const rows = await db
+      .select({ value: verification.value })
+      .from(verification)
+      .where(eq(verification.identifier, 'sign-in-otp-secret@example.com'));
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.value).not.toContain(code);
   });
 
-  it("refuses an account's address without one as any other: the answer tells no account", async () => {
-    await guardian('deja@example.com');
-    await refused(await signUp('deja@example.com'));
+  it('has no password: its routes are gone', async () => {
+    await invite(db, 'mot-de-passe@example.com');
+    const signUp = await api.request('POST', '/api/auth/sign-up/email', {
+      body: { name: 'Parent', email: 'mot-de-passe@example.com', password: 'un mot de passe solide' },
+    });
+    expect(signUp.status).toBeGreaterThanOrEqual(400);
+    expect((await api.request('POST', '/api/auth/email-otp/reset-password', { body: {} })).status).toBe(404);
+    expect(await accounts('mot-de-passe@example.com')).toEqual([]);
   });
 
-  it('refuses an expired one', async () => {
-    await invite(db, 'en-retard@example.com');
-    await db
-      .update(verification)
-      .set({ expiresAt: new Date(Date.now() - 1000) })
-      .where(eq(verification.identifier, invitationIdentifier('en-retard@example.com')));
-    await refused(await signUp('en-retard@example.com'));
-  });
-
-  it('is replaced when the address is invited again', async () => {
+  it('keeps one invitation per address, inviting again replacing it', async () => {
     await invite(db, 'deux-fois@example.com');
     const { expiresAt } = await invite(db, 'deux-fois@example.com');
     expect((await invitations('deux-fois@example.com')).map((row) => row.expiresAt)).toEqual([expiresAt]);
@@ -118,107 +152,54 @@ describe('invitation', () => {
 
 describe('the error page', () => {
   it("is the web's, not better-auth's own, whose inline style the CSP blocks", async () => {
-    const res = await request('GET', '/api/auth/error?error=boom');
+    const res = await api.request('GET', '/api/auth/error?error=boom');
     expect(res.status).toBe(302);
     expect(res.headers.get('location')).toBe(`${ORIGIN}/erreur-connexion?error=boom`);
   });
 });
 
-describe('password reset', () => {
-  it('sends a link; the new password works, the old one no longer does, and every session ends', async () => {
-    const email = 'oubli@example.com';
-    const before = await guardian(email);
-    expect(await sessionUser(before)).toBeDefined();
-
-    expect((await request('POST', '/api/auth/request-password-reset', { body: { email } })).status).toBe(200);
-    const token = new URL(mail.linkTo(email, 'Réinitialiser')).pathname.split('/').pop() ?? '';
-    const reset = await request('POST', '/api/auth/reset-password', { body: { token, newPassword: 'un tout nouveau mot de passe' } });
-    expect(reset.status).toBe(200);
-
-    expect(await sessionUser(before)).toBeUndefined();
-    expect((await signIn(email, PASSWORD)).status).toBe(401);
-    expect((await signIn(email, 'un tout nouveau mot de passe')).status).toBe(200);
-
-    const again = await request('POST', '/api/auth/reset-password', { body: { token, newPassword: 'encore un autre mot de passe' } });
-    expect(again.status).toBe(400);
-  });
-
-  it("answers an unknown address and a student's address alike, sending nothing", async () => {
-    const parent = await guardian('parent-eleve@example.com');
-    const created = await request('POST', '/api/household/students', {
-      cookie: parent,
-      body: { name: 'Léa', level: 'cinquieme', birthMonth: '2014-03' },
-    });
-    const { id } = (await created.json()) as { id: string };
-    const [student] = await db.select({ email: user.email }).from(user).where(eq(user.id, id));
-    const sentBefore = mail.sent.length;
-
-    for (const email of ['inconnu@example.com', student?.email ?? '']) {
-      expect((await request('POST', '/api/auth/request-password-reset', { body: { email } })).status).toBe(200);
-    }
-    expect(mail.sent.length).toBe(sentBefore);
-  });
-});
-
-describe('email verification', () => {
-  it('sends the link again when the guardian tries to sign in before confirming', async () => {
-    const email = 'distrait@example.com';
-    await invite(db, email);
-    await signUp(email);
-    const links = () => mail.sent.filter((each) => each.to === email && each.subject.includes('Confirmez')).length;
-    expect(links()).toBe(1);
-
-    expect((await signIn(email, PASSWORD)).status).toBe(403);
-    expect(links()).toBe(2);
-    expect((await app.request(mail.linkTo(email, 'Confirmez'))).status).toBeLessThan(400);
-    expect((await signIn(email, PASSWORD)).status).toBe(200);
-  });
-});
-
 describe('account deletion', () => {
-  it("takes a sole guardian's household, students and their devices with it, given the password", async () => {
+  it("takes a sole guardian's household, students and their devices with it, from a session just opened", async () => {
     const email = 'depart@example.com';
-    const parent = await guardian(email);
-    const created = await request('POST', '/api/household/students', {
-      cookie: parent,
-      body: { name: 'Léo', level: 'sixieme', birthMonth: '2015-09' },
-    });
-    const { id: studentId } = (await created.json()) as { id: string };
-    const pairing = await request('POST', `/api/household/students/${studentId}/pairing-code`, { cookie: parent });
-    const { code } = (await pairing.json()) as { code: string };
-    const device = cookieOf(await request('POST', '/api/auth/device-pairing/redeem', { body: { code } }));
-    const parentId = (await sessionUser(parent))?.id ?? '';
+    const parent = await api.guardian(email);
+    const student = await api.student(parent);
+    const device = await api.pair(parent, student.id);
+    const parentId = (await api.sessionUser(parent))?.id ?? '';
     const [member] = await db.select({ householdId: householdMember.householdId }).from(householdMember).where(eq(householdMember.userId, parentId));
 
-    expect((await request('POST', '/api/auth/delete-user', { cookie: parent, body: { password: PASSWORD } })).status).toBe(200);
-    expect(await db.select().from(user).where(eq(user.id, parentId))).toEqual([]);
-    expect(await db.select().from(user).where(eq(user.id, studentId))).toEqual([]);
-    expect(await db.select().from(session).where(eq(session.userId, studentId))).toEqual([]);
+    const notice = mail.next(email);
+    expect((await api.request('POST', '/api/auth/delete-user', { cookie: parent, body: {} })).status).toBe(200);
+    expect(await accounts(email)).toEqual([]);
+    expect(await db.select().from(user).where(eq(user.id, student.id))).toEqual([]);
+    expect(await db.select().from(session).where(eq(session.userId, student.id))).toEqual([]);
     expect(
       await db
         .select()
         .from(household)
         .where(eq(household.id, member?.householdId ?? '')),
     ).toEqual([]);
-    expect(await sessionUser(device)).toBeUndefined();
-    expect(await sessionUser(parent)).toBeUndefined();
-    expect((await signIn(email, PASSWORD)).status).toBe(401);
-    expect(mail.sent.some((each) => each.to === email && each.subject.includes('supprimé'))).toBe(true);
+    expect(await api.sessionUser(device)).toBeUndefined();
+    expect(await api.sessionUser(parent)).toBeUndefined();
+    expect((await notice).subject).toContain('supprimé');
   });
 
-  it('refuses a deletion without the password, or with a wrong one, and keeps the account', async () => {
+  it('refuses a session opened more than ten minutes ago, and keeps the account', async () => {
     const email = 'prudent@example.com';
-    const parent = await guardian(email);
-    expect((await request('POST', '/api/auth/delete-user', { cookie: parent, body: {} })).status).toBe(400);
-    expect((await request('POST', '/api/auth/delete-user', { cookie: parent, body: { password: 'pas le bon' } })).status).toBe(400);
-    expect(await db.select({ id: user.id }).from(user).where(eq(user.email, email))).toHaveLength(1);
-    expect(await sessionUser(parent)).toBeDefined();
+    const parent = await api.guardian(email);
+    const parentId = (await api.sessionUser(parent))?.id ?? '';
+    await db
+      .update(session)
+      .set({ createdAt: new Date(Date.now() - 11 * 60_000) })
+      .where(eq(session.userId, parentId));
+    expect((await api.request('POST', '/api/auth/delete-user', { cookie: parent, body: {} })).status).toBe(400);
+    expect(await accounts(email)).toHaveLength(1);
+    expect(await api.sessionUser(parent)).toBeDefined();
   });
 
   it('deletes a guardian who never created a student', async () => {
     const email = 'seul@example.com';
-    const parent = await guardian(email);
-    expect((await request('POST', '/api/auth/delete-user', { cookie: parent, body: { password: PASSWORD } })).status).toBe(200);
-    expect(await db.select().from(user).where(eq(user.email, email))).toEqual([]);
+    const parent = await api.guardian(email);
+    expect((await api.request('POST', '/api/auth/delete-user', { cookie: parent, body: {} })).status).toBe(200);
+    expect(await accounts(email)).toEqual([]);
   });
 });

@@ -1,4 +1,4 @@
-/** Who is signed in, as `/api/me` tells it; null for a visitor without a session. */
+/** Who is signed in, as `/api/me` tells it; null for a visitor without a session. And their devices. */
 
 import { queryOptions } from '@tanstack/react-query';
 import { api, isProblem, parseResponse } from './api';
@@ -13,4 +13,10 @@ export const meQuery = queryOptions({
       throw error;
     }
   },
+});
+
+/** The devices paired to the signed-in account, the newest first. */
+export const devicesQuery = queryOptions({
+  queryKey: ['me', 'devices'],
+  queryFn: () => parseResponse(api.me.devices.$get()),
 });

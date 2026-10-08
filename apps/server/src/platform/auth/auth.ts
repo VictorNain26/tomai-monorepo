@@ -1,15 +1,17 @@
 /**
  * better-auth, on the one public origin of the API and the web: the session cookie stays on that
- * host. No cookieCache: a cached session would outlive a deleted account, or a password the
- * guardian revoked, for its whole maxAge. A student has no credential: their device is paired by
- * a guardian's code (./pairing.ts). A guardian signs up on an invitation (./invitation.ts), proves
- * their email before signing in, can reset their password, which ends every session, and delete
- * their account by giving their password.
+ * host. No cookieCache: a cached session would outlive a deleted account for its whole maxAge. A
+ * student has no credential: their device is paired by a guardian's code (./pairing.ts). A
+ * guardian has no password either: a code sent to their address lets them in, and the first one
+ * creates their account, on an invitation (./invitation.ts). Deleting the account asks for a
+ * session opened by a code a few minutes before.
  */
 
+import type { GenericEndpointContext } from '@better-auth/core';
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
-import { APIError, createAuthMiddleware } from 'better-auth/api';
+import { APIError } from 'better-auth/api';
+import { emailOTP } from 'better-auth/plugins';
 import type { Logger } from 'pino';
 import type { Config } from '../../config';
 import type { Db } from '../db/client';
@@ -38,6 +40,12 @@ export function createAuth(db: Db, config: Pick<Config, 'publicUrl' | 'authSecre
     await mailer(email);
   };
 
+  // Closed beta: an address without an account needs a live invitation, whatever creates the user.
+  const invited = async ({ context }: GenericEndpointContext, email: string) => {
+    const invitation = await context.internalAdapter.findVerificationValue(invitationIdentifier(email));
+    return invitation !== null && invitation.expiresAt > new Date();
+  };
+
   return betterAuth({
     baseURL: config.publicUrl,
     secret: config.authSecret,
@@ -48,31 +56,6 @@ export function createAuth(db: Db, config: Pick<Config, 'publicUrl' | 'authSecre
     logger: {
       log: (level, message, ...args) => {
         logger[level]({ err: args.find((arg) => arg instanceof Error) }, message);
-      },
-    },
-    emailAndPassword: {
-      enabled: true,
-      requireEmailVerification: true,
-      revokeSessionsOnPasswordReset: true,
-      sendResetPassword: async ({ user: { email }, url }) => {
-        await send({
-          to: email,
-          subject: 'Réinitialiser votre mot de passe Tom',
-          text: `Bonjour,\n\nPour choisir un nouveau mot de passe, ouvrez ce lien, valable une heure :\n${url}\n\nToutes vos connexions seront fermées. Si vous n'avez rien demandé, ignorez ce message.`,
-        });
-      },
-    },
-    emailVerification: {
-      sendOnSignUp: true,
-      // A link that expired is sent again at the next sign-in attempt.
-      sendOnSignIn: true,
-      autoSignInAfterVerification: true,
-      sendVerificationEmail: async ({ user: { email }, url }) => {
-        await send({
-          to: email,
-          subject: 'Confirmez votre adresse e-mail',
-          text: `Bonjour,\n\nPour activer votre compte Tom, confirmez votre adresse en ouvrant ce lien :\n${url}\n\nSi vous n'avez pas créé de compte, ignorez ce message.`,
-        });
       },
     },
     user: {
@@ -96,32 +79,18 @@ export function createAuth(db: Db, config: Pick<Config, 'publicUrl' | 'authSecre
         },
       },
     },
-    hooks: {
-      before: createAuthMiddleware(async (ctx) => {
-        const body: unknown = ctx.body;
-        const field = (name: string): unknown => (typeof body === 'object' && body !== null && name in body ? Reflect.get(body, name) : undefined);
-        // Deleting an account asks for its password, whatever the session's age: a re-authentication
-        // that works from any device, where an emailed link needs the browser that holds the session.
-        const password = field('password');
-        if (ctx.path === '/delete-user' && (typeof password !== 'string' || password === '')) {
-          throw new APIError('BAD_REQUEST', { message: 'Password required' });
-        }
-        // Closed beta (./invitation.ts), checked before better-auth looks the address up: an address
-        // without an invitation is refused alike, whether it has an account or not. Spent once the
-        // account exists (databaseHooks): a sign-up that fails keeps it.
-        if (ctx.path === '/sign-up/email') {
-          const email = field('email');
-          const invitation = typeof email === 'string' ? await ctx.context.internalAdapter.findVerificationValue(invitationIdentifier(email)) : null;
-          if (!invitation || invitation.expiresAt <= new Date()) {
-            throw APIError.from('FORBIDDEN', { code: 'INVITATION_REQUIRED', message: 'Sign-up is by invitation only' });
-          }
-        }
-      }),
-    },
+    // Deleting the account needs a session at most this old: a code asked for just before.
+    session: { freshAge: 10 * 60 },
     databaseHooks: {
-      // After the sign-up's transaction commits (better-auth's db/with-hooks.mjs).
       user: {
         create: {
+          // Every path that creates a guardian; a student is inserted by the household module.
+          before: async ({ email }, ctx) => {
+            if (!ctx || !(await invited(ctx, email))) {
+              throw APIError.from('FORBIDDEN', { code: 'INVITATION_REQUIRED', message: 'Sign-up is by invitation only' });
+            }
+          },
+          // Spent once the account exists, after the transaction commits (better-auth's db/with-hooks.mjs).
           after: async ({ email }, ctx) => {
             await ctx?.context.internalAdapter.deleteVerificationByIdentifier(invitationIdentifier(email));
           },
@@ -135,7 +104,42 @@ export function createAuth(db: Db, config: Pick<Config, 'publicUrl' | 'authSecre
     advanced: { disableOriginCheck: false, backgroundTasks: { handler: background } },
     // A pairing code is a credential: stored hashed, like a password, never in clear.
     verification: { storeIdentifier: { default: 'plain', overrides: { [PAIRING_PREFIX]: 'hashed' } } },
-    plugins: [devicePairing()],
+    // The code's own routes for what Tom does not use: no password to reset, no other check.
+    disabledPaths: [
+      '/email-otp/check-verification-otp',
+      '/email-otp/verify-email',
+      '/email-otp/request-password-reset',
+      '/forget-password/email-otp',
+      '/email-otp/reset-password',
+    ],
+    plugins: [
+      devicePairing(),
+      emailOTP({
+        otpLength: 6,
+        expiresIn: 5 * 60,
+        allowedAttempts: 3,
+        storeOTP: 'hashed',
+        // In the background (advanced.backgroundTasks): the answer is the same, and as fast, for any
+        // address. One without an account or a live invitation is told of the closed beta instead.
+        sendVerificationOTP: async ({ email, otp, type }, ctx) => {
+          if (type !== 'sign-in' || !ctx) return;
+          const known = (await ctx.context.internalAdapter.findUserByEmail(email)) !== null;
+          if (known || (await invited(ctx, email))) {
+            await send({
+              to: email,
+              subject: `Votre code Tom : ${otp}`,
+              text: `Bonjour,\n\nVotre code pour entrer dans Tom : ${otp}\n\nIl est valable 5 minutes. Si vous n'avez rien demandé, ignorez ce message : personne n'entre sans ce code.`,
+            });
+            return;
+          }
+          await send({
+            to: email,
+            subject: 'Tom est en bêta fermée',
+            text: `Bonjour,\n\nQuelqu'un, sans doute vous, a demandé à entrer dans Tom avec cette adresse. Tom est en bêta fermée : un compte ne se crée que sur invitation, et cette adresse n'en a pas, ou elle a expiré.\n\nSi vous attendiez une invitation, demandez-la à la personne qui vous a parlé de Tom. Sinon, ignorez ce message.`,
+          });
+        },
+      }),
+    ],
   });
 }
 
