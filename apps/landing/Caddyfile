@@ -21,6 +21,10 @@
 	encode zstd gzip
 	import security_headers
 
+	# One address for the site: www's visitors and links go to the bare domain (astro.config.mjs, `site`).
+	@www host www.tomia.fr
+	redir @www https://tomia.fr{uri} 308
+
 	# Clever Cloud's load balancer ends TLS and says which scheme the visitor used.
 	# https://www.clever.cloud/developers/doc/find-help/faq/
 	@plainHttp header X-Forwarded-Proto http
