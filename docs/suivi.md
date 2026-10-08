@@ -62,7 +62,7 @@ bloquant levé). L'historique vit dans git et les PR.
   supprimés ; Astro 7 statique sans framework client (éléments natifs et personnalisés, API vanilla de
   Motion), CSP à empreintes, servie par Caddy (`apps/landing/Caddyfile`),
   contre lequel tourne la suite e2e ; pages légales alignées sur Clever Cloud. Déployée le 2026-10-08
-  dans l'application statique `tomai-landing` (pico, Paris), par la CI à chaque merge qui la touche ;
+  dans l'application statique `tomai-landing` (pico, Paris), par la CI à chaque merge ;
   `tomia.fr` pointe encore sur la version Next de Vercel jusqu'à la bascule du DNS.
 - **Staging et bêta fermée** (Victor, 2026-10-07) : la préproduction de l'étape 7 devient le staging,
   avec ses propres clés et la plus petite taille qui suffit (Docker nano, 582 Mo, pour un serveur

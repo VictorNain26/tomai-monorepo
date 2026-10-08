@@ -317,9 +317,10 @@ jobs:
           npx --yes clever-tools@5.1.0 link "$APP_ID"
           npx --yes clever-tools@5.1.0 deploy --force
 
-  # The landing is production straight away (Victor, 2026-10-08): each merge on main that changes it,
-  # once everything passed. Clever Cloud's static runtime serves what the CI built, its Caddyfile and
-  # dist/, with Caddy, and builds nothing (https://www.clever.cloud/developers/doc/deploy/applications/static/).
+  # The landing is production straight away (Victor, 2026-10-08): every merge on main, once everything
+  # passed, as for the staging. Deploying only when a merge changes it would lose a change whose run is
+  # overtaken by the next merge's. Clever Cloud's static runtime serves what the CI built, its Caddyfile
+  # and dist/, with Caddy, and builds nothing (https://www.clever.cloud/developers/doc/deploy/applications/static/).
   deploy-landing:
     name: Deploy landing
     needs: [ci-ok]
@@ -338,20 +339,9 @@ jobs:
       APP_ID: app_abb69675-6703-41a7-a092-c847e01a57eb
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 2
       - uses: ./.github/actions/setup-monorepo
-      - name: Does this merge change the landing
-        id: changed
-        env:
-          TURBO_SCM_BASE: HEAD^1
-        run: |
-          TASKS=$(bunx --no-install turbo run build --filter=landing --affected --dry=json | jq '[.tasks[] | select(.command != "<NONEXISTENT>")] | length')
-          echo "deploy=$([ "$TASKS" -gt 0 ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
-      - if: steps.changed.outputs.deploy == 'true'
-        run: bunx --no-install turbo run build --filter=landing
+      - run: bunx --no-install turbo run build --filter=landing
       - name: Deploy the build
-        if: steps.changed.outputs.deploy == 'true'
         run: |
           # As for the staging: only main's head deploys, so that an older build never replaces a newer one.
           head="$(git ls-remote "https://github.com/$GITHUB_REPOSITORY" refs/heads/main | cut -f1)"
