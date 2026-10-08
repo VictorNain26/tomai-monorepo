@@ -1,0 +1,26 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema-jsonc.json",
+  "workspaces": {
+    ".": {
+      "entry": ["scripts/*.mjs"],
+      "project": ["scripts/**/*.mjs"],
+    },
+    "apps/server": {
+      "entry": ["src/main.ts", "src/contract.ts", "src/**/*.test.ts"],
+      "project": ["src/**/*.ts"],
+      // Only the declarations `build:types` emits name its types, through better-auth's passkey
+      // plugin (TS2883): no source imports it, and a run without that build would call it unused.
+      "ignoreDependencies": ["@simplewebauthn/server"],
+    },
+    "packages/ui": {
+      "project": ["src/**/*.{ts,tsx}"],
+    },
+    "packages/tokens": {
+      "entry": ["*.test.mjs"],
+    },
+    "tooling/playwright-web": {
+      "entry": ["reset-database.ts"],
+      "ignoreDependencies": ["tomai-server", "web"],
+    },
+  },
+}
