@@ -42,9 +42,10 @@ En place (`apps/server/src`) :
   ni mot de passe, ni nom de famille), ses appareils ; l'accès du gardien à l'élève comme clause
   de la requête SQL, une matrice de tests d'accès croisés.
 - `platform/email` : l'envoi d'un e-mail, Scaleway TEM par son SDK en production, le journal en
-  développement ; le gardien vérifie son adresse, réinitialise son mot de passe (toutes ses
-  sessions fermées) et supprime son compte avec son mot de passe, ce qui emporte son foyer s'il en
-  est le seul gardien. Les envois partent après la réponse (`platform/lifecycle/background.ts`),
+  développement. Le gardien n'a pas de mot de passe : il entre par un code à 6 chiffres envoyé à son
+  adresse (plugin `email-otp`), le premier créant son compte sur invitation, et supprime son compte
+  depuis une session ouverte il y a moins de 10 minutes, ce qui emporte son foyer s'il en est le
+  seul gardien. Les envois partent après la réponse (`platform/lifecycle/background.ts`),
   que l'arrêt attend.
 - `modules/tutor` : les séances, le tour (`POST /api/sessions/:id/messages`), qui échoue fermé, le
   quota par élève, le résumé et le titre en tâche de fond, la mémoire d'apprentissage

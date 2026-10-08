@@ -35,8 +35,8 @@ bloquant levé). L'historique vit dans git et les PR.
   parent.
 - **Étape 4** : le foyer, l'élève en mode guidé, son jumelage d'appareil et la matrice d'accès
   (#425) ; l'e-mail des gardiens chez Scaleway TEM (`etudes/2026-10-07/email-transactionnel.md`) :
-  adresse vérifiée avant toute connexion, réinitialisation qui ferme toutes les sessions,
-  suppression confirmée par le mot de passe qui emporte le foyer d'un gardien seul.
+  suppression qui emporte le foyer d'un gardien seul. Depuis le 2026-10-08, plus de mot de passe :
+  un code envoyé à l'adresse (« Entrée sans mot de passe » ci-dessous).
 - **Étape 5 faite**, le tuteur porté : la plateforme IA et le faux Mistral (#430), les contrôles
   purs (#431), les étapes du tour, qui échouent fermées (#432), les séances (#434), le tour et son
   enregistrement (#435), le quota par élève (#436, 2 c par jour pour tous tant que le paiement
@@ -72,15 +72,17 @@ bloquant levé). L'historique vit dans git et les PR.
   seule, chaque merge déployé en staging ; la production, avec la première vraie famille, reçoit la
   même image sur l'approbation de Victor. Clever Cloud jugé fiable pour cet usage : pannes publiées
   et suivies d'un compte rendu, la dernière à Paris le 2026-09-30 (57 min) ; Scalingo reste le plan B.
-- **Staging, créé le 2026-10-08** : chez Clever Cloud, région Paris, l'application `tomai-staging`
-  (Docker nano) et sa base `tomai-staging-db` (PostgreSQL 18, `XXS_TNY`, disque chiffré) ; le domaine
-  `staging.tomia.fr` (CNAME chez OVH) ; chez Scaleway, le projet « TomIA », l'e-mail en offre
-  Essential et le domaine d'envoi `mail.tomia.fr`, dont SPF, DKIM, DMARC et MX sont publiés chez OVH.
-  Les entrées DNS mortes de Koyeb (`api`, `api-staging`) sont supprimées. Le déploiement par la CI
-  et le certificat épinglé du Postgres : `ci/deploy-staging`.
-- **Prochaine action** : le premier déploiement du staging, une fois ses secrets posés (étapes
-  manuelles ci-dessous), puis sa vérification de bout en bout dans Chrome ; la landing de
-  production ensuite.
+- **Staging en ligne le 2026-10-08** : https://staging.tomia.fr, chez Clever Cloud, région Paris,
+  l'application `tomai-staging` (Docker nano) et sa base `tomai-staging-db` (PostgreSQL 18,
+  `XXS_TNY`, disque chiffré, certificat épinglé par `DATABASE_CA`) ; déployé par la CI après chaque
+  merge (#451). L'e-mail part de `mail.tomia.fr` chez Scaleway (domaine vérifié, clé IAM limitée à
+  l'envoi, `tomai-staging-mail`). Les entrées DNS mortes de Koyeb sont supprimées.
+- **Entrée sans mot de passe** (Victor, 2026-10-08) : pas de connexion Google, qui ferait savoir à
+  une société américaine qui utilise Tom ; le parent entre par un code à 6 chiffres envoyé à son
+  adresse, le premier créant son compte sur invitation, puis donne son prénom. Les passkeys suivront,
+  une fois `@better-auth/passkey` vérifié.
+- **Prochaine action** : le test d'inscription de Victor sur le staging, puis les passkeys ; la
+  landing de production chez Clever Cloud ensuite.
 - **Rentabilité et quotas** (`etudes/2026-10-07/rentabilite.md`) : le gratuit décide de la
   rentabilité, la distribution est le vrai risque ; quotas proposés de 2 c (Gratuit) et 10 c
   (Complet) par élève et par jour, voix comprise, remis à zéro à 4 h, et l'année scolaire à 69 €
@@ -104,7 +106,7 @@ supprime ou que l'étude couvre n'y figure plus.
 - **Cookies de session** : le préfixe `__Host-` pour ceux de better-auth, l'app et la landing étant du même site (à vérifier dans la config de better-auth).
 - **Base du staging joignable depuis internet**, protégée par identifiant, mot de passe et TLS : la placer avec l'application dans un réseau privé Clever Cloud (Network Groups, [changelog](https://www.clever.cloud/developers/changelog/2026/05-12-network-groups-console)) avant la production.
 - **Landing** : son application statique Clever Cloud (`Caddyfile` à la racine de l'application ; le build du monorepo par `CC_BUILD_COMMAND`, Bun y compris, reste à vérifier), une application de preview par PR (`etudes/2026-10-07/hebergement.md`), puis la bascule du DNS (étape manuelle).
-- **Hébergement** : délai de grâce SIGTERM d'au moins un tour de chat, et `DRAIN_MS` (`src/main.ts`, 5 s) recalé sur l'intervalle de la sonde de l'hébergeur ; stockage partagé du rate limit s'il y a plusieurs instances ; derrière le proxy de l'hébergeur, ses sauts de confiance pour la clé du rate limit, y compris celle de better-auth sur l'échange d'un code de jumelage (`advanced.ipAddress`, `platform/auth/pairing.ts`), sans quoi tous les clients partagent un même compteur (`platform/http/rate-limit.ts`, aujourd'hui l'adresse de la connexion) et pour `trustedProxies` de better-auth ; compression des fichiers du web par le build ou par le proxy, selon l'hébergeur.
+- **Hébergement** : délai de grâce SIGTERM d'au moins un tour de chat, et `DRAIN_MS` (`src/main.ts`, 5 s) recalé sur l'intervalle de la sonde de l'hébergeur ; stockage partagé du rate limit s'il y a plusieurs instances ; derrière le proxy de l'hébergeur, ses sauts de confiance pour la clé du rate limit, y compris celle de better-auth sur l'échange d'un code de jumelage (`advanced.ipAddress`, `platform/auth/pairing.ts`) et sur l'envoi du code de connexion (3 par minute), sans quoi tous les clients partagent un même compteur (`platform/http/rate-limit.ts`, aujourd'hui l'adresse de la connexion) et pour `trustedProxies` de better-auth ; compression des fichiers du web par le build ou par le proxy, selon l'hébergeur.
 - **Appareils de l'élève** : l'élève voit ses appareils reliés sur son accueil ; reste à le prévenir sur ses appareils déjà reliés quand un nouvel appareil l'est (date, type d'appareil) ; décider, en concevant l'historique, si un appareil nouvellement relié ne montre que les séances commencées après son jumelage (revue de #425, `etudes/2026-10-07/foyer-eleve-age.md`, § 7).
 - **Client web** : mesures sur un vrai iPhone et un Android (`etudes/2026-10-06/client-web.md`).
 - **Clever Cloud** (`etudes/2026-10-07/hebergement.md`), à tester sur la préproduction : un tour SSE
