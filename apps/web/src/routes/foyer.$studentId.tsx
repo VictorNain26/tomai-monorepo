@@ -9,6 +9,7 @@ import { Field, SelectField } from '../components/field';
 import { Notice } from '../components/notice';
 import { Page } from '../components/page';
 import { api, isProblem, parseResponse } from '../lib/api';
+import { authClient, authMessage } from '../lib/auth';
 import { deviceName, formatDay, formatHour } from '../lib/device';
 import { formatCode } from '../lib/pairing';
 import { LEVEL_LABELS, devicesQuery, householdMessage, memoryStatus, studentSchema, studentsQuery, type Student } from '../lib/household';
@@ -36,11 +37,48 @@ function StudentPage() {
       <Link to="/foyer" className="min-h-11 py-3 text-sm text-primary underline">
         Retour au foyer
       </Link>
+      <OpenHere child={child} />
       <Devices child={child} />
       <Memory child={child} />
       <EditStudent child={child} />
       <DeleteStudent child={child} />
     </Page>
+  );
+}
+
+/**
+ * The family's phone, handed to the child: their session if the device holds it, otherwise one
+ * paired here by the app, no code to copy. The server then closes the guardian's session on it
+ * (platform/auth/pairing.ts): coming back takes the guardian's passkey or a code.
+ */
+function OpenHere({ child }: { child: Student }) {
+  const navigate = useNavigate();
+  const open = useMutation({
+    mutationFn: async () => {
+      const { data: held } = await authClient.multiSession.listDeviceSessions();
+      const own = held?.find(({ user }) => user.id === child.id);
+      const { error } = own
+        ? await authClient.multiSession.setActive({ sessionToken: own.session.token })
+        : await authClient.devicePairing.redeem({ code: (await parseResponse(student['pairing-code'].$post({ param: { id: child.id } }))).code });
+      if (error) throw new Error(authMessage(error));
+      // Loaded afresh: nothing of the guardian's stays in memory.
+      await navigate({ to: '/', reloadDocument: true });
+    },
+  });
+
+  return (
+    <section className="flex flex-col gap-3">
+      <Button
+        disabled={open.isPending}
+        onClick={() => {
+          open.mutate();
+        }}
+      >
+        Ouvrir l’espace de {child.name} sur cet appareil
+      </Button>
+      <p className="text-sm text-muted-foreground">Pour revenir au vôtre, il vous faudra votre clé d’accès ou un code.</p>
+      {open.error && <Notice tone="error">{open.error.message}</Notice>}
+    </section>
   );
 }
 

@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@repo/ui';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useCallback, useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -15,9 +15,10 @@ import { meQuery } from '../lib/me';
 /**
  * The guardian's way in, without a password: a passkey, which the browser offers in the address
  * field, or their address, then the code it receives. The first code creates the account, on an
- * invitation (closed beta); /bienvenue then asks its name.
+ * invitation (closed beta); /bienvenue then asks its name. On a device paired to a child, the
+ * child's session stays on it while the guardian enters.
  */
-export const Route = createFileRoute('/_parent/connexion')({ component: SignIn });
+export const Route = createFileRoute('/connexion')({ component: SignIn });
 
 const emailSchema = z.object({ email: z.email('Une adresse e-mail valide.') });
 
@@ -47,6 +48,8 @@ function SignIn() {
 
 function EmailStep({ onSent, onEntered }: { onSent: (email: string) => void; onEntered: () => Promise<void> }) {
   const queryClient = useQueryClient();
+  // Not awaited: when /api/me fails, the form still shows.
+  const { data: me } = useQuery(meQuery);
   const [failure, setFailure] = useState<string | null>(null);
   const form = useForm({ resolver: zodResolver(emailSchema), defaultValues: { email: '' } });
 
@@ -80,6 +83,17 @@ function EmailStep({ onSent, onEntered }: { onSent: (email: string) => void; onE
 
   return (
     <Page title="Entrer dans Tom">
+      {me?.role === 'student' && (
+        <>
+          <Notice tone="info">
+            Cet appareil est relié au compte de {me.name}. Entrez en parent avec votre clé d’accès ou un code : l’espace de {me.name} reste sur
+            l’appareil.
+          </Notice>
+          <Link to="/" className="min-h-11 py-3 text-sm text-primary underline">
+            Revenir à l’espace de {me.name}
+          </Link>
+        </>
+      )}
       <Notice tone="info">Tom est en bêta fermée : un compte se crée avec l’adresse e-mail qui a reçu une invitation.</Notice>
       <form noValidate onSubmit={(event) => void submit(event)} className="flex flex-col gap-4">
         <Field

@@ -15,7 +15,7 @@ import { meQuery } from '../lib/me';
  * A new guardian's first name: their account was created by their first code, nameless. A screen
  * of its own, which the household sends them to until they give it, whatever they reloaded.
  */
-export const Route = createFileRoute('/_parent/bienvenue')({
+export const Route = createFileRoute('/bienvenue')({
   beforeLoad: async ({ context }) => {
     const me = await context.queryClient.query(meQuery);
     if (!me) throw redirect({ to: '/connexion' });

@@ -92,6 +92,36 @@ export function httpClient(app: App, mail: ReturnType<typeof memoryMailer>, db: 
     async devices(cookie: string, studentId: string) {
       return (await (await request('GET', `/api/household/students/${studentId}/devices`, { cookie })).json()) as Device[];
     },
+    /**
+     * One device's browser: every cookie its responses set, kept for its next requests, and dropped
+     * once expired, as the multi-session plugin keeps one per account the device holds.
+     */
+    device() {
+      const jar = new Map<string, string>();
+      const cookie = () => [...jar].map(([name, value]) => `${name}=${value}`).join('; ');
+      const send = async (method: string, path: string, body?: unknown) => {
+        const res = await request(method, path, { cookie: cookie(), body });
+        for (const line of res.headers.getSetCookie()) {
+          const [pair = '', ...attributes] = line.split(';');
+          const name = pair.slice(0, pair.indexOf('='));
+          const value = pair.slice(pair.indexOf('=') + 1);
+          if (value === '' || attributes.some((attribute) => /^\s*max-age=0\s*$/i.test(attribute))) jar.delete(name);
+          else jar.set(name, value);
+        }
+        return res;
+      };
+      return {
+        cookie,
+        send,
+        /** The guardian in by the code their address received, on this device. */
+        async signIn(email: string) {
+          const received = mail.next(email);
+          expect((await send('POST', '/api/auth/email-otp/send-verification-otp', { email, type: 'sign-in' })).status).toBe(200);
+          return send('POST', '/api/auth/sign-in/email-otp', { email, otp: mail.codeIn(await received) });
+        },
+        redeem: (code: string) => send('POST', '/api/auth/device-pairing/redeem', { code }),
+      };
+    },
   };
   return api;
 }

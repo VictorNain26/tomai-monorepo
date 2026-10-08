@@ -19,7 +19,17 @@ import type { HouseholdService } from './service';
 // From the CP to the terminale and beyond for a student who repeated: five to twenty years old.
 const MIN_AGE_YEARS = 5;
 const MAX_AGE_YEARS = 20;
-const STUDENT_AUTH_PATHS = new Set(['/api/auth/device-pairing/redeem', '/api/auth/get-session', '/api/auth/sign-out']);
+// A student's own routes, and the guardian's ways in: a guardian enters on their child's device,
+// which keeps the child's session (multi-session).
+const STUDENT_AUTH_PATHS = new Set([
+  '/api/auth/device-pairing/redeem',
+  '/api/auth/get-session',
+  '/api/auth/sign-out',
+  '/api/auth/email-otp/send-verification-otp',
+  '/api/auth/sign-in/email-otp',
+  '/api/auth/passkey/generate-authenticate-options',
+  '/api/auth/passkey/verify-authentication',
+]);
 
 const name = z.string().trim().min(1).max(50);
 

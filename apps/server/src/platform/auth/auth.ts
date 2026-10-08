@@ -12,13 +12,13 @@ import { passkey } from '@better-auth/passkey';
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { APIError } from 'better-auth/api';
-import { emailOTP } from 'better-auth/plugins';
+import { emailOTP, multiSession } from 'better-auth/plugins';
 import type { Logger } from 'pino';
 import type { Config } from '../../config';
 import type { Db } from '../db/client';
 import type { Mailer } from '../email/mailer';
 import { invitationIdentifier } from './invitation';
-import { devicePairing, PAIRING_PREFIX } from './pairing';
+import { devicePairing, isStudentEmail, PAIRING_PREFIX } from './pairing';
 import { account, passkey as passkeyTable, session, user, verification } from './schema';
 
 interface AuthDeps {
@@ -34,10 +34,9 @@ interface AuthDeps {
 }
 
 export function createAuth(db: Db, config: Pick<Config, 'publicUrl' | 'authSecret'>, { mailer, logger, background, deleteUser }: AuthDeps) {
-  // A student's address is the RFC 6761 `.invalid` one better-auth makes for an account without
-  // email: never sent to, and answered as an unknown address would be, without telling.
+  // A student's address is never sent to, and answered as an unknown address would be, without telling.
   const send: Mailer = async (email) => {
-    if (email.to.endsWith('.invalid')) return;
+    if (isStudentEmail(email.to)) return;
     await mailer(email);
   };
   const { hostname: rpID, origin } = new URL(config.publicUrl);
@@ -81,8 +80,10 @@ export function createAuth(db: Db, config: Pick<Config, 'publicUrl' | 'authSecre
         },
       },
     },
-    // Deleting the account, or adding a passkey, needs a session at most this old.
-    session: { freshAge: 10 * 60 },
+    // A session lives ninety days without use, renewed as it is used: a summer without opening the
+    // tablet leaves the child's device paired. Deleting the account, or adding a passkey, needs a
+    // session at most ten minutes old.
+    session: { expiresIn: 90 * 24 * 60 * 60, freshAge: 10 * 60 },
     databaseHooks: {
       user: {
         create: {
@@ -116,6 +117,9 @@ export function createAuth(db: Db, config: Pick<Config, 'publicUrl' | 'authSecre
     ],
     plugins: [
       devicePairing(),
+      // A device keeps the child's session while their guardian enters on it (./pairing.ts hands
+      // it back to the child).
+      multiSession(),
       // Bound to the public origin, never to the one a request claims; a discoverable credential,
       // which the browser offers in the address field. Its name in Tom is the browser that made it,
       // as a session's: a name the client sends would also replace, in the browser's own list, the
