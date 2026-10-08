@@ -8,7 +8,8 @@ import { Notice } from '../components/notice';
 import { Page } from '../components/page';
 import { TomHead } from '../components/tom';
 import { api, isProblem } from '../lib/api';
-import { chatMessage, messagesQuery, textOf, toUIMessage, type TurnBody } from '../lib/chat';
+import type { TurnStep } from 'tomai-server/contract';
+import { chatMessage, messagesQuery, textOf, toUIMessage, waitingText, type ChatMessage, type TurnBody } from '../lib/chat';
 import { meQuery } from '../lib/me';
 
 /** A session with Tom: what was said, then the chat. */
@@ -27,6 +28,7 @@ function Session() {
   const { data: stored } = useSuspenseQuery(messagesQuery(sessionId));
   const [text, setText] = useState('');
   const aiNoticeId = useId();
+  const [step, setStep] = useState<TurnStep | null>(null);
   // The server keeps the conversation: a turn sends the new message only, to the chat's session.
   const [transport] = useState(
     () =>
@@ -37,10 +39,13 @@ function Session() {
         }),
       }),
   );
-  const { messages, setMessages, sendMessage, status, error } = useChat({
+  const { messages, setMessages, sendMessage, status, error } = useChat<ChatMessage>({
     id: sessionId,
     messages: stored.map(toUIMessage),
     transport,
+    onData: (part) => {
+      setStep(part.data);
+    },
     // A refused or failed turn stored nothing: its message leaves the conversation and comes back
     // to the field, to be sent again.
     onError: (failure) => {
@@ -62,6 +67,7 @@ function Session() {
     const trimmed = text.trim();
     if (!trimmed || busy) return;
     setText('');
+    setStep(null);
     void sendMessage({ text: trimmed });
   };
 
@@ -92,35 +98,37 @@ function Session() {
           ),
         )}
       </ol>
-      {status === 'submitted' && <Notice tone="info">Tom réfléchit…</Notice>}
+      {status === 'submitted' && <Notice tone="info">{waitingText(step)}</Notice>}
       {error && <Notice tone="error">{chatMessage(error)}</Notice>}
-      <form
-        className="flex gap-2"
-        onSubmit={(event) => {
-          event.preventDefault();
-          send();
-        }}
-      >
-        <label htmlFor="message" className="sr-only">
-          Ton message
-        </label>
-        <Input
-          id="message"
-          autoComplete="off"
-          aria-describedby={aiNoticeId}
-          placeholder="Ta question, ou ton essai"
-          value={text}
-          onChange={(event) => {
-            setText(event.target.value);
+      <div className="sticky bottom-0 flex flex-col gap-2 bg-background pt-2 pb-3">
+        <form
+          className="flex gap-2"
+          onSubmit={(event) => {
+            event.preventDefault();
+            send();
           }}
-        />
-        <Button type="submit" disabled={busy || text.trim() === ''}>
-          Envoyer
-        </Button>
-      </form>
-      <p id={aiNoticeId} className="text-sm text-muted-foreground">
-        Tom est une IA : il peut se tromper, vérifie avec ton cours.
-      </p>
+        >
+          <label htmlFor="message" className="sr-only">
+            Ton message
+          </label>
+          <Input
+            id="message"
+            autoComplete="off"
+            aria-describedby={aiNoticeId}
+            placeholder="Ta question, ou ton essai"
+            value={text}
+            onChange={(event) => {
+              setText(event.target.value);
+            }}
+          />
+          <Button type="submit" disabled={busy || text.trim() === ''}>
+            Envoyer
+          </Button>
+        </form>
+        <p id={aiNoticeId} className="text-sm text-muted-foreground">
+          Tom est une IA : il peut se tromper, vérifie avec ton cours.
+        </p>
+      </div>
     </Page>
   );
 }

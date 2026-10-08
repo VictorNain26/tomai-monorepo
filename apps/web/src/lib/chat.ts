@@ -3,6 +3,7 @@
 import { queryOptions } from '@tanstack/react-query';
 import type { UIMessage } from 'ai';
 import type { InferRequestType, InferResponseType } from 'hono/client';
+import type { TurnStep } from 'tomai-server/contract';
 import { api, isProblem, parseResponse } from './api';
 
 const sessions = api.sessions;
@@ -22,7 +23,7 @@ export const messagesQuery = (sessionId: string) =>
   });
 
 /** A stored message as useChat shows it. */
-export const toUIMessage = ({ id, role, text }: StoredMessage): UIMessage => ({
+export const toUIMessage = ({ id, role, text }: StoredMessage): ChatMessage => ({
   id,
   role: role === 'student' ? 'user' : 'assistant',
   parts: [{ type: 'text', text }],
@@ -30,6 +31,16 @@ export const toUIMessage = ({ id, role, text }: StoredMessage): UIMessage => ({
 
 /** The text a message carries, its parts joined. */
 export const textOf = (message: UIMessage | undefined) => (message?.parts ?? []).map((part) => (part.type === 'text' ? part.text : '')).join('');
+
+/** A message of the session; the server streams the step of the turn as a transient `data-step` part. */
+export type ChatMessage = UIMessage<unknown, { step: TurnStep }>;
+
+/** What Tom does while the student waits, before the first step has arrived too. */
+export function waitingText(step: TurnStep | null): string {
+  if (step === 'exercise') return 'Tom prépare ton exercice, ça prend quelques secondes…';
+  if (step === 'writing') return 'Tom écrit sa réponse…';
+  return 'Tom lit ton message…';
+}
 
 /** A failed turn, in words a student reads; the server's own message never shows. */
 export function chatMessage(error: Error): string {

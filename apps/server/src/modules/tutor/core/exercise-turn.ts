@@ -67,6 +67,8 @@ export interface ExerciseTurnRequest {
   lastTutorText: string | null;
   attachedFilesBlock: string | null;
   now: Date;
+  /** Before a new sheet is drawn, the long part of a turn. */
+  onDraw: () => void;
 }
 
 const MIN_RESTATED = 12;
@@ -78,7 +80,9 @@ export async function prepareExerciseTurn(deps: { ai: Ai; logger: Logger }, requ
   // (« Conjugue », the rest on a photo) would match any message.
   const statement = current?.sheet?.statement.trim() ?? '';
   const restated = statement.length >= MIN_RESTATED && findLeakForm(request.studentText, [statement]) !== null;
-  const drawn = analysis.bringsExercise && !restated ? await prepareSheet(deps, request) : null;
+  const draws = analysis.bringsExercise && !restated;
+  if (draws) request.onDraw();
+  const drawn = draws ? await prepareSheet(deps, request) : null;
   // Draws that all failed never replace a watched exercise: its answer stays watched.
   const prepared = drawn?.sheet === null && current?.sheet ? null : drawn;
   if (drawn && !prepared) deps.logger.warn('Sheet failed: the exercise in progress stays');

@@ -52,6 +52,38 @@ test('a paired student opens a session, writes to Tom and reads his reply', asyn
   await expect(page.getByRole('link', { name: /Séance sans titre/ })).toBeVisible();
 });
 
+test('while Tom answers, the student is told what he does', async ({ page, browser }, testInfo) => {
+  await pairedStudent(page, browser, testInfo, 'Lou');
+  let answer = () => undefined as unknown;
+  await page.route('**/api/sessions/*/messages', (route) => {
+    if (route.request().method() !== 'POST') return route.fallback();
+    answer = () => route.fulfill({ status: 409, contentType: 'application/problem+json', json: { status: 409, code: 'TURN_IN_PROGRESS' } });
+    return undefined;
+  });
+
+  await page.getByRole('button', { name: 'Nouvelle séance' }).click();
+  await page.getByLabel('Ton message').fill('Résous 3x + 5 = 20');
+  await page.getByRole('button', { name: 'Envoyer' }).click();
+  await expect(page.getByText('Tom lit ton message…')).toBeVisible();
+  await answer();
+});
+
+test('in a long conversation, the field and the AI mark stay at the bottom of the screen', async ({ page, browser }, testInfo) => {
+  await pairedStudent(page, browser, testInfo, 'Noa');
+  await tutorReplies(page, Array.from({ length: 40 }, (_, line) => `Ligne ${String(line + 1)} de l’explication.`).join('\n'));
+
+  await page.getByRole('button', { name: 'Nouvelle séance' }).click();
+  await page.getByLabel('Ton message').fill('Explique-moi');
+  await page.getByRole('button', { name: 'Envoyer' }).click();
+  await expect(page.getByText('Ligne 40 de l’explication.')).toBeVisible();
+  await page.evaluate(() => {
+    window.scrollTo(0, 0);
+  });
+  await expect(page.getByRole('heading', { name: 'Séance avec Tom' })).toBeInViewport();
+  await expect(page.getByLabel('Ton message')).toBeInViewport();
+  await expect(page.getByText('Tom est une IA : il peut se tromper, vérifie avec ton cours.')).toBeInViewport();
+});
+
 test('a day past the quota is told in French, without the server’s message', async ({ page, browser }, testInfo) => {
   await pairedStudent(page, browser, testInfo, 'Malo');
   await page.route('**/api/sessions/*/messages', (route) =>

@@ -10,3 +10,4 @@ import type { devicePairing } from './platform/auth/pairing';
 export type AppType = ReturnType<typeof createApp>;
 export type DevicePairing = ReturnType<typeof devicePairing>;
 export type { ProblemCode } from './platform/http/problem';
+export type { TurnStep } from './modules/tutor';
