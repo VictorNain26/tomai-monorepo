@@ -14,6 +14,11 @@ export default [
     rules: {
       // A route's beforeLoad throws TanStack Router's redirect, a Response, as its docs do.
       '@typescript-eslint/only-throw-error': ['error', { allow: [{ from: 'package', package: '@tanstack/router-core', name: 'Redirect' }] }],
+      // A test passes its doubles in; replacing a module hides the wiring and breaks silently.
+      'no-restricted-properties': [
+        'error',
+        { object: 'mock', property: 'module', message: 'Pas de mock.module : passer la dépendance en paramètre (.claude/rules/testing.md).' },
+      ],
     },
   },
   {

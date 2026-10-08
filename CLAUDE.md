@@ -33,7 +33,7 @@ change (Postgres de `docker compose` requis). Formatage : `bun run format`.
   le supprime.
 - Jamais un type du serveur réécrit côté client : il vient du client typé de `hono/client`.
 - Jamais un changement de comportement sans son test écrit et vu en échec d'abord (TDD).
-- Jamais de test décoratif : pas de `mock.module` (refusé au lint du serveur), pas d'assertion
+- Jamais de test décoratif : pas de `mock.module` (refusé au lint), pas d'assertion
   triviale ; un service, un helper ou une validation modifié a son test, cas nominal et cas
   limites.
 
