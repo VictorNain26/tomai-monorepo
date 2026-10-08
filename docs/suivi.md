@@ -6,7 +6,7 @@ Où on en est, réécrit dans chaque PR qui fait avancer ; ce qui est fini en so
 ## Où on en est
 
 - **Mis à jour le** 2026-10-08.
-- **Lot en cours : 3**, en commençant par les fondations de la direction artistique avec Victor
+- **Lot en cours : 3** : la direction artistique « Cahier du soir » est posée ; ensuite la séance
   (`roadmap.md`, « Maintenant »).
 - **Lot 1 en pause** : le harnais `bun run eval` est mergé ; son passage unique attend le paiement
   à l'usage de Mistral (bloquant ci-dessous). Le premier essai s'est arrêté à 3 conversations sur
@@ -72,7 +72,7 @@ concernée les reprend (`.claude/rules/plans-and-agents.md`).
   l'usage.
 
 **Lot 3**
-- Résumé de la semaine : son écran (étape 4 de `roadmap.md`), écrit comme des pistes de
+- Résumé de la semaine : son écran (étape 3 de `roadmap.md`), écrit comme des pistes de
   conversation, et son arrêt à la demande de l'élève ; le serveur le calcule déjà
   (`/api/summary`).
 - Après une détresse : la revue humaine, son délai et sa trace ; ce que voit l'élève ensuite ; le
@@ -83,10 +83,10 @@ concernée les reprend (`.claude/rules/plans-and-agents.md`).
 - Photo : `wrapAttachedFiles` (`modules/tutor/core/fences.ts`) attend la photo,
   `attachedFilesBlock` est encore toujours vide.
 - Client web : mesures sur un vrai iPhone et un Android.
-- Tests du web qui gardent l'identité actuelle (`tooling/playwright-web/tests/home.spec.ts`, nom et
-  couleurs du manifest) : à revoir avec la direction artistique.
+- Le bouton désactivé, à 50 % d'opacité, perd son contraste : un état désactivé dans les tokens.
 
 **Lot 4**
+- La landing reçoit `packages/tokens/theme.css` et Andika ; `landing.css` se supprime.
 - Image Open Graph, tests de la landing qui gardent l'identité rejetée (`signs.spec.ts`,
   `type.spec.ts`, `hero.spec.ts`), une application de preview par PR.
 

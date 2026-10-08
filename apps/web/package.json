@@ -14,7 +14,7 @@
   "dependencies": {
     "@ai-sdk/react": "4.0.131",
     "@better-auth/passkey": "^1.7.7",
-    "@fontsource-variable/nunito": "^5.3.0",
+    "@fontsource/andika": "^5.3.0",
     "@hookform/resolvers": "^5.9.1",
     "@repo/tokens": "workspace:*",
     "@repo/ui": "workspace:*",

@@ -8,7 +8,7 @@ import { OG_IMAGE } from '@/lib/open-graph';
 
 // Drawn at build time, the image follows the brand name: satori lays it out as next/og did.
 
-// satori reads no CSS variable: copied from packages/tokens/theme.css.
+// satori reads no CSS variable: copied from packages/tokens/landing.css.
 const PAPER = '#FAF7F0';
 const INK = '#1D1D22';
 const PRIMARY = '#1F3F9E';

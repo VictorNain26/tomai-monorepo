@@ -35,8 +35,13 @@ test('a paired student opens a session, writes to Tom and reads his reply', asyn
   await page.getByLabel('Ton message').fill('Je bloque sur 3x + 5 = 20');
   await page.getByRole('button', { name: 'Envoyer' }).click();
 
+  // AI Act art. 50(1): the student is told they talk to an AI before their first message is answered.
+  await expect(page.getByText('Tom est une IA : il t’aide à trouver, il ne fait pas à ta place.')).toBeVisible();
   const conversation = page.getByRole('list', { name: 'Conversation' });
   await expect(conversation.getByRole('listitem')).toHaveText(['Toi : Je bloque sur 3x + 5 = 20', 'Tom : Que fais-tu du + 5 ?']);
+  // Tom's head beside his message, never beside the student's.
+  await expect(conversation.getByRole('listitem').last().locator('img')).toHaveCount(1);
+  await expect(conversation.getByRole('listitem').first().locator('img')).toHaveCount(0);
   // The server keeps the conversation: the turn carries the new message only.
   expect(sent).toEqual([{ text: 'Je bloque sur 3x + 5 = 20', inputMode: 'text' }]);
 

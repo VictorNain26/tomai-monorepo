@@ -6,6 +6,7 @@ import { DefaultChatTransport } from 'ai';
 import { useState } from 'react';
 import { Notice } from '../components/notice';
 import { Page } from '../components/page';
+import { TomHead } from '../components/tom';
 import { api, isProblem } from '../lib/api';
 import { chatMessage, messagesQuery, textOf, toUIMessage, type TurnBody } from '../lib/chat';
 import { meQuery } from '../lib/me';
@@ -68,20 +69,27 @@ function Session() {
       <Link to="/" className="min-h-11 py-3 text-sm text-primary underline">
         Retour à tes séances
       </Link>
-      <ol aria-label="Conversation" className="flex flex-col gap-3">
-        {messages.map((message) => (
-          <li
-            key={message.id}
-            className={
-              message.role === 'user'
-                ? 'max-w-[85%] self-end rounded-2xl bg-primary px-4 py-3 whitespace-pre-wrap text-primary-foreground'
-                : 'max-w-[85%] self-start rounded-2xl border border-border bg-card px-4 py-3 whitespace-pre-wrap text-card-foreground'
-            }
-          >
-            <span className="sr-only">{message.role === 'user' ? 'Toi : ' : 'Tom : '}</span>
-            {textOf(message)}
-          </li>
-        ))}
+      <p className="flex items-center gap-3 text-sm text-muted-foreground">
+        <TomHead className="size-8 shrink-0" />
+        Tom est une IA : il t’aide à trouver, il ne fait pas à ta place.
+      </p>
+      <ol aria-label="Conversation" className="flex flex-col gap-5">
+        {messages.map((message) =>
+          message.role === 'user' ? (
+            <li key={message.id} className="max-w-[85%] self-end rounded-2xl bg-secondary px-4 py-3 whitespace-pre-wrap text-secondary-foreground">
+              <span className="sr-only">Toi : </span>
+              {textOf(message)}
+            </li>
+          ) : (
+            <li key={message.id} className="flex gap-3 self-start text-lg leading-relaxed text-foreground">
+              <TomHead className="mt-0.5 size-8 shrink-0" />
+              <p className="whitespace-pre-wrap">
+                <span className="sr-only">Tom : </span>
+                {textOf(message)}
+              </p>
+            </li>
+          ),
+        )}
       </ol>
       {status === 'submitted' && <Notice tone="info">Tom réfléchit…</Notice>}
       {error && <Notice tone="error">{chatMessage(error)}</Notice>}
@@ -98,7 +106,7 @@ function Session() {
         <Input
           id="message"
           autoComplete="off"
-          placeholder="Écris à Tom"
+          placeholder="Ta question, ou ton essai"
           value={text}
           onChange={(event) => {
             setText(event.target.value);

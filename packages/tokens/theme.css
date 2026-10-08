@@ -1,50 +1,48 @@
-/* @repo/tokens — source unique de vérité des tokens de marque (light).
+/* @repo/tokens — source unique de vérité des tokens de marque, clair puis sombre.
  * Consommé en CSS par les apps Tailwind v4 via :
  *   @import "@repo/tokens/theme.css";
  * Importer APRÈS l'import de Tailwind de l'app.
- * Contrastes AA vérifiés par contrast.test.mjs. */
+ * Contrastes AA vérifiés par contrast.test.mjs, dans les deux modes. */
 
-/* inline : la landing pose --font-nunito et --font-caveat par le composant <Font>
- * d'Astro ; sans inline, la fonte se résoudrait là où le token est défini. Une app
- * sans ces variables charge la fonte par Fontsource : la valeur de repli de var() porte son nom, sinon
- * toute la pile serait invalide et le navigateur retomberait sur sa serif. */
-@theme inline {
-  --font-sans: var(--font-nunito, 'Nunito Variable'), ui-sans-serif, system-ui, sans-serif;
-  --font-heading: var(--font-nunito, 'Nunito Variable'), ui-sans-serif, system-ui, sans-serif;
-  --font-hand: var(--font-caveat, 'Caveat Variable'), cursive;
+/* Direction « Cahier du soir » (docs/decisions.md) : calme et studieux. Une seule fonte,
+ * dessinée pour l'apprentissage de la lecture (Andika, SIL), au zéro plein, aux 1, l et I
+ * distincts ; l'encre bleue du pull de Tom pour seul accent ; un sombre pour les devoirs du soir. */
+@theme {
+  --font-sans: 'Andika', ui-sans-serif, system-ui, sans-serif;
+  --font-heading: 'Andika', ui-sans-serif, system-ui, sans-serif;
 }
 
 @theme {
-  /* Rayon des cartes ; boutons, champs et badges prennent rounded-full
+  /* Rayon des cartes et des bulles ; boutons, champs et badges prennent rounded-full
    * (utilitaire Tailwind). */
-  --radius-2xl: 20px;
+  --radius-2xl: 14px;
 
-  /* Couleurs sémantiques (light) — stylo Bic quatre couleurs sur papier crème */
-  --color-background: #faf7f0;
-  --color-foreground: #1d1d22;
-  --color-primary: #1f3f9e;
+  /* Couleurs sémantiques (clair) — papier neutre, encre bleue */
+  --color-background: #f6f6f3;
+  --color-foreground: #1b2130;
+  --color-primary: #24409a;
   --color-primary-foreground: #ffffff;
-  --color-secondary: #f0eadd;
-  --color-secondary-foreground: #1d1d22;
-  --color-muted: #f0eadd;
-  --color-muted-foreground: #5c5c66;
-  --color-accent: #f0eadd;
-  --color-accent-foreground: #1d1d22;
-  --color-card: #fffdf8;
-  --color-card-foreground: #1d1d22;
-  --color-popover: #fffdf8;
-  --color-popover-foreground: #1d1d22;
+  --color-secondary: #ecebe6;
+  --color-secondary-foreground: #1b2130;
+  --color-muted: #ecebe6;
+  --color-muted-foreground: #575d6b;
+  --color-accent: #ecebe6;
+  --color-accent-foreground: #1b2130;
+  --color-card: #ffffff;
+  --color-card-foreground: #1b2130;
+  --color-popover: #ffffff;
+  --color-popover-foreground: #1b2130;
   --color-destructive: #b42318;
   --color-destructive-foreground: #ffffff;
   --color-success: #1b7337;
   --color-success-foreground: #ffffff;
   --color-warning: #e0a43a;
-  --color-warning-foreground: #1d1d22;
+  --color-warning-foreground: #1b2130;
   --color-highlight: #f9e08b;
   --color-annotation: #c0282d;
-  --color-border: #e3dacb;
-  --color-input: #8a7f6c;
-  --color-ring: #1f3f9e;
+  --color-border: #dddbd3;
+  --color-input: #858378;
+  --color-ring: #24409a;
   --color-overlay: #000000;
 
   /* Motion — fast: micro-feedback (press, toggle) ; base: transitions
@@ -53,4 +51,37 @@
   --duration-base: 250ms;
   --duration-slow: 400ms;
   --duration-pulse: 1000ms;
+}
+
+/* Sombre, suivi du réglage de l'appareil : la même encre, éclaircie, sur un bleu nuit. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --color-background: #12151c;
+    --color-foreground: #e7e9ee;
+    --color-primary: #a9bcff;
+    --color-primary-foreground: #12151c;
+    --color-secondary: #222733;
+    --color-secondary-foreground: #e7e9ee;
+    --color-muted: #222733;
+    --color-muted-foreground: #a3a9b6;
+    --color-accent: #222733;
+    --color-accent-foreground: #e7e9ee;
+    --color-card: #1a1e27;
+    --color-card-foreground: #e7e9ee;
+    --color-popover: #1a1e27;
+    --color-popover-foreground: #e7e9ee;
+    --color-destructive: #f28b82;
+    --color-destructive-foreground: #12151c;
+    --color-success: #7dd3a0;
+    --color-success-foreground: #12151c;
+    --color-warning: #e0a43a;
+    --color-warning-foreground: #12151c;
+    --color-highlight: #4a3d10;
+    --color-annotation: #ff9a8f;
+    --color-border: #2c3240;
+    --color-input: #7c8496;
+    --color-ring: #a9bcff;
+    --color-overlay: #000000;
+  }
 }

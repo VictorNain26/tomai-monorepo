@@ -4,6 +4,7 @@ import { Link, createFileRoute, redirect, useNavigate } from '@tanstack/react-ro
 import { MemoryAnswer } from '../components/memory-answer';
 import { Notice } from '../components/notice';
 import { Page } from '../components/page';
+import { TomHead } from '../components/tom';
 import { api, parseResponse } from '../lib/api';
 import { sessionsQuery } from '../lib/chat';
 import { deviceName, formatDay } from '../lib/device';
@@ -54,6 +55,10 @@ function Sessions() {
       <h2 id="sessions" className="text-xl font-bold text-foreground">
         Tes séances avec Tom
       </h2>
+      <p className="flex items-center gap-3 text-muted-foreground">
+        <TomHead className="size-10 shrink-0" />
+        Un exercice qui résiste ? Ouvre une séance, on le reprend pas à pas.
+      </p>
       <Button
         disabled={start.isPending}
         onClick={() => {
