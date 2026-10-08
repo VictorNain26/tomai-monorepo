@@ -12,7 +12,7 @@ import { createBackgroundTasks } from '../../platform/lifecycle/background';
 import { createLifecycle } from '../../platform/lifecycle/shutdown';
 import { testDatabase } from '../../testing/database';
 import { fakeMistral } from '../../testing/mistral';
-import { httpClient, ORIGIN } from '../../testing/http';
+import { birthMonthAged, httpClient, ORIGIN } from '../../testing/http';
 import { memoryMailer } from '../../testing/mailer';
 import { accountDeletion } from '../household';
 import type { ExerciseState } from './core/exercise-turn';
@@ -57,7 +57,7 @@ const asStudentA = await api.pair(guardianA, studentA.id);
 const asStudentB = await api.pair(guardianB, studentB.id);
 
 const start = async (cookie: string) => {
-  const res = await api.request('POST', '/api/sessions', { cookie });
+  const res = await api.request('POST', '/api/sessions', { cookie, body: { accompanied: false } });
   expect(res.status).toBe(201);
   return (await res.json()) as Session;
 };
@@ -70,14 +70,14 @@ await db.insert(message).values([
 
 describe('access matrix', () => {
   const routes = [
-    { method: 'POST', path: '/api/sessions' },
+    { method: 'POST', path: '/api/sessions', body: { accompanied: false } },
     { method: 'GET', path: '/api/sessions' },
     { method: 'GET', path: `/api/sessions/${sessionOfA.id}/messages` },
   ];
 
-  it.each(routes)('refuses $method $path to an anonymous visitor, and to a guardian, the student’s own included', async ({ method, path }) => {
-    expect((await api.request(method, path)).status).toBe(401);
-    expect((await api.request(method, path, { cookie: guardianA })).status).toBe(403);
+  it.each(routes)('refuses $method $path to an anonymous visitor, and to a guardian, the student’s own included', async ({ method, path, body }) => {
+    expect((await api.request(method, path, { body })).status).toBe(401);
+    expect((await api.request(method, path, { cookie: guardianA, body })).status).toBe(403);
   });
 
   it("does not find another student's session, nor one that does not exist", async () => {
@@ -105,6 +105,22 @@ describe('sessions', () => {
       { role: 'tutor', text: 'Que cherches-tu ?' },
     ]);
     expect(JSON.stringify(messages)).not.toContain('secret');
+  });
+
+  it('opens a session with the parent beside in 6e and 5e only, and keeps the choice', async () => {
+    const beside = await api.request('POST', '/api/sessions', { cookie: asStudentA, body: { accompanied: true } });
+    expect(beside.status).toBe(201);
+    expect(await beside.json()).toMatchObject({ accompanied: true });
+    // The empty session opened again takes the new choice.
+    expect(await (await api.request('POST', '/api/sessions', { cookie: asStudentA, body: { accompanied: false } })).json()).toMatchObject({
+      accompanied: false,
+    });
+
+    const quatrieme = await api.student(guardianA, { name: 'Noé', level: 'quatrieme', birthMonth: birthMonthAged(13) });
+    const asQuatrieme = await api.pair(guardianA, quatrieme.id);
+    expect((await api.request('POST', '/api/sessions', { cookie: asQuatrieme, body: { accompanied: true } })).status).toBe(403);
+    expect((await api.request('POST', '/api/sessions', { cookie: asQuatrieme, body: { accompanied: false } })).status).toBe(201);
+    expect((await api.request('POST', '/api/sessions', { cookie: asQuatrieme })).status).toBe(400);
   });
 
   it('opens the latest session again while nothing was said in it, and a new one once something was', async () => {

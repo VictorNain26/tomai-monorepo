@@ -97,6 +97,19 @@ describe('access matrix', () => {
     expect(listA.map((s) => s.id)).toEqual([studentOfA.id]);
     expect(listB.map((s) => s.id)).toEqual([studentOfB.id]);
   });
+
+  it('says of each student whether they work on the family’s device, before the 4e', async () => {
+    const [lea] = (await (await api.request('GET', '/api/household/students', { cookie: guardianA })).json()) as (Student & {
+      accompanied: boolean;
+    })[];
+    expect(lea).toMatchObject({ level: 'cinquieme', accompanied: true });
+    await api.request('PATCH', `/api/household/students/${studentOfA.id}`, { cookie: guardianA, body: { level: 'quatrieme' } });
+    const [later] = (await (await api.request('GET', '/api/household/students', { cookie: guardianA })).json()) as (Student & {
+      accompanied: boolean;
+    })[];
+    expect(later).toMatchObject({ level: 'quatrieme', accompanied: false });
+    await api.request('PATCH', `/api/household/students/${studentOfA.id}`, { cookie: guardianA, body: { level: 'cinquieme' } });
+  });
 });
 
 const creation = client();
@@ -107,12 +120,19 @@ describe('/api/me', () => {
   it('tells who is signed in and as what, a guardian without a household yet included', async () => {
     const api = client();
     const fresh = await api.guardian('nouveau@example.com');
-    expect(await (await api.request('GET', '/api/me', { cookie: fresh })).json()).toMatchObject({ name: 'Parent', role: 'guardian', level: null });
+    expect(await (await api.request('GET', '/api/me', { cookie: fresh })).json()).toMatchObject({
+      name: 'Parent',
+      role: 'guardian',
+      level: null,
+      accompanied: false,
+    });
+    // In 5e, the child works on the family's device, the parent beside or not.
     expect(await (await api.request('GET', '/api/me', { cookie: asStudentA })).json()).toEqual({
       id: studentOfA.id,
       name: 'Léa',
       role: 'student',
       level: 'cinquieme',
+      accompanied: true,
     });
     expect((await api.request('GET', '/api/me')).status).toBe(401);
   });

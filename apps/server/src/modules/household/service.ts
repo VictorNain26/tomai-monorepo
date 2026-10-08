@@ -7,7 +7,7 @@
 
 import { createPlaceholderEmail } from '@better-auth/core/utils/email';
 import { generateId } from '@better-auth/core/utils/id';
-import type { SchoolLevel } from '../../domain/levels';
+import { isAccompaniedLevel, type SchoolLevel } from '../../domain/levels';
 import { memoryConsent, type MemoryAnswer } from '../../domain/memory-consent';
 
 export type { MemoryAnswer };
@@ -43,7 +43,12 @@ export function learnerMemory(
 // The date column holds the first day of the month; the API speaks in YYYY-MM.
 const toStudent = ({ birthMonth, memoryProposedAt, memoryAnswer, ...student }: StudentRow) => {
   const { state, decidesAlone } = memoryConsent({ birthMonth, proposedAt: memoryProposedAt, answer: memoryAnswer }, new Date());
-  return { ...student, birthMonth: birthMonth.slice(0, 7), memory: { proposed: memoryProposedAt !== null, state, decidesAlone } };
+  return {
+    ...student,
+    birthMonth: birthMonth.slice(0, 7),
+    accompanied: isAccompaniedLevel(student.level),
+    memory: { proposed: memoryProposedAt !== null, state, decidesAlone },
+  };
 };
 
 export function createHouseholdService({ repository, createPairingCode }: Deps) {
@@ -67,8 +72,8 @@ export function createHouseholdService({ repository, createPairingCode }: Deps) 
     async me(userId: string, name: string) {
       const student = await repository.findProfile(userId);
       return student
-        ? { id: userId, name, role: 'student' as const, level: student.level }
-        : { id: userId, name, role: 'guardian' as const, level: null };
+        ? { id: userId, name, role: 'student' as const, level: student.level, accompanied: isAccompaniedLevel(student.level) }
+        : { id: userId, name, role: 'guardian' as const, level: null, accompanied: false };
     },
 
     async listStudents(guardianId: string) {

@@ -140,7 +140,9 @@ export async function playConversation(
   repetition: number,
 ): Promise<Transcript> {
   const device = await pairedStudent(harness, guardian, exercise);
-  const { id: sessionId } = (await (await ok(call(harness, 'POST', '/api/sessions', { cookie: device }), 'session')).json()) as { id: string };
+  const { id: sessionId } = (await (
+    await ok(call(harness, 'POST', '/api/sessions', { cookie: device, body: { accompanied: false } }), 'session')
+  ).json()) as { id: string };
   const played: Omit<TutorTurn, 'record'>[] = [];
   for (const student of renderTurns(scenario, exercise)) {
     const turn = await playTurn(harness, sessionId, device, student);

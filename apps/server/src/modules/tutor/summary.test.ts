@@ -84,7 +84,7 @@ const newExercise = { sheet, uncertain: false, drawnForms: ['5'], mathCheck: 'pa
 
 /** A session the student opened at `when`. */
 async function openSession(cookie: string, when: Date) {
-  const { id } = (await (await api.request('POST', '/api/sessions', { cookie })).json()) as { id: string };
+  const { id } = (await (await api.request('POST', '/api/sessions', { cookie, body: { accompanied: false } })).json()) as { id: string };
   await db.update(studySession).set({ createdAt: when }).where(eq(studySession.id, id));
   return id;
 }
