@@ -9,10 +9,20 @@ paths:
 Vitrine marketing et SEO, statique, en Astro 7, servie par Caddy dans une application statique
 Clever Cloud (`apps/landing/Caddyfile`).
 
-- **Gelée jusqu'au lot 4** (`docs/roadmap.md`) : seuls des correctifs d'honnêteté
-  (`.claude/rules/marketing.md`) ou techniques y entrent. Pas de nouvelle section ni de
-  nouvelle direction visuelle : l'identité est rejetée et se refait au lot 4, avec le nom du
-  produit.
+- **Gelée jusqu'au lot 4** (`docs/roadmap.md`) : seuls des correctifs d'honnêteté ou techniques
+  y entrent, pas de nouvelle section. Au lot 4, elle reçoit la direction artistique du lot 3 et
+  le nom du produit.
+- **On n'affirme que ce qu'on peut prouver** (`docs/vision.md`) : chaque chiffre a une source
+  primaire datée, chaque différence face à un concurrent est mesurée, ce qui n'est pas construit
+  ne se promet pas. Une phrase qu'on ne peut adosser à une source ou à une mesure se retire.
+- Jamais de promesse de progrès scolaire ni de meilleures notes, jamais « le seul » ; jamais
+  « conforme au cadre d'usage de l'IA du ministère », « agréé » ou « recommandé par l'Éducation
+  nationale », « aligné sur les programmes » sans la métrique publiée, ni « fait les devoirs »
+  (`docs/etudes/2026-10-01/education-nationale.md`, c).
+- Preuve sociale réelle seulement : témoignages de vraies familles avec leur accord, chiffres
+  sourcés ; jamais un avis, un logo ou un compteur inventé ou anticipé.
+- Jamais un cookie non essentiel avant le consentement, ni un bandeau où « Refuser » est moins
+  visible qu'« Accepter » ([CNIL](https://www.cnil.fr/en/dark-patterns-cookie-banners-cnil-issues-formal-notice-website-publishers)).
 - Jamais de framework client (React ou autre) : la landing est du HTML statique. Un composant qui
   a besoin du navigateur est un élément personnalisé (`customElements.define`) dans le `<script>`
   de son composant, sur l'élément natif quand il existe (`<dialog>` pour le menu, `<details>` pour

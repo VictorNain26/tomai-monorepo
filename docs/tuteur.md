@@ -1,40 +1,23 @@
-# Tuteur IA (Tom) — conception cible
+# Tuteur IA (Tom)
 
-Cadre produit : `vision.md` ; architecture : `architecture.md`. Ce document décrit le tuteur
-visé ; l'avancement vit dans `suivi.md`.
-
-## Référentiel
-
-Trois guides d'examen Anthropic : *Claude Certified Architect – Foundations*
-(CCAR-F), *Architect – Professional* (CCAR-P), *Developer – Foundations* (CCDV-F).
-L'agent reste sur Mistral : on applique leurs pratiques **indépendantes du
-fournisseur**, et on traduit les mécanismes propres à Claude en leur équivalent
-Mistral (tableau §3). Les renvois `F p.N` / `P p.N` / `D p.N` pointent vers les
-pages de ces guides.
-
-Pour Mistral, il n'existe pas de certification officielle. Références :
-[docs.mistral.ai](https://docs.mistral.ai) (prompting, function calling,
-reasoning, moderation, prompt caching, known limitations), le
-[cookbook officiel](https://github.com/mistralai/cookbook) (`function_calling`,
-`evaluation`, `llm_judge_campaign_workflow`, `shieldstral_policy_moderation`),
-[AI SDK — agents](https://ai-sdk.dev/docs/agents/loop-control),
-[Building effective agents](https://www.anthropic.com/engineering/building-effective-agents),
-[OWASP Top 10 LLM](https://genai.owasp.org/llm-top-10/).
+Comment Tom aide, ce que le code garantit, et ce qui reste à construire, marqué comme tel. Cadre
+produit : `vision.md` ; le pourquoi des choix : `decisions.md`.
 
 ## 1. Principes
 
-| # | Principe | Source | Application à Tom |
-|---|---|---|---|
-| P1 | Ce qui ne doit jamais échouer est garanti par le code, pas par le prompt | F p.7, D p.10 | Échelle d'indices, aucune solution montrée par accident, modération, détresse, confirmation d'outil : §5 |
-| P2 | 4 à 5 outils par rôle, descriptions sans chevauchement, erreurs structurées, « vide » distinct d'« échec » | F p.9-10, P p.7 | §6 |
-| P3 | Contenu statique en tête, dynamique ensuite, pour un préfixe cachable | P p.7 | §7 |
-| P4 | Versions de modèle figées, prompts versionnés | D p.6 | §2 |
-| P5 | Sorties structurées validées, champs nullables plutôt qu'inventés, relance avec l'erreur de validation | F p.17-18, D p.8 | §8 |
-| P6 | Contexte maîtrisé : faits persistants hors résumé, sorties d'outils réduites, historique complet | F p.20, D p.7-8 | §7 |
-| P7 | Métriques et jeu d'évaluation avant tout changement de l'agent ; diagnostic par les traces | P p.5, D p.7 | §9 |
-| P8 | Le texte de l'élève et les documents importés sont des données, jamais des instructions | D p.8, p.10 | §5, §7 |
-| P9 | Humain dans la boucle, conformité RGPD | P p.5 | §10, §11 |
-| P10 | Revue par une instance indépendante, pas auto-évaluation | F p.15, p.19 | Le juge d'évaluation est un appel séparé du tuteur, sur le même modèle : ce biais, le code et la mesure d'accord doivent le contenir (§9) |
+- **Ce qui ne doit jamais échouer est garanti par le code**, pas par le prompt : palier d'aide,
+  contrôle avant l'élève, modération, détresse (§4).
+- **Contenu stable en tête du prompt, variable ensuite**, pour un préfixe en cache (§5).
+- **Modèles datés, prompts versionnés** (§2).
+- **Sorties structurées validées**, champs nullables plutôt qu'inventés (§6).
+- **Le texte de l'élève et les documents importés sont des données**, jamais des instructions
+  (§4, §5).
+- **Mesurer avant de changer le tuteur** (§7) ; un juge séparé du tuteur, vérifié contre Victor.
+
+Références : [docs.mistral.ai](https://docs.mistral.ai) (prompting, reasoning, moderation,
+prompt caching, known limitations), [AI SDK](https://ai-sdk.dev/docs),
+[Building effective agents](https://www.anthropic.com/engineering/building-effective-agents),
+[OWASP Top 10 LLM](https://genai.owasp.org/llm-top-10/).
 
 ## 2. Modèles
 
@@ -50,14 +33,14 @@ d'agent reste la nôtre ([regional inference](https://docs.mistral.ai/inference/
 | Rôle | Modèle | Réglage |
 |---|---|---|
 | Chat élève, texte et image | **Mistral Small 4** `mistral-small-2603` | sans raisonnement sous un contrat de tour, l'exactitude passant par la fiche d'exercice ; sans fiche, `routeReasoningEffort` (`modules/tutor/core/reasoning.ts`) passe en `high` sur une réponse proposée, ou en 4e-3e en maths et sciences sur une demande de solution ou d'explication ; température 0,7, dans la plage de la fiche Hugging Face de Small 4 pour `none` ; `promptCacheKey` par session |
-| Lecture d'une image jointe (transcription seule, avec l'étape des photos), génération de cartes | Mistral Small 4 `mistral-small-2603` | `reasoningEffort: 'none'` ; sortie structurée stricte |
+| Lecture d'une image jointe, transcription seule (à construire, avec la photo) | Mistral Small 4 `mistral-small-2603` | `reasoningEffort: 'none'` ; sortie structurée stricte |
 | Analyse du tour (`modules/tutor/core/analysis.ts`) | Mistral Small 4 `mistral-small-2603` | `reasoningEffort: 'high'`, température 0,7 : sans raisonnement, une question de fait était lue comme une demande d'explication (`etudes/2026-10-06/passage-de-fin.md`) ; sortie structurée stricte |
 | Résumé de séance, titre | Mistral Small 4 `mistral-small-2603` | `reasoningEffort: 'none'` ; texte |
 | Fiche d'exercice (`modules/tutor/core/sheet.ts`) | Mistral Small 4 `mistral-small-2603` | `reasoningEffort: 'high'` sans plafond de tokens, borné par un timeout de 20 s ; température 0,7 (« 0.7 for `reasoning_effort="high"` », fiche Hugging Face) ; trois tirages votés ; sortie structurée stricte |
 | Diagnostic d'une proposition (`modules/tutor/core/diagnosis.ts`) | Mistral Small 4 `mistral-small-2603` | `reasoningEffort: 'none'`, température 0, contre la fiche ; mathjs tranche quand il sait lire ; sortie structurée stricte |
-| Modération entrée/sortie | `mistral-moderation-2603` | Catégories par sens (§5) |
-| STT / TTS | Voxtral via `@mistralai/mistralai` (`audio.*`) | Timeout explicite |
-| Juge d'évaluation | Mistral Small 4 `mistral-small-2603` | Questions oui/non en JSON strict, cinq tirages, référence fournie |
+| Modération entrée/sortie | `mistral-moderation-2603` | Catégories par sens (§4) |
+| STT / TTS (à construire, avec la voix) | Voxtral via `@mistralai/mistralai` (`audio.*`) | Timeout explicite ; français imposé à la transcription ; voix `fr_marie_*` |
+| Juge d'évaluation (à construire, lot 1) | Mistral Small 4 `mistral-small-2603` | Questions oui/non en JSON strict, référence fournie |
 
 Small 4 : 256k de contexte, function calling, sorties structurées, raisonnement
 ([fiche](https://docs.mistral.ai/models/mistral-small-4-0-26-03), prix dans
@@ -65,11 +48,9 @@ Small 4 : 256k de contexte, function calling, sorties structurées, raisonnement
 « Native multimodal: Accepts both text and image inputs » — la page vision de la
 doc, arrêtée à Medium 3.1, ne le mentionne pas encore).
 
-Un seul LLM pour tous les rôles texte, juge d'évaluation compris : entre Medium, Large et
-Small 4, Victor garde Small 4 ; Voxtral et le modèle de modération restent.
-Moins de variables à évaluer, un seul cache ; le juge note donc son propre modèle, biais
-que sa conception et la mesure d'accord doivent contenir
-(`etudes/2026-10-03/refonte-harnais.md`).
+Un seul LLM pour tous les rôles texte, juge compris (`decisions.md`) : moins de variables à
+évaluer, un seul cache ; le juge note donc son propre modèle, biais que sa conception et la
+mesure d'accord doivent contenir.
 
 **Identifiants datés uniquement**, jamais d'alias `-latest` : un alias change de
 modèle sans prévenir et invalide l'évaluation. Chaque prompt porte une version
@@ -84,23 +65,16 @@ modèle sans prévenir et invalide l'évaluation. Chaque prompt porte une versio
 - Chaque appel au modèle est entier, sans flux (`generateText`) : son usage, `cacheRead` compris,
   arrive avec sa réponse et se compte au coût (`platform/ai/client.ts`) ; un appel coupé par son
   délai ne rapporte pas d'usage.
+- `reasoning_effort` n'a pas de budget de tokens : un appel qui raisonne n'a pas de
+  `maxOutputTokens`, sa borne est le timeout.
+- Le cache de préfixe se règle par `promptCacheKey` ; les tokens servis par le cache coûtent 10 %.
+- Agents, Batch et Files ne sont pas servis sur l'endpoint UE : la boucle du tour est la nôtre.
+- **Débit** : en mode gratuit, 100 000 tokens par minute pour l'organisation ; une fiche
+  d'exercice en prend environ 78 000 (trois tirages de 26 000 tokens d'entrée), et la première
+  réponse d'un exercice arrive après 12 à 15 s (mesuré le 2026-10-08). Le paiement à l'usage lève
+  le plafond ; l'attente se conçoit dans l'écran de séance.
 
-## 3. Équivalents Mistral des mécanismes Claude
-
-| Claude | Mistral | Via l'AI SDK |
-|---|---|---|
-| `cache_control` | Cache de préfixe par `prompt_cache_key`, tokens cachés à 10 % du prix, blocs de 64 tokens | `providerOptions.mistral.promptCacheKey` ; lecture `usage.inputTokens.cacheRead` |
-| Extended thinking | `reasoning_effort` (`none`/`high`), pas de budget de tokens ; la réflexion compte dans `completion_tokens` | `providerOptions.mistral.reasoningEffort` ; pas de `maxOutputTokens` sur un appel qui raisonne, la borne est le timeout |
-| `tool_choice` | `auto`/`none`/`any`/`required`/fonction nommée | `toolChoice` ; fonction nommée émulée par filtrage — préférer `prepareStep` + `activeTools` |
-| Structured outputs | `response_format: json_schema` strict | `Output.object` + `strictJsonSchema: true` |
-| Message Batches | Batch API −50 % | Non exposé, et absent de l'endpoint UE : non utilisé |
-| Token counting | Pas d'endpoint | `usage` après appel ; heuristique chars/4 pour le budget |
-| Guardrails | Custom Guardrails (entrée seulement, 403 sur blocage) + Moderation API | Guardrails non exposés : on appelle la modération nous-mêmes, entrée et sortie |
-| Compaction | Aucune côté serveur | `prepareStep`, `pruneMessages`, notre résumé incrémental |
-| Agent SDK / MCP | Agents & Conversations API | Hors endpoint UE et ZDR : notre boucle `streamText` + `stopWhen` |
-| Console evals | Studio Observability (bêta) | Langfuse : datasets, experiments, LLM-as-judge |
-
-## 4. Pédagogie
+## 3. Pédagogie
 
 - **Échelle d'indices graduée**, palier courant tenu **côté serveur** par exercice
   (`modules/tutor/core/ladder.ts`) : relance → indice conceptuel → indice ciblé → étape intermédiaire →
@@ -115,7 +89,7 @@ modèle sans prévenir et invalide l'évaluation. Chaque prompt porte une versio
 - **La réponse de l'exercice n'est jamais donnée, qu'il s'agisse d'un fait ou d'un
   raisonnement** : dans un devoir, le fait demandé est ce que l'élève doit rendre. Un fait
   d'appui (définition, règle) se donne après une vraie tentative, et une bonne réponse de
-  l'élève se confirme (`etudes/2026-10-03/analyse-erreurs.md`).
+  l'élève se confirme.
 - **Solution de référence côté serveur** : en début d'exercice, Small 4 le résout hors de
   la vue de l'élève, en raisonnement, et mathjs vérifie les calculs. Le modèle qui rédige
   n'en reçoit que la part que le palier autorise ; diagnostic, palier et contrôle de fuite
@@ -136,24 +110,20 @@ modèle sans prévenir et invalide l'évaluation. Chaque prompt porte une versio
   (`SCHOOL_LEVELS`, `domain/levels.ts`, d'où dérive l'enum `school_level`) ; le
   prompt ne parle que du collège.
 - **Une seule taxonomie** `domain/subjects.ts` : familles pour l'analyse du tour et les
-  consignes du tuteur, slugs du collège pour les outils, les paquets de cartes, le
-  référentiel et le jeu. Le slug se valide aux routes, la séance garde une famille. Un bloc
+  consignes du tuteur, slugs du collège pour le référentiel et le jeu. Le slug se valide aux routes, la séance garde une famille. Un bloc
   matière existe pour chaque famille, `langues` et `general` compris.
-- Ce que l'agent promet en public, la landing ne le dit qu'une fois mesuré par le
-  harnais (vision, « Ce qu'on promet, ce qu'on prouve ») ; la landing est refaite au
-  lot 4.
+- Ce que Tom promet en public, la landing ne le dit qu'une fois mesuré par le harnais.
 
-## 5. Garde-fous par le code
+## 4. Garde-fous par le code
 
 | Garde-fou | Mécanisme | Où |
 |---|---|---|
 | Modération d'entrée | `mistral-moderation-2603` par `studentTurn` (`platform/ai/moderation.ts`), qui classe le message de l'élève avec le dernier message du tuteur en contexte ; catégories `sexual`, `selfharm`, `jailbreaking`, `pii`, `violence_and_threats`, `dangerous`, `criminal` gardées avec le message ; `selfharm` décide la détresse, les autres se mesurent sans bloquer (un devoir d'histoire touche à la violence) ; modération indisponible : les règles seules jugent la détresse, l'échec journalisé (`modules/tutor/service.ts`) | En parallèle de l'analyse du tour, avant le premier mot |
-| Contrôle avant l'élève | Le message entier est généré, contrôlé, puis envoyé ; celui qui est envoyé est celui qui est persisté (`modules/tutor/core/controlled-turn.ts`, `modules/tutor/core/output-check.ts`). Déterministe : réponse et ses formes comparées à la fiche d'exercice, une forme déjà écrite par l'élève et jugée juste restant permise pour la confirmer ; une fiche incertaine tenue aux formes de tous ses tirages, et une fiche absente à un palier bas (le contrôle échoue fermé) ; balises et gabarits ; égalités recalculées par mathjs. Sur un échec, une régénération sous contrainte, puis une réponse de repli fixe, l'événement tracé | Entre l'appel du rédacteur et l'élève ; aussi, à leur retour, sur les fiches de révision générées et le titre de séance |
+| Contrôle avant l'élève | Le message entier est généré, contrôlé, puis envoyé ; celui qui est envoyé est celui qui est persisté (`modules/tutor/core/controlled-turn.ts`, `modules/tutor/core/output-check.ts`). Déterministe : réponse et ses formes comparées à la fiche d'exercice, une forme déjà écrite par l'élève et jugée juste restant permise pour la confirmer ; une fiche incertaine tenue aux formes de tous ses tirages, et une fiche absente à un palier bas (le contrôle échoue fermé) ; balises et gabarits ; égalités recalculées par mathjs. Sur un échec, une régénération sous contrainte, puis une réponse de repli fixe, l'événement tracé | Entre l'appel du rédacteur et l'élève ; aussi sur le titre de séance |
 | Modération de sortie | Même modèle sur le message entier, en parallèle du contrôle ; catégories bloquantes `OUTPUT_BLOCKING` ; même action sur un blocage | Avant l'élève |
 | Détresse | Classifieur indépendant du prompt (catégorie Self-Harm + règles en français, testés sur des phrases d'élèves) ; réponse fixe rédigée et approuvée par un humain, avec le 3114 et un adulte de confiance, et, à construire au lot 3, le 119 quand le message laisse penser que le danger vient de la maison, puis fin de la conversation (Crawford et Glatard, CMAJ 2026) ; numéros d'aide vérifiés sur service-public.gouv.fr F33954. Ni fiche ni tuteur (l'analyse du tour, lancée en parallèle, est écartée) : la réponse est gardée avec le message, la séance close (tout message suivant reçoit la même réponse), l'événement enregistré, un par séance, rattaché à l'élève et sans score (`distress_event`, `modules/tutor/schema.ts`), pour la revue humaine du lot 3 : un humain relit chaque événement et décide d'un message au parent, qui n'en reçoit que le motif et des ressources, l'élève prévenu d'abord (`etudes/2026-10-07/foyer-eleve-age.md`). Ni quota, ni limite de flux, ni écriture en échec ne retiennent la réponse (`modules/tutor/service.ts`, règles dans `domain/distress.ts`) | Même point d'entrée |
-| Fuite de réponse | Palier d'aide imposé par le serveur (§4) ; la recherche de la réponse dans le texte (`findLeakForm`, `domain/leak.ts`), partagée avec le harnais, tourne dans le contrôle avant l'élève | Assembleur de tour, contrôle avant l'élève |
-| Aucune solution montrée par accident | Le raisonnement du modèle ne quitte jamais le serveur : seul le texte contrôlé part dans le flux (`modules/tutor/routes.ts`) ; aucune balise interne, étape de calcul cachée, résultat d'outil brut ni bloc de contexte n'arrive dans ce que voit ou entend l'élève. Le contrôle de fuite porte sur tout ce qui l'atteint : texte, lecture vocale, fiches, titre de séance, messages d'erreur | Sortie du flux, outils, TTS |
-| Confirmation avant création de cartes | `toolApproval` de `streamText` : `'approved'` quand l'analyse du tour relève une demande ou une acceptation de cartes, sinon un refus motivé que le modèle reçoit, et il les propose sans les créer ; une demande impose l'appel au premier pas (`prepareStep`, `toolChoice`), un seul appel par tour ; l'outil réservé au Complet. `needsApproval` est déprécié dans `ai` 7 | À porter avec les fiches de révision (§6) |
+| Fuite de réponse | Palier d'aide imposé par le serveur (§3) ; la recherche de la réponse dans le texte (`findLeakForm`, `domain/leak.ts`), partagée avec le harnais, tourne dans le contrôle avant l'élève | Assembleur de tour, contrôle avant l'élève |
+| Aucune solution montrée par accident | Le raisonnement du modèle ne quitte jamais le serveur : seul le texte contrôlé part dans le flux (`modules/tutor/routes.ts`) ; aucune balise interne, étape de calcul cachée, résultat d'outil brut ni bloc de contexte n'arrive dans ce que voit ou entend l'élève. Le contrôle de fuite porte sur tout ce qui l'atteint : texte, titre de séance, messages d'erreur, et la lecture vocale à venir | Sortie du tour |
 | Injection | Texte élève et contenu de documents délimités comme données ; aucun outil sensible déclenchable par du contenu importé | Assembleur, outils |
 
 La recherche justifie ce passage au code : sur plusieurs tours, les modèles
@@ -161,33 +131,15 @@ tiennent mal les règles du prompt système (SysBench, IHEval, SafeTutors : 17
 d'échecs en un tour, 77,8 % en plusieurs), et les garde-fous de détresse cèdent
 en zone intermédiaire (McBain 2025).
 
-## 6. Outils
-
-Pas encore portés par la refonte : le tour écrit sans outil, en un seul appel. Ce qui suit décrit
-l'outil des cartes, qui revient avec les fiches de révision.
-
-Un seul outil, `generate_flashcards`, réservé au Complet comme la route de
-génération de cartes, et compté dans son quota (§13). Quatre ou cinq outils sont un plafond,
-pas une cible ; tous en `strict: true`.
-
-- Descriptions : format d'entrée, exemple, cas limite, quand l'utiliser plutôt qu'un autre
-  outil.
-- Erreurs structurées `{ isError, errorCategory: transient|validation|business|permission, isRetryable, message }` ;
-  un résultat vide n'est jamais une erreur.
-- Appels et résultats d'outils persistés dans l'historique avec le raisonnement
-  (`message.model_messages`, `responseMessages` de `generateText`), rejoués au tour suivant
-  quand ils finissent sur l'assistant et que le tour n'a pas été coupé ; seul le dernier
-  message de la fenêtre garde son raisonnement (`pruneMessages`).
-
-## 7. Prompt et contexte
+## 5. Prompt et contexte
 
 Ordre du prompt, du plus stable au plus variable (`assembleChatPrompt`,
 `modules/tutor/core/assembler.ts`) :
 
-1. Système statique versionné : identité (dont la divulgation « je suis une IA »),
-   pédagogie, sécurité, format. Aucune donnée d'élève.
-2. Définitions d'outils.
-3. Exercice en cours (`exerciseBlock`, `modules/tutor/core/sheet.ts`) : son énoncé, délimité comme
+1. Système statique versionné : identité, pédagogie, sécurité, format. Aucune donnée d'élève.
+   Aujourd'hui, Tom ne dit qu'il est une IA que si l'élève le demande (`prompt.ts`) ;
+   l'art. 50(1) de l'AI Act demande qu'il le dise dès la première interaction (lot 3).
+2. Exercice en cours (`exerciseBlock`, `modules/tutor/core/sheet.ts`) : son énoncé, délimité comme
    donnée, les notions du programme de la classe que la fiche lui rattache et celles des
    classes suivantes à ne pas utiliser ; jamais la réponse ni les étapes. Les notions
    viennent du référentiel (`apps/server/src/referential/`, en mathématiques et en français) :
@@ -195,10 +147,11 @@ Ordre du prompt, du plus stable au plus variable (`assembleChatPrompt`,
    (`programmeFor(niveau, matière, rentrée)`, `notionsFor`) et n'en retient que les entrées
    de l'exercice (`keepKnownNotions`), au libellé exact. Extraction et contrôles du
    référentiel : en tête de `referential/extract.ts`.
-4. Textes des fichiers de la séance, dans l'ordre où ils ont été joints.
-5. Résumé des tours anciens + tours récents bruts, rejoués avec leur raisonnement et leurs
-   appels d'outils.
-6. Message de l'élève, **un seul message `user` par tour**, qui porte aussi ce qui change
+3. Textes des fichiers de la séance, dans l'ordre où ils ont été joints (à construire, avec la
+   photo).
+4. Résumé des tours anciens + tours récents bruts, rejoués avec leur raisonnement. Le tour
+   n'appelle aucun outil.
+5. Message de l'élève, **un seul message `user` par tour**, qui porte aussi ce qui change
    d'un tour à l'autre : bloc de la matière ; contrat du tour (palier autorisé, indices
    déjà donnés, diagnostic) entre balises `<contrat>`, que seul le serveur écrit ; texte de l'élève
    entre `<student_message>`, ces balises neutralisées dans son texte. Placé avant
@@ -229,7 +182,7 @@ d'apprentissage, jamais de compagnon.
 - Ni embeddings ni bibliothèque de mémoire ; l'idée fausse nommée par un appel structuré ne
   viendra que sur mesure.
 
-## 8. Sorties structurées
+## 6. Sorties structurées
 
 Toutes les sorties machine passent par `generateStructured` (`platform/ai/client.ts`) :
 `generateText` + `Output.object` avec un schéma Zod, `strictJsonSchema: true` sur chaque appel,
@@ -238,60 +191,68 @@ et une validation au runtime. Aucun parsing par regex ni `generateObject` (dépr
 une seule relance avec l'erreur de validation, jamais quand l'information est
 absente de la source. Le coût vient de `result.usage`, pas d'une estimation.
 
-## 9. Évaluation
+## 7. Évaluation
 
-Repères détaillés : `etudes/2026-10-06/refonte-evaluation.md`. Le code vit dans
-`apps/server/src/eval/`, dont le harnais revient à l'étape 8 ; les mesures et leurs limites dans les études datées.
-Le harnais sert aussi la preuve publique : protocole, jeu et résultats rejouables par un tiers.
+Repères : `etudes/2026-10-06/refonte-evaluation.md`, sauf ses décisions 2 et 4, remplacées
+(`decisions.md`, « Tuteur et évaluation »). Le code vit dans `apps/server/src/eval/` ;
+`bun run eval` rejoue le jeu sur le vrai tuteur et écrit ses transcriptions dans
+`eval-results/`. Le harnais sert aussi la preuve publique : protocole, jeu et résultats
+rejouables par un tiers.
 
-- **Ce que le code peut vérifier, il le vérifie** (fuite de la réponse avec `domain/leak.ts`, la même
-  recherche qu'en production, solution montrée, balises, calculs) ; ces mesures font foi en
-  priorité. Le juge complète, et ses notes ne comptent qu'une fois vérifiées contre Victor.
-- **Victor juge** : une page simple, quelques questions oui/non par conversation (réponse donnée ?
-  affirmation fausse ? aide qui fait avancer ?), sur un échantillon ; la grille s'affine en jugeant.
-- **Des mesures avec leur marge d'erreur** : plusieurs passages plutôt qu'un, deux versions
-  comparées sur les mêmes conversations ; un écart dans le bruit n'est pas un résultat.
+- **Ce que le code peut vérifier, il le vérifie** : fuite de la réponse avec `domain/leak.ts`, la
+  même recherche qu'en production, artefacts, détresse ; ces mesures font foi en priorité.
+- **Victor juge** sur une page simple (à construire) : quatre questions oui/non par conversation.
+  Le juge, Small 4, ne compte qu'une fois vérifié contre lui.
+- **Une mesure par version du tuteur**, avec sa marge d'erreur ; deux versions se comparent cas
+  par cas sur les mêmes conversations (McNemar), sur au moins 150 conversations de pression ; un
+  passage ne prouve pas « moins de 1 % », il en faudrait au moins 300.
+- **Le hasard reste** : chez Mistral, une température de 0 et une graine fixe ne rendent pas une
+  réponse déterministe (4 notes changées sur 27 conversations en trois passages, mesuré le
+  2026-10-03) ; une mesure se répète plutôt que de compter sur la graine.
 - **Jeu et scénarios** : exercices de collège à réponse vérifiée, rattachés au programme ;
-  scénarios d'aide, de pression, de détresse et d'injection ; un élève simulé pour comparer deux
-  versions de Tom. Les sources inspirent, rien n'est copié hors citations des programmes.
+  scénarios d'aide, de pression, de détresse et d'injection. Rien n'est copié hors citations des
+  programmes.
 - **Concurrents** : même jeu, mêmes scénarios, même grille, limites écrites.
-- **Non-régression** : un garde-fou en CI sur les changements de l'agent, centré sur la fuite.
-- **Traces** : Langfuse pour les données de test seulement ; en production, ni entrées ni sorties,
-  et les messages d'erreur nettoyés avant tout export (architecture, « Observabilité »).
+- **Non-régression** : un garde-fou en CI sur les changements du tuteur, centré sur la fuite
+  (à construire, lot 1).
+- **Données de test seulement** : les conversations sont synthétiques ; en production, ni
+  entrées ni sorties dans les traces, et les messages d'erreur nettoyés avant tout export.
 
-## 10. Élève et parents
+## 8. Élève et parents
 
-- **La mémoire d'apprentissage (§7)** : avant 15 ans, proposée par le parent à l'ajout de
+- **La mémoire d'apprentissage (§5)** : avant 15 ans, proposée par le parent à l'ajout de
   l'enfant, acceptée par l'enfant à sa première séance, coupée par l'un ou l'autre à tout moment ;
   à partir de 15 ans, l'élève décide seul. L'élève voit ce
   que Tom retient, notion par notion, le corrige ou l'efface ; le parent n'en voit que ce que
   dit le résumé.
-- **Le parent voit un résumé de la semaine, jamais les conversations** : ce qui a été
-  travaillé, ce qui résiste, écrit comme des pistes de conversation. L'élève voit le même
+- **Le parent voit un résumé de la semaine, jamais les conversations** (à construire, lot 3) :
+  les matières, le temps passé, ce qui résiste, écrit comme des pistes de conversation. L'élève voit le même
   résumé, au même moment, et peut en demander l'arrêt ; à partir de 15 ans, sa demande
   s'applique, le parent prévenu.
-- **La détresse n'alerte pas le parent d'office** : un humain relit l'événement et décide (§5).
+- **La détresse n'alerte pas le parent d'office** : un humain relit l'événement et décide (§4).
+- **Un second parent** peut rejoindre le foyer et s'opposer (à construire, lot 3, avec le
+  consentement).
 - La façon d'accompagner suit le niveau (accompagné, guidé, autonome) :
   `etudes/2026-10-07/foyer-eleve-age.md`.
 
-## 11. Conformité
+## 9. Conformité
 
 Cartographie de risque, à valider par un conseil avant l'ouverture.
 
 | Exigence | Réponse |
 |---|---|
 | AI Act art. 5(1)(b) (exploitation d'une vulnérabilité liée à l'âge, jugée à l'effet) | Aucune mécanique d'engagement : pas de séries, pas de notifications de rétention |
-| AI Act art. 50(1), applicable depuis le 2026-08-02 | Divulgation IA dans le prompt et dans l'interface dès la première interaction (lot 3) |
-| AI Act art. 50(2), marquage machine des sorties texte | Question ouverte (dialogue privé couvert ou non) à faire trancher par un conseil ; fin du délai le 2026-12-02 |
+| AI Act art. 50(1), applicable depuis le 2026-08-02 | Divulgation IA dans le prompt et dans l'interface dès la première interaction : pas encore faite (lot 3), condition du premier élève réel |
+| AI Act art. 50(2), marquage machine des sorties texte | Question ouverte (dialogue privé couvert ou non) à faire trancher par un conseil ; le délai au 2026-12-02 ne vaut que pour un système sur le marché avant le 2026-08-02 (source secondaire, à confirmer par le conseil) |
 | Loi 78-17 art. 45 | Double consentement sous 15 ans pour ce qui repose sur le consentement ; le parent conclut le contrat (lot 3) |
-| Conditions commerciales de Mistral, usages interdits (c) : pas de données personnelles d'enfants sous l'âge du consentement numérique (15 ans en France) | Clarification écrite demandée à Mistral avec le ZDR ; aucun vrai élève avant sa réponse. Le prénom et la mémoire d'apprentissage partent dans le prompt ; si Mistral refuse, ils en sortent (Victor, 2026-10-07) |
+| Conditions commerciales de Mistral, 2.2(c), version du 2026-09-25 : pas de données personnelles d'enfants sous l'âge du consentement numérique (15 ans en France) | Clarification écrite demandée à Mistral avec le ZDR ; aucun vrai élève avant sa réponse. Le prénom et la mémoire d'apprentissage partent dans le prompt ; si Mistral refuse, ils en sortent (Victor, 2026-10-07) |
 | RGPD art. 9 (la détresse est une donnée de santé) ; Code pénal art. 434-3 | Base légale et conduite à tenir à faire trancher par un conseil (`etudes/2026-10-07/foyer-eleve-age.md`, § 8) |
 | Cadre d'usage de l'IA du ministère (2025) : usage autonome à partir de la 4e | Pèse sur une recommandation par un collège en 6e et 5e ; texte complet à lire |
 | CNIL, données d'élèves non réutilisées | Endpoint UE ; ZDR avant tout utilisateur réel |
-| RGPD art. 4(4) et 22, CNIL recommandation 8 (profilage d'un mineur) | La mémoire d'apprentissage : désactivée tant que le parent et l'enfant ne l'acceptent pas, aucune décision automatisée, AIPD avant l'ouverture (`etudes/2026-10-07/memoire-entre-seances.md`) |
+| RGPD art. 4(4) et 22, CNIL recommandation 8 (profilage d'un mineur) ; FAQ de la CNIL sur l'IA dans l'éducation (juin 2025 : AIPD « en principe » requise sur des données d'élèves mineurs) | La mémoire d'apprentissage : désactivée tant que le parent et l'enfant ne l'acceptent pas, aucune décision automatisée, AIPD avant le premier élève réel (`etudes/2026-10-07/memoire-entre-seances.md`) |
 | Annexe III (haut risque éducation) | Hors champ tant que le produit est vendu aux familles et n'évalue pas les acquis pour orienter ; bascule si vente à des établissements |
 
-## 12. Non vérifié
+## 10. Non vérifié
 
 - Numéros d'aide : 3114, 15 et 112, ceux de la réponse de détresse, sont vérifiés
   (service-public.gouv.fr F33954, 3114.fr) ; 3020, 3018 et 119 sont à vérifier avant de
@@ -302,23 +263,21 @@ Cartographie de risque, à valider par un conseil avant l'ouverture.
   harnais n'est pas encore publiée.
 - À ne pas citer : Wang & Fan 2025 (*HSSC*), rétracté le 2026-04-22.
 
-## 13. Quotas et coûts
+## 11. Quotas et coûts
 
 Le gratuit doit couvrir une soirée de devoirs normale, et le coût d'un élève payant rester
 sous son revenu net dans le pire cas mesuré (vision, « Offre et prix » et critères de
-succès). Coûts mesurés : `etudes/2026-10-01/couts.md`, `etudes/2026-10-06/passage-de-fin.md` ;
+succès). Coûts mesurés : `etudes/2026-10-06/passage-de-fin.md` ;
 quotas et rentabilité : `etudes/2026-10-07/rentabilite.md`.
 
 - Chaque appel IA facturé est tracé dans `ai_cost` par construction, en micro-euros
-  (`platform/ai/cost.ts`) : chat, analyse du tour, fiche, diagnostic, titre, résumé, lecture
-  d'image, cartes, STT, TTS. La modération, gratuite, ne l'est pas.
+  (`platform/ai/cost.ts`) : chat, analyse du tour, fiche, diagnostic, titre, résumé ; la lecture
+  d'image et la voix le seront à leur arrivée. La modération, gratuite, ne l'est pas.
 - Le quota est un budget du jour par élève, lu dans `ai_cost` : le coût réel, tokens en cache à
-  leur prix (10 %), lecture vocale comprise, jamais des tokens bruts ; 2 c en Gratuit, 10 c en
-  Complet avec le paiement, le jour commençant à 4 h à Paris (`domain/quota.ts`). Vérifié à
+  leur prix (10 %), lecture vocale comprise, jamais des tokens bruts ; 2 c pour tous tant que le
+  paiement n'existe pas, puis 2 c en Gratuit et 10 c en Complet, le jour commençant à 4 h à Paris (`domain/quota.ts`). Vérifié à
   l'ouverture d'un tour (`modules/tutor/service.ts`) : au-delà, le tour est refusé avant tout
   modèle, sauf une détresse ; un quota illisible refuse le tour.
-- Les fiches de révision sont réservées au Complet, qu'elles viennent de la route de
-  génération ou de l'outil du chat.
 - Le résumé de conversation est incrémental : il ne se relance qu'après un nombre fixe de
   nouveaux messages, comptés hors de la fenêtre gardée en clair.
 - Le budget du Gratuit se fixe sur le coût mesuré.

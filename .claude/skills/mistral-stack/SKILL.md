@@ -5,26 +5,23 @@ description: Choisir le modèle Mistral et l'appeler correctement — chat, rais
 
 # Stack IA — casting et réglages
 
-Contrainte non négociable : **stack 100 % Mistral, inférence en UE** (`api.eu.mistral.ai`,
-variable `MISTRAL_SERVER_URL`). Référence de conception : `docs/tuteur.md` §2-3.
+Contrainte non négociable : **stack 100 % Mistral, inférence en UE** (`api.eu.mistral.ai`,
+variable `MISTRAL_SERVER_URL`, +10 % sur le prix). Les rôles, les modèles et leurs réglages :
+`docs/tuteur.md` §2 ; le pourquoi : `docs/decisions.md`.
 
 ## Casting
 
-| Rôle | Modèle | Réglage |
-|---|---|---|
-| Chat élève, texte et image | `mistral-small-2603` (Small 4) | `generateText` en un appel, contrôlé avant l'élève (`modules/tutor/core/controlled-turn.ts`) ; `reasoningEffort` routé par `modules/tutor/core/reasoning.ts`, `promptCacheKey` = ID de session |
-| Lecture d'image (transcription seule), résumés, cartes, titres, diagnostic | `mistral-small-2603` | `reasoningEffort: 'none'` (défaut de `platform/ai/client.ts`) |
-| Fiche d'exercice | `mistral-small-2603` | `reasoningEffort: 'high'` passé à `generateStructured`, sans plafond de tokens, température 0,7, trois tirages votés (`modules/tutor/core/sheet.ts`) |
-| Analyse du tour | `mistral-small-2603` | `reasoningEffort: 'high'`, température 0,7 (`modules/tutor/core/analysis.ts`) |
-| Modération d'entrée et de sortie | `mistral-moderation-2603` (gratuit) | `platform/ai/moderation.ts`, drapeaux au seuil de Mistral. Entrée : `studentTurn`, le message de l'élève avec le dernier message du tuteur, `selfharm` décide la détresse, les autres catégories se gardent sans bloquer ; indisponible = les règles seules jugent la détresse. Sortie : catégories bloquantes `OUTPUT_BLOCKING` ; indisponible = rien ne part sans contrôle |
-| STT / TTS | `voxtral-mini-2602` / `voxtral-mini-tts-2603` | STT en français imposé (sans langue, les réponses courtes basculent en anglais, mesuré) ; TTS en voix preset `fr_marie_neutral` (champ `language` refusé par l'API) |
-
-Un seul modèle texte : une seule variable (`MISTRAL_MODEL`), un seul cache, une seule
-configuration à évaluer. Un autre modèle (Ministral, Medium 3.5) ne revient que sur une
-mesure du harnais d'évaluation (lot 1), jamais sur intuition.
-
-**IDs datés uniquement.** `src/config.ts` refuse tout `-latest` au boot : un alias change de
-modèle et de prix sans prévenir (docs.mistral.ai/inference/model-lifecycle).
+- **Mistral Small 4** (`mistral-small-2603`) pour tout rôle de LLM, juge compris : jamais
+  Medium, Large ni Ministral. Restent les modèles spécialisés : `mistral-moderation-2603`
+  (gratuit), et Voxtral pour la voix, à son arrivée au lot 3 (`voxtral-mini-2602` en
+  transcription, en français imposé ; voix `fr_marie_*`, le champ `language` est refusé).
+- Un seul modèle texte : une seule variable (`MISTRAL_MODEL`), un seul cache, une seule
+  configuration à évaluer.
+- **IDs datés uniquement.** `src/config.ts` refuse tout `-latest` au boot : un alias change de
+  modèle et de prix sans prévenir (docs.mistral.ai/inference/model-lifecycle).
+- **Débit** : en mode gratuit, 100 000 tokens par minute pour l'organisation, et une fiche
+  d'exercice en prend environ 78 000. Sur un 429, lire les en-têtes `x-ratelimit-*` : un plafond
+  à 0 veut dire « modèle hors offre », pas « quota épuisé ».
 
 ## Appeler l'API
 
@@ -47,25 +44,27 @@ modèle et de prix sans prévenir (docs.mistral.ai/inference/model-lifecycle).
 
 Chaque appel facturé de `createAi` écrit son coût dans `ai_cost`, en micro-euros, au nom de
 l'élève (`owner`, `null` hors d'un élève : rien n'est écrit), une réponse hors schéma comprise.
-La modération, gratuite, n'est pas tracée. Un appel qui ne passe pas par `createAi` (la voix)
-écrit son coût lui aussi : jamais un appel facturé hors du quota.
+La modération, gratuite, n'est pas tracée. Un appel qui ne passera pas par `createAi` (la voix)
+devra écrire son coût lui aussi : jamais un appel facturé hors du quota.
 
 - **Tarif** : `PRICES_USD` (`src/platform/ai/cost.ts`), prix publics en dollars par ID daté. Tokens
   en cache à 10 % du prix d'entrée, endpoint UE +10 %, conversion au taux que Mistral facture
   (`MISTRAL_USD_TO_EUR`). Un modèle sans prix fait échouer `createAi`, donc le démarrage :
   l'ajouter à la table.
-- **Quota** : 2 c par élève et par jour en Gratuit, 10 c en Complet, voix comprise, remise à zéro
+- **Quota** : 2 c par élève et par jour pour tous tant que le paiement n'existe pas, puis 2 c en
+  Gratuit et 10 c en Complet, voix comprise, remise à zéro
   à 4 h à Paris (`src/domain/quota.ts`, `docs/etudes/2026-10-07/rentabilite.md`), vérifié à
   l'ouverture de chaque tour sur la somme d'`ai_cost`, un tour à la fois par élève. Un appel
-  facturé d'un tour compte tout seul ; une route qui appelle Mistral hors d'un tour (voix, cartes)
-  vérifie le quota à son entrée.
+  facturé d'un tour compte tout seul ; une route qui appellera Mistral hors d'un tour (la voix)
+  vérifiera le quota à son entrée.
 - **Réduire le coût** : cache de prompt, clé = ID de session pour le chat, ID de workflow
   versionné pour les tâches templatées, contenu stable en tête du prompt ;
   `maxOutputTokens` fixé par tâche à l'appel, sauf sur un appel qui raisonne (la borne est alors
   le timeout).
 - **Endpoint UE** : Batch, Agents et Files n'y sont pas servis : on ne les utilise pas.
 
-Coûts mesurés : `docs/etudes/2026-10-01/couts.md`, `docs/etudes/2026-10-06/passage-de-fin.md`.
+Coûts mesurés : `docs/etudes/2026-10-06/passage-de-fin.md` ; quotas et prix :
+`docs/etudes/2026-10-07/rentabilite.md`.
 
 ## Sources
 

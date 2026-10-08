@@ -28,8 +28,8 @@ git add src/<chemin>/schema.ts drizzle/
 ```
 
 Le job Migration Sync de la CI vérifie que le SQL commité correspond au schéma. Au démarrage
-de l'image Docker, `docker-entrypoint.sh` applique les migrations (`dist/migrate.js`) hors
-`NODE_ENV=development`.
+de l'image Docker, `docker-entrypoint.sh` applique les migrations (`dist/migrate.js`) avant de
+lancer le serveur.
 
 ## Interdictions
 
