@@ -234,6 +234,12 @@ rejouables par un tiers.
   `GET /api/summary/:studentId`. À construire au lot 3 : l'écran, écrit comme des pistes de
   conversation, et l'arrêt à la demande de l'élève ; à partir de 15 ans, sa demande s'applique,
   le parent prévenu.
+- **En 6e et 5e, le mode accompagné** (à construire, lot 3 ; `decisions.md`) : la séance s'ouvre
+  depuis l'espace du parent, « Je reste à côté » ou « Il travaille seul ce soir ». À côté, Tom
+  propose au parent au plus trois ou quatre pistes par séance (rôle, stratégie, réparation,
+  étape), déclenchées par un blocage ou la fin, de vingt mots au plus, visibles de l'enfant ; une
+  piste ne donne jamais plus que le cran courant de l'enfant, et le contrôle de sortie s'y applique
+  comme à une réponse. Formulations et sources : `etudes/2026-10-08/aide-parentale.md`, § 6 (c).
 - **La détresse n'alerte pas le parent d'office** : un humain relit l'événement et décide (§4).
 - **Un second parent** peut rejoindre le foyer et s'opposer (à construire, lot 3, avec le
   consentement).

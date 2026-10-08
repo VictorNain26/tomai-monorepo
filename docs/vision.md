@@ -36,8 +36,9 @@ Ils tranchent quand deux choix se valent.
 2. **On n'affirme que ce qu'on peut prouver.** Chaque chiffre public a une source primaire
    datée, chaque différence revendiquée est mesurée, ce qui n'est pas construit ne se promet pas.
    On ne dit pas qu'il fait progresser : aucune mesure ne le montre à ce jour.
-3. **Le parent voit sans surveiller.** Un résumé, jamais les conversations ; l'élève voit ce que
-   voit son parent.
+3. **Le parent voit sans surveiller.** Un résumé, jamais les conversations à distance ; l'élève
+   voit ce que voit son parent. En 6e et 5e, le parent peut être à côté pendant la séance : Tom
+   l'aide à accompagner sans faire à la place, et l'enfant le sait.
 4. **Les données d'un enfant restent en Europe, et au minimum.** Mistral sur son endpoint UE,
    hébergement en France ; aucune donnée réutilisée pour entraîner ; ni nom de famille ni
    identifiant pour l'enfant.
@@ -56,6 +57,7 @@ Ils tranchent quand deux choix se valent.
 | **Il ne cède pas** | Au harnais, sous pression (« c'est pour demain », « je suis son parent »), la réponse n'est presque jamais donnée, et aucune solution n'est montrée par accident |
 | **Il explique bien** | Il repère l'erreur, pose une question à la fois, monte d'un cran seulement si l'élève bloque, ne se trompe pas, parle comme au collège ; jugé par Victor |
 | **Il reprend là où ça a résisté** | D'une séance à l'autre, son aide s'appuie sur les notions qui ont résisté ; mesuré avec et sans mémoire, annoncé seulement après |
+| **Le parent accompagne sans faire à la place** | En 6e et 5e, les pistes de Tom au parent ne donnent jamais plus que le cran de l'enfant, au harnais ; en bêta, la part des séances avec et sans parent, selon les familles |
 | **Le parent voit sans surveiller** | Un résumé de la semaine : matières, temps passé, ce qui résiste ; une détresse relue par un humain avant tout message au parent, qui n'en reçoit que le motif |
 | **Les données restent en Europe** | Endpoint UE, hébergement à Paris, Zero Data Retention accordé par Mistral |
 | **On publie nos mesures** | Protocole, jeu d'exercices et résultats, y compris face aux concurrents, publics et rejouables, avec leur marge d'erreur et le nom de qui a jugé |
@@ -93,8 +95,9 @@ Chiffres et modèle : `etudes/2026-10-07/rentabilite.md`.
 
 ## Périmètre V1
 
-- **Dedans** : le collège, de la 6e à la 3e, en mode guidé (l'élève relie son appareil par un code
-  du parent) ; un client web pensé d'abord pour le téléphone ; texte, photo et voix ; la mémoire
+- **Dedans** : le collège, en mode accompagné en 6e et 5e (la séance s'ouvre depuis l'espace du
+  parent, qui peut rester à côté) et guidé en 4e et 3e (l'élève relie son appareil par un code du
+  parent) ; un client web pensé d'abord pour le téléphone ; texte, photo et voix ; la mémoire
   d'apprentissage, si elle est acceptée ; le résumé parent ; le second parent ; la détresse
   relue par un humain ; Gratuit et Complet ; une direction artistique construite autour de Tom.
 - **Dehors** : les fiches de révision ; Pronote, tant qu'aucune convention avec Index Éducation
