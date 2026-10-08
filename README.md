@@ -1,8 +1,9 @@
 # Tom Monorepo
 
 Tuteur IA pour les devoirs des collégiens (6e à 3e) : il aide l'élève à trouver sans
-faire l'exercice à sa place, et le parent reçoit un résumé de la semaine, jamais les
-conversations. Pré-lancement : aucun utilisateur en production.
+faire l'exercice à sa place, et le parent recevra un résumé de la semaine, jamais les
+conversations. Pré-lancement : aucun utilisateur réel. Staging : https://staging.tomia.fr ;
+landing : https://tomia.fr.
 
 ## Démarrage
 
@@ -18,8 +19,7 @@ Un compte parent se crée sur invitation, en bêta fermée comme en production�
 Arrêt de l'infra : `bun run dev:down`. `bun run dev` attend que postgres soit prêt et que les
 migrations passent ; sinon rien ne démarre.
 
-**En refonte** depuis le 2026-10-06 (`docs/etudes/2026-10-06/refonte-architecture.md`) ; ce qui
-est fait et ce qui reste : `docs/suivi.md`.
+Où on en est : `docs/suivi.md`.
 
 ## Structure
 
@@ -48,9 +48,9 @@ tooling/
 | Auth | Better Auth 1.7 : le gardien entre par un code envoyé à son adresse ou par une clé d'accès, sans mot de passe, sur invitation pendant la bêta fermée ; l'appareil de l'élève est relié par un code |
 | IA | Mistral Small 4, endpoint UE (`docs/tuteur.md`) |
 | Paiements | Aucun branché. Paiement web prévu au lot 3 |
-| Observabilité | Logs pino ; Bugsink, auto-hébergé, pour les erreurs avec la préproduction (`docs/etudes/2026-10-07/hebergement.md`). Pas d'analytics installée |
+| Observabilité | Logs pino ; Bugsink, auto-hébergé, pour les erreurs avant la première famille (`docs/etudes/2026-10-07/hebergement.md`). Pas d'analytics installée |
 | Monorepo | Turborepo, workspaces Bun |
-| Déploiement | Landing : une application statique Clever Cloud, servie par Caddy (`apps/landing/Caddyfile`), pas encore déployée. Server : image `apps/server/Dockerfile`, qui embarque le build du web, publiée sur GHCR au SHA à chaque merge sur `main`, pas encore déployée ; elle le sera chez Clever Cloud, région Paris, en staging à chaque merge, puis en production sur approbation (`docs/architecture.md`, « Environnements et livraison »). Web : servi par le serveur, sur la même origine que l'API ; en dev, par le proxy de Vite (`apps/web/vite.config.ts`) |
+| Déploiement | Clever Cloud, région Paris, par la CI à chaque merge sur `main` (`docs/architecture.md`, « Environnements et livraison »). Landing : une application statique servie par Caddy (`apps/landing/Caddyfile`). Serveur : l'image `apps/server/Dockerfile`, qui embarque le build du web, publiée sur GHCR au SHA, déployée en staging ; la production suivra, sur approbation. Web : servi par le serveur, sur la même origine que l'API ; en dev, par le proxy de Vite |
 
 ## Commandes
 
@@ -67,7 +67,8 @@ Migrations : `.claude/rules/database-migrations.md` ; stack locale : skill `dev-
 Harnais d'évaluation : `cd apps/server && bun run eval [--scenario S2] [--exercise M1] [--repeat 2]` rejoue
 le jeu de `src/eval` sur le vrai tuteur et le vrai Mistral, sur la base locale seulement, et écrit
 transcriptions, verdicts et taux avec leur intervalle de Wilson dans `eval-results/`. Il est payant :
-environ 0,5 € et 2 h pour le jeu entier.
+environ 0,5 € et 2 h pour le jeu entier, et demande Mistral en paiement à l'usage (le mode
+gratuit plafonne le débit).
 
 ## Git
 
@@ -80,8 +81,7 @@ instructions destinées aux agents, et `.claude/rules/` celles qui ne valent que
 partie du code, chargées sur ses chemins.
 
 Produit et avancement, dans `docs/` :
-[vision produit](./docs/vision.md) (pour qui,
-promesse, prix, périmètre) · [roadmap](./docs/roadmap.md) ·
-[suivi](./docs/suivi.md) (où on en est) · specs techniques
-[cible V1](./docs/architecture.md) et
-[tuteur IA](./docs/tuteur.md).
+[vision](./docs/vision.md) (pour qui, promesse, principes,
+périmètre) · [décisions](./docs/decisions.md) · [roadmap](./docs/roadmap.md) ·
+[suivi](./docs/suivi.md) (où on en est) · [architecture](./docs/architecture.md) ·
+[tuteur IA](./docs/tuteur.md) · études datées dans `docs/etudes/`.

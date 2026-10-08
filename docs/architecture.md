@@ -1,36 +1,16 @@
-# Cible V1 — architecture et périmètre
+# Architecture
 
-Statut : validé le 2026-09-22, aligné sur la vision produit le 2026-10-01. **En refonte depuis le
-2026-10-06** : la cible est `etudes/2026-10-06/refonte-architecture.md`, qui prime sur ce document
-là où ils divergent ; chaque étape de la refonte réécrit la partie qu'elle reconstruit.
+Ce qui est en place, et comment. Le pourquoi de chaque choix : `decisions.md` ; le produit :
+`vision.md` ; le tuteur : `tuteur.md`.
 
-## Produit
-
-Pour qui, promesse, preuves, prix et périmètre : `vision.md`, qui
-prime sur ce document. Ici, seulement l'architecture qui en découle.
-
-Le nom du produit est ouvert (vision, « Marque ») ; Tom est le nom de l'IA. L'app n'est
-pas en production : aucun utilisateur, aucune contrainte de rétrocompatibilité, on vise
-directement la cible.
-
-## Décisions
-
-| Sujet | Décision | Motif |
-|---|---|---|
-| Client V1 | **Web uniquement, application monopage Vite + React + TanStack Router, installable (PWA), servie par Hono sur la même origine que l'API, pensée d'abord pour le téléphone** | Un seul client à livrer ; le collégien travaille le soir, probablement sur téléphone, à vérifier (vision, « Pour qui ») ; options comparées, Next.js compris, dans `etudes/2026-10-06/client-web.md` |
-| Application native | **Hors V1** ; `apps/mobile` supprimé au lot 0 (l'historique git le garde) | Code mort à maintenir sinon |
-| Topologie | **Un dépôt, backend en monolithe modulaire** | `ai-service` et `curriculum` séparés ont pourri puis été supprimés ; un service séparé ne se justifie que par une contrainte réelle |
-| Serveur | Bun + Hono (Elysia remplacé le 2026-10-01) | Client typé de bout en bout (`hono/client`) ; adoption et maintenance bien plus larges qu'Elysia, qui reposait sur un seul mainteneur ; tourne sur Bun, Node et l'edge |
-| LLM | **Mistral**, stack 100 % UE | Souveraineté, données de mineurs (RGPD) |
-| Modèle de chat | **Mistral Small 4** (`mistral-small-2603`), multimodal | Voir `tuteur.md` |
-| Pronote | **Hors V1** : module, `pawnote`, tables et routes retirés au lot 0 | Accès non officiel, cassé par la version 2026 de Pronote ; il ne revient que par une convention avec Index Éducation (vision, « Périmètre V1 ») |
-| Paiement | Web, **à facturation sans piège** (vision, « Offre et prix ») | Premier reproche des parents dans les avis |
+Tom est le nom de l'IA, pas du produit, dont le nom est ouvert. Aucun utilisateur réel : aucune
+contrainte de rétrocompatibilité, on vise directement la cible.
 
 ## Serveur
 
-Monolithe modulaire, en refonte : structure, règles de dépendance et ordre de reconstruction
-dans `etudes/2026-10-06/refonte-architecture.md`. Les modules (foyer, tuteur, apprentissage,
-fichiers, voix, facturation) arrivent chacun avec l'étape qui le construit.
+Monolithe modulaire ; sa structure et ses règles de dépendance viennent de
+`etudes/2026-10-06/refonte-architecture.md`. Les fichiers, la voix et la facturation arrivent
+au lot 3.
 
 En place (`apps/server/src`) :
 - `main.ts`, seule racine de composition, et `migrate.ts` ; `config.ts`, un seul schéma de
@@ -84,7 +64,7 @@ En place (`apps/web`) :
 - Après un déploiement, un onglet ouvert qui demande un morceau disparu de son ancien build se
   recharge une fois sur le nouveau (TanStack Router, `lazyRouteComponent`).
 - Installable (PWA, `vite-plugin-pwa`) : manifest et service worker, qui ne met en cache que le
-  build, jamais une réponse `/api`, et laisse passer les navigations `/api` (callback OAuth).
+  build, jamais une réponse `/api`, et laisse passer les navigations `/api`.
   Photo, voix et push passeront par le web, sans application native en V1.
 
 - Client typé : le serveur émet ses déclarations (`build:types`, seul point d'entrée
@@ -100,21 +80,30 @@ En place (`apps/web`) :
 
 - **En place** : logs pino avec le `requestId` de chaque requête et un sérialiseur d'erreurs en
   liste blanche (aucun texte d'élève). Les erreurs iront à Bugsink, auto-hébergé chez Clever Cloud,
-  avec la préproduction ; les traces OpenTelemetry attendent un besoin mesuré
+  juste avant la première vraie famille ; les traces OpenTelemetry attendent un besoin mesuré
   (`etudes/2026-10-07/hebergement.md`).
 - **À tenir dès leur retour** : l'AI SDK écrit le message d'erreur dans le span quel que soit
   `recordInputs`, et une erreur de validation y met la sortie du modèle ; les messages d'erreur
   se réécrivent avant tout export.
-- **Cible** (`etudes/2026-10-06/refonte-evaluation.md`, « Observabilité en production ») : traces et
-  métriques sans identifiant ni texte, logs avec `trace_id`, erreurs dans un outil hébergé dans
-  l'UE, rétentions courtes, accès réservé ; les erreurs vont à Bugsink, chez l'hébergeur.
+- **Cible** : traces et métriques sans identifiant ni texte, logs avec `trace_id`, rétentions
+  courtes, accès réservé.
 
 ## Hébergement
 
-Tranché le 2026-10-07 (`etudes/2026-10-07/hebergement.md`) : tout chez Clever Cloud, région Paris.
-`app.<nom>.fr` sert l'API et le web depuis l'image du serveur ; `<nom>.fr` est la landing, en
-Astro, dans une application statique à part. Les erreurs vont à Bugsink, l'e-mail part de Scaleway
-TEM, les photos iront dans Cellar.
+Tout chez Clever Cloud, région Paris (`etudes/2026-10-07/hebergement.md`). L'image du serveur
+sert l'API et le web ; la landing, en Astro, vit dans une application statique à part. L'e-mail
+part de Scaleway TEM, les photos iront dans Cellar.
+
+- **Staging** : https://staging.tomia.fr, l'application `tomai-staging` (Docker nano) et sa base
+  `tomai-staging-db` (PostgreSQL 18, `XXS_TNY`, disque chiffré, certificat épinglé par
+  `DATABASE_CA`). Le proxy de Clever Cloud ajoute l'adresse réelle à droite de
+  `X-Forwarded-For` : le serveur fait confiance à `TRUSTED_PROXY_HOPS` sauts (1 au staging) pour
+  son rate limit et pour better-auth (`platform/http/client-address.ts`). L'e-mail part de
+  `mail.tomia.fr`, par une clé limitée à l'envoi.
+- **Landing** : https://tomia.fr, l'application statique `tomai-landing`, servie par Caddy
+  (`apps/landing/Caddyfile`). `contact@tomia.fr` est redirigée vers la boîte Gmail de Victor,
+  donc chez Google : à revoir si une boîte dans l'UE devient nécessaire.
+- **Production** : elle naît avec la première vraie famille.
 
 ### Environnements et livraison
 
@@ -141,12 +130,7 @@ fait que tirer l'image : il ne construit rien, et les secrets ne passent pas a
 
 ## Décisions ouvertes
 
-Elles sont tranchées au démarrage du lot qui en dépend, doc-first, pas avant :
-
-| Décision | Lot | Ce qui doit être vérifié |
-|---|---|---|
-| Fournisseur de paiement web | 3 | Conformité UE, abonnement familial multi-enfants, facturation sans piège réalisable telle que la vision la définit |
-| Nom du produit | 4 | Marques et domaines (vision, « Marque ») |
+`decisions.md`, « Ouvertes ».
 
 ## Ordre des lots
 

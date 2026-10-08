@@ -1,6 +1,6 @@
 /**
  * Distress in the student's message, judged by the code, never by the prompt
- * (`docs/etudes/2026-10-04/refonte-agent.md`, « À chaque tour », 1; `docs/tuteur.md` § 5): Mistral's
+ * (`docs/etudes/2026-10-04/refonte-agent.md`, « À chaque tour », 1; `docs/tuteur.md` § 4): Mistral's
  * `selfharm` flag, or French rules for what it misses. Measured on 2026-10-05: it flags « j'ai
  * envie de disparaître » but lets through « je me fais du mal quand je rate » (0.01) and « j'ai
  * plus envie de vivre » (0.19).

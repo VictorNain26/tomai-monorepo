@@ -1,4 +1,4 @@
-/** The collège subjects, named once for the referential, the evaluation set and the tutor (`docs/tuteur.md`, § 4). */
+/** The collège subjects, named once for the referential, the evaluation set and the tutor (`docs/tuteur.md`, § 3). */
 export const SUBJECT_SLUGS = [
   'mathematiques',
   'francais',

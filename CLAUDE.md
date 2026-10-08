@@ -4,11 +4,13 @@ Tuteur IA des devoirs pour collégiens, avec un résumé pour le parent.
 
 ## Carte
 
-- Pour qui, promesse, périmètre : `docs/vision.md`, qui prime sur tout ; on n'affirme que ce
-  qu'on peut prouver.
-- **Travaux en cours : `docs/suivi.md`**, à lire avant de reprendre et à mettre à jour dans la PR
-  qui fait avancer. Ordre des lots : `docs/roadmap.md`. Refonte en cours :
-  `docs/etudes/2026-10-06/refonte-architecture.md`.
+- Pour qui, promesse, principes, périmètre : `docs/vision.md`, qui prime sur tout ; on n'affirme
+  que ce qu'on peut prouver.
+- Le pourquoi de chaque choix : `docs/decisions.md` ; une décision de Victor y entre dans la PR
+  qui la suit, jamais seulement dans une mémoire d'agent.
+- **Où on en est : `docs/suivi.md`**, à lire avant de reprendre et à réécrire dans la PR qui fait
+  avancer. Ordre des lots : `docs/roadmap.md`. Études datées, jamais mises à jour :
+  `docs/etudes/`.
 - Stack, structure, démarrage : `README.md`. Règles d'une partie du code :
   `.claude/rules/<sujet>.md`, chargées sur ses chemins.
 
@@ -30,16 +32,16 @@ change (Postgres de `docker compose` requis). Formatage : `bun run format`.
 - Jamais deux versions d'une même chose, ni un fichier sans usage : ce qu'une PR remplace, elle
   le supprime.
 - Jamais un type du serveur réécrit côté client : il vient du client typé de `hono/client`.
-- Jamais de test décoratif : pas de `mock.module` (refusé au lint), pas d'assertion triviale ;
-  un service, un helper ou une validation modifié a son test, cas nominal et cas limites.
+- Jamais un changement de comportement sans son test écrit et vu en échec d'abord (TDD).
+- Jamais de test décoratif : pas de `mock.module` (refusé au lint du serveur), pas d'assertion
+  triviale ; un service, un helper ou une validation modifié a son test, cas nominal et cas
+  limites.
 
 ## Revue avant merge
 
 `/code-review` relit la branche dans un contexte neuf. Ne retenir que ce qui touche la
-correction ou les exigences du plan : un relecteur trouve presque toujours quelque chose, et
-tout suivre mène à la sur-ingénierie (code.claude.com/docs/en/best-practices, « Add an
-adversarial review step »). Un constat retenu se corrige avant le merge, puis suit la boucle de
-`.claude/rules/plans-and-agents.md`.
+correction ou les exigences du plan ; un constat retenu se corrige avant le merge
+(`.claude/rules/plans-and-agents.md`).
 
 ## Garde-fous déterministes
 
