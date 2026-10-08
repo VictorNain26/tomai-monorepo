@@ -5,8 +5,9 @@ import { authClient, authMessage } from '../lib/auth';
 import { Notice } from './notice';
 
 /**
- * Signs this device out, a guardian or a student, then loads the sign-in page afresh: on a device
- * the family shares, nothing of whoever left stays in memory.
+ * Signs the guardian out of this device, then loads the app afresh: on a device the family shares,
+ * nothing of theirs stays in memory. Where the device also holds a child's session, only theirs is
+ * revoked, and the device goes back to the child: better-auth's sign-out would close them all.
  */
 export function SignOut({ label }: { label: string }) {
   const navigate = useNavigate();
@@ -16,13 +17,15 @@ export function SignOut({ label }: { label: string }) {
   const signOut = async () => {
     setFailure(null);
     setPending(true);
-    const { error } = await authClient.signOut();
+    const [{ data: current }, { data: held }] = await Promise.all([authClient.getSession(), authClient.multiSession.listDeviceSessions()]);
+    const shared = held?.some(({ session }) => session.token !== current?.session.token) ?? false;
+    const { error } = current && shared ? await authClient.multiSession.revoke({ sessionToken: current.session.token }) : await authClient.signOut();
     if (error) {
       setPending(false);
       setFailure(authMessage(error));
       return;
     }
-    await navigate({ to: '/connexion', reloadDocument: true });
+    await navigate({ to: '/', reloadDocument: true });
   };
 
   return (

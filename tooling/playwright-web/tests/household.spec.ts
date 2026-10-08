@@ -81,7 +81,13 @@ test('on the family phone, the parent opens the child’s space without a code, 
   await expect(page.getByRole('status').first()).toContainText('Cet appareil est relié au compte de Zoé');
   await signIn(page, email);
   await expect(page).toHaveURL(/\/foyer$/);
+  // Leaving, the parent hands the phone back: Zoé's space stays on it.
+  await page.getByRole('button', { name: 'Se déconnecter' }).click();
+  await expect(page.getByRole('heading', { name: 'Bonjour Zoé' })).toBeVisible();
 
+  await page.getByRole('link', { name: 'Changer de profil' }).click();
+  await signIn(page, email);
+  await expect(page).toHaveURL(/\/foyer$/);
   await page.getByRole('link', { name: /^Zoé/ }).click();
   await openZoe.click();
   await expect(page.getByRole('heading', { name: 'Bonjour Zoé' })).toBeVisible();
