@@ -47,7 +47,10 @@ En place (`apps/server/src`) :
   (`@better-auth/passkey`, liée à l'origine publique) qu'il crée depuis son foyer. Une clé se crée,
   et le compte se supprime, depuis une session ouverte il y a moins de 10 minutes ; la suppression
   emporte son foyer s'il en est le seul gardien. L'élève n'a pas de clé : le garde du foyer lui
-  ferme les routes de better-auth. Les envois partent après la réponse (`platform/lifecycle/background.ts`),
+  ferme les routes de better-auth, sauf celles par où son parent entre sur son appareil. Une session
+  vit 90 jours sans usage ; un appareil garde la session de l'enfant quand le parent y entre
+  (`multiSession`), et ne garde aucune session de parent une fois rendu à l'enfant
+  (`platform/auth/pairing.ts`). Les envois partent après la réponse (`platform/lifecycle/background.ts`),
   que l'arrêt attend.
 - `modules/tutor` : les séances, le tour (`POST /api/sessions/:id/messages`), qui échoue fermé, le
   quota par élève, le résumé et le titre en tâche de fond, la mémoire d'apprentissage

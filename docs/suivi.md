@@ -84,6 +84,9 @@ bloquant levé). L'historique vit dans git et les PR.
   (`@better-auth/passkey`, vérifié le 2026-10-08) ; le code reste pour un appareil neuf.
 - **Test du staging par Victor, le 2026-10-08** : inscription sur invitation, code, prénom et clé
   d'accès marchent de bout en bout ; ses retours d'interface et de parcours vont au lot 3.
+- **Profils sur l'appareil** (Victor, 2026-10-08) : l'appareil d'un enfant reste relié 90 jours sans
+  usage ; le parent ouvre l'espace de son enfant sur son propre téléphone sans code, et revient au
+  sien par sa clé d'accès ou un code ; l'enfant n'a plus de déconnexion, mais « Changer de profil ».
 - **Prochaine action** : la landing de production chez Clever Cloud.
 - **Rentabilité et quotas** (`etudes/2026-10-07/rentabilite.md`) : le gratuit décide de la
   rentabilité, la distribution est le vrai risque ; quotas proposés de 2 c (Gratuit) et 10 c
@@ -103,6 +106,8 @@ tâche ou est explicitement renvoyé (`.claude/rules/plans-and-agents.md`). Ce q
 supprime ou que l'étude couvre n'y figure plus.
 
 ### Refonte — préproduction (étape 7)
+
+- **Trous des tests, mesurés le 2026-10-08** (couverture Bun 99 % des lignes, sans branches ; mutation StrykerJS et `@hughescr/stryker-bun-runner` sur trois modules purs : 76,9 %), à combler en TDD : `domain/leak.ts` (une réponse sans espaces que le tuteur écrit avec, chaque forme parlée : volts, cm², euros, « f de n ») ; `written-equalities.ts` (produit implicite « 2(3) = 5 », côté non évaluable, frontière de l'arrondi) ; `output-check.ts` (consigne de régénération pour une balise, formes vides) ; la réponse de détresse quand son enregistrement échoue (`tutor/service.ts`) ; le rate limit par adresse réelle (`rate-limit.test.ts` ne passe jamais par `getConnInfo`) ; mois de naissance fixes qui expireront (`household.test.ts`, `household.spec.ts`), un test qui dépend de l'ordre (`household.test.ts`), un quota calculé au chargement (`turn.test.ts`).
 
 - **Observabilité** : les erreurs du serveur vers Bugsink, auto-hébergé avec sa base, celles des navigateurs par le serveur (`tunnel`) ; les traces OpenTelemetry attendent un besoin mesuré (`etudes/2026-10-07/hebergement.md`).
 - **Cookies de session** : le préfixe `__Host-` pour ceux de better-auth, l'app et la landing étant du même site (à vérifier dans la config de better-auth).
