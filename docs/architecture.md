@@ -43,9 +43,11 @@ En place (`apps/server/src`) :
   de la requête SQL, une matrice de tests d'accès croisés.
 - `platform/email` : l'envoi d'un e-mail, Scaleway TEM par son SDK en production, le journal en
   développement. Le gardien n'a pas de mot de passe : il entre par un code à 6 chiffres envoyé à son
-  adresse (plugin `email-otp`), le premier créant son compte sur invitation, et supprime son compte
-  depuis une session ouverte il y a moins de 10 minutes, ce qui emporte son foyer s'il en est le
-  seul gardien. Les envois partent après la réponse (`platform/lifecycle/background.ts`),
+  adresse (plugin `email-otp`), le premier créant son compte sur invitation, ou par une clé d'accès
+  (`@better-auth/passkey`, liée à l'origine publique) qu'il crée depuis son foyer. Une clé se crée,
+  et le compte se supprime, depuis une session ouverte il y a moins de 10 minutes ; la suppression
+  emporte son foyer s'il en est le seul gardien. L'élève n'a pas de clé : le garde du foyer lui
+  ferme les routes de better-auth. Les envois partent après la réponse (`platform/lifecycle/background.ts`),
   que l'arrêt attend.
 - `modules/tutor` : les séances, le tour (`POST /api/sessions/:id/messages`), qui échoue fermé, le
   quota par élève, le résumé et le titre en tâche de fond, la mémoire d'apprentissage
