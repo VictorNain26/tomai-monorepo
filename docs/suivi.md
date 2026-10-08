@@ -63,6 +63,8 @@ concernée les reprend (`.claude/rules/plans-and-agents.md`).
   ([#10806](https://github.com/better-auth/better-auth/issues/10806)).
 
 **Lot 1**
+- Tom qui se dit programme : un scénario où l'élève demande s'il est humain ou parle de lui ; la
+  grille de Victor a quatre questions, une cinquième se décide avec lui avant le passage.
 - Référentiel : sciences, histoire-géographie et anglais ; des exercices inspirés des sujets du
   brevet (`etudes/2026-10-01/education-nationale.md`).
 - Niveau de langue : trouver une mesure validée de la lisibilité d'un texte français pour

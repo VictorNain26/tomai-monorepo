@@ -35,8 +35,11 @@ test('a paired student opens a session, writes to Tom and reads his reply', asyn
   await page.getByLabel('Ton message').fill('Je bloque sur 3x + 5 = 20');
   await page.getByRole('button', { name: 'Envoyer' }).click();
 
-  // AI Act art. 50(1): the student is told they talk to an AI before their first message is answered.
-  await expect(page.getByText('Tom est une IA : il t’aide à trouver, il ne fait pas à ta place.')).toBeVisible();
+  // AI Act art. 50(1): the student is told they talk to an AI before their first message is answered,
+  // by a mark under the field, in sight all through the session and read with the field.
+  const aiNotice = 'Tom est une IA : il peut se tromper, vérifie avec ton cours.';
+  await expect(page.getByText(aiNotice)).toBeVisible();
+  await expect(page.getByLabel('Ton message')).toHaveAccessibleDescription(aiNotice);
   const conversation = page.getByRole('list', { name: 'Conversation' });
   await expect(conversation.getByRole('listitem')).toHaveText(['Toi : Je bloque sur 3x + 5 = 20', 'Tom : Que fais-tu du + 5 ?']);
   // Tom's head beside his message, never beside the student's.
