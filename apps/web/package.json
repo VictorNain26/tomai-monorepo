@@ -24,6 +24,7 @@
     "better-auth": "^1.7.7",
     "bowser": "2.14.1",
     "hono": "^4.13.12",
+    "katex": "^0.16.27",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "react-hook-form": "^7.89.0",

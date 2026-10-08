@@ -47,6 +47,13 @@ export const isTurnStep = (value: unknown): value is TurnStep => typeof value ==
 /** What Tom does while the student waits; he reads before the first step has arrived. */
 export const waitingText = (step: TurnStep | null): string => WAITING[step ?? 'reading'];
 
+/**
+ * Tom's text with the LaTeX delimiters a model may write despite the prompt, \( … \) and
+ * \[ … \], turned into the dollars remark-math reads.
+ */
+export const mathDelimited = (text: string): string =>
+  text.replace(/\\\[([\s\S]+?)\\\]/g, (_, tex: string) => `$$${tex}$$`).replace(/\\\(([\s\S]+?)\\\)/g, (_, tex: string) => `$${tex}$`);
+
 /** A failed turn, in words a student reads; the server's own message never shows. */
 export function chatMessage(error: Error): string {
   if (isProblem(error, 'QUOTA_EXCEEDED')) return 'Le temps avec Tom est fini pour aujourd’hui. Reviens demain !';

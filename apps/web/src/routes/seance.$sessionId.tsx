@@ -95,9 +95,9 @@ function Session() {
               {textOf(message)}
             </li>
           ) : (
-            <li key={message.id} className="flex gap-3 self-start text-lg leading-relaxed text-foreground">
+            <li key={message.id} className="flex max-w-full gap-3 self-start text-lg leading-relaxed text-foreground">
               <TomHead className="mt-0.5 size-8 shrink-0" />
-              <div>
+              <div className="min-w-0">
                 <span className="sr-only">Tom : </span>
                 <TomText>{textOf(message)}</TomText>
               </div>

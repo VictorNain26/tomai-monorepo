@@ -1,22 +1,40 @@
-import Markdown, { type Options } from 'react-markdown';
+import { memo } from 'react';
+import Markdown, { type Components, type Options } from 'react-markdown';
 import rehypeKatex from 'rehype-katex';
 import remarkMath from 'remark-math';
+import { mathDelimited } from '../lib/chat';
+import { unreadableMathAsText } from '../lib/math';
 
-// KaTeX's HTML output sets style attributes, which the CSP refuses: MathML needs none, and every
-// phone browser draws it. The prompt asks Tom for $…$ inline.
-const remarkPlugins: Options['remarkPlugins'] = [remarkMath];
+// MathML needs neither KaTeX's stylesheet nor its fonts, and every phone browser draws it; a wide
+// formula scrolls on its own, as a formula does not wrap.
+const remarkPlugins: Options['remarkPlugins'] = [remarkMath, unreadableMathAsText];
 const rehypePlugins: Options['rehypePlugins'] = [[rehypeKatex, { output: 'mathml' }]];
+
+// Tailwind's preflight strips list markers; a single line break of Tom's stays one.
+const components: Components = {
+  p: ({ children }) => <p className="whitespace-pre-line">{children}</p>,
+  ol: ({ children }) => <ol className="flex list-decimal flex-col gap-1 pl-6">{children}</ol>,
+  ul: ({ children }) => <ul className="flex list-disc flex-col gap-1 pl-6">{children}</ul>,
+  pre: ({ children }) => <pre className="overflow-x-auto">{children}</pre>,
+};
 
 /**
  * What Tom writes, as the student reads it: formatting and formulas. Neither HTML, nor a link, nor
  * an image the model wrote: a child has no link from an AI to follow.
  */
-export function TomText({ children }: { children: string }) {
+export const TomText = memo(function TomText({ children }: { children: string }) {
   return (
-    <div className="flex flex-col gap-3">
-      <Markdown remarkPlugins={remarkPlugins} rehypePlugins={rehypePlugins} skipHtml disallowedElements={['a', 'img']} unwrapDisallowed>
-        {children}
+    <div className="flex min-w-0 flex-col gap-3 [&_.katex]:inline-block [&_.katex]:max-w-full [&_.katex]:overflow-x-auto [&_.katex]:align-bottom">
+      <Markdown
+        remarkPlugins={remarkPlugins}
+        rehypePlugins={rehypePlugins}
+        components={components}
+        skipHtml
+        disallowedElements={['a', 'img']}
+        unwrapDisallowed
+      >
+        {mathDelimited(children)}
       </Markdown>
     </div>
   );
-}
+});
