@@ -56,9 +56,16 @@ export function studentAuthGuard({ auth, service }: { auth: Auth; service: House
   });
 }
 
-/** /api/me: who is signed in, and as what; the web picks its home from it. */
+/**
+ * /api/me: who is signed in, and as what; the web picks its home from it. Their devices too, read
+ * here rather than through better-auth's /list-sessions, which wants a session younger than its
+ * freshAge: a student's paired device is days old.
+ */
 export function meRoutes({ auth, service }: { auth: Auth; service: HouseholdService }) {
-  return new Hono<SessionEnv>().use(requireSession(auth)).get('/', async (c) => c.json(await service.me(c.var.userId, c.var.userName)));
+  return new Hono<SessionEnv>()
+    .use(requireSession(auth))
+    .get('/', async (c) => c.json(await service.me(c.var.userId, c.var.userName)))
+    .get('/devices', async (c) => c.json(await service.listOwnDevices(c.var.userId)));
 }
 
 export function householdRoutes({ auth, service }: { auth: Auth; service: HouseholdService }) {

@@ -104,6 +104,10 @@ export function createHouseholdService({ repository, createPairingCode }: Deps) 
       return createPairingCode(studentId);
     },
 
+    listOwnDevices(userId: string) {
+      return repository.listOwnDevices(userId);
+    },
+
     async listDevices(guardianId: string, studentId: string) {
       await found(guardianId, studentId);
       return repository.listDevices(guardianId, studentId);

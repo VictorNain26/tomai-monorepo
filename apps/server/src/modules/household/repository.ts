@@ -4,7 +4,7 @@
  * (OWASP Authorization Cheat Sheet): a student of another household is simply not found.
  */
 
-import { and, desc, eq, gt, inArray, ne, sql } from 'drizzle-orm';
+import { and, desc, eq, gt, inArray, ne, type SQL, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import type { SchoolLevel } from '../../domain/levels';
 import type { MemoryAnswer } from '../../domain/memory-consent';
@@ -31,6 +31,14 @@ export function createHouseholdRepository(db: Db) {
       .from(householdMember)
       .innerJoin(guardian, and(eq(guardian.householdId, householdMember.householdId), eq(guardian.userId, guardianId), eq(guardian.role, 'guardian')))
       .where(eq(householdMember.role, 'student'));
+
+  /** Live sessions matching `where`, the newest first. */
+  const devices = (where: SQL | undefined) =>
+    db
+      .select({ id: session.id, pairedAt: session.createdAt, userAgent: session.userAgent })
+      .from(session)
+      .where(and(where, gt(session.expiresAt, new Date())))
+      .orderBy(desc(session.createdAt));
 
   const studentColumns = {
     id: user.id,
@@ -147,11 +155,12 @@ export function createHouseholdRepository(db: Db) {
 
     /** A device is a live session: when it was paired and its browser; never its token nor its address. */
     async listDevices(guardianId: string, studentId: string) {
-      return db
-        .select({ id: session.id, pairedAt: session.createdAt, userAgent: session.userAgent })
-        .from(session)
-        .where(and(eq(session.userId, studentId), gt(session.expiresAt, new Date()), inArray(session.userId, studentsOf(guardianId))))
-        .orderBy(desc(session.createdAt));
+      return devices(and(eq(session.userId, studentId), inArray(session.userId, studentsOf(guardianId))));
+    },
+
+    /** The signed-in user's own devices, as their guardian sees them. */
+    async listOwnDevices(userId: string) {
+      return devices(eq(session.userId, userId));
     },
 
     /** `false` when no such device of a student of the guardian's household. */

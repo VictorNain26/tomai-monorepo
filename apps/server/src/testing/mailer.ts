@@ -1,21 +1,31 @@
-/** The emails a test's app sends, kept in memory, and the link each one carries. */
+/** The emails a test's app sends, kept in memory, and a wait for the next one to an address. */
 
 import type { Email, Mailer } from '../platform/email/mailer';
 
 export function memoryMailer() {
   const sent: Email[] = [];
+  const waiting: { to: string; resolve: (email: Email) => void }[] = [];
   const mailer: Mailer = (email) => {
     sent.push(email);
+    for (const waiter of waiting.filter(({ to }) => to === email.to)) {
+      waiting.splice(waiting.indexOf(waiter), 1);
+      waiter.resolve(email);
+    }
     return Promise.resolve();
   };
 
-  /** The link of the last email sent to `to` whose subject contains `subject`. */
-  const linkTo = (to: string, subject: string) => {
-    const email = sent.findLast((each) => each.to === to && each.subject.includes(subject));
-    const link = email?.text.match(/https?:\/\/\S+/)?.[0];
-    if (!link) throw new Error(`No email to ${to} about "${subject}"`);
-    return link;
+  /**
+   * The next email to `to`, sent after this call: wait for it before the request that sends it,
+   * since the auth sends in the background, once its answer is out.
+   */
+  const next = (to: string) => new Promise<Email>((resolve) => waiting.push({ to, resolve }));
+
+  /** The sign-in code an email carries in its subject. */
+  const codeIn = ({ subject }: Email) => {
+    const code = /\b\d{6}\b/.exec(subject)?.[0];
+    if (!code) throw new Error(`No code in "${subject}"`);
+    return code;
   };
 
-  return { mailer, sent, linkTo };
+  return { mailer, sent, next, codeIn };
 }
