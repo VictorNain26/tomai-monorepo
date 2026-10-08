@@ -114,8 +114,9 @@ bloquant levé). L'historique vit dans git et les PR.
   passage unique, comparé à la mesure du 2026-10-06 (11 fuites sur 106,
   `etudes/2026-10-06/passage-de-fin.md`), reprend une fois le paiement à l'usage actif (bloquant
   ci-dessous), et avant la première famille.
-- **Prochaine action** : le lot 3 en parallèle, les retours de Victor sur le staging, écran par
-  écran.
+- **Prochaine action** : le lot 3 en parallèle, dans l'ordre de `etudes/2026-10-08/interfaces.md`
+  (la séance, l'accueil parent, l'accueil élève, le résumé parent, le jumelage), complété par les
+  retours de Victor sur le staging.
 - **Rentabilité et quotas** (`etudes/2026-10-07/rentabilite.md`) : le gratuit décide de la
   rentabilité, la distribution est le vrai risque ; quotas proposés de 2 c (Gratuit) et 10 c
   (Complet) par élève et par jour, voix comprise, remis à zéro à 4 h, et l'année scolaire à 69 €
