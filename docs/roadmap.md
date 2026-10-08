@@ -1,85 +1,90 @@
 # Roadmap V1
 
-Vision : `vision.md`. Specs : `architecture.md`, `tuteur.md`. L'avancement vit dans `suivi.md`.
-
-Le fil conducteur : prouver avant de vendre. Le lot 0 refait la codebase sur des pratiques
-établies, le lot 1 mesure, le lot 2 construit ce qui nous
-distingue, le lot 3 le met entre les mains des familles, le lot 4 le dit, mesures à l'appui. Les
-lots avancent en parallèle quand rien ne les bloque. L'ordre et le contenu ci-dessous sont des
-repères : chaque PR précise son périmètre dans son plan, au moment où elle démarre
-(`.claude/rules/plans-and-agents.md`).
+Le fil : prouver avant de vendre (`vision.md`). Les lots sont des résultats à atteindre, pas des
+dates ; ils avancent en parallèle quand rien ne les bloque. Chaque PR précise son périmètre dans
+son plan, au moment où elle démarre (`.claude/rules/plans-and-agents.md`). L'état du jour :
+`suivi.md`.
 
 ## Lots
 
-| Lot | Objectif | Repère de fin |
+| Lot | Résultat | Repère de fin |
 |---|---|---|
-| 0 — Refonte | Une codebase de qualité production, reconstruite sur des pratiques publiées, sans rien garder de l'ancienne architecture | Les huit étapes de `etudes/2026-10-06/refonte-architecture.md` mergées, une seule version de chaque chose |
-| 1 — Mesurer et observer | Un harnais d'évaluation crédible et des signaux de production sans contenu d'élève | Des mesures avec leur marge d'erreur, un juge vérifié contre Victor, un garde-fou en CI |
-| 2 — Un agent qui ne cède pas | Guider sans donner la réponse, au bon niveau, sans se tromper, et bien réagir à la détresse | Au harnais, la réponse presque jamais donnée sous pression et une aide jugée bonne par Victor |
-| 3 — L'app entre les mains des familles | L'app web sur téléphone : chat, photo, voix, comptes et consentement, parent, paiement, hébergement UE | Les parcours marchent de bout en bout en préproduction, et Victor les utilise |
-| 4 — Marque et lancement | Nom, identité, landing qui ne dit que le prouvé, mesures publiées, accès à l'app | Chaque phrase publique renvoie à une source ou à une mesure |
+| 0 — Refonte | Une codebase reconstruite sur des pratiques publiées | Fait : étapes 1 à 7 (`etudes/2026-10-06/refonte-architecture.md`) |
+| 1 — Mesurer | Un harnais crédible et rejouable | Des mesures avec leur marge d'erreur, un juge vérifié contre Victor, un garde-fou en CI |
+| 2 — Un tuteur qui ne cède pas | Guider sans donner la réponse, sans se tromper, bien réagir à la détresse | Au harnais, la réponse presque jamais donnée sous pression, une aide jugée bonne par Victor, la mémoire mesurée |
+| 3 — L'app entre les mains des familles | L'app sur téléphone, de la direction artistique au paiement | Les parcours marchent de bout en bout au staging, Victor les utilise, puis la bêta fermée |
+| 4 — Marque et lancement | Nom, logo, site qui ne dit que le prouvé, mesures publiées | Chaque phrase publique renvoie à une source ou à une mesure |
 
-## Repères par lot
+## Maintenant
 
-**Lot 0** — l'ordre et le contenu sont dans `etudes/2026-10-06/refonte-architecture.md` : on
-supprime l'ancien serveur, puis on reconstruit par tranches, du socle au tuteur, au chat et à la
-préproduction, puis au harnais. Seul se porte ce qui a été mesuré, validé par Victor ou vérifié
-contre une source. Les lots 1 à 3 reprennent sur le nouveau socle, chacun à son étape.
+**Lot 3**, dans cet ordre (`etudes/2026-10-08/interfaces.md` pour les constats) :
+1. **Les fondations de la direction artistique** avec Victor : couleurs, typographie, place de
+   Tom dans l'interface, ton ; deux ou trois directions essayées sur les vrais écrans de séance
+   et d'accueil, puis tokens dans `@repo/tokens`. En parallèle, sans dépendre d'elle : le service
+   du résumé parent côté serveur, et l'accueil de Tom qui dit qu'il est une IA (AI Act,
+   art. 50(1)).
+2. **La séance** : accueil et avatar de Tom, champ fixé en bas, rendu des maths, une attente qui
+   dit ce qui se passe.
+3. **L'accueil élève** : les séances d'abord, la mémoire dans les mots de l'élève, un choix de
+   profil.
+4. **L'accueil parent et le résumé** : une carte par enfant, l'étape suivante après l'ajout,
+   « Mon compte » pour les clés d'accès.
+5. **Le jumelage** par QR code, et les petits textes.
+6. **Le consentement** : double consentement sous 15 ans, second parent ; **photo et voix** ;
+   **revue humaine de la détresse** ; **paiement**.
 
-**Lot 1** — repères dans `etudes/2026-10-06/refonte-evaluation.md` ; le harnais se reconstruit à
-l'étape 8 de la refonte, en lisant l'enregistrement de chaque tour. Ordre indicatif : des mesures
-avec leur marge d'erreur ; une page simple pour que Victor juge, et un juge vérifié contre lui ;
-un garde-fou en CI ; puis un jeu plus riche (programmes des autres matières, exercices inspirés du
-brevet) et un élève simulé ; observabilité de production avec l'hébergeur.
+**Lot 1**, dès que le paiement à l'usage de Mistral est actif : le passage unique du harnais sur
+le code actuel, puis le rapport et la comparaison cas par cas (McNemar), le juge, sa vérification
+par Victor sur une page de jugement, le garde-fou en CI.
 
-**Lot 2** — le savoir est acquis (#380 à #404, `etudes/2026-10-06/passage-de-fin.md`) et se porte
-dans le nouveau tuteur à l'étape 5 de la refonte, avec le diagnostic de #415, un contrôle de fuite
-qui bloque au lieu de laisser passer, et un cran d'aide qui monte quand l'élève bloque. Reste à
-fermer les fuites restantes et à le prouver avec le harnais refait. La mémoire d'apprentissage
-(`etudes/2026-10-07/memoire-entre-seances.md`) se construit après le chat de la refonte, et se
-mesure au harnais avec et sans elle, sur des scénarios à plusieurs séances.
+## Ensuite
 
-**Lot 3** — ordre indicatif, pensé pour que Victor teste lui-même au plus tôt : le chat avec une
-connexion simple et la préproduction UE arrivent dans la refonte (étapes 6 et 7) ; puis
-consentement et mention IA, photo et voix, parcours parent, paiement, sur le modèle du foyer.
+- **Lot 2** : fermer les fuites que le passage a listées, mesurées sur au moins 150 conversations
+  de pression ; mesurer la mémoire avec et sans elle, sur des scénarios à plusieurs séances.
+- **La bêta fermée** : Victor d'abord, puis quelques familles invitées, une fois la porte
+  ci-dessous franchie. Elle tranche les questions ouvertes de la vision.
 
-**Lot 4** — nom et identité ; landing réécrite sur la vision, avec la page des mesures et l'accès
-à l'app ; pages légales alignées sur l'hébergement réel ; ouverture.
+## Plus tard
 
-## Porte avant ouverture au public
+- **Lot 4** : nom et logo, site réécrit sur la vision et la direction artistique, avec la page des
+  mesures et l'accès à l'app ; ouverture.
 
-Rien n'est ouvert à des élèves avant (obligations, pas des repères) :
-- art. 50(1) de l'AI Act traité dans le prompt et dans l'interface ;
-- détresse et modération mesurées par le harnais ;
-- endpoint UE et ZDR actifs, et la clause des mineurs des conditions de Mistral clarifiée par
-  écrit (`etudes/2026-10-07/foyer-eleve-age.md`, § 1), demandées ensemble ;
-- la détresse relue par un humain, avec un délai tenu, avant tout message au parent ;
-- double consentement sous 15 ans, y compris pour la mémoire d'apprentissage, et son AIPD ;
-- avis d'un conseil sur l'art. 50(2) ;
-- pages légales alignées sur l'hébergement réel ;
-- mesures publiées rejouables.
+## Porte avant le premier élève réel
+
+Obligations, pas des repères :
+- Mistral en paiement à l'usage, Zero Data Retention accordé, clause des mineurs clarifiée par
+  écrit (`etudes/2026-10-07/foyer-eleve-age.md`, § 1) ;
+- art. 50(1) de l'AI Act tenu dans le prompt et dans l'interface (applicable depuis le
+  2026-08-02) ;
+- détresse et modération mesurées au harnais ; la détresse relue par un humain, avec un délai
+  tenu, avant tout message au parent ;
+- double consentement sous 15 ans, mémoire comprise, et son analyse d'impact (AIPD) ;
+- pages légales alignées sur l'app réelle (mémoire, résumé, consentement) ;
+- réponse de la CNIL sur l'hébergement de données de santé ; base dans un réseau privé ; erreurs
+  remontées dans Bugsink ; la production, avec l'approbation de Victor.
+
+## Porte avant l'ouverture publique
+
+- Mesures publiées et rejouables, après un regard pédagogique humain sur un échantillon des
+  exercices du jeu ;
+- avis d'un conseil sur l'art. 50(2) (marquage des sorties) et sur la détresse comme donnée de
+  santé (RGPD art. 9) ;
+- statut juridique tranché avec un expert-comptable, avant le paiement.
 
 ## Après la V1
 
-- **Primaire**, en mode accompagné (`etudes/2026-10-07/foyer-eleve-age.md`) : après une mesure
-  de la reconnaissance vocale sur des voix d'enfants français, et une position face au cadre
-  d'usage de l'IA du ministère.
-- **Lycée** (`etudes/2026-10-02/alignement.md`, § 9), en mode autonome : la même chaîne de référentiel et
-  d'évaluation, par vagues. D'abord la vingtaine de couples (niveau, enseignement) les
-  plus suivis de la voie générale, mathématiques en tête ; puis la série STMG et les
-  matières générales de la voie professionnelle ; sujets du bac pour évaluer. Le
-  référentiel et le jeu sont indexés par enseignement dès le lot 1 pour que le lycée soit
-  un ajout de données.
+- **Primaire**, en mode accompagné (`etudes/2026-10-07/foyer-eleve-age.md`) : après une mesure de
+  la reconnaissance vocale sur des voix d'enfants français, et une position face au cadre d'usage
+  de l'IA du ministère.
+- **Lycée** (`etudes/2026-10-02/alignement.md`, § 9), en mode autonome : la même chaîne de
+  référentiel et d'évaluation, par vagues, mathématiques en tête ; le référentiel et le jeu sont
+  indexés par enseignement pour que le lycée soit un ajout de données.
 
 ## Hors roadmap, délibérément
 
-- Pronote et les autres logiciels de vie scolaire tant qu'aucune convention officielle n'est
-  signée ; les enseignants et les établissements (GAR).
-- RAG vectoriel : le programme d'un niveau et d'une matière tient dans le contexte
-  (mesuré le 2026-10-02, `etudes/2026-10-02/alignement.md`) ; il ne revient que pour
-  chercher dans un corpus qui ne tient pas dans le contexte.
-- Référentiels des spécialités professionnelles (plus de 300 textes).
-- Un autre fournisseur que Mistral pour l'élève, l'auto-hébergement de poids, le fine-tuning ; un
-  juge d'une autre famille pour l'évaluation seule reste possible, les conversations de test
-  étant synthétiques.
+- Pronote et les logiciels de vie scolaire sans convention officielle ; les établissements (GAR).
+- Les fiches de révision.
+- RAG vectoriel : le programme d'un niveau et d'une matière tient dans le contexte (mesuré le
+  2026-10-02, `etudes/2026-10-02/alignement.md`).
+- Un autre fournisseur que Mistral pour l'élève, l'auto-hébergement de poids, le fine-tuning.
 - Application native.
