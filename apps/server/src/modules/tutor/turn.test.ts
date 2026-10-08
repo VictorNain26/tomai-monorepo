@@ -64,9 +64,14 @@ async function say(sessionId: string, text: string, cookie = asStudent) {
   const chunks = body
     .split('\n')
     .filter((line) => line.startsWith('data: {'))
-    .map((line) => JSON.parse(line.slice(6)) as { type: string; delta?: string; errorText?: string });
+    .map((line) => JSON.parse(line.slice(6)) as { type: string; delta?: string; errorText?: string; data?: unknown; transient?: boolean });
+  // What the student is told while they wait comes before the reply's first word, if any.
+  const replyStart = chunks.findIndex((chunk) => chunk.type === 'text-start');
+  const beforeReply = replyStart === -1 ? chunks : chunks.slice(0, replyStart);
   return {
     status: res.status,
+    steps: beforeReply.flatMap((chunk) => (chunk.type === 'data-step' ? [chunk.data] : [])),
+    transientSteps: chunks.filter((chunk) => chunk.type === 'data-step').every((chunk) => chunk.transient === true),
     reply: chunks.flatMap((chunk) => (chunk.type === 'text-delta' && chunk.delta ? [chunk.delta] : [])).join(''),
     error: chunks.find((chunk) => chunk.type === 'error')?.errorText,
     body,
@@ -135,6 +140,18 @@ describe('a turn', () => {
     expect(session).toEqual({ subject: 'mathematiques', turnStartedAt: null });
     const billed = await db.select({ operation: aiCost.operation }).from(aiCost).where(eq(aiCost.studentId, student.id));
     expect(billed.map((row) => row.operation)).toEqual(expect.arrayContaining(['turn-analysis', 'chat']));
+  });
+
+  it('tells the student what it does while they wait, out of the conversation: reading, then writing', async () => {
+    const sessionId = await newSession();
+    mistral.chat.push(analysis(), { text: 'Que veux-tu travailler ?' });
+    expect(await say(sessionId, 'Bonjour')).toMatchObject({ steps: ['reading', 'writing'], transientSteps: true });
+  });
+
+  it('says so when it prepares a new exercise, the long part of a first turn', async () => {
+    const sessionId = await newSession();
+    mistral.chat.push(analysis({ bringsExercise: true }), draft, draft, draft, { text: 'Que cherches-tu ?' });
+    expect(await say(sessionId, 'Résous 3x + 5 = 20.')).toMatchObject({ steps: ['reading', 'exercise', 'writing'] });
   });
 
   it('gives the writer the name fenced, never in the system prompt', async () => {

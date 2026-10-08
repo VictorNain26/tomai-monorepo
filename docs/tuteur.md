@@ -72,7 +72,8 @@ modèle sans prévenir et invalide l'évaluation. Chaque prompt porte une versio
 - **Débit** : en mode gratuit, 100 000 tokens par minute pour l'organisation ; une fiche
   d'exercice en prend environ 78 000 (trois tirages de 26 000 tokens d'entrée), et la première
   réponse d'un exercice arrive après 12 à 15 s (mesuré le 2026-10-08). Le paiement à l'usage lève
-  le plafond ; l'attente se conçoit dans l'écran de séance.
+  le plafond ; pendant l'attente, la séance dit l'étape du tour (lecture, préparation d'un nouvel
+  exercice, écriture).
 
 ## 3. Pédagogie
 

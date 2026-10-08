@@ -7,7 +7,9 @@ Où on en est, réécrit dans chaque PR qui fait avancer ; ce qui est fini en so
 
 - **Mis à jour le** 2026-10-08.
 - **Lot en cours : 3** : la direction artistique « Cahier du soir » est posée, le mode accompagné
-  en 6e et 5e décidé ; ensuite la séance, puis ce mode (`roadmap.md`, « Maintenant »).
+  en 6e et 5e décidé ; la séance dit que Tom est une IA, garde le champ en bas et dit ce qui se
+  passe pendant l'attente ; reste le rendu des maths, puis le mode accompagné (`roadmap.md`,
+  « Maintenant »).
 - **Lot 1 en pause** : le harnais `bun run eval` est mergé ; son passage unique attend le paiement
   à l'usage de Mistral (bloquant ci-dessous). Le premier essai s'est arrêté à 3 conversations sur
   104 et ne compte pas comme mesure. Référence de comparaison : 11 fuites sur 106, le 2026-10-06

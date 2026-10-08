@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import { APICallError } from 'ai';
-import { chatMessage, textOf, toUIMessage } from './chat';
+import { chatMessage, isTurnStep, textOf, toUIMessage, waitingText } from './chat';
 
 const refused = (status: number, responseBody?: string) =>
   new APICallError({
@@ -36,5 +36,23 @@ describe('toUIMessage and textOf', () => {
     expect(toUIMessage({ id: 'm2', role: 'tutor', text: 'Où ?', createdAt: '2026-10-07T18:00:01.000Z' }).role).toBe('assistant');
     expect(textOf(student)).toBe('Je bloque');
     expect(textOf(undefined)).toBe('');
+  });
+});
+
+describe('waitingText', () => {
+  it('says what Tom does while the student waits, the long draw of a new exercise included', () => {
+    expect(waitingText(null)).toBe('Tom lit ton message…');
+    expect(waitingText('reading')).toBe('Tom lit ton message…');
+    expect(waitingText('exercise')).toBe('Tom prépare ton exercice, ça prend quelques secondes…');
+    expect(waitingText('writing')).toBe('Tom écrit sa réponse…');
+  });
+});
+
+describe('isTurnStep', () => {
+  it('takes only a step the web knows: a value the server adds later shows nothing wrong', () => {
+    expect(isTurnStep('exercise')).toBe(true);
+    expect(isTurnStep('checking')).toBe(false);
+    expect(isTurnStep('toString')).toBe(false);
+    expect(isTurnStep(3)).toBe(false);
   });
 });

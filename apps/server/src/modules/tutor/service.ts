@@ -17,7 +17,7 @@ import type { StudentDirectory } from '../household';
 import { analyseTurn, turnInstruction, type TurnAnalysis } from './core/analysis';
 import { assembleChatPrompt, replayable, type HistoryTurn } from './core/assembler';
 import { writeChecked } from './core/controlled-turn';
-import { prepareExerciseTurn } from './core/exercise-turn';
+import { drawsSheet, prepareExerciseTurn } from './core/exercise-turn';
 import { hintOf } from './core/ladder';
 import { learnerMemoryBlock, notionMemories, notionView, schoolYearStart } from './core/memory';
 import type { OutputCheckContext } from './core/output-check';
@@ -47,6 +47,9 @@ export interface TurnInput {
   text: string;
   inputMode: 'text' | 'voice';
 }
+
+/** What the student is told while they wait: reading their message, preparing a new exercise, writing. */
+export type TurnStep = 'reading' | 'exercise' | 'writing';
 
 /** The turn's reply, and what runs after it, once the session is free. */
 interface TurnReply {
@@ -155,7 +158,7 @@ export function createTutorService({ repository, students, ai, moderation, logge
     }
   }
 
-  async function turn({ student: learner, session, distress }: OpenTurn, input: TurnInput): Promise<TurnReply> {
+  async function turn({ student: learner, session, distress }: OpenTurn, input: TurnInput, onStep: (step: TurnStep) => void): Promise<TurnReply> {
     const studentText = input.text;
 
     // The conversation stopped at a distress: any later message gets the fixed reply again.
@@ -183,6 +186,7 @@ export function createTutorService({ repository, students, ai, moderation, logge
     ]);
     const lastTutorText = history.findLast((row) => row.role === 'tutor')?.text ?? null;
     // Started together; the distress waits for the moderation only, and drops the analysis.
+    onStep('reading');
     const analysed = analyseTurn(
       { ai, logger },
       { studentId: learner.id, studentText, lastTutorText, currentStatement: current?.sheet?.statement ?? null },
@@ -199,6 +203,7 @@ export function createTutorService({ repository, students, ai, moderation, logge
     const detected = analysis.subject === 'general' ? null : analysis.subject;
     const subject = detected ?? session.subject ?? undefined;
 
+    if (drawsSheet({ analysis, current: current ?? null, studentText })) onStep('exercise');
     const exerciseTurn = await prepareExerciseTurn(
       { ai, logger },
       {
@@ -245,6 +250,7 @@ export function createTutorService({ repository, students, ai, moderation, logge
       pastStudentTexts: history.filter((row) => row.role === 'student').map((row) => row.text),
     };
 
+    onStep('writing');
     const reply = await writeChecked(
       { ai, moderation, logger },
       { studentId: learner.id, sessionId: session.id, system, messages, reasoningEffort },
@@ -383,11 +389,11 @@ export function createTutorService({ repository, students, ai, moderation, logge
     },
 
     /** The turn's reply; the session is free for the next turn whatever happens. */
-    async runTurn(opened: OpenTurn, input: TurnInput): Promise<string> {
+    async runTurn(opened: OpenTurn, input: TurnInput, onStep: (step: TurnStep) => void): Promise<string> {
       const free = () => repository.endTurn(opened.session.id, opened.session.turnStartedAt);
       let reply: TurnReply;
       try {
-        reply = await turn(opened, input);
+        reply = await turn(opened, input, onStep);
       } catch (error) {
         await free();
         throw error;
