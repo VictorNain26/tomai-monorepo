@@ -58,6 +58,9 @@ const PAIRS = [
   ['annotation', 'secondary'],
 ];
 
+// Tokens the app added after the landing froze (landing.css takes none until lot 4).
+const APP_PAIRS = [['qr', 'qr-background']];
+
 const CONTROL_PAIRS = [
   ['input', 'background'],
   ['input', 'card'],
@@ -68,7 +71,7 @@ const CONTROL_PAIRS = [
 
 for (const [mode, palette] of modes) {
   for (const [pairs, minimum, criterion] of [
-    [PAIRS, 4.5, 'WCAG AA (4.5:1)'],
+    [mode === 'landing' ? PAIRS : [...PAIRS, ...APP_PAIRS], 4.5, 'WCAG AA (4.5:1)'],
     [CONTROL_PAIRS, 3, 'WCAG 1.4.11 (3:1)'],
   ]) {
     for (const [fg, bg] of pairs) {

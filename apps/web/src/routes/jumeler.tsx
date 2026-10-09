@@ -10,14 +10,21 @@ import { Page } from '../components/page';
 import { authClient, authMessage } from '../lib/auth';
 import { pairingSchema } from '../lib/pairing';
 
-/** The child's device: the code their parent asked for opens its own session. */
-export const Route = createFileRoute('/jumeler')({ component: Pair });
+/**
+ * The child's device: the code their parent asked for opens its own session. The QR code on the
+ * parent's phone opens this page with the code filled in; the child still taps « Relier ».
+ */
+export const Route = createFileRoute('/jumeler')({
+  validateSearch: (search): { code?: string } => (typeof search['code'] === 'string' ? { code: search['code'] } : {}),
+  component: Pair,
+});
 
 function Pair() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { code: scanned } = Route.useSearch();
   const [failure, setFailure] = useState<string | null>(null);
-  const form = useForm({ resolver: zodResolver(pairingSchema), defaultValues: { code: '' } });
+  const form = useForm({ resolver: zodResolver(pairingSchema), defaultValues: { code: scanned ?? '' } });
 
   const submit = form.handleSubmit(async ({ code }) => {
     setFailure(null);

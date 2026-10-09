@@ -8,11 +8,12 @@ import type { z } from '../lib/zod';
 import { Field, SelectField } from '../components/field';
 import { Notice } from '../components/notice';
 import { Page } from '../components/page';
+import { QrCode } from '../components/qr-code';
 import { WeekSummary } from '../components/week-summary';
 import { api, isProblem, parseResponse } from '../lib/api';
 import { authClient, authMessage } from '../lib/auth';
 import { deviceName, formatDay, formatHour } from '../lib/device';
-import { formatCode } from '../lib/pairing';
+import { formatCode, pairingLink } from '../lib/pairing';
 import { summaryQuery } from '../lib/summary';
 import { LEVEL_LABELS, devicesQuery, householdMessage, memoryStatus, studentSchema, studentsQuery, type Student } from '../lib/household';
 
@@ -161,11 +162,15 @@ function Devices({ child }: { child: Student }) {
       ) : redeemed ? (
         <Notice tone="info">L’appareil de {child.name} est relié.</Notice>
       ) : pairing.data && pending(devices) ? (
-        <Notice tone="info">
-          Sur l’appareil de {child.name}, ouvrez {window.location.origin}/jumeler et saisissez le code{' '}
-          <strong className="font-mono text-lg tracking-widest">{formatCode(pairing.data.code)}</strong> avant {formatHour(pairing.data.expiresAt)}.
-          Il ne sert qu’une fois.
-        </Notice>
+        <>
+          <p>Avec l’appareil photo de l’appareil de {child.name}, visez ce code :</p>
+          <QrCode text={pairingLink(window.location.origin, pairing.data.code)} label={`QR code pour relier l’appareil de ${child.name}`} />
+          <Notice tone="info">
+            Ou, sur son appareil, ouvrez {window.location.origin}/jumeler et saisissez le code{' '}
+            <strong className="font-mono text-lg tracking-widest">{formatCode(pairing.data.code)}</strong> avant {formatHour(pairing.data.expiresAt)}.
+            Il ne sert qu’une fois.
+          </Notice>
+        </>
       ) : (
         <p className="text-muted-foreground">Un code à usage unique relie l’appareil de {child.name} à son compte, sans mot de passe.</p>
       )}
@@ -200,7 +205,7 @@ function Memory({ child }: { child: Student }) {
       <p className="text-muted-foreground">{memoryStatus(child)}</p>
       {propose.error && (
         <Notice tone="error">
-          {isProblem(propose.error, 'FORBIDDEN') ? `À partir de 15 ans, ${child.name} décide seul.` : householdMessage(propose.error)}
+          {isProblem(propose.error, 'FORBIDDEN') ? `À partir de 15 ans, c’est ${child.name} qui décide.` : householdMessage(propose.error)}
         </Notice>
       )}
       {!child.memory.decidesAlone &&
