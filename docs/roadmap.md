@@ -18,11 +18,9 @@ son plan, au moment où elle démarre (`.claude/rules/plans-and-agents.md`). L'�
 ## Maintenant
 
 **Lot 3**, dans cet ordre (`etudes/2026-10-08/interfaces.md` pour les constats) :
-1. **L'accueil élève** : les séances d'abord, la mémoire dans les mots de l'élève, un choix de
-   profil.
-2. **L'accueil parent et le résumé** : une carte par enfant, l'étape suivante après l'ajout, « Mon compte » pour les clés d'accès.
-3. **Le jumelage** par QR code, et les petits textes.
-4. **Le consentement** : double consentement sous 15 ans, second parent ; **photo et voix** ;
+1. **L'accueil parent et le résumé** : une carte par enfant, l'étape suivante après l'ajout, « Mon compte » pour les clés d'accès.
+2. **Le jumelage** par QR code, et les petits textes.
+3. **Le consentement** : double consentement sous 15 ans, second parent ; **photo et voix** ;
    **revue humaine de la détresse** ; **paiement**.
 
 **Lot 1**, dès que le paiement à l'usage de Mistral est actif : le passage unique du harnais sur
