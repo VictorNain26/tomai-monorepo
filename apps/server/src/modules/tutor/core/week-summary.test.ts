@@ -93,8 +93,8 @@ describe('weekSummary, what resists', () => {
       new Map(),
     );
     expect(summary.resisting.map(({ notionId, lastSolved, lastHelp }) => [notionId, lastSolved, lastHelp])).toEqual([
-      [first.id, false, 'Indice conceptuel'],
-      [second.id, true, 'Étape intermédiaire'],
+      [first.id, false, 'avec un rappel de la règle'],
+      [second.id, true, 'avec une étape faite ensemble'],
     ]);
   });
 

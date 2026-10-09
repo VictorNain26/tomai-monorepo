@@ -16,7 +16,7 @@ export const memoryQuery = queryOptions({
 export function notionSummary({ worked, lastSolved, lastHelp, watch }: Notion): string {
   return [
     `Travaillée ${String(worked)} fois.`,
-    `La dernière fois : ${lastSolved ? 'résolue' : 'pas résolue'}, aide jusqu’à « ${lastHelp} ».`,
+    `La dernière fois : ${lastSolved ? `résolue ${lastHelp}` : `pas encore résolue, ${lastHelp}`}.`,
     ...(watch ? [`À surveiller : ${watch}.`] : []),
   ].join(' ');
 }

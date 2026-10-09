@@ -137,7 +137,7 @@ describe('the summary of the week', () => {
       minutes: 5,
       sessions: 1,
       subjects: [{ subject: 'mathematiques', minutes: 5 }],
-      resisting: [{ notionId: notion.id, label: notion.text, worked: 1, lastSolved: false, lastHelp: 'Indice conceptuel', watch: null }],
+      resisting: [{ notionId: notion.id, label: notion.text, worked: 1, lastSolved: false, lastHelp: 'avec un rappel de la règle', watch: null }],
     });
   });
 

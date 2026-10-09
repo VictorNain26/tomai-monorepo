@@ -4,19 +4,17 @@ import { hc } from 'hono/client';
 import { parseResponse } from './api';
 import { memoryMessage, notionSummary } from './memory';
 
-const notion = { notionId: 'n', label: 'Équations', worked: 2, lastSolved: false, lastHelp: 'Indice ciblé' as const, watch: 'mal lire la consigne' };
+const notion = { notionId: 'n', label: 'Équations', worked: 2, lastSolved: false, lastHelp: 'avec un indice', watch: 'mal lire la consigne' };
 
 describe('notionSummary', () => {
-  it('says how often, how it ended last time with what help, and what to watch', () => {
+  it('says how often, how it ended last time with what help, and what to watch, in the student’s words', () => {
     expect(notionSummary(notion)).toBe(
-      'Travaillée 2 fois. La dernière fois : pas résolue, aide jusqu’à « Indice ciblé ». À surveiller : mal lire la consigne.',
+      'Travaillée 2 fois. La dernière fois : pas encore résolue, avec un indice. À surveiller : mal lire la consigne.',
     );
   });
 
   it('says nothing to watch without a frequent error', () => {
-    expect(notionSummary({ ...notion, lastSolved: true, watch: null })).toBe(
-      'Travaillée 2 fois. La dernière fois : résolue, aide jusqu’à « Indice ciblé ».',
-    );
+    expect(notionSummary({ ...notion, lastSolved: true, watch: null })).toBe('Travaillée 2 fois. La dernière fois : résolue avec un indice.');
   });
 });
 

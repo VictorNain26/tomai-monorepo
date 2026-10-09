@@ -85,7 +85,7 @@ describe('learnerMemoryBlock', () => {
 });
 
 describe('notionView', () => {
-  it('names the help by its step of the ladder, and the error to watch in the student’s words', () => {
+  it('names the help and the error to watch in the student’s words, never by the ladder’s names', () => {
     const [memory] = notionMemories([exercise({ hintLevel: 2, solved: false, errorTypes: ['misinterpret', 'misinterpret'] })], new Map());
     if (!memory) throw new Error('no memory');
     expect(notionView(memory)).toEqual({
@@ -93,7 +93,7 @@ describe('notionView', () => {
       label: first.text,
       worked: 1,
       lastSolved: false,
-      lastHelp: 'Indice ciblé',
+      lastHelp: 'avec un indice',
       watch: 'mal lire la consigne',
     });
     expect(notionView({ ...memory, frequentError: null }).watch).toBeNull();

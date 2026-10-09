@@ -34,6 +34,9 @@ test('a code pairs the child’s phone, which sees it, and the guardian disconne
   await child.getByLabel('Le code').fill(code ?? '');
   await child.getByRole('button', { name: 'Relier' }).click();
   await expect(child.getByRole('heading', { name: 'Bonjour Noé' })).toBeVisible();
+  // The sessions first; the devices folded, a tap away.
+  await expect(child.getByText('Un appareil que tu ne reconnais pas ?')).toBeHidden();
+  await child.getByText('Tes appareils reliés').click();
   await expect(child.getByRole('listitem')).toHaveCount(1);
 
   // The guardian's list follows the pairing on its own.
@@ -78,7 +81,12 @@ test('on the family phone, the parent opens the child’s space without a code, 
 
   await page.getByRole('link', { name: 'Changer de profil' }).click();
   await expect(page).toHaveURL(/\/connexion$/);
-  await expect(page.getByRole('status').first()).toContainText('Cet appareil est relié au compte de Zoé');
+  // A choice of who uses Tom, not the generic sign-in.
+  await expect(page.getByRole('heading', { level: 1, name: 'Qui utilise Tom ?' })).toBeVisible();
+  await expect(page.getByText('Tom est en bêta fermée')).toBeHidden();
+  await page.getByRole('link', { name: 'C’est Zoé' }).click();
+  await expect(page.getByRole('heading', { name: 'Bonjour Zoé' })).toBeVisible();
+  await page.getByRole('link', { name: 'Changer de profil' }).click();
   await signIn(page, email);
   await expect(page).toHaveURL(/\/foyer$/);
   // Leaving, the parent hands the phone back: Zoé's space stays on it.

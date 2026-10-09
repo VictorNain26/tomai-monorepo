@@ -2,9 +2,12 @@ import { Button } from '@repo/ui';
 import { memoryMessage, useMemoryAnswer } from '../lib/memory';
 import { Notice } from './notice';
 
-/** What the memory is, and the student's yes or no. */
-export function MemoryAnswer() {
+/** What the memory is, and the student's yes or no, which `onAnswered` hears once taken. */
+export function MemoryAnswer({ onAnswered }: { onAnswered?: (answer: 'accepted' | 'declined') => void }) {
   const answer = useMemoryAnswer();
+  const reply = (given: 'accepted' | 'declined') => {
+    answer.mutate(given, { onSuccess: () => onAnswered?.(given) });
+  };
 
   return (
     <section aria-labelledby="memory-offer" className="flex flex-col gap-3 rounded-lg border border-border bg-card p-4 text-card-foreground">
@@ -20,7 +23,7 @@ export function MemoryAnswer() {
         <Button
           disabled={answer.isPending}
           onClick={() => {
-            answer.mutate('accepted');
+            reply('accepted');
           }}
         >
           D’accord
@@ -29,7 +32,7 @@ export function MemoryAnswer() {
           variant="outline"
           disabled={answer.isPending}
           onClick={() => {
-            answer.mutate('declined');
+            reply('declined');
           }}
         >
           Non merci
