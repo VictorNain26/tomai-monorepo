@@ -103,6 +103,26 @@ test('while Tom answers, the student is told what he does, step by step', async 
   await expect(page.getByText('Tom écrit sa réponse…')).toHaveCount(0);
 });
 
+test('a session opens on its last message, not its top, and so does it from the home', async ({ page, browser }, testInfo) => {
+  await pairedStudent(page, browser, testInfo, 'Iris');
+  // The conversation the server keeps: thirty messages.
+  const stored = Array.from({ length: 30 }, (_, index) => ({
+    id: crypto.randomUUID(),
+    role: index % 2 === 0 ? 'student' : 'tutor',
+    text: `Message ${String(index + 1)}`,
+    createdAt: new Date().toISOString(),
+  }));
+  await page.route('**/api/sessions/*/messages', (route) =>
+    route.request().method() === 'GET' ? route.fulfill({ json: stored }) : route.fallback(),
+  );
+
+  await page.getByRole('button', { name: 'Nouvelle séance' }).click();
+  await expect(page.getByText('Message 30', { exact: true })).toBeInViewport();
+  await page.getByRole('link', { name: 'Retour à tes séances' }).click();
+  await page.getByRole('link', { name: /Séance sans titre/ }).click();
+  await expect(page.getByText('Message 30', { exact: true })).toBeInViewport();
+});
+
 test('in a long conversation, the field and the AI mark stay at the bottom of the screen', async ({ page, browser }, testInfo) => {
   await pairedStudent(page, browser, testInfo, 'Noa');
   await tutorReplies(page, Array.from({ length: 40 }, (_, line) => `Ligne ${String(line + 1)} de l’explication.`).join('\n'));
@@ -155,6 +175,8 @@ test('Tom’s formatting and formulas render, his links, images and HTML never d
   await expect(reply.locator('strong')).toHaveCSS('font-weight', '700');
   // $…$, \\( … \\) and $$…$$ all render; a single line break stays one.
   await expect(reply.locator('.katex')).toHaveCount(3);
+  // A fraction in the text as legible as one on its own line, for a 6e pupil.
+  await expect(reply.locator('math').first()).toHaveCSS('math-style', 'normal');
   expect(
     await reply
       .locator('p')

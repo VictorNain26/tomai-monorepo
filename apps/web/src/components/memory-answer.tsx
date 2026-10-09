@@ -1,11 +1,12 @@
 import { Button } from '@repo/ui';
-import { memoryMessage, useMemoryAnswer } from '../lib/memory';
+import { memoryMessage, type useMemoryAnswer } from '../lib/memory';
 import { Notice } from './notice';
 
-/** What the memory is, and the student's yes or no. */
-export function MemoryAnswer() {
-  const answer = useMemoryAnswer();
-
+/**
+ * What the memory is, and the student's yes or no. The mutation belongs to the screen, which
+ * outlives this offer: it says the answer back once the offer is gone.
+ */
+export function MemoryAnswer({ answer }: { answer: ReturnType<typeof useMemoryAnswer> }) {
   return (
     <section aria-labelledby="memory-offer" className="flex flex-col gap-3 rounded-lg border border-border bg-card p-4 text-card-foreground">
       <h2 id="memory-offer" className="text-lg font-bold">

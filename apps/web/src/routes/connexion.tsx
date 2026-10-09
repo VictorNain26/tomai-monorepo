@@ -18,7 +18,12 @@ import { meQuery } from '../lib/me';
  * invitation (closed beta); /bienvenue then asks its name. On a device paired to a child, the
  * child's session stays on it while the guardian enters.
  */
-export const Route = createFileRoute('/connexion')({ component: SignIn });
+export const Route = createFileRoute('/connexion')({
+  // Read before the page shows, so that a device holding a child's space never shows the sign-in
+  // first; a failure of /api/me still leaves the form.
+  loader: ({ context }) => context.queryClient.query(meQuery).catch(() => null),
+  component: SignIn,
+});
 
 const emailSchema = z.object({ email: z.email('Une adresse e-mail valide.') });
 
@@ -48,7 +53,7 @@ function SignIn() {
 
 function EmailStep({ onSent, onEntered }: { onSent: (email: string) => void; onEntered: () => Promise<void> }) {
   const queryClient = useQueryClient();
-  // Not awaited: when /api/me fails, the form still shows.
+  // Read by the loader; when /api/me fails, the form still shows.
   const { data: me } = useQuery(meQuery);
   const [failure, setFailure] = useState<string | null>(null);
   const form = useForm({ resolver: zodResolver(emailSchema), defaultValues: { email: '' } });
@@ -81,20 +86,21 @@ function EmailStep({ onSent, onEntered }: { onSent: (email: string) => void; onE
     else if (!isCancelled(error)) setFailure(authMessage(error));
   };
 
+  const child = me?.role === 'student' ? me.name : null;
   return (
-    <Page title="Entrer dans Tom">
-      {me?.role === 'student' && (
+    // On a device that holds a child's space, a choice of who uses Tom; elsewhere, the sign-in.
+    <Page title={child ? 'Qui utilise Tom ?' : 'Entrer dans Tom'}>
+      {child ? (
         <>
-          <Notice tone="info">
-            Cet appareil est relié au compte de {me.name}. Entrez en parent avec votre clé d’accès ou un code : l’espace de {me.name} reste sur
-            l’appareil.
-          </Notice>
-          <Link to="/" className="min-h-11 py-3 text-sm text-primary underline">
-            Revenir à l’espace de {me.name}
-          </Link>
+          <Button asChild>
+            <Link to="/">C’est {child}</Link>
+          </Button>
+          <h2 className="text-xl font-bold text-foreground">Vous êtes son parent</h2>
+          <p className="text-muted-foreground">Entrez avec votre clé d’accès ou un code : l’espace de {child} reste sur l’appareil.</p>
         </>
+      ) : (
+        <Notice tone="info">Tom est en bêta fermée : un compte se crée avec l’adresse e-mail qui a reçu une invitation.</Notice>
       )}
-      <Notice tone="info">Tom est en bêta fermée : un compte se crée avec l’adresse e-mail qui a reçu une invitation.</Notice>
       <form noValidate onSubmit={(event) => void submit(event)} className="flex flex-col gap-4">
         <Field
           label="Adresse e-mail"
@@ -111,9 +117,11 @@ function EmailStep({ onSent, onEntered }: { onSent: (email: string) => void; onE
       <Button variant="outline" onClick={() => void withPasskey()}>
         Entrer avec une clé d’accès
       </Button>
-      <Link to="/jumeler" className="min-h-11 py-3 text-sm text-primary underline">
-        Tu es élève ? Relie cet appareil
-      </Link>
+      {!child && (
+        <Link to="/jumeler" className="min-h-11 py-3 text-sm text-primary underline">
+          Tu es élève ? Relie cet appareil
+        </Link>
+      )}
     </Page>
   );
 }

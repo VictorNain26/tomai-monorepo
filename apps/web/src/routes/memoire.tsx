@@ -29,8 +29,8 @@ function Memory() {
     onSuccess: refresh,
   });
   const erase = useMutation({ mutationFn: () => parseResponse(api.memory.$delete()), onSuccess: refresh });
-  const stop = useMemoryAnswer();
-  const failure = understood.error ?? erase.error ?? stop.error;
+  const answer = useMemoryAnswer();
+  const failure = understood.error ?? erase.error ?? answer.error;
 
   return (
     <Page title="Ce que Tom retient">
@@ -50,6 +50,7 @@ function Memory() {
             <ul className="flex flex-col gap-2">
               {memory.notions.map((notion) => (
                 <li key={notion.notionId} className="flex flex-col gap-2 rounded-lg border border-border bg-card p-4 text-card-foreground">
+                  <span className="text-sm text-muted-foreground">Au programme</span>
                   <span className="font-bold">{notion.label}</span>
                   <span className="text-sm text-muted-foreground">{notionSummary(notion)}</span>
                   <Button
@@ -73,7 +74,7 @@ function Memory() {
                   : 'Tom oubliera tout ce qu’il retient de toi et ne retiendra plus rien. Tes séances restent.'}
               </Notice>
               <Button
-                disabled={erase.isPending || stop.isPending}
+                disabled={erase.isPending || answer.isPending}
                 onClick={() => {
                   const done = {
                     onSuccess: () => {
@@ -81,7 +82,7 @@ function Memory() {
                     },
                   };
                   if (confirming === 'erase') erase.mutate(undefined, done);
-                  else stop.mutate('declined', done);
+                  else answer.mutate('declined', done);
                 }}
               >
                 {confirming === 'erase' ? 'Tout effacer' : 'Arrêter et tout effacer'}
@@ -117,7 +118,7 @@ function Memory() {
           )}
         </>
       ) : memory.mayAnswer ? (
-        <MemoryAnswer />
+        <MemoryAnswer answer={answer} />
       ) : (
         <p className="text-muted-foreground">
           Tom ne retient rien d’une séance à l’autre. Ton parent peut te proposer qu’il retienne ce qui a résisté.

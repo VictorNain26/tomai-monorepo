@@ -25,7 +25,8 @@ const router = createRouter({
   context: { queryClient, sessionLost },
   defaultPreload: 'intent',
   defaultErrorComponent: Failure,
-  scrollRestoration: true,
+  // A session places itself on its last message (routes/seance.$sessionId.tsx).
+  scrollRestoration: ({ location }) => !location.pathname.startsWith('/seance/'),
 });
 
 declare module '@tanstack/react-router' {

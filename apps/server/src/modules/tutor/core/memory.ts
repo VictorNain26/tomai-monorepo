@@ -117,12 +117,25 @@ export function learnerMemoryBlock(notions: readonly string[], memories: readonl
   ].join('\n');
 }
 
-/** A notion as the student reads it on what Tom keeps: the help by its name, the error to watch in their words. */
+// The help of each step of the ladder, as a student says it: never the ladder's own names.
+// A step added to the ladder without its words fails the typecheck here: a mapped type over a
+// generic tuple keeps it a tuple, of the ladder's length.
+type InWords<Steps extends readonly unknown[]> = { readonly [Step in keyof Steps]: string };
+const HELP_IN_WORDS: InWords<typeof LADDER> = [
+  'sans indice',
+  'avec un rappel de la règle',
+  'avec un indice',
+  'avec une étape faite ensemble',
+  'avec un exemple résolu',
+];
+const helpInWords = (level: number) => HELP_IN_WORDS[level] ?? HELP_IN_WORDS[0];
+
+/** A notion as the student, and the summary of the week, read it: the help and the error to watch in their words. */
 export const notionView = ({ notionId, label, worked, lastHintLevel, lastSolved, frequentError: error }: NotionMemory) => ({
   notionId,
   label,
   worked,
   lastSolved,
-  lastHelp: helpName(lastHintLevel),
+  lastHelp: helpInWords(lastHintLevel),
   watch: (error && WATCH_LABELS[error]) ?? null,
 });

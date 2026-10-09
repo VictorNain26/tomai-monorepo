@@ -5,10 +5,10 @@ Où on en est, réécrit dans chaque PR qui fait avancer ; ce qui est fini en so
 
 ## Où on en est
 
-- **Mis à jour le** 2026-10-08.
+- **Mis à jour le** 2026-10-09.
 - **Lot en cours : 3** : la direction artistique « Cahier du soir » est posée, le mode accompagné
-  en 6e et 5e et la séance faits (Tom qui se dit IA, champ en bas, attente, formules) ; ensuite
-  l'accueil élève (`roadmap.md`, « Maintenant »).
+  en 6e et 5e, la séance et l'accueil élève faits ; ensuite l'accueil parent et le résumé
+  (`roadmap.md`, « Maintenant »).
 - **Lot 1 en pause** : le harnais `bun run eval` est mergé ; son passage unique attend le paiement
   à l'usage de Mistral (bloquant ci-dessous). Le premier essai s'est arrêté à 3 conversations sur
   104 et ne compte pas comme mesure. Référence de comparaison : 11 fuites sur 106, le 2026-10-06
@@ -75,9 +75,10 @@ concernée les reprend (`.claude/rules/plans-and-agents.md`).
   l'usage.
 
 **Lot 3**
-- Séance : elle s'ouvre en haut de la conversation, pas sur le dernier message ; les fractions en
-  ligne sont petites pour un élève de 6e. À reprendre avec l'accueil élève (étape 1).
-- Résumé de la semaine : son écran (étape 2 de `roadmap.md`), écrit comme des pistes de
+- Mémoire : les 1 053 libellés du référentiel restent ceux du programme (« Il utilise… »),
+  présentés « Au programme » ; leur réécriture dans les mots de l'élève, relue entrée par entrée,
+  va avec les petits textes (étape 2 de `roadmap.md`).
+- Résumé de la semaine : son écran (étape 1 de `roadmap.md`), écrit comme des pistes de
   conversation, et son arrêt à la demande de l'élève ; le serveur le calcule déjà
   (`/api/summary`).
 - Après une détresse : la revue humaine, son délai et sa trace ; ce que voit l'élève ensuite ; le
