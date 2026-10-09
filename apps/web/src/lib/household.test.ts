@@ -65,9 +65,11 @@ describe('memoryStatus', () => {
     expect(status({ proposed: true, state: 'off', decidesAlone: false })).toBe('Léa l’a refusée.');
   });
 
-  it('from 15, says the child decides alone, and whether it is active', () => {
-    expect(status({ proposed: false, state: 'asked', decidesAlone: true })).toBe('À partir de 15 ans, Léa décide seul : la question lui est posée.');
-    expect(status({ proposed: false, state: 'off', decidesAlone: true })).toBe('À partir de 15 ans, Léa décide seul.');
+  it('from 15, says the child decides, in words that fit a girl as a boy, and whether it is active', () => {
+    expect(status({ proposed: false, state: 'asked', decidesAlone: true })).toBe(
+      'À partir de 15 ans, c’est Léa qui décide : la question lui est posée.',
+    );
+    expect(status({ proposed: false, state: 'off', decidesAlone: true })).toBe('À partir de 15 ans, c’est Léa qui décide.');
     expect(status({ proposed: false, state: 'active', decidesAlone: true })).toStartWith('Léa l’a acceptée');
   });
 });
