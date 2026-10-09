@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import { APICallError } from 'ai';
-import { chatMessage, isTurnStep, textOf, toUIMessage, waitingText } from './chat';
+import { chatMessage, isTurnStep, mathDelimited, textOf, toUIMessage, waitingText } from './chat';
 
 const refused = (status: number, responseBody?: string) =>
   new APICallError({
@@ -54,5 +54,16 @@ describe('isTurnStep', () => {
     expect(isTurnStep('checking')).toBe(false);
     expect(isTurnStep('toString')).toBe(false);
     expect(isTurnStep(3)).toBe(false);
+  });
+});
+
+describe('mathDelimited', () => {
+  it('turns the LaTeX delimiters a model may write into the dollars the renderer reads', () => {
+    expect(mathDelimited('Que vaut \\( \\frac{3}{4} \\) ?')).toBe('Que vaut $ \\frac{3}{4} $ ?');
+    expect(mathDelimited('On pose\n\\[x^2 = 9\\]\ndonc')).toBe('On pose\n$$x^2 = 9$$\ndonc');
+  });
+
+  it('leaves dollars and plain text as they are', () => {
+    expect(mathDelimited('Il reste $3x = 15$ et 20 €.')).toBe('Il reste $3x = 15$ et 20 €.');
   });
 });

@@ -124,6 +124,58 @@ test('in a long conversation, the field and the AI mark stay at the bottom of th
   await expect(page.getByRole('list', { name: 'Conversation' }).getByRole('listitem').last()).toBeInViewport();
 });
 
+test('Tom’s formatting and formulas render, his links, images and HTML never do', async ({ page, browser }, testInfo) => {
+  await pairedStudent(page, browser, testInfo, 'Zoé');
+  const refused: string[] = [];
+  page.on('console', (message) => {
+    if (message.text().includes('Content Security Policy')) refused.push(message.text());
+  });
+  await tutorReplies(
+    page,
+    [
+      '**Bien vu.** Que vaut $\\frac{3}{4}$ ? [un lien](https://exemple.fr) ![image](https://exemple.fr/x.png) <b>html</b>',
+      'Et \\( \\frac{1}{2} \\) ?',
+      '',
+      '1. On isole x',
+      '2. On divise par 3',
+      '',
+      '$$3x + 5 - 2(x - 4) + 7x - 12 + 9x - 3(2x + 1) - 4x + 8 = 7x - 12 + \\frac{1}{2} + 3x - 5$$',
+      '',
+      'Ici une erreur : $\\frac{3}{$',
+    ].join('\n'),
+  );
+
+  await page.getByRole('button', { name: 'Nouvelle séance' }).click();
+  await page.getByLabel('Ton message').fill('Aide-moi');
+  await page.getByRole('button', { name: 'Envoyer' }).click();
+
+  // The conversation's own items: Tom's reply holds a list of its own.
+  const reply = page.getByRole('list', { name: 'Conversation' }).locator(':scope > li').last();
+  await expect(reply.locator('strong')).toHaveText('Bien vu.');
+  await expect(reply.locator('strong')).toHaveCSS('font-weight', '700');
+  // $…$, \\( … \\) and $$…$$ all render; a single line break stays one.
+  await expect(reply.locator('.katex')).toHaveCount(3);
+  expect(
+    await reply
+      .locator('p')
+      .first()
+      .evaluate((paragraph: HTMLElement) => paragraph.innerText),
+  ).toContain('\n');
+  await expect(reply.locator('ol li')).toHaveCount(2);
+  await expect(reply.locator('ol')).toHaveCSS('list-style-type', 'decimal');
+  // A wide formula scrolls on its own, never the page.
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+  // A formula KaTeX cannot read stays the text Tom wrote, never an error in red.
+  await expect(reply.locator('p').last()).toHaveText('Ici une erreur : $\\frac{3}{$');
+  await expect(reply.locator('.katex-error')).toHaveCount(0);
+  await expect(reply.locator('p').first()).not.toContainText('**');
+  await expect(reply.locator('p').first()).not.toContainText('$');
+  await expect(reply.locator('a, b')).toHaveCount(0);
+  // Tom's head only: no image of the model's.
+  await expect(reply.locator('img')).toHaveCount(1);
+  expect(refused).toEqual([]);
+});
+
 test('a day past the quota is told in French, without the server’s message', async ({ page, browser }, testInfo) => {
   await pairedStudent(page, browser, testInfo, 'Malo');
   await page.route('**/api/sessions/*/messages', (route) =>

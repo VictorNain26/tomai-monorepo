@@ -48,6 +48,11 @@ describe('the system prompt, after the rework study (docs/etudes/2026-10-04/refo
     expect(prompt).not.toContain("tu le dis si l'élève te le demande");
   });
 
+  it('announces only the formulas the session renders, no diagram it cannot show', () => {
+    expect(prompt).toContain('$...$ en ligne, $$...$$ en bloc');
+    expect(prompt).not.toMatch(/mermaid|schéma/i);
+  });
+
   it('never gives the answer, checks a proposal first, follows the contract for the level, never climbs on pressure', () => {
     expect(prompt).toContain("La réponse de l'exercice ne se donne jamais");
     expect(prompt).toContain('Une seule question');

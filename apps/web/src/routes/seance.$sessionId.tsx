@@ -7,6 +7,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { Notice } from '../components/notice';
 import { Page } from '../components/page';
 import { TomHead } from '../components/tom';
+import { TomText } from '../components/tom-text';
 import { api, isProblem } from '../lib/api';
 import type { TurnStep } from 'tomai-server/contract';
 import { chatMessage, isTurnStep, messagesQuery, textOf, toUIMessage, waitingText, type ChatMessage, type TurnBody } from '../lib/chat';
@@ -94,12 +95,12 @@ function Session() {
               {textOf(message)}
             </li>
           ) : (
-            <li key={message.id} className="flex gap-3 self-start text-lg leading-relaxed text-foreground">
+            <li key={message.id} className="flex max-w-full gap-3 self-start text-lg leading-relaxed text-foreground">
               <TomHead className="mt-0.5 size-8 shrink-0" />
-              <p className="whitespace-pre-wrap">
+              <div className="min-w-0">
                 <span className="sr-only">Tom : </span>
-                {textOf(message)}
-              </p>
+                <TomText>{textOf(message)}</TomText>
+              </div>
             </li>
           ),
         )}
