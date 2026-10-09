@@ -23,20 +23,21 @@ export const messagesQuery = (sessionId: string) =>
   });
 
 /** A stored message as useChat shows it. */
-export const toUIMessage = ({ id, role, text }: StoredMessage): ChatMessage => ({
+export const toUIMessage = ({ id, role, text, photo }: StoredMessage): ChatMessage => ({
   id,
   role: role === 'student' ? 'user' : 'assistant',
   parts: [{ type: 'text', text }],
+  metadata: { photo },
 });
 
 /** The text a message carries, its parts joined. */
 export const textOf = (message: UIMessage | undefined) => (message?.parts ?? []).map((part) => (part.type === 'text' ? part.text : '')).join('');
 
 /**
- * A message of the session; the server streams, as transient parts, the step of the turn and,
- * with the parent beside the child, a cue for them.
+ * A message of the session, and whether the student sent a photo with it; the server streams, as
+ * transient parts, the step of the turn and, with the parent beside the child, a cue for them.
  */
-export type ChatMessage = UIMessage<unknown, { step: TurnStep; cue: string }>;
+export type ChatMessage = UIMessage<{ photo: boolean }, { step: TurnStep; cue: string }>;
 
 const WAITING: Record<TurnStep, string> = {
   reading: 'Tom lit ton message…',
@@ -63,5 +64,6 @@ export function chatMessage(error: Error): string {
   if (isProblem(error, 'TURN_IN_PROGRESS')) return 'Tom répond encore à ton message précédent : attends sa réponse.';
   if (isProblem(error, 'RATE_LIMITED')) return 'Trop de messages d’un coup. Attends une minute avant de réécrire.';
   if (isProblem(error, 'INVALID_REQUEST')) return 'Ton message est vide ou trop long.';
+  if (isProblem(error, 'PAYLOAD_TOO_LARGE')) return 'La photo est trop lourde. Reprends-la, ou recopie l’énoncé.';
   return 'Tom n’a pas pu répondre. Réessaie dans un instant.';
 }

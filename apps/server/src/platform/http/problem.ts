@@ -17,6 +17,7 @@ const PROBLEMS = {
   FORBIDDEN: { status: 403, title: 'Accès refusé' },
   NOT_FOUND: { status: 404, title: 'Ressource introuvable' },
   TURN_IN_PROGRESS: { status: 409, title: 'Un tour est déjà en cours dans cette séance' },
+  PAYLOAD_TOO_LARGE: { status: 413, title: 'Envoi trop lourd' },
   RATE_LIMITED: { status: 429, title: 'Trop de requêtes' },
   QUOTA_EXCEEDED: { status: 429, title: 'Le temps avec Tom est fini pour aujourd’hui' },
   INTERNAL_ERROR: { status: 500, title: 'Erreur interne' },

@@ -6,13 +6,20 @@
 
 import { createUIMessageStream, createUIMessageStreamResponse } from 'ai';
 import { Hono } from 'hono';
+import { bodyLimit } from 'hono/body-limit';
 import type { Logger } from 'pino';
 import { z } from 'zod';
 import type { Auth } from '../../platform/auth/auth';
 import { requireSession, type SessionEnv } from '../../platform/auth/session';
+import { Problem } from '../../platform/http/problem';
 import { jsonBody, uuidParam } from '../../platform/http/validate';
 import { sanitize } from './core/fences';
+import { PHOTO_MEDIA_TYPES } from './core/photo';
 import type { TutorService } from './service';
+
+const tooLarge = (): never => {
+  throw new Problem('PAYLOAD_TOO_LARGE', 'La photo dépasse 3 Mo.');
+};
 
 // The calls of a turn can leave the connection silent past Bun's idle timeout (30 s, main.ts).
 const KEEP_ALIVE_MS = 10_000;
@@ -21,10 +28,17 @@ const MAX_CHARS = 4000;
 // In 6e and 5e, the parent beside the child or not (`domain/levels.ts`): said every time, never assumed.
 const newSession = z.object({ accompanied: z.boolean() });
 
-const turnBody = z.object({
-  text: z.string().transform(sanitize).pipe(z.string().trim().min(1).max(MAX_CHARS)),
-  inputMode: z.enum(['text', 'voice']).default('text'),
-});
+// The web sends a photo cut to 1 600 px in JPEG, well under this: past it, 413 before any parsing.
+const MAX_BODY_BYTES = 3 * 1024 * 1024;
+
+const turnBody = z
+  .object({
+    text: z.string().transform(sanitize).pipe(z.string().trim().max(MAX_CHARS)).default(''),
+    inputMode: z.enum(['text', 'voice']).default('text'),
+    /** A photo of the homework, read by the model and never kept (core/photo.ts). */
+    image: z.object({ mediaType: z.enum(PHOTO_MEDIA_TYPES), data: z.base64() }).optional(),
+  })
+  .refine((body) => body.text !== '' || body.image !== undefined, 'un message ou une photo');
 
 export function tutorRoutes({ auth, service, logger }: { auth: Auth; service: TutorService; logger: Logger }) {
   return new Hono<SessionEnv>()
@@ -32,8 +46,9 @@ export function tutorRoutes({ auth, service, logger }: { auth: Auth; service: Tu
     .post('/', jsonBody(newSession), async (c) => c.json(await service.startSession(c.var.userId, c.req.valid('json').accompanied), 201))
     .get('/', async (c) => c.json(await service.listSessions(c.var.userId)))
     .get('/:id/messages', uuidParam('id'), async (c) => c.json(await service.listMessages(c.var.userId, c.req.valid('param').id)))
-    .post('/:id/messages', uuidParam('id'), jsonBody(turnBody), async (c) => {
-      const input = c.req.valid('json');
+    .post('/:id/messages', bodyLimit({ maxSize: MAX_BODY_BYTES, onError: () => tooLarge() }), uuidParam('id'), jsonBody(turnBody), async (c) => {
+      const { image, ...message } = c.req.valid('json');
+      const input = { ...message, ...(image && { image: { mediaType: image.mediaType, data: Uint8Array.from(Buffer.from(image.data, 'base64')) } }) };
       const opened = await service.openTurn(c.var.userId, c.req.valid('param').id, input);
       return createUIMessageStreamResponse({
         keepAliveMs: KEEP_ALIVE_MS,

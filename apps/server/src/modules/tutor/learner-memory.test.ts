@@ -80,7 +80,7 @@ const record = (errorType: string | null): SavedTurn['record'] => ({
   errorType,
 });
 const turn = (overrides: Partial<SavedTurn>): SavedTurn => ({
-  exchange: { studentText: 'Retiens que je suis nul en maths', tutorText: 'Que fais-tu du + 5 ?', replay: null },
+  exchange: { studentText: 'Retiens que je suis nul en maths', photoText: null, tutorText: 'Que fais-tu du + 5 ?', replay: null },
   subject: null,
   newExercise: null,
   exerciseId: null,

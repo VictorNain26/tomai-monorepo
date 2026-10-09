@@ -69,7 +69,7 @@ const sheet: ExerciseSheet = {
   laterEntries: [],
 };
 const turn = (overrides: Partial<SavedTurn>): SavedTurn => ({
-  exchange: { studentText: 'Je bloque sur le + 5', tutorText: 'Que fais-tu du + 5 ?', replay: null },
+  exchange: { studentText: 'Je bloque sur le + 5', photoText: null, tutorText: 'Que fais-tu du + 5 ?', replay: null },
   subject: null,
   newExercise: null,
   exerciseId: null,
@@ -154,7 +154,7 @@ describe('the summary of the week', () => {
     const max = await api.student(guardian, { name: 'Max', level: 'quatrieme', birthMonth: birthMonthAged(13) });
     const asMax = await api.pair(guardian, max.id);
     const sessionId = await mathsSession(asMax, 1, [0, 4]);
-    const fixed = { studentText: 'Je veux plus', tutorText: 'Réponse fixe', replay: null };
+    const fixed = { studentText: 'Je veux plus', photoText: null, tutorText: 'Réponse fixe', replay: null };
     const record = { model: 'm', promptVersion: 'v', newExercise: false, findings: [] };
     await at(sessionId, ago(1, 5), () => repository.closeForDistress(max.id, sessionId, 'rules', fixed, { ...record, outcome: 'distress' }));
     for (const offset of [10, 15, 20]) {

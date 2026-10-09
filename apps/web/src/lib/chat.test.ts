@@ -17,6 +17,7 @@ describe('chatMessage', () => {
     expect(chatMessage(refused(409, JSON.stringify({ code: 'TURN_IN_PROGRESS' })))).toStartWith('Tom répond encore');
     expect(chatMessage(refused(429, JSON.stringify({ code: 'RATE_LIMITED' })))).toStartWith('Trop de messages');
     expect(chatMessage(refused(400, JSON.stringify({ code: 'INVALID_REQUEST' })))).toBe('Ton message est vide ou trop long.');
+    expect(chatMessage(refused(413, JSON.stringify({ code: 'PAYLOAD_TOO_LARGE' })))).toStartWith('La photo est trop lourde');
   });
 
   it('falls back for an unknown code, a body that is not a problem, or a failure of the stream', () => {
@@ -30,10 +31,10 @@ describe('chatMessage', () => {
 });
 
 describe('toUIMessage and textOf', () => {
-  it('shows the student as the user and Tom as the assistant, the text kept', () => {
-    const student = toUIMessage({ id: 'm1', role: 'student', text: 'Je bloque', createdAt: '2026-10-07T18:00:00.000Z' });
-    expect(student).toEqual({ id: 'm1', role: 'user', parts: [{ type: 'text', text: 'Je bloque' }] });
-    expect(toUIMessage({ id: 'm2', role: 'tutor', text: 'Où ?', createdAt: '2026-10-07T18:00:01.000Z' }).role).toBe('assistant');
+  it('shows the student as the user and Tom as the assistant, the text kept, and whether a photo came', () => {
+    const student = toUIMessage({ id: 'm1', role: 'student', text: 'Je bloque', photo: true, createdAt: '2026-10-07T18:00:00.000Z' });
+    expect(student).toEqual({ id: 'm1', role: 'user', parts: [{ type: 'text', text: 'Je bloque' }], metadata: { photo: true } });
+    expect(toUIMessage({ id: 'm2', role: 'tutor', text: 'Où ?', photo: false, createdAt: '2026-10-07T18:00:01.000Z' }).role).toBe('assistant');
     expect(textOf(student)).toBe('Je bloque');
     expect(textOf(undefined)).toBe('');
   });

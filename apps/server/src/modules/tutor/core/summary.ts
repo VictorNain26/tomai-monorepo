@@ -6,7 +6,8 @@
 
 import type { Logger } from 'pino';
 import type { Ai } from '../../../platform/ai/client';
-import { stripPromptTags, wrapUserMessage } from './fences';
+import { stripPromptTags } from './fences';
+import { studentMessage } from './photo';
 
 /** The last messages the tutor reads as they are, never summarized. */
 export const RECENT_MESSAGES = 10;
@@ -48,7 +49,7 @@ pertinent.
 export interface SummaryRequest {
   studentId: string;
   previous: string | null;
-  messages: readonly { role: 'student' | 'tutor'; text: string }[];
+  messages: readonly { role: 'student' | 'tutor'; text: string; photoText?: string | null }[];
 }
 
 /** The new summary; null when the call failed or answered nothing, which is logged. */
@@ -56,7 +57,9 @@ export async function summarize({ ai, logger }: { ai: Ai; logger: Logger }, requ
   // Each message fenced: a student cannot write a line of the tutor, nor a heading of the summary.
   const exchanges = request.messages
     .map((message) =>
-      message.role === 'student' ? wrapUserMessage(message.text) : `<tutor_message>\n${stripPromptTags(message.text)}\n</tutor_message>`,
+      message.role === 'student'
+        ? studentMessage(message.text, message.photoText)
+        : `<tutor_message>\n${stripPromptTags(message.text)}\n</tutor_message>`,
     )
     .join('\n\n');
   const previous = request.previous ? `## RÉSUMÉ PRÉCÉDENT\n${stripPromptTags(request.previous)}\n\n` : '';
