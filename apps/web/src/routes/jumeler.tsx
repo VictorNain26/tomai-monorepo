@@ -20,9 +20,14 @@ export const Route = createFileRoute('/jumeler')({
 });
 
 function Pair() {
+  const { code: scanned } = Route.useSearch();
+  // A code scanned while the page is open replaces the form, filled anew.
+  return <PairForm key={scanned ?? ''} scanned={scanned} />;
+}
+
+function PairForm({ scanned }: { scanned: string | undefined }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { code: scanned } = Route.useSearch();
   const [failure, setFailure] = useState<string | null>(null);
   const form = useForm({ resolver: zodResolver(pairingSchema), defaultValues: { code: scanned ?? '' } });
 

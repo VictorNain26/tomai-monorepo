@@ -58,8 +58,13 @@ const PAIRS = [
   ['annotation', 'secondary'],
 ];
 
-// Tokens the app added after the landing froze (landing.css takes none until lot 4).
+// Tokens the app added after the landing froze: checked in each palette that defines them, which
+// the app's light one must (landing.css takes none until lot 4).
 const APP_PAIRS = [['qr', 'qr-background']];
+
+test('the app’s palette defines the tokens it added after the landing froze', () => {
+  for (const [fg, bg] of APP_PAIRS) assert.ok(light[fg] && light[bg], `missing --color-${fg} or --color-${bg}`);
+});
 
 const CONTROL_PAIRS = [
   ['input', 'background'],
@@ -71,7 +76,7 @@ const CONTROL_PAIRS = [
 
 for (const [mode, palette] of modes) {
   for (const [pairs, minimum, criterion] of [
-    [mode === 'landing' ? PAIRS : [...PAIRS, ...APP_PAIRS], 4.5, 'WCAG AA (4.5:1)'],
+    [[...PAIRS, ...APP_PAIRS.filter(([fg, bg]) => palette[fg] && palette[bg])], 4.5, 'WCAG AA (4.5:1)'],
     [CONTROL_PAIRS, 3, 'WCAG 1.4.11 (3:1)'],
   ]) {
     for (const [fg, bg] of pairs) {

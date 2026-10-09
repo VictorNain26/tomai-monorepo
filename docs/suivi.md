@@ -102,6 +102,9 @@ concernée les reprend (`.claude/rules/plans-and-agents.md`).
 
 Conditions à guetter, sans PR tant qu'elles ne se déclenchent pas.
 
+- **E2E instables en local** (2026-10-09) : sous la suite complète, « the button gets a parent in
+  with their passkey » et « a paired student opens a session » ont échoué une fois chacun, puis
+  passé seuls à chaque relance. Si la CI les voit échouer, en chercher la cause (attente, charge).
 - **Jeton de la CLI Clever Cloud** : il expire le 2027-10-08 ; le renouveler avant.
 - **Taux de Mistral** (`MISTRAL_USD_TO_EUR`, 0,85 le 2026-10-06) : le revérifier à chaque
   facture ; un écart change chaque coût et chaque quota.
