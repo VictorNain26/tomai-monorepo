@@ -22,6 +22,7 @@ import { drawsSheet, prepareExerciseTurn } from './core/exercise-turn';
 import { hintOf } from './core/ladder';
 import { learnerMemoryBlock, notionMemories, notionView, schoolYearStart } from './core/memory';
 import { parentCue, type CueKind } from './core/parent-cues';
+import { PHOTO_ONLY, photoBlock, readPhoto, type Photo } from './core/photo';
 import type { OutputCheckContext } from './core/output-check';
 import { studentBlock, subjectBlock, systemPrompt } from './core/prompt';
 import { routeReasoningEffort } from './core/reasoning';
@@ -46,8 +47,11 @@ interface Deps {
 }
 
 export interface TurnInput {
+  /** What the student typed; empty when a photo comes alone. */
   text: string;
   inputMode: 'text' | 'voice';
+  /** A photo of the homework, read at the start of the turn and never kept. */
+  image?: Photo;
 }
 
 /** What the student is told while they wait: reading their message, preparing a new exercise, writing. */
@@ -166,13 +170,15 @@ export function createTutorService({ repository, students, ai, moderation, logge
   }
 
   async function turn({ student: learner, session, distress }: OpenTurn, input: TurnInput, onStep: (step: TurnStep) => void): Promise<TurnReply> {
+    // What the student typed; what the conversation keeps of it, a photo alone named so.
     const studentText = input.text;
+    const stored = studentText || PHOTO_ONLY;
 
     // The conversation stopped at a distress: any later message gets the fixed reply again.
     if (session.closedAt) {
       await repository
         .saveTurn(session.id, {
-          exchange: fixedReply(studentText),
+          exchange: fixedReply(stored),
           subject: null,
           newExercise: null,
           exerciseId: null,
@@ -185,26 +191,31 @@ export function createTutorService({ repository, students, ai, moderation, logge
       return { text: DISTRESS_REPLY, cue: null, after: null };
     }
 
-    if (distress) return { text: await answerDistress(learner.id, session.id, studentText, distress), cue: null, after: null };
+    if (distress) return { text: await answerDistress(learner.id, session.id, stored, distress), cue: null, after: null };
 
     const [history, current] = await Promise.all([
       repository.window(session.id, WINDOW, session.summaryUntil),
       repository.currentExercise(learner.id, session.id),
     ]);
     const lastTutorText = history.findLast((row) => row.role === 'tutor')?.text ?? null;
-    // Started together; the distress waits for the moderation only, and drops the analysis.
     onStep('reading');
+    // The photo first: its text is part of what the student says, for the analysis, the moderation
+    // and the distress; the sheet and the writer read it fenced. The photo itself goes no further.
+    const reading = input.image ? await readPhoto({ ai, logger }, { studentId: learner.id, image: input.image }) : undefined;
+    const attachedFilesBlock = reading === undefined ? null : photoBlock(reading);
+    const said = [studentText, reading?.kind === 'text' ? reading.text : ''].filter(Boolean).join('\n\n') || stored;
+    // Started together; the distress waits for the moderation only, and drops the analysis.
     const analysed = analyseTurn(
       { ai, logger },
-      { studentId: learner.id, studentText, lastTutorText, currentStatement: current?.sheet?.statement ?? null },
+      { studentId: learner.id, studentText: said, lastTutorText, currentStatement: current?.sheet?.statement ?? null },
     );
-    const inputModeration = await moderateInput(lastTutorText, studentText);
+    const inputModeration = await moderateInput(lastTutorText, said);
 
     // Distress before anything else: no sheet, no tutor, the fixed reply.
-    const source = detectDistress(studentText, inputModeration?.flagged.includes('selfharm') ?? false);
+    const source = detectDistress(said, inputModeration?.flagged.includes('selfharm') ?? false);
     if (source)
       return {
-        text: await answerDistress(learner.id, session.id, studentText, { source, flagged: inputModeration?.flagged ?? null }),
+        text: await answerDistress(learner.id, session.id, stored, { source, flagged: inputModeration?.flagged ?? null }),
         cue: null,
         after: null,
       };
@@ -225,7 +236,7 @@ export function createTutorService({ repository, students, ai, moderation, logge
         current: current ?? null,
         studentText,
         lastTutorText,
-        attachedFilesBlock: null,
+        attachedFilesBlock,
         now: new Date(),
       },
     );
@@ -249,7 +260,8 @@ export function createTutorService({ repository, students, ai, moderation, logge
         subjectBlock: subjectBlock(subject),
         turnInstruction: [instruction, extra].filter((block): block is string => block !== null).join('\n\n') || null,
         inputMode: input.inputMode,
-        studentText,
+        attachedFilesBlock,
+        studentText: stored,
       }).messages;
     const reasoningEffort = routeReasoningEffort({ schoolLevel: learner.level, subject, analysis, contracted: contract !== null });
     const check: OutputCheckContext = {
@@ -288,7 +300,7 @@ export function createTutorService({ repository, students, ai, moderation, logge
           )
         : null;
     await repository.saveTurn(session.id, {
-      exchange: { studentText, tutorText: reply.text, replay: reply.replay },
+      exchange: { studentText: stored, tutorText: reply.text, replay: reply.replay },
       subject: session.subject ? null : detected,
       newExercise:
         exerciseTurn.isNew && exercise
@@ -321,7 +333,8 @@ export function createTutorService({ repository, students, ai, moderation, logge
     return {
       text: reply.text,
       cue: cue?.text ?? null,
-      after: () => afterTurn(learner.id, session, { studentText, tutorText: reply.text, check, first }),
+      // The title from what the student said, the photo's text included.
+      after: () => afterTurn(learner.id, session, { studentText: said, tutorText: reply.text, check, first }),
     };
   }
 

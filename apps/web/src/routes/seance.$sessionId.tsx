@@ -12,6 +12,7 @@ import { api, isProblem } from '../lib/api';
 import type { TurnStep } from 'tomai-server/contract';
 import { chatMessage, isTurnStep, messagesQuery, textOf, toUIMessage, waitingText, type ChatMessage, type TurnBody } from '../lib/chat';
 import { meQuery } from '../lib/me';
+import { PHOTO_ONLY, preparePhoto, type PhotoUpload } from '../lib/photo';
 
 /** A session with Tom: what was said, then the chat. */
 export const Route = createFileRoute('/seance/$sessionId')({
@@ -31,13 +32,22 @@ function Session() {
   const aiNoticeId = useId();
   const [step, setStep] = useState<TurnStep | null>(null);
   const [cue, setCue] = useState<string | null>(null);
+  const [photo, setPhoto] = useState<PhotoUpload | null>(null);
+  const [photoFailed, setPhotoFailed] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+  // What the turn sends: the typed text, empty for a photo alone, and the photo.
+  const outgoingRef = useRef<{ text: string; image?: PhotoUpload }>({ text: '' });
   // The server keeps the conversation: a turn sends the new message only, to the chat's session.
   const [transport] = useState(
     () =>
       new DefaultChatTransport({
-        prepareSendMessagesRequest: ({ id, messages }) => ({
+        prepareSendMessagesRequest: ({ id }) => ({
           api: api.sessions[':id'].messages.$path({ param: { id } }),
-          body: { text: textOf(messages.at(-1)), inputMode: 'text' } satisfies TurnBody,
+          body: {
+            text: outgoingRef.current.text,
+            inputMode: 'text',
+            ...(outgoingRef.current.image && { image: outgoingRef.current.image }),
+          } satisfies TurnBody,
         }),
       }),
   );
@@ -59,7 +69,8 @@ function Session() {
       setMessages((shown) => {
         const last = shown.at(-1);
         if (last?.role !== 'user') return shown;
-        setText(textOf(last));
+        // A photo alone gives back no text; the photo is taken again.
+        setText(textOf(last) === PHOTO_ONLY ? '' : textOf(last));
         return shown.slice(0, -1);
       });
     },
@@ -74,11 +85,20 @@ function Session() {
   const busy = status === 'submitted' || status === 'streaming';
   const send = () => {
     const trimmed = text.trim();
-    if (!trimmed || busy) return;
+    if ((!trimmed && !photo) || busy) return;
+    outgoingRef.current = { text: trimmed, ...(photo && { image: photo }) };
     setText('');
+    setPhoto(null);
     setStep(null);
     setCue(null);
-    void sendMessage({ text: trimmed });
+    void sendMessage({ text: trimmed || PHOTO_ONLY });
+  };
+  const takePhoto = (file: File | undefined) => {
+    setPhotoFailed(false);
+    if (!file) return;
+    preparePhoto(file).then(setPhoto, () => {
+      setPhotoFailed(true);
+    });
   };
 
   return (
@@ -120,6 +140,21 @@ function Session() {
       {error && <Notice tone="error">{chatMessage(error)}</Notice>}
       <div ref={endRef} />
       <div className="sticky bottom-0 flex flex-col gap-2 bg-background pt-2 pb-3">
+        {photo && (
+          <p className="flex items-center justify-between gap-3 text-sm">
+            Photo prête : elle part avec ton message.
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setPhoto(null);
+              }}
+            >
+              Retirer
+            </Button>
+          </p>
+        )}
+        {photoFailed && <Notice tone="error">La photo n’a pas pu être préparée. Réessaie, ou recopie l’énoncé.</Notice>}
         <form
           className="flex gap-2"
           onSubmit={(event) => {
@@ -140,7 +175,30 @@ function Session() {
               setText(event.target.value);
             }}
           />
-          <Button type="submit" disabled={busy || text.trim() === ''}>
+          {/* The camera on a phone, the files elsewhere; the file read as it is chosen, then cleared. */}
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            capture="environment"
+            aria-label="Prendre une photo de l’exercice"
+            className="sr-only"
+            onChange={(event) => {
+              takePhoto(event.target.files?.[0]);
+              event.target.value = '';
+            }}
+          />
+          <Button
+            type="button"
+            variant="outline"
+            disabled={busy}
+            onClick={() => {
+              fileRef.current?.click();
+            }}
+          >
+            Photo
+          </Button>
+          <Button type="submit" disabled={busy || (text.trim() === '' && !photo)}>
             Envoyer
           </Button>
         </form>

@@ -242,6 +242,26 @@ test('with the parent beside, Tom’s cue for them shows under the reply, and le
   await expect(forParent).toHaveCount(0);
 });
 
+test('a photo of the homework goes with the message, cut down to JPEG, and the conversation says it was sent', async ({
+  page,
+  browser,
+}, testInfo) => {
+  await pairedStudent(page, browser, testInfo, 'Mia');
+  const sent = await tutorReplies(page, 'Je lis : résous 3x + 5 = 20. Que cherches-tu ?');
+  await page.getByRole('button', { name: 'Nouvelle séance' }).click();
+
+  // A one-pixel PNG, as a phone camera would hand it over.
+  const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==', 'base64');
+  await page.getByLabel('Prendre une photo de l’exercice').setInputFiles({ name: 'exercice.png', mimeType: 'image/png', buffer: png });
+  await expect(page.getByText('Photo prête')).toBeVisible();
+  await page.getByRole('button', { name: 'Envoyer' }).click();
+
+  const conversation = page.getByRole('list', { name: 'Conversation' });
+  await expect(conversation.locator(':scope > li')).toHaveText(['Toi : Photo envoyée', 'Tom : Je lis : résous 3x + 5 = 20. Que cherches-tu ?']);
+  expect(sent).toEqual([{ text: '', inputMode: 'text', image: { mediaType: 'image/jpeg', data: expect.stringMatching(/^[A-Za-z0-9+/]+=*$/) } }]);
+  await expect(page.getByText('Photo prête')).toHaveCount(0);
+});
+
 test('a day past the quota is told in French, without the server’s message', async ({ page, browser }, testInfo) => {
   await pairedStudent(page, browser, testInfo, 'Malo');
   await page.route('**/api/sessions/*/messages', (route) =>

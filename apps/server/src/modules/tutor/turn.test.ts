@@ -62,13 +62,14 @@ const companionSession = async (accompanied: boolean) =>
 const newSession = async () =>
   ((await (await api.request('POST', '/api/sessions', { cookie: asStudent, body: { accompanied: false } })).json()) as { id: string }).id;
 
-/** The turn's reply as the student reads it, from the UI message stream; or its error. */
-async function say(sessionId: string, text: string, cookie = asStudent) {
-  const res = await api.request('POST', `/api/sessions/${sessionId}/messages`, { cookie, body: { text } });
-  const body = await res.text();
+/** The turn's reply as the student reads it, from the UI message stream; or its error. A message is its text, or the whole body. */
+async function say(sessionId: string, message: string | Record<string, unknown>, cookie = asStudent) {
+  const body = typeof message === 'string' ? { text: message } : message;
+  const res = await api.request('POST', `/api/sessions/${sessionId}/messages`, { cookie, body });
+  const streamed = await res.text();
   // The title and the summary run after the reply: done before the test queues the next replies.
   await tasks.settled();
-  const chunks = body
+  const chunks = streamed
     .split('\n')
     .filter((line) => line.startsWith('data: {'))
     .map((line) => JSON.parse(line.slice(6)) as { type: string; delta?: string; errorText?: string; data?: unknown; transient?: boolean });
@@ -82,7 +83,7 @@ async function say(sessionId: string, text: string, cookie = asStudent) {
     cues: chunks.filter((chunk) => chunk.type === 'data-cue').map((chunk) => ({ cue: chunk.data, transient: chunk.transient })),
     reply: chunks.flatMap((chunk) => (chunk.type === 'text-delta' && chunk.delta ? [chunk.delta] : [])).join(''),
     error: chunks.find((chunk) => chunk.type === 'error')?.errorText,
-    body,
+    body: streamed,
   };
 }
 

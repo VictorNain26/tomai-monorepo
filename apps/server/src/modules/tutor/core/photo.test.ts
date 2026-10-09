@@ -1,0 +1,48 @@
+import { describe, expect, it } from 'bun:test';
+import { eq } from 'drizzle-orm';
+import { aiCost } from '../../../platform/ai/schema';
+import { testAi } from '../../../testing/ai';
+import { photoBlock, readPhoto } from './photo';
+
+const { ai, db, logger, logs, mistral, sent, studentId } = await testAi();
+const deps = { ai, logger };
+
+// A PNG's first bytes: what the model receives is not looked at by the fake.
+const image = { mediaType: 'image/png' as const, data: new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]) };
+
+describe('readPhoto', () => {
+  it('reads the text of the homework on the photo, the image sent to the model and billed to the student', async () => {
+    mistral.chat.push({ text: 'Exercice 3 : Résous 3x + 5 = 20.\n[Figure : un triangle rectangle ABC.]' });
+    expect(await readPhoto(deps, { studentId, image })).toEqual({
+      kind: 'text',
+      text: 'Exercice 3 : Résous 3x + 5 = 20.\n[Figure : un triangle rectangle ABC.]',
+    });
+    expect(JSON.stringify(sent().body)).toContain('data:image/png;base64,');
+    expect(sent().system).toContain('Recopie fidèlement');
+    const billed = await db.select({ operation: aiCost.operation }).from(aiCost).where(eq(aiCost.studentId, studentId));
+    expect(billed.map((row) => row.operation)).toContain('photo-reading');
+  });
+
+  it('says a photo it cannot read, and one that shows no homework, without describing it', async () => {
+    mistral.chat.push({ text: 'ILLISIBLE' });
+    expect(await readPhoto(deps, { studentId, image })).toEqual({ kind: 'unreadable' });
+    mistral.chat.push({ text: 'HORS_DEVOIR' });
+    expect(await readPhoto(deps, { studentId, image })).toEqual({ kind: 'off-topic' });
+    // A final stop the model adds changes nothing.
+    mistral.chat.push({ text: 'ILLISIBLE.' });
+    expect(await readPhoto(deps, { studentId, image })).toEqual({ kind: 'unreadable' });
+  });
+
+  it('fences the text of the photo for the sheet and the writer, and says a photo not read without describing it', () => {
+    expect(photoBlock({ kind: 'text', text: 'Résous 3x + 5 = 20.' })).toBe('<attached_file name="photo">\nRésous 3x + 5 = 20.\n</attached_file>');
+    expect(photoBlock({ kind: 'unreadable' })).toContain('[Photo illisible.]');
+    expect(photoBlock({ kind: 'off-topic' })).toContain('[Photo qui ne montre pas de devoir.]');
+    expect(photoBlock(null)).toContain('[Photo non lue');
+  });
+
+  it('gives nothing when the call fails, and logs it', async () => {
+    mistral.chat.push({ status: 500 }, { status: 500 }, { status: 500 });
+    expect(await readPhoto(deps, { studentId, image })).toBeNull();
+    expect(logs).toContainEqual(expect.objectContaining({ msg: 'Photo not read' }));
+  });
+});
