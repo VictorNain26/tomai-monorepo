@@ -15,6 +15,7 @@ test('an invited parent gets in by the code their address received, names themse
   await expect(page).toHaveURL(/\/foyer$/);
   await expect(page.getByRole('heading', { name: 'Bonjour Claire' })).toBeVisible();
 
+  await page.getByRole('link', { name: 'Mon compte' }).click();
   await page.getByRole('button', { name: 'Se déconnecter' }).click();
   await expect(page).toHaveURL(/\/connexion$/);
   await page.goto('/foyer');
@@ -65,9 +66,10 @@ test.describe('with the server failing', () => {
     await guardian(page, 'sortie');
 
     await page.route('**/api/auth/sign-out', (route) => route.fulfill({ status: 429, json: { code: 'TOO_MANY_REQUESTS' } }));
+    await page.getByRole('link', { name: 'Mon compte' }).click();
     await page.getByRole('button', { name: 'Se déconnecter' }).click();
     await expect(page.getByRole('alert')).toContainText('Trop d’essais');
-    await expect(page).toHaveURL(/\/foyer$/);
+    await expect(page).toHaveURL(/\/compte$/);
   });
 
   test('a screen that cannot load says so in French, and loads on a retry', async ({ page }) => {

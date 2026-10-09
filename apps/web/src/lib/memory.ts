@@ -14,14 +14,16 @@ export const memoryQuery = queryOptions({
   queryFn: () => parseResponse(api.memory.$get()),
 });
 
-/** « Travaillée 2 fois. La dernière fois : pas encore résolue, avec un indice. À surveiller : mal lire la consigne. » */
-export function notionSummary({ worked, lastSolved, lastHelp, watch }: Notion): string {
+/** « La dernière fois : pas encore résolue, avec un indice. À surveiller : mal lire la consigne. », as the memory and the week say it. */
+export function lastTime({ lastSolved, lastHelp, watch }: Pick<Notion, 'lastSolved' | 'lastHelp' | 'watch'>): string {
   return [
-    `Travaillée ${String(worked)} fois.`,
     `La dernière fois : ${lastSolved ? `résolue ${lastHelp}` : `pas encore résolue, ${lastHelp}`}.`,
     ...(watch ? [`À surveiller : ${watch}.`] : []),
   ].join(' ');
 }
+
+/** « Travaillée 2 fois. » and the last time. */
+export const notionSummary = (notion: Notion): string => `Travaillée ${String(notion.worked)} fois. ${lastTime(notion)}`;
 
 /** A failed memory request, in words a student reads. */
 export function memoryMessage(error: unknown): string {

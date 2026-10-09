@@ -29,7 +29,11 @@ async function phoneLock(page: Page) {
   };
 }
 
-const makePasskey = (page: Page) => page.getByRole('button', { name: 'Créer une clé d’accès sur cet appareil' }).click();
+// The passkeys live on « Mon compte », out of the household's home.
+async function makePasskey(page: Page) {
+  if (!page.url().endsWith('/compte')) await page.getByRole('link', { name: 'Mon compte' }).click();
+  await page.getByRole('button', { name: 'Créer une clé d’accès sur cet appareil' }).click();
+}
 
 test('a parent makes a passkey on their phone, filed under their address, and the address field lets them in with it', async ({ page }) => {
   const lock = await phoneLock(page);

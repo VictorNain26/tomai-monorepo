@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@repo/ui';
-import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { Link, createFileRoute, redirect, useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -8,17 +8,25 @@ import type { z } from '../lib/zod';
 import { Field, SelectField } from '../components/field';
 import { Notice } from '../components/notice';
 import { Page } from '../components/page';
+import { WeekSummary } from '../components/week-summary';
 import { api, isProblem, parseResponse } from '../lib/api';
 import { authClient, authMessage } from '../lib/auth';
 import { deviceName, formatDay, formatHour } from '../lib/device';
 import { formatCode } from '../lib/pairing';
+import { summaryQuery } from '../lib/summary';
 import { LEVEL_LABELS, devicesQuery, householdMessage, memoryStatus, studentSchema, studentsQuery, type Student } from '../lib/household';
 
 const student = api.household.students[':id'];
 
-/** One child of the household: the pairing of their devices, their name and class, their account. */
+/**
+ * One child of the household: their week, the way in to their space, the pairing of their
+ * devices, their name and class, their account. Until a device holds their space, the next step
+ * comes first.
+ */
 export const Route = createFileRoute('/foyer/$studentId')({
   loader: async ({ context, params }) => {
+    // Started, not awaited: the week failing leaves the child's page, which says so.
+    void context.queryClient.query(summaryQuery(params.studentId)).catch(() => undefined);
     const students = await context.queryClient.query(studentsQuery);
     if (!students.some(({ id }) => id === params.studentId)) throw redirect({ to: '/foyer' });
     await context.queryClient.query(devicesQuery(params.studentId));
@@ -29,6 +37,8 @@ export const Route = createFileRoute('/foyer/$studentId')({
 function StudentPage() {
   const { studentId } = Route.useParams();
   const { data: students } = useSuspenseQuery(studentsQuery);
+  const { data: devices } = useSuspenseQuery(devicesQuery(studentId));
+  const week = useQuery(summaryQuery(studentId));
   const child = students.find(({ id }) => id === studentId);
   if (!child) return null;
 
@@ -37,7 +47,13 @@ function StudentPage() {
       <Link to="/foyer" className="min-h-11 py-3 text-sm text-primary underline">
         Retour au foyer
       </Link>
+      {devices.length === 0 && (
+        <Notice tone="info">
+          Prochaine étape : {child.accompanied ? `faire les devoirs avec ${child.name} sur cet appareil.` : 'relier son appareil, avec un code.'}
+        </Notice>
+      )}
       <OpenHere child={child} />
+      <WeekSummary week={week.data} failed={week.isError} name={child.name} reader="guardian" />
       <Devices child={child} />
       <Memory child={child} />
       <EditStudent child={child} />
