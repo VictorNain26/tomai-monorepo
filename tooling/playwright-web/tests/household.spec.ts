@@ -21,6 +21,26 @@ test('a guardian adds a child, changes their class, then deletes their account',
   await expect(page.getByText('Ajoutez votre enfant')).toBeVisible();
 });
 
+test('a QR code on the parent’s phone opens the pairing on the child’s, the code filled in', async ({ page, browser }, testInfo) => {
+  await guardian(page, 'qr');
+  await addChild(page, 'Nina');
+  await page.getByRole('button', { name: 'Relier un appareil' }).click();
+  await expect(page.getByRole('img', { name: 'QR code pour relier l’appareil de Nina' })).toBeVisible();
+  const code = (await page.getByText(/^[0-9A-Z]{4}-[0-9A-Z]{4}$/).textContent()) ?? '';
+
+  const phone = await childPhone(browser, testInfo);
+  const child = await phone.newPage();
+  // A code of digits stays text through the router's search, dash kept.
+  await child.goto('/jumeler?code=4821-3907');
+  await expect(child.getByLabel('Le code')).toHaveValue('4821-3907');
+  // What the QR code holds, opened by the child's camera.
+  await child.goto(`/jumeler?code=${code}`);
+  await expect(child.getByLabel('Le code')).toHaveValue(code);
+  await child.getByRole('button', { name: 'Relier' }).click();
+  await expect(child.getByRole('heading', { name: 'Bonjour Nina' })).toBeVisible();
+  await phone.close();
+});
+
 test('a code pairs the child’s phone, which sees it, and the guardian disconnects it', async ({ page, browser }, testInfo) => {
   await guardian(page, 'jumelage');
   await addChild(page, 'Noé');

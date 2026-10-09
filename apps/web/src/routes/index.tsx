@@ -144,7 +144,7 @@ function Devices() {
               </li>
             ))}
           </ul>
-          <p className="text-sm text-muted-foreground">Un appareil que tu ne reconnais pas ? Dis-le à ton parent : il peut le déconnecter.</p>
+          <p className="text-sm text-muted-foreground">Un appareil que tu ne reconnais pas ? Dis-le à ton parent, qui peut le déconnecter.</p>
           <p className="text-sm text-muted-foreground">Sur un appareil partagé, ton parent passe sur son profil sans te déconnecter.</p>
         </div>
       </details>

@@ -48,6 +48,11 @@ describe('the system prompt, after the rework study (docs/etudes/2026-10-04/refo
     expect(prompt).not.toContain("tu le dis si l'élève te le demande");
   });
 
+  it('speaks to a student whose gender it does not know in words that fit a girl as a boy', () => {
+    expect(prompt).toContain('Tu ne connais pas le genre de l’élève');
+    expect(prompt).toContain('« ça bloque ? » plutôt que « tu es bloqué ? »');
+  });
+
   it('announces only the formulas the session renders, no diagram it cannot show', () => {
     expect(prompt).toContain('$...$ en ligne, $$...$$ en bloc');
     expect(prompt).not.toMatch(/mermaid|schéma/i);

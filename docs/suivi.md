@@ -7,8 +7,8 @@ Où on en est, réécrit dans chaque PR qui fait avancer ; ce qui est fini en so
 
 - **Mis à jour le** 2026-10-09.
 - **Lot en cours : 3** : la direction artistique « Cahier du soir » est posée, le mode accompagné
-  en 6e et 5e, la séance, l'accueil élève, l'accueil parent et l'écran du résumé faits ; ensuite
-  le jumelage par QR code et les petits textes (`roadmap.md`, « Maintenant »).
+  en 6e et 5e, la séance, les accueils élève et parent, l'écran du résumé, le jumelage par QR
+  code et les petits textes faits ; ensuite le consentement (`roadmap.md`, « Maintenant »).
 - **Lot 1 en pause** : le harnais `bun run eval` est mergé ; son passage unique attend le paiement
   à l'usage de Mistral (bloquant ci-dessous). Le premier essai s'est arrêté à 3 conversations sur
   104 et ne compte pas comme mesure. Référence de comparaison : 11 fuites sur 106, le 2026-10-06
@@ -76,9 +76,12 @@ concernée les reprend (`.claude/rules/plans-and-agents.md`).
 
 **Lot 3**
 - Mémoire : les 1 053 libellés du référentiel restent ceux du programme (« Il utilise… »),
-  présentés « Au programme » ; leur réécriture dans les mots de l'élève, relue entrée par entrée,
-  va avec les petits textes (étape 1 de `roadmap.md`).
-- Résumé de la semaine : son arrêt à la demande de l'élève, avec le consentement (étape 2 de
+  présentés « Au programme » ; leur réécriture dans les mots de l'élève demande une relecture
+  de Victor entrée par entrée, avant la bêta fermée.
+- Le champ du mois de naissance montre « --------- ---- » vide sur Chrome de bureau (contrôle
+  natif, un sélecteur sur téléphone) : à revoir avec le consentement (étape 1), qui touche ce
+  formulaire.
+- Résumé de la semaine : son arrêt à la demande de l'élève, avec le consentement (étape 1 de
   `roadmap.md`) ; un envoi par e-mail n'est pas décidé.
 - Après une détresse : la revue humaine, son délai et sa trace ; ce que voit l'élève ensuite ; le
   canal du message au parent (`decisions.md`, « Ouvertes »), avec une table d'envois idempotente.
@@ -99,6 +102,9 @@ concernée les reprend (`.claude/rules/plans-and-agents.md`).
 
 Conditions à guetter, sans PR tant qu'elles ne se déclenchent pas.
 
+- **E2E instables en local** (2026-10-09) : sous la suite complète, « the button gets a parent in
+  with their passkey » et « a paired student opens a session » ont échoué une fois chacun, puis
+  passé seuls à chaque relance. Si la CI les voit échouer, en chercher la cause (attente, charge).
 - **Jeton de la CLI Clever Cloud** : il expire le 2027-10-08 ; le renouveler avant.
 - **Taux de Mistral** (`MISTRAL_USD_TO_EUR`, 0,85 le 2026-10-06) : le revérifier à chaque
   facture ; un écart change chaque coût et chaque quota.

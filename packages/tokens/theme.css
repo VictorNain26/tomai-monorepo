@@ -44,6 +44,9 @@
   --color-input: #858378;
   --color-ring: #24409a;
   --color-overlay: #000000;
+  /* A QR code stays dark on light in both modes: not every reader takes it inverted. */
+  --color-qr: #000000;
+  --color-qr-background: #ffffff;
 
   /* Motion — fast: micro-feedback (press, toggle) ; base: transitions
    * standard ; slow: entrées d'écran ; pulse: demi-cycle skeleton. */
@@ -83,5 +86,7 @@
     --color-input: #7c8496;
     --color-ring: #a9bcff;
     --color-overlay: #000000;
+    --color-qr: #000000;
+    --color-qr-background: #ffffff;
   }
 }

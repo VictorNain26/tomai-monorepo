@@ -127,7 +127,7 @@ function AddStudent({ open }: { open: boolean }) {
         />
         <CheckboxField
           label="Proposer que Tom retienne ce qui a résisté"
-          hint="Les notions de ses exercices et ce qui a été difficile, jamais ce qu’il écrit. Votre enfant accepte ou non, et peut tout effacer."
+          hint="Les notions de ses exercices et ce qui a été difficile, jamais ce qui est écrit dans les séances. Votre enfant accepte ou non, et peut tout effacer."
           {...form.register('memoryProposed')}
         />
         {create.error && (
