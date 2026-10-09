@@ -5,11 +5,13 @@ import { MemoryAnswer } from '../components/memory-answer';
 import { Notice } from '../components/notice';
 import { Page } from '../components/page';
 import { TomHead } from '../components/tom';
+import { WeekSummary } from '../components/week-summary';
 import { api, parseResponse } from '../lib/api';
 import { sessionsQuery } from '../lib/chat';
 import { deviceName, formatDay } from '../lib/device';
 import { devicesQuery, meQuery } from '../lib/me';
 import { memoryQuery, useMemoryAnswer, type MemoryChoice } from '../lib/memory';
+import { ownSummaryQuery } from '../lib/summary';
 
 /**
  * The home: the sign-in for a visitor, the household for a guardian, their space for a student:
@@ -36,12 +38,15 @@ function StudentHome() {
   // Not awaited: the memory is optional, a failure of it leaves the sessions open.
   const { data: memory } = useQuery(memoryQuery);
   const answer = useMemoryAnswer();
+  // Not awaited either: the week failing leaves the sessions.
+  const { data: week } = useQuery(ownSummaryQuery);
 
   return (
     <Page title={`Bonjour ${me?.name ?? ''}`}>
       {memory?.state === 'asked' && <MemoryAnswer answer={answer} />}
       {answer.isSuccess && <Notice tone="info">{ANSWERED[answer.variables]}</Notice>}
       <Sessions />
+      {week && me && <WeekSummary week={week} name={me.name} reader="student" />}
       <Link to="/memoire" className="min-h-11 py-3 text-sm text-primary underline">
         Ce que Tom retient
       </Link>

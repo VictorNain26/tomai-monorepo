@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { addChild, birthMonthAged, childPhone, guardian, signIn } from '../guardian';
+import { addChild, birthMonthAged, childPhone, guardian, pairedStudent, signIn } from '../guardian';
 
 test('a guardian adds a child, changes their class, then deletes their account', async ({ page }) => {
   await guardian(page, 'foyer');
@@ -8,7 +8,8 @@ test('a guardian adds a child, changes their class, then deletes their account',
 
   await page.getByLabel('Sa classe', { exact: true }).selectOption({ label: 'Troisième' });
   await page.getByRole('button', { name: 'Enregistrer' }).click();
-  await expect(page.getByRole('status')).toHaveText('Enregistré.');
+  // The page of a child just added says the next step too.
+  await expect(page.getByRole('status').filter({ hasText: 'Enregistré.' })).toHaveText('Enregistré.');
   await page.getByLabel('Son prénom', { exact: true }).fill('Léa-Rose');
   await expect(page.getByText('Enregistré.')).toBeHidden();
   await page.getByLabel('Son prénom', { exact: true }).fill('Léa');
@@ -65,7 +66,7 @@ test.describe('with the session gone', () => {
     await page.getByLabel('Son prénom', { exact: true }).fill('Léo');
     await page.getByLabel('Sa classe', { exact: true }).selectOption({ label: 'Sixième' });
     await page.getByLabel('Son mois de naissance').fill(birthMonthAged(11));
-    await page.getByRole('button', { name: 'Ajouter' }).click();
+    await page.getByRole('button', { name: 'Ajouter', exact: true }).click();
     await expect(page).toHaveURL(/\/connexion$/);
   });
 });
@@ -90,6 +91,7 @@ test('on the family phone, the parent opens the child’s space without a code, 
   await signIn(page, email);
   await expect(page).toHaveURL(/\/foyer$/);
   // Leaving, the parent hands the phone back: Zoé's space stays on it.
+  await page.getByRole('link', { name: 'Mon compte' }).click();
   await page.getByRole('button', { name: 'Se déconnecter' }).click();
   await expect(page.getByRole('heading', { name: 'Bonjour Zoé' })).toBeVisible();
 
@@ -118,4 +120,78 @@ test('in 5e, the parent does the homework with the child on the family phone, an
   await expect(
     page.getByText('Quand tu travailles sur l’appareil de ta famille, ton parent peut ouvrir ton espace et relire tes séances.'),
   ).toBeVisible();
+});
+
+test('the parent’s home: a card per child with their week, the adding folded, the next step after it', async ({ page }) => {
+  await guardian(page, 'accueil');
+  // No child yet: the form is open.
+  await expect(page.getByLabel('Son prénom', { exact: true })).toBeVisible();
+  await addChild(page, 'Léo');
+  await expect(page.getByRole('status')).toHaveText('Léo a rejoint votre foyer. Prochaine étape : relier son appareil, avec un code.');
+
+  await page.getByRole('link', { name: 'Retour au foyer' }).click();
+  const card = page.getByRole('link', { name: /^Léo/ });
+  await expect(card).toContainText('Quatrième');
+  await expect(card).toContainText('Pas de séance cette semaine');
+  await expect(page.getByLabel('Son prénom', { exact: true })).toBeHidden();
+  await addChild(page, 'Lou', { level: 'Cinquième' });
+  await expect(page.getByRole('status')).toHaveText('Lou a rejoint votre foyer. Prochaine étape : faire les devoirs avec Lou sur cet appareil.');
+});
+
+test('« Mon compte » holds the passkeys and the sign-out, out of the home', async ({ page }) => {
+  await guardian(page, 'compte');
+  await expect(page.getByRole('button', { name: 'Se déconnecter' })).toHaveCount(0);
+  await page.getByRole('link', { name: 'Mon compte' }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Mon compte' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Vos clés d’accès' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Se déconnecter' })).toBeVisible();
+});
+
+// page.route never sees what the service worker answers.
+test.describe('with a week of work', () => {
+  test.use({ serviceWorkers: 'block' });
+  const week = {
+    minutes: 35,
+    sessions: 2,
+    subjects: [
+      { subject: 'mathematiques', minutes: 25 },
+      { subject: 'francais', minutes: 10 },
+    ],
+    resisting: [
+      { notionId: 'n', label: 'Résoudre une équation', worked: 2, lastSolved: false, lastHelp: 'avec un indice', watch: 'mal lire la consigne' },
+    ],
+  };
+
+  test('the parent reads the week of their child: subjects, time, what resists, a question to ask', async ({ page }) => {
+    await guardian(page, 'semaine');
+    await page.route('**/api/summary/*', (route) => route.fulfill({ json: week }));
+    await addChild(page, 'Léo');
+    const summary = page.getByRole('region', { name: 'Sa semaine' });
+    await expect(summary).toContainText('Léo a travaillé environ 35 min, en 2 séances.');
+    await expect(summary).toContainText('Maths : environ 25 min');
+    await expect(summary).toContainText('Résoudre une équation');
+    await expect(summary).toContainText('Pas encore résolue, avec un indice. À surveiller : mal lire la consigne.');
+    await expect(summary).toContainText('Demandez à Léo de vous montrer un exercice sur « Résoudre une équation », et où ça coince.');
+  });
+
+  test('the child reads the same week, told to them, and knows their parent sees it', async ({ page, browser }, testInfo) => {
+    await pairedStudent(page, browser, testInfo, 'Ines');
+    await page.route('**/api/summary', (route) => route.fulfill({ json: week }));
+    await page.reload();
+    const summary = page.getByRole('region', { name: 'Ta semaine' });
+    await expect(summary).toContainText('Tu as travaillé environ 35 min, en 2 séances.');
+    await expect(summary).toContainText('Résoudre une équation');
+    await expect(summary).toContainText('Ton parent voit ce même résumé.');
+  });
+});
+
+test('a week without a session says so, to the parent and to the child', async ({ page, browser }, testInfo) => {
+  const phone = await childPhone(browser, testInfo);
+  const parent = await phone.newPage();
+  await guardian(parent, 'semaine-vide');
+  await addChild(parent, 'Ana');
+  await expect(parent.getByRole('region', { name: 'Sa semaine' })).toContainText('Ana n’a pas ouvert de séance ces sept derniers jours.');
+  await phone.close();
+  await pairedStudent(page, browser, testInfo, 'Eva');
+  await expect(page.getByRole('region', { name: 'Ta semaine' })).toContainText('Pas de séance ces sept derniers jours.');
 });
