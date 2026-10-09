@@ -2,7 +2,7 @@ import { describe, expect, it } from 'bun:test';
 import { Hono } from 'hono';
 import { hc } from 'hono/client';
 import { parseResponse } from './api';
-import { memoryMessage, notionSummary } from './memory';
+import { lastTime, memoryMessage, notionSummary } from './memory';
 
 const notion = { notionId: 'n', label: 'Équations', worked: 2, lastSolved: false, lastHelp: 'avec un indice', watch: 'mal lire la consigne' };
 
@@ -15,6 +15,13 @@ describe('notionSummary', () => {
 
   it('says nothing to watch without a frequent error', () => {
     expect(notionSummary({ ...notion, lastSolved: true, watch: null })).toBe('Travaillée 2 fois. La dernière fois : résolue avec un indice.');
+  });
+});
+
+describe('lastTime', () => {
+  it('says how the notion ended last time and what to watch, as the memory and the week both say it', () => {
+    expect(lastTime(notion)).toBe('La dernière fois : pas encore résolue, avec un indice. À surveiller : mal lire la consigne.');
+    expect(lastTime({ ...notion, lastSolved: true, watch: null })).toBe('La dernière fois : résolue avec un indice.');
   });
 });
 

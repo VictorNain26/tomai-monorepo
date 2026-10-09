@@ -20,11 +20,13 @@ const student = api.household.students[':id'];
 
 /**
  * One child of the household: their week, the way in to their space, the pairing of their
- * devices, their name and class, their account. Just added, the next step comes first.
+ * devices, their name and class, their account. Until a device holds their space, the next step
+ * comes first.
  */
 export const Route = createFileRoute('/foyer/$studentId')({
-  validateSearch: (search): { ajoute?: true } => (search['ajoute'] === true ? { ajoute: true } : {}),
   loader: async ({ context, params }) => {
+    // Started, not awaited: the week failing leaves the child's page, which says so.
+    void context.queryClient.query(summaryQuery(params.studentId)).catch(() => undefined);
     const students = await context.queryClient.query(studentsQuery);
     if (!students.some(({ id }) => id === params.studentId)) throw redirect({ to: '/foyer' });
     await context.queryClient.query(devicesQuery(params.studentId));
@@ -34,10 +36,9 @@ export const Route = createFileRoute('/foyer/$studentId')({
 
 function StudentPage() {
   const { studentId } = Route.useParams();
-  const { ajoute } = Route.useSearch();
   const { data: students } = useSuspenseQuery(studentsQuery);
-  // Not awaited: the week failing leaves the child's page.
-  const { data: week } = useQuery(summaryQuery(studentId));
+  const { data: devices } = useSuspenseQuery(devicesQuery(studentId));
+  const week = useQuery(summaryQuery(studentId));
   const child = students.find(({ id }) => id === studentId);
   if (!child) return null;
 
@@ -46,14 +47,13 @@ function StudentPage() {
       <Link to="/foyer" className="min-h-11 py-3 text-sm text-primary underline">
         Retour au foyer
       </Link>
-      {ajoute && (
+      {devices.length === 0 && (
         <Notice tone="info">
-          {child.name} a rejoint votre foyer. Prochaine étape :{' '}
-          {child.accompanied ? `faire les devoirs avec ${child.name} sur cet appareil.` : 'relier son appareil, avec un code.'}
+          Prochaine étape : {child.accompanied ? `faire les devoirs avec ${child.name} sur cet appareil.` : 'relier son appareil, avec un code.'}
         </Notice>
       )}
       <OpenHere child={child} />
-      {week && <WeekSummary week={week} name={child.name} reader="guardian" />}
+      <WeekSummary week={week.data} failed={week.isError} name={child.name} reader="guardian" />
       <Devices child={child} />
       <Memory child={child} />
       <EditStudent child={child} />

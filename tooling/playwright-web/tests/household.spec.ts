@@ -122,20 +122,24 @@ test('in 5e, the parent does the homework with the child on the family phone, an
   ).toBeVisible();
 });
 
-test('the parent’s home: a card per child with their week, the adding folded, the next step after it', async ({ page }) => {
+test('the parent’s home: a card per child with their week, the adding folded, the next step until it is done', async ({ page }) => {
   await guardian(page, 'accueil');
   // No child yet: the form is open.
   await expect(page.getByLabel('Son prénom', { exact: true })).toBeVisible();
   await addChild(page, 'Léo');
-  await expect(page.getByRole('status')).toHaveText('Léo a rejoint votre foyer. Prochaine étape : relier son appareil, avec un code.');
+  await expect(page.getByRole('status')).toHaveText('Prochaine étape : relier son appareil, avec un code.');
 
   await page.getByRole('link', { name: 'Retour au foyer' }).click();
   const card = page.getByRole('link', { name: /^Léo/ });
   await expect(card).toContainText('Quatrième');
-  await expect(card).toContainText('Pas de séance cette semaine');
+  await expect(card).toContainText('Pas de séance ces sept derniers jours');
   await expect(page.getByLabel('Son prénom', { exact: true })).toBeHidden();
   await addChild(page, 'Lou', { level: 'Cinquième' });
-  await expect(page.getByRole('status')).toHaveText('Lou a rejoint votre foyer. Prochaine étape : faire les devoirs avec Lou sur cet appareil.');
+  await expect(page.getByRole('status')).toHaveText('Prochaine étape : faire les devoirs avec Lou sur cet appareil.');
+  // Done once a device holds the child's space, the step goes.
+  await page.getByRole('button', { name: 'Faire les devoirs avec Lou' }).click();
+  await page.getByRole('link', { name: 'Changer de profil' }).click();
+  await expect(page.getByRole('heading', { name: 'Qui utilise Tom ?' })).toBeVisible();
 });
 
 test('« Mon compte » holds the passkeys and the sign-out, out of the home', async ({ page }) => {
@@ -167,10 +171,10 @@ test.describe('with a week of work', () => {
     await page.route('**/api/summary/*', (route) => route.fulfill({ json: week }));
     await addChild(page, 'Léo');
     const summary = page.getByRole('region', { name: 'Sa semaine' });
-    await expect(summary).toContainText('Léo a travaillé environ 35 min, en 2 séances.');
+    await expect(summary).toContainText('Léo a travaillé environ 35 min, en 2 séances, ces sept derniers jours.');
     await expect(summary).toContainText('Maths : environ 25 min');
     await expect(summary).toContainText('Résoudre une équation');
-    await expect(summary).toContainText('Pas encore résolue, avec un indice. À surveiller : mal lire la consigne.');
+    await expect(summary).toContainText('La dernière fois : pas encore résolue, avec un indice. À surveiller : mal lire la consigne.');
     await expect(summary).toContainText('Demandez à Léo de vous montrer un exercice sur « Résoudre une équation », et où ça coince.');
   });
 
@@ -179,9 +183,22 @@ test.describe('with a week of work', () => {
     await page.route('**/api/summary', (route) => route.fulfill({ json: week }));
     await page.reload();
     const summary = page.getByRole('region', { name: 'Ta semaine' });
-    await expect(summary).toContainText('Tu as travaillé environ 35 min, en 2 séances.');
+    await expect(summary).toContainText('Tu as travaillé environ 35 min, en 2 séances, ces sept derniers jours.');
     await expect(summary).toContainText('Résoudre une équation');
+    // The same question, said to the child, never the adult's sentence.
+    await expect(summary).toContainText('Ton parent peut te demander de lui montrer un exercice sur « Résoudre une équation », et où ça coince.');
+    await expect(summary).not.toContainText('Demandez à');
     await expect(summary).toContainText('Ton parent voit ce même résumé.');
+  });
+
+  test('a week that cannot load says so, and leaves the child’s page', async ({ page }) => {
+    await guardian(page, 'semaine-panne');
+    await page.route('**/api/summary/*', (route) => route.fulfill({ status: 500, contentType: 'application/problem+json', json: { status: 500 } }));
+    await addChild(page, 'Léo');
+    await expect(page.getByRole('region', { name: 'Sa semaine' })).toContainText('Le résumé de la semaine n’a pas pu se charger.', {
+      timeout: 15_000,
+    });
+    await expect(page.getByRole('button', { name: 'Relier un appareil' })).toBeVisible();
   });
 });
 

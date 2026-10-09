@@ -38,15 +38,15 @@ function StudentHome() {
   // Not awaited: the memory is optional, a failure of it leaves the sessions open.
   const { data: memory } = useQuery(memoryQuery);
   const answer = useMemoryAnswer();
-  // Not awaited either: the week failing leaves the sessions.
-  const { data: week } = useQuery(ownSummaryQuery);
+  // Not awaited either: the week failing leaves the sessions, and says so.
+  const week = useQuery(ownSummaryQuery);
 
   return (
     <Page title={`Bonjour ${me?.name ?? ''}`}>
       {memory?.state === 'asked' && <MemoryAnswer answer={answer} />}
       {answer.isSuccess && <Notice tone="info">{ANSWERED[answer.variables]}</Notice>}
       <Sessions />
-      {week && me && <WeekSummary week={week} name={me.name} reader="student" />}
+      {me && <WeekSummary week={week.data} failed={week.isError} name={me.name} reader="student" />}
       <Link to="/memoire" className="min-h-11 py-3 text-sm text-primary underline">
         Ce que Tom retient
       </Link>

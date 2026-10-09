@@ -19,9 +19,15 @@ describe('subjectLabel', () => {
 });
 
 describe('questionFor', () => {
-  it('asks the child to show where a notion that resists gets stuck, without knowing the answer', () => {
-    expect(questionFor('Lou', 'Résoudre une équation du premier degré')).toBe(
+  it('asks the parent to have the child show where a notion that resists gets stuck, without knowing the answer', () => {
+    expect(questionFor('guardian', 'Lou', 'Résoudre une équation du premier degré')).toBe(
       'Demandez à Lou de vous montrer un exercice sur « Résoudre une équation du premier degré », et où ça coince.',
+    );
+  });
+
+  it('tells the child the same question in their own words', () => {
+    expect(questionFor('student', 'Lou', 'Résoudre une équation du premier degré')).toBe(
+      'Ton parent peut te demander de lui montrer un exercice sur « Résoudre une équation du premier degré », et où ça coince.',
     );
   });
 });

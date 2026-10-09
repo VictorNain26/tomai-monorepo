@@ -42,6 +42,11 @@ export const subjectLabel = (subject: SubjectFamily) => SUBJECTS[subject];
 
 /**
  * A question for the parent, from a notion that resists: the child shows, the parent listens,
- * nothing to know of the subject (`docs/etudes/2026-10-08/aide-parentale.md`).
+ * nothing to know of the subject (`docs/etudes/2026-10-08/aide-parentale.md`). Said to the parent,
+ * or to the child, never the adult's sentence to a pupil.
  */
-export const questionFor = (name: string, notion: string) => `Demandez à ${name} de vous montrer un exercice sur « ${notion} », et où ça coince.`;
+export function questionFor(reader: 'guardian' | 'student', name: string, notion: string): string {
+  return reader === 'guardian'
+    ? `Demandez à ${name} de vous montrer un exercice sur « ${notion} », et où ça coince.`
+    : `Ton parent peut te demander de lui montrer un exercice sur « ${notion} », et où ça coince.`;
+}

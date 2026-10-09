@@ -15,7 +15,11 @@ import { minutesText, summaryQuery } from '../lib/summary';
 
 /** The guardian's household: a card per child with their week, and the adding of a new one. */
 export const Route = createFileRoute('/foyer/')({
-  loader: ({ context }) => context.queryClient.query(studentsQuery),
+  loader: async ({ context }) => {
+    const students = await context.queryClient.query(studentsQuery);
+    // Started, not awaited: each card's line arrives with the page, or says it failed.
+    for (const { id } of students) void context.queryClient.query(summaryQuery(id)).catch(() => undefined);
+  },
   component: Household,
 });
 
@@ -49,9 +53,9 @@ function Household() {
   );
 }
 
-/** A child, their class, and their week in a line; the week not read yet, or failing, leaves the card. */
+/** A child, their class, and their seven last days in a line, which holds its place while it loads. */
 function ChildCard({ child }: { child: Student }) {
-  const { data: week } = useQuery(summaryQuery(child.id));
+  const week = useQuery(summaryQuery(child.id));
   return (
     <Link
       to="/foyer/$studentId"
@@ -62,11 +66,15 @@ function ChildCard({ child }: { child: Student }) {
         <span className="font-bold">{child.name}</span>
         <span className="text-sm text-muted-foreground">{LEVEL_LABELS[child.level]}</span>
       </span>
-      {week && (
-        <span className="text-sm text-muted-foreground">
-          {week.sessions === 0 ? 'Pas de séance cette semaine' : `Cette semaine : ${minutesText(week.minutes)}`}
-        </span>
-      )}
+      <span className="text-sm text-muted-foreground">
+        {week.data
+          ? week.data.sessions === 0
+            ? 'Pas de séance ces sept derniers jours'
+            : `Ces sept derniers jours : ${minutesText(week.data.minutes)}`
+          : week.isError
+            ? 'Sa semaine n’a pas pu se charger'
+            : 'Chargement…'}
+      </span>
     </Link>
   );
 }
@@ -79,9 +87,11 @@ function AddStudent({ open }: { open: boolean }) {
   const form = useForm({ resolver: zodResolver(newStudentSchema), defaultValues: { name: '', birthMonth: '', memoryProposed: false } });
   const create = useMutation({
     mutationFn: (json: z.output<typeof newStudentSchema>) => parseResponse(api.household.students.$post({ json })),
-    onSuccess: async ({ id }) => {
-      await queryClient.invalidateQueries({ queryKey: studentsQuery.queryKey });
-      await navigate({ to: '/foyer/$studentId', params: { studentId: id }, search: { ajoute: true } });
+    onSuccess: async (created) => {
+      // The form stays open while the page changes: the list growing would fold it first.
+      setUnfolded(true);
+      queryClient.setQueryData(studentsQuery.queryKey, (list) => [...(list ?? []), created]);
+      await navigate({ to: '/foyer/$studentId', params: { studentId: created.id } });
     },
   });
   const submit = form.handleSubmit((values) => {

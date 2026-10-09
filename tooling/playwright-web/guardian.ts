@@ -58,10 +58,12 @@ export const childPhone = (browser: Browser, testInfo: TestInfo) =>
  * page. In 4e by default: a device of their own pairs from the 4e on.
  */
 export async function addChild(page: Page, name: string, { memory = false, level = 'Quatrième' } = {}) {
-  // Folded once a child exists.
+  // Folded once a child exists: wait for the household to show one or the other.
   const unfold = page.getByRole('button', { name: 'Ajouter un enfant' });
+  const firstName = page.getByLabel('Son prénom', { exact: true });
+  await expect(unfold.or(firstName)).toBeVisible();
   if (await unfold.isVisible()) await unfold.click();
-  await page.getByLabel('Son prénom', { exact: true }).fill(name);
+  await firstName.fill(name);
   if (memory) await page.getByLabel('Proposer que Tom retienne ce qui a résisté').check();
   await page.getByLabel('Sa classe', { exact: true }).selectOption({ label: level });
   await page.getByLabel('Son mois de naissance').fill(birthMonthAged(12));
