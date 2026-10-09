@@ -8,7 +8,10 @@ Où on en est, réécrit dans chaque PR qui fait avancer ; ce qui est fini en so
 - **Mis à jour le** 2026-10-09.
 - **Lot en cours : 3** : la direction artistique « Cahier du soir » est posée, le mode accompagné
   en 6e et 5e, la séance, les accueils élève et parent, l'écran du résumé, le jumelage par QR
-  code et les petits textes faits ; ensuite le consentement (`roadmap.md`, « Maintenant »).
+  code, les petits textes et la photo de l'exercice faits ; ensuite la voix, puis le
+  consentement (`roadmap.md`, « Maintenant »).
+- **Cascade de PR** : chacune part de la précédente et la vise ; Victor les merge dans l'ordre,
+  la suivante reciblée sur `main` après chaque merge.
 - **Lot 1 en pause** : le harnais `bun run eval` est mergé ; son passage unique attend le paiement
   à l'usage de Mistral (bloquant ci-dessous). Le premier essai s'est arrêté à 3 conversations sur
   104 et ne compte pas comme mesure. Référence de comparaison : 11 fuites sur 106, le 2026-10-06
