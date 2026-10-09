@@ -61,6 +61,8 @@ export const message = pgTable(
     role: messageRole('role').notNull(),
     /** What the student wrote, or what they read: the checked text. */
     text: text('text').notNull(),
+    /** The text of the photo the student sent with the message (core/photo.ts); the photo itself is never kept. */
+    photoText: text('photo_text'),
     /** The tutor's response messages as the model produced them, replayed by the next turns; never sent to the client. */
     modelMessages: jsonb('model_messages'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),

@@ -15,6 +15,7 @@ import type { Ai } from '../../../platform/ai/client';
 import type { TurnAnalysis } from './analysis';
 import { diagnose, type Diagnosis } from './diagnosis';
 import { applyChange, levelChange, topLevel, turnContract, type Hint } from './ladder';
+import { photoBlock, saidWith } from './photo';
 import { prepareSheet, type ExerciseSheet } from './sheet';
 
 /** The exercise in progress, as the session keeps it. */
@@ -63,9 +64,11 @@ export interface ExerciseTurnRequest {
   analysis: TurnAnalysis;
   /** The session's exercise before this turn. */
   current: ExerciseState | null;
+  /** What the student typed. */
   studentText: string;
   lastTutorText: string | null;
-  attachedFilesBlock: string | null;
+  /** The text of the photo sent with the message (core/photo.ts). */
+  photoText: string | null;
   now: Date;
 }
 
@@ -77,15 +80,22 @@ const MIN_RESTATED = 12;
  * 2026-10-05): a new sheet would reset the level. A short statement (« Conjugue », the rest on a
  * photo) would match any message.
  */
-export function drawsSheet({ analysis, current, studentText }: Pick<ExerciseTurnRequest, 'analysis' | 'current' | 'studentText'>): boolean {
+export function drawsSheet({
+  analysis,
+  current,
+  studentText,
+  photoText,
+}: Pick<ExerciseTurnRequest, 'analysis' | 'current' | 'studentText' | 'photoText'>): boolean {
   const statement = current?.sheet?.statement.trim() ?? '';
-  const restated = statement.length >= MIN_RESTATED && findLeakForm(studentText, [statement]) !== null;
+  const restated = statement.length >= MIN_RESTATED && findLeakForm(saidWith(studentText, photoText), [statement]) !== null;
   return analysis.bringsExercise && !restated;
 }
 
 export async function prepareExerciseTurn(deps: { ai: Ai; logger: Logger }, request: ExerciseTurnRequest): Promise<ExerciseTurn> {
   const { analysis, current } = request;
-  const drawn = drawsSheet(request) ? await prepareSheet(deps, request) : null;
+  const drawn = drawsSheet(request)
+    ? await prepareSheet(deps, { ...request, attachedFilesBlock: request.photoText === null ? null : photoBlock(request.photoText) })
+    : null;
   // Draws that all failed never replace a watched exercise: its answer stays watched.
   const prepared = drawn?.sheet === null && current?.sheet ? null : drawn;
   if (drawn && !prepared) deps.logger.warn('Sheet failed: the exercise in progress stays');
@@ -110,7 +120,11 @@ export async function prepareExerciseTurn(deps: { ai: Ai; logger: Logger }, requ
   // An uncertain sheet cannot judge, nor a missing one: no diagnosis is asked of them.
   const diagnosis =
     attempt && exercise.sheet && !exercise.uncertain
-      ? await diagnose(deps, exercise.sheet, { studentId: request.studentId, studentText: request.studentText, lastTutorText: request.lastTutorText })
+      ? await diagnose(deps, exercise.sheet, {
+          studentId: request.studentId,
+          studentText: saidWith(request.studentText, request.photoText),
+          lastTutorText: request.lastTutorText,
+        })
       : null;
   const { change, stuckTurns } = levelChange({
     attempt,

@@ -1,0 +1,1 @@
+ALTER TABLE "message" ADD COLUMN "photo_text" text;

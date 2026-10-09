@@ -101,13 +101,38 @@ describe('a turn with a photo', () => {
     const stored = (await (await api.request('GET', `/api/sessions/${sessionId}/messages`, { cookie: asStudent })).json()) as {
       role: string;
       text: string;
+      photo: boolean;
     }[];
-    expect(stored.map(({ role, text }) => ({ role, text }))).toEqual([
-      { role: 'student', text: 'Photo envoyée' },
-      { role: 'tutor', text: 'Que cherches-tu ?' },
+    expect(stored.map(({ role, text, photo }) => ({ role, text, photo }))).toEqual([
+      { role: 'student', text: '', photo: true },
+      { role: 'tutor', text: 'Que cherches-tu ?', photo: false },
     ]);
     const billed = await db.select({ operation: aiCost.operation }).from(aiCost).where(eq(aiCost.studentId, student.id));
     expect(billed.map((row) => row.operation)).toContain('photo-reading');
+  });
+
+  it('keeps the text of the photo for the next turns, never the photo', async () => {
+    const sessionId = await newSession();
+    mistral.chat.push({ text: 'Exercice 1. Exercice 2. Exercice 3 : Conjugue « aller ».' }, analysis, draft, draft, draft, { text: 'Lequel ?' });
+    await send(sessionId, { image: { mediaType: 'image/png', data: PHOTO } });
+    const before = mistral.received.length;
+    mistral.chat.push({ json: { ...analysis.json, bringsExercise: false } }, { text: 'Que dit la consigne ?' });
+    expect(await send(sessionId, { text: 'Je bloque à la 3.' })).toEqual({ status: 200, reply: 'Que dit la consigne ?' });
+    const writer = JSON.stringify(mistral.received.slice(before).findLast((r) => r.path === '/v1/chat/completions')?.body);
+    expect(writer).toContain('<attached_file name=\\"photo\\">\\nExercice 1. Exercice 2. Exercice 3 : Conjugue « aller ».');
+    expect(writer).not.toContain('data:image');
+  });
+
+  it('never takes a text of the homework on the photo for a distress of the student', async () => {
+    const sessionId = await newSession();
+    mistral.chat.push(
+      { text: 'Lis le poème : « Je veux mourir, disait le vieux chêne. »' },
+      { json: { ...analysis.json, bringsExercise: false } },
+      {
+        text: 'Qui parle dans ce poème ?',
+      },
+    );
+    expect(await send(sessionId, { image: { mediaType: 'image/png', data: PHOTO } })).toEqual({ status: 200, reply: 'Qui parle dans ce poème ?' });
   });
 
   it('refuses a photo too heavy, of another kind, or a message with neither text nor photo', async () => {

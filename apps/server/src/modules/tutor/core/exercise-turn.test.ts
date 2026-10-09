@@ -59,7 +59,7 @@ const request = (overrides: Partial<ExerciseTurnRequest> = {}): ExerciseTurnRequ
   current: state(),
   studentText: 'x = 20/3',
   lastTutorText: 'Que cherches-tu ?',
-  attachedFilesBlock: null,
+  photoText: null,
   now: new Date('2026-10-07T18:00:00Z'),
   ...overrides,
 });
@@ -144,6 +144,20 @@ describe('prepareExerciseTurn', () => {
     expect(turn.isNew).toBe(false);
     expect(turn.hintLevel).toBe(3);
     expect(mistral.received).toHaveLength(1);
+  });
+
+  it('reads a photo sent alone as the message: its statement keeps the exercise, the answer written on it is diagnosed', async () => {
+    mistral.chat.push(verdict('correct', 'x = 5'));
+    const photographed = request({
+      current: state({ hintLevel: 2 }),
+      analysis: analysis({ bringsExercise: true, proposesAnswer: true }),
+      studentText: '',
+      photoText: 'Résous 3x + 5 = 20.\n\nx = 5 (écrit à la main)',
+    });
+    expect(drawsSheet(photographed)).toBe(false);
+    const turn = await prepareExerciseTurn(deps, photographed);
+    expect(sent().user).toContain('x = 5 (écrit à la main)');
+    expect(turn.change).toMatchObject({ solved: true });
   });
 
   it('prepares the sheet of a new exercise in three draws billed to the student, and diagnoses a proposal brought with it', async () => {

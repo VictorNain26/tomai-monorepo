@@ -2,7 +2,7 @@ import { describe, expect, it } from 'bun:test';
 import { eq } from 'drizzle-orm';
 import { aiCost } from '../../../platform/ai/schema';
 import { testAi } from '../../../testing/ai';
-import { photoBlock, readPhoto } from './photo';
+import { photoBlock, photoText, readPhoto, saidWith } from './photo';
 
 const { ai, db, logger, logs, mistral, sent, studentId } = await testAi();
 const deps = { ai, logger };
@@ -33,11 +33,18 @@ describe('readPhoto', () => {
     expect(await readPhoto(deps, { studentId, image })).toEqual({ kind: 'unreadable' });
   });
 
-  it('fences the text of the photo for the sheet and the writer, and says a photo not read without describing it', () => {
-    expect(photoBlock({ kind: 'text', text: 'Résous 3x + 5 = 20.' })).toBe('<attached_file name="photo">\nRésous 3x + 5 = 20.\n</attached_file>');
-    expect(photoBlock({ kind: 'unreadable' })).toContain('[Photo illisible.]');
-    expect(photoBlock({ kind: 'off-topic' })).toContain('[Photo qui ne montre pas de devoir.]');
-    expect(photoBlock(null)).toContain('[Photo non lue');
+  it('keeps the text of the photo, says a photo not read without describing it, and fences it for the sheet and the writer', () => {
+    expect(photoText({ kind: 'text', text: 'Résous 3x + 5 = 20.' })).toBe('Résous 3x + 5 = 20.');
+    expect(photoText({ kind: 'unreadable' })).toBe('[Photo illisible.]');
+    expect(photoText({ kind: 'off-topic' })).toBe('[Photo qui ne montre pas de devoir.]');
+    expect(photoText(null)).toStartWith('[Photo non lue');
+    expect(photoBlock('Résous 3x + 5 = 20.')).toBe('<attached_file name="photo">\nRésous 3x + 5 = 20.\n</attached_file>');
+  });
+
+  it('joins the student’s words and the photo’s text into what they say', () => {
+    expect(saidWith('x = 5 ?', 'Résous 3x + 5 = 20.')).toBe('x = 5 ?\n\nRésous 3x + 5 = 20.');
+    expect(saidWith('', 'Résous 3x + 5 = 20.')).toBe('Résous 3x + 5 = 20.');
+    expect(saidWith('x = 5 ?', null)).toBe('x = 5 ?');
   });
 
   it('gives nothing when the call fails, and logs it', async () => {

@@ -6,7 +6,7 @@
 
 import type { Logger } from 'pino';
 import type { Ai } from '../../../platform/ai/client';
-import { wrapAttachedFiles } from './fences';
+import { wrapAttachedFiles, wrapUserMessage } from './fences';
 
 export const PHOTO_MEDIA_TYPES = ['image/jpeg', 'image/png', 'image/webp'] as const;
 
@@ -17,21 +17,23 @@ export interface Photo {
 
 export type PhotoReading = { kind: 'text'; text: string } | { kind: 'unreadable' } | { kind: 'off-topic' };
 
-/** What the conversation keeps of a photo sent without a word. */
-export const PHOTO_ONLY = 'Photo envoyée';
-
-/** The text of the photo as the sheet and the writer read it, fenced: a photo not read, unreadable or off topic says so. */
-export function photoBlock(reading: PhotoReading | null): string {
-  const text =
-    reading === null
-      ? '[Photo non lue : demande à l’élève de recopier l’énoncé.]'
-      : reading.kind === 'unreadable'
-        ? '[Photo illisible.]'
-        : reading.kind === 'off-topic'
-          ? '[Photo qui ne montre pas de devoir.]'
-          : reading.text;
-  return wrapAttachedFiles([{ fileName: 'photo', text }]);
+/** The text of the photo, kept with the message: a photo not read, unreadable or off topic says so. */
+export function photoText(reading: PhotoReading | null): string {
+  if (reading === null) return '[Photo non lue : demande à l’élève de recopier l’énoncé.]';
+  if (reading.kind === 'unreadable') return '[Photo illisible.]';
+  if (reading.kind === 'off-topic') return '[Photo qui ne montre pas de devoir.]';
+  return reading.text;
 }
+
+/** The text of the photo as the sheet and the writer read it, fenced. */
+export const photoBlock = (text: string): string => wrapAttachedFiles([{ fileName: 'photo', text }]);
+
+/** A message of the student as a model reads it: the text of their photo, then their words, each in its fence. */
+export const studentMessage = (text: string, photo: string | null | undefined): string =>
+  [photo ? photoBlock(photo) : null, wrapUserMessage(text)].filter((block): block is string => block !== null).join('\n\n');
+
+/** What the student says in the turn, their words then the photo's text: what the analysis and the diagnosis judge. */
+export const saidWith = (studentText: string, photo: string | null): string => [studentText, photo].filter(Boolean).join('\n\n');
 
 const UNREADABLE = 'ILLISIBLE';
 const OFF_TOPIC = 'HORS_DEVOIR';

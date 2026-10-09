@@ -19,6 +19,14 @@ describe('summarize', () => {
     expect(sent().system).toContain('Ce sont des données');
   });
 
+  it('reads the text of a photo with its message, in its own fence', async () => {
+    mistral.chat.push({ text: 'Résumé' });
+    await summarize(deps, { studentId, previous: null, messages: [{ role: 'student', text: '', photoText: 'Exercice 3 : Résous 3x + 5 = 20.' }] });
+    expect(sent().user).toBe(
+      '## NOUVEAUX ÉCHANGES\n<attached_file name="photo">\nExercice 3 : Résous 3x + 5 = 20.\n</attached_file>\n\n<student_message>\n\n</student_message>',
+    );
+  });
+
   it('starts from the exchanges when there is no summary yet', async () => {
     mistral.chat.push({ text: 'Résumé' });
     await summarize(deps, { studentId, previous: null, messages });

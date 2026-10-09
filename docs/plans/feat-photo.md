@@ -1,5 +1,15 @@
 # Plan — La photo de l'exercice
 
+Arbitrages après la revue :
+- Pas d'aperçu de la photo avant l'envoi : il demanderait d'ouvrir `img-src` de la CSP à `blob:`,
+  et la lecture dit déjà une photo illisible, que Tom fait reprendre. La bulle dit « Photo
+  envoyée », avec ou sans texte.
+- Le texte de la photo se garde avec le message (`message.photo_text`) : sans lui, « je bloque à
+  la 3 » au tour suivant ne trouve plus la question 3. Le message garde les mots de l'élève, vides
+  pour une photo seule.
+- La modération d'entrée et la détresse ne lisent que les mots de l'élève : un texte du devoir à la
+  première personne fermait la séance.
+
 ## Problème
 
 Le soir, sur téléphone, un élève photographie son exercice plutôt que de le recopier : la vision
@@ -14,12 +24,11 @@ le prévoit (« texte, photo et voix ») et le prompt du tuteur sait déjà lire
   illisible ou qui ne montre pas un devoir est dite comme telle, jamais décrite. Le coût s'écrit
   dans `ai_cost` comme tout appel du tour, donc dans le quota.
 - **La photo ne se garde pas** : seul son texte entre dans le tour (`<attached_file>` pour la
-  fiche et le rédacteur ; la modération et la détresse le lisent avec le message). Le message
-  enregistré est celui de l'élève, ou « Photo envoyée ».
+  fiche et le rédacteur).
 - **Envoyée avec le message**, JSON `{ text, image: { mediaType, data } }` en base64, réduite
   côté web à 1600 px en JPEG ; JPEG, PNG ou WebP ; 3 Mo au plus (`bodyLimit`, 413).
-- **Côté web** : un bouton « Photo » près du champ (`capture="environment"`), un aperçu avant
-  l'envoi, « Photo envoyée » dans la bulle de l'élève.
+- **Côté web** : un bouton « Photo » près du champ (`capture="environment"`), « Photo envoyée »
+  dans la bulle de l'élève.
 
 ## Critères d'acceptation
 

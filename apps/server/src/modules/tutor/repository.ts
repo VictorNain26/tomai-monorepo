@@ -42,15 +42,16 @@ export interface SavedTurn {
   parentCue?: CueKind;
 }
 
-/** The two messages of a turn: what the student wrote, what they read, and how to replay it. */
+/** The two messages of a turn: what the student wrote and the text of their photo, what they read, and how to replay it. */
 interface Exchange {
   studentText: string;
+  photoText: string | null;
   tutorText: string;
   replay: ResponseMessage[] | null;
 }
 
-async function writeExchange(executor: Executor, sessionId: string, { studentText, tutorText, replay }: Exchange) {
-  await executor.insert(message).values({ sessionId, role: 'student', text: studentText });
+async function writeExchange(executor: Executor, sessionId: string, { studentText, photoText, tutorText, replay }: Exchange) {
+  await executor.insert(message).values({ sessionId, role: 'student', text: studentText, photoText });
   const [tutor] = await executor
     .insert(message)
     .values({ sessionId, role: 'tutor', text: tutorText, modelMessages: replay })
@@ -154,10 +155,16 @@ export function createTutorRepository(db: Db) {
       return found;
     },
 
-    /** The messages of the student's session, oldest first; none for a session that is not theirs. */
+    /** The messages of the student's session, oldest first, whether a photo came with each; none for a session that is not theirs. */
     listMessages(studentId: string, sessionId: string) {
       return db
-        .select({ id: message.id, role: message.role, text: message.text, createdAt: message.createdAt })
+        .select({
+          id: message.id,
+          role: message.role,
+          text: message.text,
+          photo: isNotNull(message.photoText).mapWith(Boolean),
+          createdAt: message.createdAt,
+        })
         .from(message)
         .innerJoin(studySession, eq(studySession.id, message.sessionId))
         .where(ownSession(studentId, sessionId))
@@ -337,7 +344,7 @@ export function createTutorRepository(db: Db) {
     /** The last messages of the session after the summary's, oldest first, with what the tutor's replay. */
     async window(sessionId: string, limit: number, after: number | null) {
       const rows = await db
-        .select({ role: message.role, text: message.text, modelMessages: message.modelMessages })
+        .select({ role: message.role, text: message.text, photoText: message.photoText, modelMessages: message.modelMessages })
         .from(message)
         .where(and(eq(message.sessionId, sessionId), after === null ? undefined : gt(message.position, after)))
         .orderBy(desc(message.position))
@@ -357,7 +364,7 @@ export function createTutorRepository(db: Db) {
     /** Every message of the session after the summary's, oldest first. */
     messagesAfter(sessionId: string, after: number | null) {
       return db
-        .select({ position: message.position, role: message.role, text: message.text })
+        .select({ position: message.position, role: message.role, text: message.text, photoText: message.photoText })
         .from(message)
         .where(and(eq(message.sessionId, sessionId), after === null ? undefined : gt(message.position, after)))
         .orderBy(asc(message.position));

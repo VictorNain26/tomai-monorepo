@@ -12,7 +12,7 @@ import { api, isProblem } from '../lib/api';
 import type { TurnStep } from 'tomai-server/contract';
 import { chatMessage, isTurnStep, messagesQuery, textOf, toUIMessage, waitingText, type ChatMessage, type TurnBody } from '../lib/chat';
 import { meQuery } from '../lib/me';
-import { PHOTO_ONLY, preparePhoto, type PhotoUpload } from '../lib/photo';
+import { preparePhoto, type PhotoUpload } from '../lib/photo';
 
 /** A session with Tom: what was said, then the chat. */
 export const Route = createFileRoute('/seance/$sessionId')({
@@ -33,6 +33,7 @@ function Session() {
   const [step, setStep] = useState<TurnStep | null>(null);
   const [cue, setCue] = useState<string | null>(null);
   const [photo, setPhoto] = useState<PhotoUpload | null>(null);
+  const [preparing, setPreparing] = useState(false);
   const [photoFailed, setPhotoFailed] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   // What the turn sends: the typed text, empty for a photo alone, and the photo.
@@ -60,7 +61,7 @@ function Session() {
       else if (isTurnStep(part.data)) setStep(part.data);
     },
     // A refused or failed turn stored nothing: its message leaves the conversation and comes back
-    // to the field, to be sent again.
+    // to the field with its photo, to be sent again.
     onError: (failure) => {
       if (isProblem(failure, 'UNAUTHENTICATED')) {
         sessionLost();
@@ -69,8 +70,8 @@ function Session() {
       setMessages((shown) => {
         const last = shown.at(-1);
         if (last?.role !== 'user') return shown;
-        // A photo alone gives back no text; the photo is taken again.
-        setText(textOf(last) === PHOTO_ONLY ? '' : textOf(last));
+        setText(textOf(last));
+        setPhoto(outgoingRef.current.image ?? null);
         return shown.slice(0, -1);
       });
     },
@@ -85,20 +86,25 @@ function Session() {
   const busy = status === 'submitted' || status === 'streaming';
   const send = () => {
     const trimmed = text.trim();
-    if ((!trimmed && !photo) || busy) return;
+    if ((!trimmed && !photo) || busy || preparing) return;
     outgoingRef.current = { text: trimmed, ...(photo && { image: photo }) };
     setText('');
     setPhoto(null);
     setStep(null);
     setCue(null);
-    void sendMessage({ text: trimmed || PHOTO_ONLY });
+    void sendMessage({ text: trimmed, metadata: { photo: photo !== null } });
   };
   const takePhoto = (file: File | undefined) => {
     setPhotoFailed(false);
     if (!file) return;
-    preparePhoto(file).then(setPhoto, () => {
-      setPhotoFailed(true);
-    });
+    setPreparing(true);
+    preparePhoto(file)
+      .then(setPhoto, () => {
+        setPhotoFailed(true);
+      })
+      .finally(() => {
+        setPreparing(false);
+      });
   };
 
   return (
@@ -115,6 +121,7 @@ function Session() {
           message.role === 'user' ? (
             <li key={message.id} className="max-w-[85%] self-end rounded-2xl bg-secondary px-4 py-3 whitespace-pre-wrap text-secondary-foreground">
               <span className="sr-only">Toi : </span>
+              {message.metadata?.photo && <span className="block text-sm font-bold">Photo envoyée</span>}
               {textOf(message)}
             </li>
           ) : (
@@ -154,6 +161,11 @@ function Session() {
             </Button>
           </p>
         )}
+        {preparing && (
+          <p role="status" className="text-sm">
+            Photo en préparation…
+          </p>
+        )}
         {photoFailed && <Notice tone="error">La photo n’a pas pu être préparée. Réessaie, ou recopie l’énoncé.</Notice>}
         <form
           className="flex gap-2"
@@ -191,14 +203,14 @@ function Session() {
           <Button
             type="button"
             variant="outline"
-            disabled={busy}
+            disabled={busy || preparing}
             onClick={() => {
               fileRef.current?.click();
             }}
           >
             Photo
           </Button>
-          <Button type="submit" disabled={busy || (text.trim() === '' && !photo)}>
+          <Button type="submit" disabled={busy || preparing || (text.trim() === '' && !photo)}>
             Envoyer
           </Button>
         </form>

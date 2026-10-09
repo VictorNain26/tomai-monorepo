@@ -5,6 +5,13 @@ import { addChild, guardian, pairedStudent } from '../guardian';
 // page.route never sees what the service worker answers.
 test.use({ serviceWorkers: 'block' });
 
+/** A one-pixel PNG, as a phone camera would hand it over. */
+const photo = {
+  name: 'exercice.png',
+  mimeType: 'image/png',
+  buffer: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==', 'base64'),
+};
+
 /** A turn answered as the server answers it, with the AI SDK's own stream. */
 async function tutorReplies(page: Page, reply: string) {
   const response = createUIMessageStreamResponse({
@@ -249,17 +256,64 @@ test('a photo of the homework goes with the message, cut down to JPEG, and the c
   await pairedStudent(page, browser, testInfo, 'Mia');
   const sent = await tutorReplies(page, 'Je lis : résous 3x + 5 = 20. Que cherches-tu ?');
   await page.getByRole('button', { name: 'Nouvelle séance' }).click();
+  // The photo held while it is cut down, as on a slow phone.
+  await page.evaluate(() => {
+    const original = window.createImageBitmap.bind(window);
+    const ready = new Promise<void>((resolve) => {
+      Object.assign(window, { photoReady: resolve });
+    });
+    window.createImageBitmap = async (image: ImageBitmapSource) => {
+      await ready;
+      return original(image);
+    };
+  });
 
-  // A one-pixel PNG, as a phone camera would hand it over.
-  const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==', 'base64');
-  await page.getByLabel('Prendre une photo de l’exercice').setInputFiles({ name: 'exercice.png', mimeType: 'image/png', buffer: png });
+  await page.getByLabel('Prendre une photo de l’exercice').setInputFiles(photo);
+  await expect(page.getByText('Photo en préparation…')).toBeVisible();
+  await page.getByLabel('Ton message').fill('Voici l’exo');
+  await expect(page.getByRole('button', { name: 'Envoyer' })).toBeDisabled();
+  await page.evaluate(() => {
+    (window as unknown as { photoReady: () => void }).photoReady();
+  });
   await expect(page.getByText('Photo prête')).toBeVisible();
+  await page.getByLabel('Ton message').fill('');
   await page.getByRole('button', { name: 'Envoyer' }).click();
 
   const conversation = page.getByRole('list', { name: 'Conversation' });
   await expect(conversation.locator(':scope > li')).toHaveText(['Toi : Photo envoyée', 'Tom : Je lis : résous 3x + 5 = 20. Que cherches-tu ?']);
   expect(sent).toEqual([{ text: '', inputMode: 'text', image: { mediaType: 'image/jpeg', data: expect.stringMatching(/^[A-Za-z0-9+/]+=*$/) } }]);
   await expect(page.getByText('Photo prête')).toHaveCount(0);
+});
+
+test('a photo the server refuses comes back with the text, and the conversation says it went with it', async ({ page, browser }, testInfo) => {
+  await pairedStudent(page, browser, testInfo, 'Noé');
+  const sent = await tutorReplies(page, 'Quelle question ?');
+  // The first send only is refused.
+  let refused = false;
+  await page.route('**/api/sessions/*/messages', (route) => {
+    if (route.request().method() !== 'POST' || refused) return route.fallback();
+    refused = true;
+    return route.fulfill({
+      status: 413,
+      contentType: 'application/problem+json',
+      json: { status: 413, code: 'PAYLOAD_TOO_LARGE', title: 'internal' },
+    });
+  });
+  await page.getByRole('button', { name: 'Nouvelle séance' }).click();
+
+  await page.getByLabel('Prendre une photo de l’exercice').setInputFiles(photo);
+  await expect(page.getByText('Photo prête')).toBeVisible();
+  await page.getByLabel('Ton message').fill('Voici l’exo');
+  await page.getByRole('button', { name: 'Envoyer' }).click();
+  await expect(page.getByRole('alert')).toHaveText('La photo est trop lourde. Reprends-la, ou recopie l’énoncé.');
+  await expect(page.getByLabel('Ton message')).toHaveValue('Voici l’exo');
+  await expect(page.getByText('Photo prête')).toBeVisible();
+
+  await page.getByRole('button', { name: 'Envoyer' }).click();
+  const student = page.getByRole('list', { name: 'Conversation' }).locator(':scope > li').first();
+  await expect(student).toContainText('Photo envoyée');
+  await expect(student).toContainText('Voici l’exo');
+  expect(sent).toEqual([{ text: 'Voici l’exo', inputMode: 'text', image: { mediaType: 'image/jpeg', data: expect.any(String) } }]);
 });
 
 test('a day past the quota is told in French, without the server’s message', async ({ page, browser }, testInfo) => {

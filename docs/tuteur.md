@@ -148,20 +148,25 @@ Ordre du prompt, du plus stable au plus variable (`assembleChatPrompt`,
    (`programmeFor(niveau, matière, rentrée)`, `notionsFor`) et n'en retient que les entrées
    de l'exercice (`keepKnownNotions`), au libellé exact. Extraction et contrôles du
    référentiel : en tête de `referential/extract.ts`.
-3. Le texte de la photo du tour, s'il y en a une : lue une fois au début du tour
-   (`core/photo.ts`), recopiée et fencée en `<attached_file name="photo">` ; une photo illisible
-   ou sans devoir est dite comme telle, jamais décrite ; la photo ne se garde pas.
-4. Résumé des tours anciens + tours récents bruts, rejoués avec leur raisonnement. Le tour
+3. Résumé des tours anciens + tours récents bruts, rejoués avec leur raisonnement. Le tour
    n'appelle aucun outil.
-5. Message de l'élève, **un seul message `user` par tour**, qui porte aussi ce qui change
+4. Message de l'élève, **un seul message `user` par tour**, qui porte aussi ce qui change
    d'un tour à l'autre : bloc de la matière ; contrat du tour (palier autorisé, indices
-   déjà donnés, diagnostic) entre balises `<contrat>`, que seul le serveur écrit ; texte de l'élève
+   déjà donnés, diagnostic) entre balises `<contrat>`, que seul le serveur écrit ; le texte de
+   sa photo, s'il en envoie une, en `<attached_file name="photo">` ; texte de l'élève
    entre `<student_message>`, ces balises neutralisées dans son texte. Placé avant
    l'historique, un bloc qui change à chaque tour casserait le cache. Le prompt système dit
    quels blocs viennent du serveur (`<subject_specifics>`, `<critical_instruction>`,
    `<contrat>`) ; deux messages `user` de suite sont fusionnés.
 
 Aucune consigne du serveur dans un bloc déclaré non fiable.
+
+La photo est lue une fois au début du tour (`core/photo.ts`) : le texte du devoir, ce que l'élève
+y a écrit, une figure en une phrase ; une photo illisible ou sans devoir est dite comme telle,
+jamais décrite. Son texte se garde avec le message (`message.photo_text`), pour les tours suivants
+et le résumé ; la photo ne se garde pas. L'analyse, le diagnostic et le contrôle de sortie lisent
+ce texte avec les mots de l'élève ; la modération d'entrée et la détresse ne lisent que ses mots,
+un texte du devoir à la première personne (un poème) n'étant pas une détresse.
 
 `promptCacheKey` = identifiant de session (recommandation Mistral). Les tokens servis par le
 cache sont gardés par appel dans `ai_cost` (`cached_input_tokens`, `platform/ai/schema.ts`).

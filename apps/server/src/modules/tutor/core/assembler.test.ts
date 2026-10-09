@@ -37,10 +37,26 @@ describe('assembleChatPrompt', () => {
     expect(text).toEndWith('Résous 3x + 5 = 20.\n</student_message>');
   });
 
-  it('opens the window with the name, the exercise in progress, the session files then the summary, never in the system prompt', () => {
+  it('gives the text of a photo with its message, fenced apart from the student’s words, in the window as in the turn', () => {
+    const { messages } = assemble({
+      history: [
+        { role: 'user', content: '', photoText: 'Exercice 1. Exercice 2.' },
+        { role: 'assistant', content: 'Lequel ?' },
+      ],
+      photoText: 'Exercice 3.',
+      studentText: 'Le 3.',
+    });
+    expect(textOf(messages[0])).toBe(
+      `${STUDENT}\n\n<attached_file name="photo">\nExercice 1. Exercice 2.\n</attached_file>\n\n<student_message>\n\n</student_message>`,
+    );
+    expect(textOf(messages.at(-1))).toEndWith(
+      '<attached_file name="photo">\nExercice 3.\n</attached_file>\n\n<student_message>\nLe 3.\n</student_message>',
+    );
+  });
+
+  it('opens the window with the name, the exercise in progress then the summary, never in the system prompt', () => {
     const { system, messages } = assemble({
       exerciseBlock: '<exercise>E</exercise>',
-      attachedFilesBlock: '<attached_file name="a">B</attached_file>',
       conversationSummary: 'Résumé',
       history: [
         { role: 'user', content: 'Bonjour' },
@@ -51,9 +67,7 @@ describe('assembleChatPrompt', () => {
 
     expect(system).toBe('SYS');
     expect(messages[0]?.role).toBe('user');
-    expect(textOf(messages[0])).toStartWith(
-      `${STUDENT}\n\n<exercise>E</exercise>\n\n<attached_file name="a">B</attached_file>\n\n<conversation_summary>\nRésumé\n</conversation_summary>`,
-    );
+    expect(textOf(messages[0])).toStartWith(`${STUDENT}\n\n<exercise>E</exercise>\n\n<conversation_summary>\nRésumé\n</conversation_summary>`);
     expect(textOf(messages.at(-1))).not.toContain('<exercise>');
   });
 

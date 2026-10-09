@@ -4,9 +4,6 @@ import type { TurnBody } from './chat';
 
 export type PhotoUpload = NonNullable<TurnBody['image']>;
 
-/** What the conversation shows of a photo sent without a word, as the server stores it. */
-export const PHOTO_ONLY = 'Photo envoyée';
-
 // Wide enough for a page of handwriting, small enough to send in a second on a phone's network.
 const MAX_SIDE = 1600;
 const QUALITY = 0.85;

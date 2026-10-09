@@ -22,7 +22,7 @@ import { drawsSheet, prepareExerciseTurn } from './core/exercise-turn';
 import { hintOf } from './core/ladder';
 import { learnerMemoryBlock, notionMemories, notionView, schoolYearStart } from './core/memory';
 import { parentCue, type CueKind } from './core/parent-cues';
-import { PHOTO_ONLY, photoBlock, readPhoto, type Photo } from './core/photo';
+import { photoText, readPhoto, saidWith, type Photo } from './core/photo';
 import type { OutputCheckContext } from './core/output-check';
 import { studentBlock, subjectBlock, systemPrompt } from './core/prompt';
 import { routeReasoningEffort } from './core/reasoning';
@@ -52,6 +52,12 @@ export interface TurnInput {
   inputMode: 'text' | 'voice';
   /** A photo of the homework, read at the start of the turn and never kept. */
   image?: Photo;
+}
+
+/** The student's message as the conversation keeps it: their words, and the text of their photo. */
+interface Sent {
+  studentText: string;
+  photoText: string | null;
 }
 
 /** What the student is told while they wait: reading their message, preparing a new exercise, writing. */
@@ -130,12 +136,12 @@ export function createTutorService({ repository, students, ai, moderation, logge
     });
 
   const fixed = { model, promptVersion: TURN_PROMPT_VERSION, newExercise: false, findings: [] };
-  const fixedReply = (studentText: string) => ({ studentText, tutorText: DISTRESS_REPLY, replay: null });
+  const fixedReply = (sent: Sent) => ({ ...sent, tutorText: DISTRESS_REPLY, replay: null });
 
   /** The fixed reply to a distress, the event recorded and the session closed; no failure to store it keeps the reply from the student. */
-  async function answerDistress(studentId: string, sessionId: string, studentText: string, distress: NonNullable<OpenTurn['distress']>) {
+  async function answerDistress(studentId: string, sessionId: string, sent: Sent, distress: NonNullable<OpenTurn['distress']>) {
     await repository
-      .closeForDistress(studentId, sessionId, distress.source, fixedReply(studentText), {
+      .closeForDistress(studentId, sessionId, distress.source, fixedReply(sent), {
         ...fixed,
         inputFlagged: distress.flagged,
         outcome: 'distress',
@@ -170,15 +176,15 @@ export function createTutorService({ repository, students, ai, moderation, logge
   }
 
   async function turn({ student: learner, session, distress }: OpenTurn, input: TurnInput, onStep: (step: TurnStep) => void): Promise<TurnReply> {
-    // What the student typed; what the conversation keeps of it, a photo alone named so.
     const studentText = input.text;
-    const stored = studentText || PHOTO_ONLY;
+    // Before a distress, the photo is not read: the conversation keeps that one came.
+    const unread: Sent = { studentText, photoText: input.image ? photoText(null) : null };
 
     // The conversation stopped at a distress: any later message gets the fixed reply again.
     if (session.closedAt) {
       await repository
         .saveTurn(session.id, {
-          exchange: fixedReply(stored),
+          exchange: fixedReply(unread),
           subject: null,
           newExercise: null,
           exerciseId: null,
@@ -191,7 +197,7 @@ export function createTutorService({ repository, students, ai, moderation, logge
       return { text: DISTRESS_REPLY, cue: null, after: null };
     }
 
-    if (distress) return { text: await answerDistress(learner.id, session.id, stored, distress), cue: null, after: null };
+    if (distress) return { text: await answerDistress(learner.id, session.id, unread, distress), cue: null, after: null };
 
     const [history, current] = await Promise.all([
       repository.window(session.id, WINDOW, session.summaryUntil),
@@ -199,23 +205,26 @@ export function createTutorService({ repository, students, ai, moderation, logge
     ]);
     const lastTutorText = history.findLast((row) => row.role === 'tutor')?.text ?? null;
     onStep('reading');
-    // The photo first: its text is part of what the student says, for the analysis, the moderation
-    // and the distress; the sheet and the writer read it fenced. The photo itself goes no further.
-    const reading = input.image ? await readPhoto({ ai, logger }, { studentId: learner.id, image: input.image }) : undefined;
-    const attachedFilesBlock = reading === undefined ? null : photoBlock(reading);
-    const said = [studentText, reading?.kind === 'text' ? reading.text : ''].filter(Boolean).join('\n\n') || stored;
+    // The photo first: its text is part of what the student says, for the analysis and the
+    // diagnosis; the sheet and the writer read it fenced, the next turns with its message. The
+    // photo itself goes no further.
+    const photo = input.image ? photoText(await readPhoto({ ai, logger }, { studentId: learner.id, image: input.image })) : null;
+    const sent: Sent = { studentText, photoText: photo };
+    const said = saidWith(studentText, photo);
     // Started together; the distress waits for the moderation only, and drops the analysis.
     const analysed = analyseTurn(
       { ai, logger },
       { studentId: learner.id, studentText: said, lastTutorText, currentStatement: current?.sheet?.statement ?? null },
     );
-    const inputModeration = await moderateInput(lastTutorText, said);
+    // The student's own words only: a text of the homework on the photo, a poem in the first
+    // person, is no distress of theirs.
+    const inputModeration = studentText ? await moderateInput(lastTutorText, studentText) : null;
 
     // Distress before anything else: no sheet, no tutor, the fixed reply.
-    const source = detectDistress(said, inputModeration?.flagged.includes('selfharm') ?? false);
+    const source = detectDistress(studentText, inputModeration?.flagged.includes('selfharm') ?? false);
     if (source)
       return {
-        text: await answerDistress(learner.id, session.id, stored, { source, flagged: inputModeration?.flagged ?? null }),
+        text: await answerDistress(learner.id, session.id, sent, { source, flagged: inputModeration?.flagged ?? null }),
         cue: null,
         after: null,
       };
@@ -225,7 +234,7 @@ export function createTutorService({ repository, students, ai, moderation, logge
     const detected = analysis.subject === 'general' ? null : analysis.subject;
     const subject = detected ?? session.subject ?? undefined;
 
-    if (drawsSheet({ analysis, current: current ?? null, studentText })) onStep('exercise');
+    if (drawsSheet({ analysis, current: current ?? null, studentText, photoText: photo })) onStep('exercise');
     const exerciseTurn = await prepareExerciseTurn(
       { ai, logger },
       {
@@ -236,7 +245,7 @@ export function createTutorService({ repository, students, ai, moderation, logge
         current: current ?? null,
         studentText,
         lastTutorText,
-        attachedFilesBlock,
+        photoText: photo,
         now: new Date(),
       },
     );
@@ -248,7 +257,12 @@ export function createTutorService({ repository, students, ai, moderation, logge
     const instruction = contract ?? turnInstruction(analysis);
     const window = history.map((row): HistoryTurn => {
       const modelMessages = row.role === 'tutor' ? replayable(row.modelMessages) : undefined;
-      return { role: row.role === 'student' ? 'user' : 'assistant', content: row.text, ...(modelMessages && { modelMessages }) };
+      return {
+        role: row.role === 'student' ? 'user' : 'assistant',
+        content: row.text,
+        photoText: row.photoText,
+        ...(modelMessages && { modelMessages }),
+      };
     });
     const messages = (extra: string | null) =>
       assembleChatPrompt({
@@ -260,8 +274,8 @@ export function createTutorService({ repository, students, ai, moderation, logge
         subjectBlock: subjectBlock(subject),
         turnInstruction: [instruction, extra].filter((block): block is string => block !== null).join('\n\n') || null,
         inputMode: input.inputMode,
-        attachedFilesBlock,
-        studentText: stored,
+        photoText: photo,
+        studentText,
       }).messages;
     const reasoningEffort = routeReasoningEffort({ schoolLevel: learner.level, subject, analysis, contracted: contract !== null });
     const check: OutputCheckContext = {
@@ -269,8 +283,8 @@ export function createTutorService({ repository, students, ai, moderation, logge
       uncertain: exercise?.uncertain ?? false,
       drawnForms: exercise?.drawnForms ?? [],
       diagnosis,
-      studentText,
-      pastStudentTexts: history.filter((row) => row.role === 'student').map((row) => row.text),
+      studentText: said,
+      pastStudentTexts: history.filter((row) => row.role === 'student').map((row) => saidWith(row.text, row.photoText)),
     };
 
     onStep('writing');
@@ -300,7 +314,7 @@ export function createTutorService({ repository, students, ai, moderation, logge
           )
         : null;
     await repository.saveTurn(session.id, {
-      exchange: { studentText: stored, tutorText: reply.text, replay: reply.replay },
+      exchange: { ...sent, tutorText: reply.text, replay: reply.replay },
       subject: session.subject ? null : detected,
       newExercise:
         exerciseTurn.isNew && exercise

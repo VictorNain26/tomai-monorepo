@@ -171,7 +171,7 @@ describe('the exercise in progress', () => {
   const newExercise: SavedTurn['newExercise'] = { sheet, uncertain: false, drawnForms: ['x = 5', '5'], mathCheck: 'passed', promptVersion: 'v1' };
   const record: SavedTurn['record'] = { model: 'm', promptVersion: 'v', newExercise: false, findings: [], outcome: 'passed' };
   const turn = (overrides: Partial<SavedTurn>): SavedTurn => ({
-    exchange: { studentText: 'élève', tutorText: 'tuteur', replay: null },
+    exchange: { studentText: 'élève', photoText: null, tutorText: 'tuteur', replay: null },
     subject: null,
     newExercise: null,
     exerciseId: null,

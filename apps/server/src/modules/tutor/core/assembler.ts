@@ -1,13 +1,16 @@
 import { assistantModelMessageSchema, pruneMessages, toolModelMessageSchema, type ModelMessage, type UserContent } from 'ai';
 import { z } from 'zod';
 import type { ResponseMessage } from '../../../platform/ai/client';
-import { stripPromptTags, wrapUserMessage } from './fences';
+import { stripPromptTags } from './fences';
+import { studentMessage } from './photo';
 
 /** One past message of the window. */
 export interface HistoryTurn {
   role: 'user' | 'assistant';
   /** What the student saw, or wrote. */
   content: string;
+  /** The text of the photo the student sent with the message. */
+  photoText?: string | null | undefined;
   /** The assistant's response messages as the model produced them; absent on older messages. */
   modelMessages?: ResponseMessage[] | undefined;
 }
@@ -31,14 +34,14 @@ export interface ChatTurnParts {
   studentBlock: string;
   /** The exercise in progress, stable while it lasts: opening the window, it stays in the cached prefix. */
   exerciseBlock?: string | null | undefined;
-  /** The texts of the session's files, in the order they were attached: they open the window too. */
-  attachedFilesBlock?: string | null | undefined;
   /** The summary of the messages out of the window. */
   conversationSummary?: string | null | undefined;
   history: readonly HistoryTurn[];
   subjectBlock?: string | null | undefined;
   turnInstruction?: string | null | undefined;
   inputMode?: string | undefined;
+  /** The text of the photo sent with the student's message. */
+  photoText?: string | null | undefined;
   studentText: string;
 }
 
@@ -78,14 +81,14 @@ function alternate(messages: readonly ModelMessage[]): ModelMessage[] {
  *   replaying every reasoning would bill each turn for traces of thousands of tokens.
  * - What changes from one turn to the next (subject, instruction, voice marker) goes in the turn's
  *   message, before the student's text: earlier, it would break the cache of the history.
- * - The student's name, the exercise in progress, the session's files then the summary open the
- *   window: they change only with a new exercise, a new file or a new summary.
+ * - The student's name, the exercise in progress then the summary open the window: they change
+ *   only with a new exercise or a new summary. The text of a photo stays with its message.
  */
 export function assembleChatPrompt(parts: ChatTurnParts): { system: string; messages: ModelMessage[] } {
   const past = pruneMessages({
     messages: parts.history.flatMap((turn): ModelMessage[] =>
       turn.role === 'user'
-        ? [{ role: 'user', content: wrapUserMessage(turn.content) }]
+        ? [{ role: 'user', content: studentMessage(turn.content, turn.photoText) }]
         : (turn.modelMessages ?? [{ role: 'assistant', content: turn.content }]),
     ),
     reasoning: 'before-last-message',
@@ -96,13 +99,17 @@ export function assembleChatPrompt(parts: ChatTurnParts): { system: string; mess
   const opening: ModelMessage[] = [
     { role: 'user' as const, content: parts.studentBlock },
     ...(parts.exerciseBlock ? [{ role: 'user' as const, content: parts.exerciseBlock }] : []),
-    ...(parts.attachedFilesBlock ? [{ role: 'user' as const, content: parts.attachedFilesBlock }] : []),
     ...(parts.conversationSummary
       ? [{ role: 'user' as const, content: `<conversation_summary>\n${stripPromptTags(parts.conversationSummary)}\n</conversation_summary>` }]
       : []),
   ];
 
-  const text = [parts.subjectBlock, parts.turnInstruction, parts.inputMode === 'voice' ? VOICE_MARKER : null, wrapUserMessage(parts.studentText)]
+  const text = [
+    parts.subjectBlock,
+    parts.turnInstruction,
+    parts.inputMode === 'voice' ? VOICE_MARKER : null,
+    studentMessage(parts.studentText, parts.photoText),
+  ]
     .filter((block): block is string => Boolean(block))
     .join('\n\n');
   return { system: parts.systemPrompt, messages: alternate([...opening, ...past, { role: 'user', content: text }]) };
