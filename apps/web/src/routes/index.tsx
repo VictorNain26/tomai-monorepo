@@ -44,9 +44,10 @@ function StudentHome() {
 
 function Sessions() {
   const navigate = useNavigate();
+  const { data: me } = useSuspenseQuery(meQuery);
   const { data: sessions } = useSuspenseQuery(sessionsQuery);
   const start = useMutation({
-    mutationFn: () => parseResponse(api.sessions.$post()),
+    mutationFn: (accompanied: boolean) => parseResponse(api.sessions.$post({ json: { accompanied } })),
     onSuccess: ({ id }) => navigate({ to: '/seance/$sessionId', params: { sessionId: id } }),
   });
 
@@ -59,14 +60,39 @@ function Sessions() {
         <TomHead className="size-10 shrink-0" />
         Un exercice qui résiste ? Ouvre une séance, on le reprend pas à pas.
       </p>
-      <Button
-        disabled={start.isPending}
-        onClick={() => {
-          start.mutate();
-        }}
-      >
-        Nouvelle séance
-      </Button>
+      {me?.accompanied ? (
+        <>
+          <Button
+            disabled={start.isPending}
+            onClick={() => {
+              start.mutate(true);
+            }}
+          >
+            Avec mon parent à côté
+          </Button>
+          <Button
+            variant="outline"
+            disabled={start.isPending}
+            onClick={() => {
+              start.mutate(false);
+            }}
+          >
+            Sans mon parent ce soir
+          </Button>
+          <p className="text-sm text-muted-foreground">
+            Quand tu travailles sur l’appareil de ta famille, ton parent peut ouvrir ton espace et relire tes séances.
+          </p>
+        </>
+      ) : (
+        <Button
+          disabled={start.isPending}
+          onClick={() => {
+            start.mutate(false);
+          }}
+        >
+          Nouvelle séance
+        </Button>
+      )}
       {start.error && <Notice tone="error">La séance n’a pas pu s’ouvrir. Réessaie dans un instant.</Notice>}
       {sessions.length > 0 && (
         <ul className="flex flex-col gap-2">

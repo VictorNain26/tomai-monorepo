@@ -46,7 +46,8 @@ const guardian = await api.guardian('parent@example.com');
 const student = await api.student(guardian, { name: 'Léa', level: 'quatrieme' });
 const asStudent = await api.pair(guardian, student.id);
 
-const newSession = async () => ((await (await api.request('POST', '/api/sessions', { cookie: asStudent })).json()) as { id: string }).id;
+const newSession = async () =>
+  ((await (await api.request('POST', '/api/sessions', { cookie: asStudent, body: { accompanied: false } })).json()) as { id: string }).id;
 
 /** The turn's reply as the student reads it, from the UI message stream; or its error. */
 async function say(sessionId: string, text: string, cookie = asStudent) {

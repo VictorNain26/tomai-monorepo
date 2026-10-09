@@ -91,7 +91,7 @@ const turn = (overrides: Partial<SavedTurn>): SavedTurn => ({
 
 /** A past exercise of the student on the notion, two turns of it made the same error. */
 async function pastExercise(cookie: string, studentId: string, errorType: string) {
-  const { id: sessionId } = (await (await api.request('POST', '/api/sessions', { cookie })).json()) as { id: string };
+  const { id: sessionId } = (await (await api.request('POST', '/api/sessions', { cookie, body: { accompanied: false } })).json()) as { id: string };
   await repository.saveTurn(
     sessionId,
     turn({
@@ -119,7 +119,7 @@ const draft = { json: { hasExercise: true, ...sheet([notion.id]) } };
 
 /** What the writer reads of a new exercise on the notion. */
 async function writerReads(cookie: string) {
-  const { id: sessionId } = (await (await api.request('POST', '/api/sessions', { cookie })).json()) as { id: string };
+  const { id: sessionId } = (await (await api.request('POST', '/api/sessions', { cookie, body: { accompanied: false } })).json()) as { id: string };
   mistral.chat.push(analysis({ bringsExercise: true }), draft, draft, draft, { text: 'Que cherches-tu ?' });
   mistral.received.length = 0;
   await (await api.request('POST', `/api/sessions/${sessionId}/messages`, { cookie, body: { text: 'Résous 3x + 5 = 20.' } })).text();
@@ -198,7 +198,9 @@ describe('the learner memory', () => {
   });
 
   it('leaves out of a reset the exercise a turn is still writing', async () => {
-    const { id: sessionId } = (await (await api.request('POST', '/api/sessions', { cookie: asLea })).json()) as { id: string };
+    const { id: sessionId } = (await (await api.request('POST', '/api/sessions', { cookie: asLea, body: { accompanied: false } })).json()) as {
+      id: string;
+    };
     await db.transaction(async (tx) => {
       await tx
         .insert(exercise)

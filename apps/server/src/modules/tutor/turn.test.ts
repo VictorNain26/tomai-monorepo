@@ -20,6 +20,7 @@ import { fakeMistral } from '../../testing/mistral';
 import { accountDeletion } from '../household';
 import type { TurnAnalysis } from './core/analysis';
 import { FALLBACK_REPLY } from './core/output-check';
+import { PARENT_CUES } from './core/parent-cues';
 import { TURN_PROMPT_VERSION } from './core/version';
 import { distressEvent, exercise, message, studySession, turnRecord } from './schema';
 
@@ -53,7 +54,13 @@ const asStudent = await api.pair(guardian, student.id);
 const otherGuardian = await api.guardian('autre@example.com');
 const asOther = await api.pair(otherGuardian, (await api.student(otherGuardian)).id);
 
-const newSession = async () => ((await (await api.request('POST', '/api/sessions', { cookie: asStudent })).json()) as { id: string }).id;
+const companion = await api.student(guardian, { name: 'Sam', level: 'cinquieme' });
+const asCompanion = await api.pair(guardian, companion.id);
+const companionSession = async (accompanied: boolean) =>
+  ((await (await api.request('POST', '/api/sessions', { cookie: asCompanion, body: { accompanied } })).json()) as { id: string }).id;
+
+const newSession = async () =>
+  ((await (await api.request('POST', '/api/sessions', { cookie: asStudent, body: { accompanied: false } })).json()) as { id: string }).id;
 
 /** The turn's reply as the student reads it, from the UI message stream; or its error. */
 async function say(sessionId: string, text: string, cookie = asStudent) {
@@ -72,6 +79,7 @@ async function say(sessionId: string, text: string, cookie = asStudent) {
     status: res.status,
     steps: beforeReply.flatMap((chunk) => (chunk.type === 'data-step' ? [chunk.data] : [])),
     transientSteps: chunks.filter((chunk) => chunk.type === 'data-step').every((chunk) => chunk.transient === true),
+    cues: chunks.filter((chunk) => chunk.type === 'data-cue').map((chunk) => ({ cue: chunk.data, transient: chunk.transient })),
     reply: chunks.flatMap((chunk) => (chunk.type === 'text-delta' && chunk.delta ? [chunk.delta] : [])).join(''),
     error: chunks.find((chunk) => chunk.type === 'error')?.errorText,
     body,
@@ -152,6 +160,37 @@ describe('a turn', () => {
     const sessionId = await newSession();
     mistral.chat.push(analysis({ bringsExercise: true }), draft, draft, draft, { text: 'Que cherches-tu ?' });
     expect(await say(sessionId, 'Résous 3x + 5 = 20.')).toMatchObject({ steps: ['reading', 'exercise', 'writing'] });
+  });
+
+  it('gives the parent beside a cue at the launch and at a frustration, nothing when all goes well, never the same twice in a row', async () => {
+    const sessionId = await companionSession(true);
+    mistral.chat.push(analysis(), { text: 'Que travailles-tu ?' });
+    expect((await say(sessionId, 'Bonjour', asCompanion)).cues).toEqual([{ cue: PARENT_CUES.launch('Sam'), transient: true }]);
+    mistral.chat.push(analysis(), { text: 'Montre-moi.' });
+    expect((await say(sessionId, 'Les fractions', asCompanion)).cues).toEqual([]);
+    const frustrated = [];
+    for (let turn = 0; turn < 4; turn++) {
+      mistral.chat.push(analysis({ saysStuck: true }), { text: 'Qu’est-ce qui te bloque ?' });
+      frustrated.push((await say(sessionId, 'je sais pas', asCompanion)).cues.length);
+    }
+    expect(frustrated).toEqual([1, 0, 0, 0]);
+  });
+
+  it('gives no cue once the child is moved up to the 4e, though the session was opened beside', async () => {
+    const moving = await api.student(guardian, { name: 'Ali', level: 'cinquieme' });
+    const asMoving = await api.pair(guardian, moving.id);
+    const { id: sessionId } = (await (await api.request('POST', '/api/sessions', { cookie: asMoving, body: { accompanied: true } })).json()) as {
+      id: string;
+    };
+    await api.request('PATCH', `/api/household/students/${moving.id}`, { cookie: guardian, body: { level: 'quatrieme' } });
+    mistral.chat.push(analysis(), { text: 'Que travailles-tu ?' });
+    expect((await say(sessionId, 'Bonjour', asMoving)).cues).toEqual([]);
+  });
+
+  it('gives no cue to a child working alone', async () => {
+    const sessionId = await companionSession(false);
+    mistral.chat.push(analysis({ saysStuck: true }), { text: 'Qu’est-ce qui te bloque ?' });
+    expect((await say(sessionId, 'je sais pas', asCompanion)).cues).toEqual([]);
   });
 
   it('gives the writer the name fenced, never in the system prompt', async () => {
@@ -328,7 +367,8 @@ const spender = await api.student(guardian, { name: 'Noé', level: 'sixieme' });
 const asSpender = await api.pair(guardian, spender.id);
 
 describe('the daily quota', () => {
-  const sessionOf = async () => ((await (await api.request('POST', '/api/sessions', { cookie: asSpender })).json()) as { id: string }).id;
+  const sessionOf = async () =>
+    ((await (await api.request('POST', '/api/sessions', { cookie: asSpender, body: { accompanied: false } })).json()) as { id: string }).id;
   // Read in each test, at its start: a run that crosses 4 a.m. would otherwise test yesterday.
   const today = () => quotaDayStart(new Date());
   /** The student's spending reset to what the test states. */

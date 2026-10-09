@@ -13,6 +13,7 @@ import type { Db } from '../../platform/db/client';
 import type { ExerciseChange, ExerciseState } from './core/exercise-turn';
 import type { Hint } from './core/ladder';
 import type { PastExercise } from './core/memory';
+import type { CueKind } from './core/parent-cues';
 import type { WeekMessage } from './core/week-summary';
 import { distressEvent, exercise, learnerNotionReset, message, studySession, turnRecord } from './schema';
 
@@ -37,6 +38,8 @@ export interface SavedTurn {
   /** What the turn changes on the exercise, the student having read the help it allowed. */
   progress: ExerciseProgress | null;
   record: TurnRecord;
+  /** The cue given to the parent beside the child: one more toward the session's cap, the last one. */
+  parentCue?: CueKind;
 }
 
 /** The two messages of a turn: what the student wrote, what they read, and how to replay it. */
@@ -65,7 +68,13 @@ const ownSession = (studentId: string, sessionId: string) => and(eq(studySession
  */
 const allocatedPosition = sql<number>`coalesce((select last_value from pg_sequences where quote_ident(schemaname) || '.' || quote_ident(sequencename) = pg_get_serial_sequence(${getTableName(exercise)}, ${exercise.position.name})), 0)`;
 
-const sessionColumns = { id: studySession.id, title: studySession.title, closedAt: studySession.closedAt, createdAt: studySession.createdAt };
+const sessionColumns = {
+  id: studySession.id,
+  title: studySession.title,
+  accompanied: studySession.accompanied,
+  closedAt: studySession.closedAt,
+  createdAt: studySession.createdAt,
+};
 
 export interface ExerciseProgress extends ExerciseChange {
   /** The tutor's message, cut, that the contract lists so as not to repeat it. */
@@ -87,10 +96,13 @@ async function updateExercise(executor: Executor, exerciseId: string, progress: 
 
 export function createTutorRepository(db: Db) {
   return {
-    /** A new session, or the latest one nothing was said in yet: tapping again piles up no empty one. */
-    async createSession(studentId: string) {
+    /**
+     * A new session, or the latest one nothing was said in yet, with the parent beside or not:
+     * tapping again piles up no empty one, and takes the new choice.
+     */
+    async createSession(studentId: string, accompanied: boolean) {
       const [empty] = await db
-        .select(sessionColumns)
+        .select({ id: studySession.id })
         .from(studySession)
         .where(
           and(
@@ -105,8 +117,27 @@ export function createTutorRepository(db: Db) {
         )
         .orderBy(desc(studySession.createdAt))
         .limit(1);
-      if (empty) return empty;
-      const [created] = await db.insert(studySession).values({ studentId }).returning(sessionColumns);
+      if (empty) {
+        // Still empty and idle when it takes the new choice: a first turn running keeps its mode.
+        const [reopened] = await db
+          .update(studySession)
+          .set({ accompanied })
+          .where(
+            and(
+              eq(studySession.id, empty.id),
+              isNull(studySession.turnStartedAt),
+              notExists(
+                db
+                  .select({ one: sql`1` })
+                  .from(message)
+                  .where(eq(message.sessionId, studySession.id)),
+              ),
+            ),
+          )
+          .returning(sessionColumns);
+        if (reopened) return reopened;
+      }
+      const [created] = await db.insert(studySession).values({ studentId, accompanied }).returning(sessionColumns);
       if (!created) throw new Error('Session not created');
       return created;
     },
@@ -277,6 +308,9 @@ export function createTutorRepository(db: Db) {
             summary: studySession.summary,
             summaryUntil: studySession.summaryUntil,
             closedAt: studySession.closedAt,
+            accompanied: studySession.accompanied,
+            parentCues: studySession.parentCues,
+            lastParentCue: studySession.lastParentCue,
             turnStartedAt: studySession.turnStartedAt,
           });
         return started;
@@ -364,6 +398,12 @@ export function createTutorRepository(db: Db) {
      */
     async saveTurn(sessionId: string, turn: SavedTurn) {
       await db.transaction(async (tx) => {
+        if (turn.parentCue) {
+          await tx
+            .update(studySession)
+            .set({ parentCues: sql`${studySession.parentCues} + 1`, lastParentCue: turn.parentCue })
+            .where(eq(studySession.id, sessionId));
+        }
         if (turn.subject) {
           await tx
             .update(studySession)

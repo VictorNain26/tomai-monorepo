@@ -9,6 +9,7 @@
 import type { Logger } from 'pino';
 import { detectDistress, DISTRESS_REPLY, type DistressSource } from '../../domain/distress';
 import type { MemoryAnswer } from '../../domain/memory-consent';
+import { isAccompaniedLevel } from '../../domain/levels';
 import { DAILY_BUDGET_MICRO_EUR, QUOTA_RESET_HOUR, quotaDayStart } from '../../domain/quota';
 import type { Ai } from '../../platform/ai/client';
 import type { InputModeration, Moderation } from '../../platform/ai/moderation';
@@ -20,6 +21,7 @@ import { writeChecked } from './core/controlled-turn';
 import { drawsSheet, prepareExerciseTurn } from './core/exercise-turn';
 import { hintOf } from './core/ladder';
 import { learnerMemoryBlock, notionMemories, notionView, schoolYearStart } from './core/memory';
+import { parentCue, type CueKind } from './core/parent-cues';
 import type { OutputCheckContext } from './core/output-check';
 import { studentBlock, subjectBlock, systemPrompt } from './core/prompt';
 import { routeReasoningEffort } from './core/reasoning';
@@ -54,6 +56,8 @@ export type TurnStep = 'reading' | 'exercise' | 'writing';
 /** The turn's reply, and what runs after it, once the session is free. */
 interface TurnReply {
   text: string;
+  /** The cue for the parent beside the child, null without one. */
+  cue: string | null;
   after: (() => Promise<void>) | null;
 }
 
@@ -69,6 +73,9 @@ export interface OpenTurn {
     summary: string | null;
     summaryUntil: number | null;
     closedAt: Date | null;
+    accompanied: boolean;
+    parentCues: number;
+    lastParentCue: CueKind | null;
     turnStartedAt: Date;
   };
   /** A distress already seen past the quota: the turn answers it, and nothing else. */
@@ -175,10 +182,10 @@ export function createTutorService({ repository, students, ai, moderation, logge
         .catch((err: unknown) => {
           logger.error({ err }, 'Closed session turn not stored');
         });
-      return { text: DISTRESS_REPLY, after: null };
+      return { text: DISTRESS_REPLY, cue: null, after: null };
     }
 
-    if (distress) return { text: await answerDistress(learner.id, session.id, studentText, distress), after: null };
+    if (distress) return { text: await answerDistress(learner.id, session.id, studentText, distress), cue: null, after: null };
 
     const [history, current] = await Promise.all([
       repository.window(session.id, WINDOW, session.summaryUntil),
@@ -196,7 +203,11 @@ export function createTutorService({ repository, students, ai, moderation, logge
     // Distress before anything else: no sheet, no tutor, the fixed reply.
     const source = detectDistress(studentText, inputModeration?.flagged.includes('selfharm') ?? false);
     if (source)
-      return { text: await answerDistress(learner.id, session.id, studentText, { source, flagged: inputModeration?.flagged ?? null }), after: null };
+      return {
+        text: await answerDistress(learner.id, session.id, studentText, { source, flagged: inputModeration?.flagged ?? null }),
+        cue: null,
+        after: null,
+      };
     const analysis = await analysed;
 
     // The detected subject, else the session's: the first one named stays the session's.
@@ -259,6 +270,23 @@ export function createTutorService({ repository, students, ai, moderation, logge
 
     // A fixed reply gave none of the help the level allowed: the exercise does not move.
     const helped = reply.outcome !== 'fallback';
+    const first = history.length === 0;
+    // The class read again: a child moved up to the 4e meanwhile works alone.
+    const cue =
+      session.accompanied && isAccompaniedLevel(learner.level)
+        ? parentCue(
+            {
+              first,
+              helped,
+              newExercise: exerciseTurn.isNew,
+              levelUp: !exerciseTurn.isNew && change !== null && current !== undefined && change.hintLevel > current.hintLevel,
+              solved: change?.solved === true,
+              frustrated: analysis.asksSolution || analysis.saysStuck,
+            },
+            { shown: session.parentCues, last: session.lastParentCue },
+            learner.name,
+          )
+        : null;
     await repository.saveTurn(session.id, {
       exchange: { studentText, tutorText: reply.text, replay: reply.replay },
       subject: session.subject ? null : detected,
@@ -288,9 +316,13 @@ export function createTutorService({ repository, students, ai, moderation, logge
         findings: reply.findings.map((finding) => finding.kind),
         outcome: reply.outcome,
       },
+      ...(cue && { parentCue: cue.kind }),
     });
-    const first = history.length === 0;
-    return { text: reply.text, after: () => afterTurn(learner.id, session, { studentText, tutorText: reply.text, check, first }) };
+    return {
+      text: reply.text,
+      cue: cue?.text ?? null,
+      after: () => afterTurn(learner.id, session, { studentText, tutorText: reply.text, check, first }),
+    };
   }
 
   return {
@@ -330,9 +362,11 @@ export function createTutorService({ repository, students, ai, moderation, logge
       return summaryOf(studentId);
     },
 
-    async startSession(userId: string) {
-      await student(userId);
-      return repository.createSession(userId);
+    /** A session, the parent beside or not: only before the 4e (`domain/levels.ts`). */
+    async startSession(userId: string, accompanied: boolean) {
+      const learner = await student(userId);
+      if (accompanied && !isAccompaniedLevel(learner.level)) throw new Problem('FORBIDDEN');
+      return repository.createSession(userId, accompanied);
     },
 
     async listSessions(userId: string) {
@@ -366,6 +400,9 @@ export function createTutorService({ repository, students, ai, moderation, logge
           summary: started.summary,
           summaryUntil: started.summaryUntil,
           closedAt: started.closedAt,
+          accompanied: started.accompanied,
+          parentCues: started.parentCues,
+          lastParentCue: started.lastParentCue,
           turnStartedAt,
         },
         distress: null,
@@ -389,7 +426,7 @@ export function createTutorService({ repository, students, ai, moderation, logge
     },
 
     /** The turn's reply; the session is free for the next turn whatever happens. */
-    async runTurn(opened: OpenTurn, input: TurnInput, onStep: (step: TurnStep) => void): Promise<string> {
+    async runTurn(opened: OpenTurn, input: TurnInput, onStep: (step: TurnStep) => void): Promise<{ text: string; cue: string | null }> {
       const free = () => repository.endTurn(opened.session.id, opened.session.turnStartedAt);
       let reply: TurnReply;
       try {
@@ -404,7 +441,7 @@ export function createTutorService({ repository, students, ai, moderation, logge
       // messages when a turn ends while the previous summary runs.
       await free();
       if (reply.after) background(reply.after());
-      return reply.text;
+      return { text: reply.text, cue: reply.cue };
     },
   };
 }

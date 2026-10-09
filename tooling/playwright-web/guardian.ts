@@ -53,11 +53,14 @@ export async function guardian(page: Page, name: string) {
 export const childPhone = (browser: Browser, testInfo: TestInfo) =>
   browser.newContext({ ...devices[testInfo.project.name === 'iphone' ? 'iPhone 15' : 'Pixel 7'] });
 
-/** A child added to the household, the learner memory proposed or not, the guardian left on their page. */
-export async function addChild(page: Page, name: string, { memory = false } = {}) {
+/**
+ * A child added to the household, the learner memory proposed or not, the guardian left on their
+ * page. In 4e by default: a device of their own pairs from the 4e on.
+ */
+export async function addChild(page: Page, name: string, { memory = false, level = 'Quatrième' } = {}) {
   await page.getByLabel('Son prénom', { exact: true }).fill(name);
   if (memory) await page.getByLabel('Proposer que Tom retienne ce qui a résisté').check();
-  await page.getByLabel('Sa classe', { exact: true }).selectOption({ label: 'Cinquième' });
+  await page.getByLabel('Sa classe', { exact: true }).selectOption({ label: level });
   await page.getByLabel('Son mois de naissance').fill(birthMonthAged(12));
   await page.getByRole('button', { name: 'Ajouter' }).click();
   await page.getByRole('link', { name: new RegExp(`^${name}`) }).click();

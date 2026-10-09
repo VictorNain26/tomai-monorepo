@@ -32,8 +32,11 @@ export const toUIMessage = ({ id, role, text }: StoredMessage): ChatMessage => (
 /** The text a message carries, its parts joined. */
 export const textOf = (message: UIMessage | undefined) => (message?.parts ?? []).map((part) => (part.type === 'text' ? part.text : '')).join('');
 
-/** A message of the session; the server streams the step of the turn as a transient `data-step` part. */
-export type ChatMessage = UIMessage<unknown, { step: TurnStep }>;
+/**
+ * A message of the session; the server streams, as transient parts, the step of the turn and,
+ * with the parent beside the child, a cue for them.
+ */
+export type ChatMessage = UIMessage<unknown, { step: TurnStep; cue: string }>;
 
 const WAITING: Record<TurnStep, string> = {
   reading: 'Tom lit ton message…',

@@ -237,13 +237,18 @@ rejouables par un tiers.
   `GET /api/summary/:studentId`. À construire au lot 3 : l'écran, écrit comme des pistes de
   conversation, et l'arrêt à la demande de l'élève ; à partir de 15 ans, sa demande s'applique,
   le parent prévenu.
-- **En 6e et 5e, le mode accompagné** (à construire, lot 3 ; `decisions.md`) : le parent lance la
-  séance, l'appareil passe au profil de l'enfant, « Je reste à côté » ou « Il travaille seul ce
-  soir ». À côté, Tom propose au parent au plus trois ou quatre pistes par séance (rôle au
-  lancement, puis stratégie, réparation, étape, adaptés des types de ParaTutor), au lancement, à
-  un blocage, à une frustration et à la fin, de vingt mots au plus, visibles de l'enfant ; une
-  piste ne donne jamais plus que le cran courant de l'enfant, et le contrôle de sortie s'y applique
-  comme à une réponse. Formulations et sources : `etudes/2026-10-08/aide-parentale.md`, § 6 (c).
+- **En 6e et 5e, le mode accompagné** (`decisions.md`) : le parent lance la séance par « Faire les
+  devoirs avec … », l'appareil passe au profil de l'enfant, qui choisit « Avec mon parent à
+  côté » ou « Sans mon parent ce soir » (`study_session.accompanied`, refusé en 4e et 3e). À
+  côté, Tom donne au parent quatre pistes au plus par séance, une au plus par tour, jamais la même
+  deux fois de suite : au lancement, à la fin d'un exercice, à un blocage, à une frustration, à un
+  nouvel exercice ; la fin et le blocage seulement quand la réponse a vraiment aidé
+  (`modules/tutor/core/parent-cues.ts`). Ce sont des phrases fixes choisies par le code, jamais un
+  mot du modèle : elles ne peuvent porter ni l'exercice ni sa réponse. Transmises en partie
+  `data-cue` transitoire, montrées sous la réponse jusqu'au message suivant, visibles de
+  l'enfant. Le web ne propose plus de relier un appareil de l'enfant avant la 4e ; le serveur
+  garde le code de jumelage, dont se sert l'ouverture sur l'appareil de la famille. Sources :
+  `etudes/2026-10-08/aide-parentale.md`, § 6 (c).
 - **La détresse n'alerte pas le parent d'office** : un humain relit l'événement et décide (§4).
 - **Un second parent** peut rejoindre le foyer et s'opposer (à construire, lot 3, avec le
   consentement).

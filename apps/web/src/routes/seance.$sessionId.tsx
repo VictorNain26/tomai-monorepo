@@ -30,6 +30,7 @@ function Session() {
   const [text, setText] = useState('');
   const aiNoticeId = useId();
   const [step, setStep] = useState<TurnStep | null>(null);
+  const [cue, setCue] = useState<string | null>(null);
   // The server keeps the conversation: a turn sends the new message only, to the chat's session.
   const [transport] = useState(
     () =>
@@ -45,7 +46,8 @@ function Session() {
     messages: stored.map(toUIMessage),
     transport,
     onData: (part) => {
-      if (isTurnStep(part.data)) setStep(part.data);
+      if (part.type === 'data-cue') setCue(part.data);
+      else if (isTurnStep(part.data)) setStep(part.data);
     },
     // A refused or failed turn stored nothing: its message leaves the conversation and comes back
     // to the field, to be sent again.
@@ -75,6 +77,7 @@ function Session() {
     if (!trimmed || busy) return;
     setText('');
     setStep(null);
+    setCue(null);
     void sendMessage({ text: trimmed });
   };
 
@@ -105,6 +108,14 @@ function Session() {
           ),
         )}
       </ol>
+      {cue && !busy && (
+        <div className="flex flex-col gap-1 rounded-2xl border border-border bg-card p-4 text-card-foreground">
+          <span className="text-sm font-bold text-muted-foreground">Pour vous, parent</span>
+          <p role="note" aria-label="Pour vous, parent">
+            {cue}
+          </p>
+        </div>
+      )}
       {status === 'submitted' && <Notice tone="info">{waitingText(step)}</Notice>}
       {error && <Notice tone="error">{chatMessage(error)}</Notice>}
       <div ref={endRef} />

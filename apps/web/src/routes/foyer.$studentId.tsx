@@ -74,8 +74,13 @@ function OpenHere({ child }: { child: Student }) {
           open.mutate();
         }}
       >
-        Ouvrir l’espace de {child.name} sur cet appareil
+        {child.accompanied ? `Faire les devoirs avec ${child.name}` : `Ouvrir l’espace de ${child.name} sur cet appareil`}
       </Button>
+      {child.accompanied && (
+        <p className="text-sm text-muted-foreground">
+          À chaque séance, {child.name} choisit : avec vous à côté, ou sans vous ce soir. À côté, Tom vous propose quoi dire, jamais la réponse.
+        </p>
+      )}
       <p className="text-sm text-muted-foreground">Pour revenir au vôtre, il vous faudra votre clé d’accès ou un code.</p>
       {open.error && <Notice tone="error">{open.error.message}</Notice>}
     </section>
@@ -133,7 +138,11 @@ function Devices({ child }: { child: Student }) {
         </ul>
       )}
       {revoke.error && <Notice tone="error">{householdMessage(revoke.error)}</Notice>}
-      {redeemed ? (
+      {child.accompanied ? (
+        <p className="text-muted-foreground">
+          En 6e et 5e, {child.name} travaille sur l’appareil de la famille ; relier son propre appareil devient possible en 4e.
+        </p>
+      ) : redeemed ? (
         <Notice tone="info">L’appareil de {child.name} est relié.</Notice>
       ) : pairing.data && pending(devices) ? (
         <Notice tone="info">
@@ -145,9 +154,11 @@ function Devices({ child }: { child: Student }) {
         <p className="text-muted-foreground">Un code à usage unique relie l’appareil de {child.name} à son compte, sans mot de passe.</p>
       )}
       {pairing.error && <Notice tone="error">{householdMessage(pairing.error)}</Notice>}
-      <Button disabled={pairing.isPending} onClick={askCode}>
-        {pending(devices) ? 'Nouveau code' : 'Relier un appareil'}
-      </Button>
+      {!child.accompanied && (
+        <Button disabled={pairing.isPending} onClick={askCode}>
+          {pending(devices) ? 'Nouveau code' : 'Relier un appareil'}
+        </Button>
+      )}
     </section>
   );
 }

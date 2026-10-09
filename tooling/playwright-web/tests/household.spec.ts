@@ -6,7 +6,7 @@ test('a guardian adds a child, changes their class, then deletes their account',
   await expect(page.getByText('Ajoutez votre enfant')).toBeVisible();
   await addChild(page, 'Léa');
 
-  await page.getByLabel('Sa classe', { exact: true }).selectOption({ label: 'Quatrième' });
+  await page.getByLabel('Sa classe', { exact: true }).selectOption({ label: 'Troisième' });
   await page.getByRole('button', { name: 'Enregistrer' }).click();
   await expect(page.getByRole('status')).toHaveText('Enregistré.');
   await page.getByLabel('Son prénom', { exact: true }).fill('Léa-Rose');
@@ -93,4 +93,21 @@ test('on the family phone, the parent opens the child’s space without a code, 
   await expect(page.getByRole('heading', { name: 'Bonjour Zoé' })).toBeVisible();
   // The same session, switched back to: no second pairing.
   await expect(page.getByText(/^Relié le /)).toHaveCount(1);
+});
+
+test('in 5e, the parent does the homework with the child on the family phone, and pairs no device of the child’s', async ({ page }) => {
+  await guardian(page, 'accompagne');
+  await addChild(page, 'Lou', { level: 'Cinquième' });
+  await expect(page.getByRole('button', { name: 'Relier un appareil' })).toHaveCount(0);
+  await expect(page.getByText('En 6e et 5e, Lou travaille sur l’appareil de la famille')).toBeVisible();
+
+  await page.getByRole('button', { name: 'Faire les devoirs avec Lou' }).click();
+  await expect(page.getByRole('heading', { name: 'Bonjour Lou' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Avec mon parent à côté' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Sans mon parent ce soir' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Nouvelle séance' })).toHaveCount(0);
+  // The child knows what their parent can see on this device.
+  await expect(
+    page.getByText('Quand tu travailles sur l’appareil de ta famille, ton parent peut ouvrir ton espace et relire tes séances.'),
+  ).toBeVisible();
 });

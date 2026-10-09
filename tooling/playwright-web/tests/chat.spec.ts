@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { createUIMessageStream, createUIMessageStreamResponse } from 'ai';
-import { pairedStudent } from '../guardian';
+import { addChild, guardian, pairedStudent } from '../guardian';
 
 // page.route never sees what the service worker answers.
 test.use({ serviceWorkers: 'block' });
@@ -174,6 +174,50 @@ test('Tom’s formatting and formulas render, his links, images and HTML never d
   // Tom's head only: no image of the model's.
   await expect(reply.locator('img')).toHaveCount(1);
   expect(refused).toEqual([]);
+});
+
+test('with the parent beside, Tom’s cue for them shows under the reply, and leaves with the next message', async ({ page }) => {
+  await guardian(page, 'piste');
+  await addChild(page, 'Lou', { level: 'Cinquième' });
+  await page.getByRole('button', { name: 'Faire les devoirs avec Lou' }).click();
+  await expect(page.getByRole('heading', { name: 'Bonjour Lou' })).toBeVisible();
+  const cue = 'Ce soir, votre rôle auprès de Lou : écouter et poser des questions. Les explications, c’est Tom.';
+  // The first reply carries a cue, the second none.
+  const reply = (withCue: boolean) =>
+    createUIMessageStreamResponse({
+      stream: createUIMessageStream({
+        execute: ({ writer }) => {
+          writer.write({ type: 'text-start', id: 'reply' });
+          writer.write({ type: 'text-delta', id: 'reply', delta: 'Que travailles-tu ?' });
+          writer.write({ type: 'text-end', id: 'reply' });
+          if (withCue) writer.write({ type: 'data-cue', data: cue, transient: true });
+        },
+      }),
+    });
+  const replies = [reply(true), reply(false)];
+  const sent: unknown[] = [];
+  await page.route('**/api/sessions', (route) => {
+    if (route.request().method() === 'POST') sent.push(route.request().postDataJSON());
+    return route.fallback();
+  });
+  await page.route('**/api/sessions/*/messages', async (route) => {
+    const next = route.request().method() === 'POST' ? replies.shift() : undefined;
+    if (!next) return route.fallback();
+    return route.fulfill({ status: 200, headers: Object.fromEntries(next.headers), body: await next.text() });
+  });
+
+  await page.getByRole('button', { name: 'Avec mon parent à côté' }).click();
+  expect(sent).toEqual([{ accompanied: true }]);
+  await page.getByLabel('Ton message').fill('Bonjour');
+  await page.getByRole('button', { name: 'Envoyer' }).click();
+  const forParent = page.getByRole('note', { name: 'Pour vous, parent' });
+  await expect(forParent).toHaveText(cue);
+  // Never in the conversation.
+  await expect(page.getByRole('list', { name: 'Conversation' })).not.toContainText(cue);
+
+  await page.getByLabel('Ton message').fill('Les fractions');
+  await page.getByRole('button', { name: 'Envoyer' }).click();
+  await expect(forParent).toHaveCount(0);
 });
 
 test('a day past the quota is told in French, without the server’s message', async ({ page, browser }, testInfo) => {
