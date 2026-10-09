@@ -1,14 +1,12 @@
 import { Button } from '@repo/ui';
-import { memoryMessage, useMemoryAnswer } from '../lib/memory';
+import { memoryMessage, type useMemoryAnswer } from '../lib/memory';
 import { Notice } from './notice';
 
-/** What the memory is, and the student's yes or no, which `onAnswered` hears once taken. */
-export function MemoryAnswer({ onAnswered }: { onAnswered?: (answer: 'accepted' | 'declined') => void }) {
-  const answer = useMemoryAnswer();
-  const reply = (given: 'accepted' | 'declined') => {
-    answer.mutate(given, { onSuccess: () => onAnswered?.(given) });
-  };
-
+/**
+ * What the memory is, and the student's yes or no. The mutation belongs to the screen, which
+ * outlives this offer: it says the answer back once the offer is gone.
+ */
+export function MemoryAnswer({ answer }: { answer: ReturnType<typeof useMemoryAnswer> }) {
   return (
     <section aria-labelledby="memory-offer" className="flex flex-col gap-3 rounded-lg border border-border bg-card p-4 text-card-foreground">
       <h2 id="memory-offer" className="text-lg font-bold">
@@ -23,7 +21,7 @@ export function MemoryAnswer({ onAnswered }: { onAnswered?: (answer: 'accepted' 
         <Button
           disabled={answer.isPending}
           onClick={() => {
-            reply('accepted');
+            answer.mutate('accepted');
           }}
         >
           D’accord
@@ -32,7 +30,7 @@ export function MemoryAnswer({ onAnswered }: { onAnswered?: (answer: 'accepted' 
           variant="outline"
           disabled={answer.isPending}
           onClick={() => {
-            reply('declined');
+            answer.mutate('declined');
           }}
         >
           Non merci

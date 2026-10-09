@@ -5,7 +5,7 @@ Où on en est, réécrit dans chaque PR qui fait avancer ; ce qui est fini en so
 
 ## Où on en est
 
-- **Mis à jour le** 2026-10-08.
+- **Mis à jour le** 2026-10-09.
 - **Lot en cours : 3** : la direction artistique « Cahier du soir » est posée, le mode accompagné
   en 6e et 5e, la séance et l'accueil élève faits ; ensuite l'accueil parent et le résumé
   (`roadmap.md`, « Maintenant »).

@@ -18,7 +18,12 @@ import { meQuery } from '../lib/me';
  * invitation (closed beta); /bienvenue then asks its name. On a device paired to a child, the
  * child's session stays on it while the guardian enters.
  */
-export const Route = createFileRoute('/connexion')({ component: SignIn });
+export const Route = createFileRoute('/connexion')({
+  // Read before the page shows, so that a device holding a child's space never shows the sign-in
+  // first; a failure of /api/me still leaves the form.
+  loader: ({ context }) => context.queryClient.query(meQuery).catch(() => null),
+  component: SignIn,
+});
 
 const emailSchema = z.object({ email: z.email('Une adresse e-mail valide.') });
 
@@ -48,7 +53,7 @@ function SignIn() {
 
 function EmailStep({ onSent, onEntered }: { onSent: (email: string) => void; onEntered: () => Promise<void> }) {
   const queryClient = useQueryClient();
-  // Not awaited: when /api/me fails, the form still shows.
+  // Read by the loader; when /api/me fails, the form still shows.
   const { data: me } = useQuery(meQuery);
   const [failure, setFailure] = useState<string | null>(null);
   const form = useForm({ resolver: zodResolver(emailSchema), defaultValues: { email: '' } });

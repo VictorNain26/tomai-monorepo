@@ -1,18 +1,20 @@
 /** What Tom keeps of the student (`/api/memory`), in the words the student reads. */
 
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
-import type { InferResponseType } from 'hono/client';
+import type { InferRequestType, InferResponseType } from 'hono/client';
 import { api, isProblem, parseResponse } from './api';
 
 type Memory = InferResponseType<typeof api.memory.$get, 200>;
 type Notion = Memory['notions'][number];
+/** The student's yes or no to the memory. */
+export type MemoryChoice = InferRequestType<typeof api.memory.answer.$post>['json']['answer'];
 
 export const memoryQuery = queryOptions({
   queryKey: ['memory'],
   queryFn: () => parseResponse(api.memory.$get()),
 });
 
-/** « Travaillée 2 fois. La dernière fois : pas résolue, aide jusqu'à « Indice ciblé ». À surveiller : mal lire la consigne. » */
+/** « Travaillée 2 fois. La dernière fois : pas encore résolue, avec un indice. À surveiller : mal lire la consigne. » */
 export function notionSummary({ worked, lastSolved, lastHelp, watch }: Notion): string {
   return [
     `Travaillée ${String(worked)} fois.`,
@@ -32,7 +34,7 @@ export function memoryMessage(error: unknown): string {
 export function useMemoryAnswer() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (answer: 'accepted' | 'declined') => parseResponse(api.memory.answer.$post({ json: { answer } })),
+    mutationFn: (answer: MemoryChoice) => parseResponse(api.memory.answer.$post({ json: { answer } })),
     onSuccess: (memory) => {
       queryClient.setQueryData(memoryQuery.queryKey, memory);
     },
