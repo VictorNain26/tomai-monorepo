@@ -234,9 +234,10 @@ rejouables par un tiers.
   10 minutes, rien après une détresse), les notions qui résistent (dernier exercice travaillé dans
   la semaine non résolu après une aide, ou résolu avec une aide allée jusqu'à « Étape
   intermédiaire »). L'élève voit le même résumé (`GET /api/summary`), son parent par
-  `GET /api/summary/:studentId`. À construire au lot 3 : l'écran, écrit comme des pistes de
-  conversation, et l'arrêt à la demande de l'élève ; à partir de 15 ans, sa demande s'applique,
-  le parent prévenu.
+  `GET /api/summary/:studentId`. L'écran (`components/week-summary.tsx` du web) dit la même
+  semaine au parent et à l'élève, avec une question à poser à l'enfant tirée de ce qui résiste.
+  À construire au lot 3 : l'arrêt à la demande de l'élève ; à partir de 15 ans, sa demande
+  s'applique, le parent prévenu.
 - **En 6e et 5e, le mode accompagné** (`decisions.md`) : le parent lance la séance par « Faire les
   devoirs avec … », l'appareil passe au profil de l'enfant, qui choisit « Avec mon parent à
   côté » ou « Sans mon parent ce soir » (`study_session.accompanied`, refusé en 4e et 3e). À
