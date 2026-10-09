@@ -18,8 +18,7 @@ son plan, au moment où elle démarre (`.claude/rules/plans-and-agents.md`). L'�
 ## Maintenant
 
 **Lot 3**, dans cet ordre (`etudes/2026-10-08/interfaces.md` pour les constats) :
-1. **Le jumelage** par QR code, et les petits textes.
-2. **Le consentement** : double consentement sous 15 ans, second parent ; **photo et voix** ;
+1. **Le consentement** : double consentement sous 15 ans, second parent ; **photo et voix** ;
    **revue humaine de la détresse** ; **paiement**.
 
 **Lot 1**, dès que le paiement à l'usage de Mistral est actif : le passage unique du harnais sur
