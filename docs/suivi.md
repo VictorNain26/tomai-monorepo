@@ -88,8 +88,6 @@ concernée les reprend (`.claude/rules/plans-and-agents.md`).
 - Voix : la `Permissions-Policy` interdit le micro, à ouvrir à `self` ; la transcription impose le
   français, un oral de langue déclare sa langue.
 - Appareils de l'élève : le prévenir quand un nouvel appareil est relié.
-- Photo : `wrapAttachedFiles` (`modules/tutor/core/fences.ts`) attend la photo,
-  `attachedFilesBlock` est encore toujours vide.
 - Client web : mesures sur un vrai iPhone et un Android.
 - Le bouton désactivé, à 50 % d'opacité, perd son contraste : un état désactivé dans les tokens.
 

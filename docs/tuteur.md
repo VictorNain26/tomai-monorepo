@@ -33,7 +33,7 @@ d'agent reste la nôtre ([regional inference](https://docs.mistral.ai/inference/
 | Rôle | Modèle | Réglage |
 |---|---|---|
 | Chat élève, texte et image | **Mistral Small 4** `mistral-small-2603` | sans raisonnement sous un contrat de tour, l'exactitude passant par la fiche d'exercice ; sans fiche, `routeReasoningEffort` (`modules/tutor/core/reasoning.ts`) passe en `high` sur une réponse proposée, ou en 4e-3e en maths et sciences sur une demande de solution ou d'explication ; température 0,7, dans la plage de la fiche Hugging Face de Small 4 pour `none` ; `promptCacheKey` par session |
-| Lecture d'une image jointe, transcription seule (à construire, avec la photo) | Mistral Small 4 `mistral-small-2603` | `reasoningEffort: 'none'` ; sortie structurée stricte |
+| Lecture de la photo, transcription seule (`modules/tutor/core/photo.ts`) | Mistral Small 4 `mistral-small-2603` | sans raisonnement, température 0, texte libre (`ILLISIBLE`, `HORS_DEVOIR` pour les cas à dire) ; facturée dans le quota du tour |
 | Analyse du tour (`modules/tutor/core/analysis.ts`) | Mistral Small 4 `mistral-small-2603` | `reasoningEffort: 'high'`, température 0,7 : sans raisonnement, une question de fait était lue comme une demande d'explication (`etudes/2026-10-06/passage-de-fin.md`) ; sortie structurée stricte |
 | Résumé de séance, titre | Mistral Small 4 `mistral-small-2603` | `reasoningEffort: 'none'` ; texte |
 | Fiche d'exercice (`modules/tutor/core/sheet.ts`) | Mistral Small 4 `mistral-small-2603` | `reasoningEffort: 'high'` sans plafond de tokens, borné par un timeout de 20 s ; température 0,7 (« 0.7 for `reasoning_effort="high"` », fiche Hugging Face) ; trois tirages votés ; sortie structurée stricte |
@@ -148,8 +148,9 @@ Ordre du prompt, du plus stable au plus variable (`assembleChatPrompt`,
    (`programmeFor(niveau, matière, rentrée)`, `notionsFor`) et n'en retient que les entrées
    de l'exercice (`keepKnownNotions`), au libellé exact. Extraction et contrôles du
    référentiel : en tête de `referential/extract.ts`.
-3. Textes des fichiers de la séance, dans l'ordre où ils ont été joints (à construire, avec la
-   photo).
+3. Le texte de la photo du tour, s'il y en a une : lue une fois au début du tour
+   (`core/photo.ts`), recopiée et fencée en `<attached_file name="photo">` ; une photo illisible
+   ou sans devoir est dite comme telle, jamais décrite ; la photo ne se garde pas.
 4. Résumé des tours anciens + tours récents bruts, rejoués avec leur raisonnement. Le tour
    n'appelle aucun outil.
 5. Message de l'élève, **un seul message `user` par tour**, qui porte aussi ce qui change
