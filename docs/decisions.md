@@ -215,6 +215,11 @@ Une décision prise en séance entre ici dans la PR qui la suit, pas dans une m�
   landing sont supprimées : trop lentes, de 8 à 30 minutes en local, et des heures à chasser leurs
   tests instables. Restent les tests Bun du serveur et du web, et la vérification de chaque PR dans
   Chrome avant son merge, puis au staging pour l'app (la landing n'en a pas).
+- **La direction se retranche avant de construire** (2026-10-17, Victor). Le lot 1 et le plan de
+  nettoyage de l'audit du 2026-10-16 sont en pause jusqu'à la vision réécrite : composer ou
+  nettoyer ce qui va peut-être changer serait perdu. Puis une refonte en place, pas un nouveau
+  dépôt : la base est saine, c'est le dispositif autour du code qui pèse. Source :
+  `etudes/2026-10-17/direction.md`.
 - **Supprimer plutôt qu'archiver** (2026-08-23, rappelé le 2026-10-06). Ce qui ne sert plus se
   supprime ; git le garde.
 - **Merge commit, pas de squash** ; une branche courte par PR, jamais de push sur `main`.

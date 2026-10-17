@@ -19,6 +19,9 @@ Chaque PR précise son périmètre dans son plan, au moment où elle démarre
 
 ## Maintenant
 
+En pause depuis le 2026-10-17, le temps que la direction se retranche
+(`etudes/2026-10-17/direction.md`, `decisions.md`).
+
 **Lot 1, le produit** (`etudes/2026-10-12/refonte-produit.md`), dans cet ordre ; chaque ligne
 est une PR, ses pratiques dans `etudes/2026-10-12/bonnes-pratiques.md` :
 1. **La direction** : « Rive », choisie le 2026-10-12 (`decisions.md`, `charte.md`). Fait.

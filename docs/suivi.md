@@ -6,6 +6,11 @@ Où on en est, réécrit dans chaque PR qui fait avancer ; ce qui est fini en so
 ## Où on en est
 
 - **Mis à jour le** 2026-10-17.
+- **La direction se retranche** : Victor doute que le produit ait un public et veut accompagner
+  ce que l'IA change à l'éducation. L'étude `etudes/2026-10-17/direction.md` propose « la méthode
+  de la maison pour apprendre à l'ère de l'IA » ; Victor tranche ses trois décisions, puis la
+  vision se réécrit. D'ici là, le lot 1 et le plan de nettoyage du 2026-10-16 sont en pause
+  (`decisions.md`) ; ensuite, une refonte en place.
 - **La refonte du produit** (`decisions.md`, 2026-10-12 ; `etudes/2026-10-12/refonte-produit.md`) :
   la vision, les décisions et la roadmap réécrites ; les anciens lots 1 à 3 forment le lot 1,
   « Le produit » ; les espaces et les écrans visés sont dans `experience.md`.
